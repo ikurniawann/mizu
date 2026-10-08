@@ -1,7 +1,7 @@
 /**
- * Scope tenant SULU-APPAREL (owner 2026-09-09, EPIC-047 Fase 0). Dipakai
+ * Scope tenant MIZU-APPAREL (owner 2026-09-09, EPIC-047 Fase 0). Dipakai
  * seluruh seeder apparel supaya kode holding/perusahaan/cabang konsisten dan
- * tidak bercampur dengan data Sulu in Wounderland / Dusun Bambu di database
+ * tidak bercampur dengan data Mizu in Wounderland / Dusun Bambu di database
  * lokal yang sama. Pola turunan `dusun-bambu-scope.js`.
  */
 const fs = require("fs");
@@ -10,11 +10,11 @@ const { sslForUrl, assertLocalTarget } = require("../../scripts/pg-utils");
 
 const ROOT = path.join(__dirname, "..", "..", "..");
 
-const HOLDING_CODE = process.env.SULU_APPAREL_HOLDING_CODE || "PROLOGE";
-const COMPANY_CODE = process.env.SULU_APPAREL_COMPANY_CODE || "SULU-APPAREL";
-const BRANCH_CODE = process.env.SULU_APPAREL_BRANCH_CODE || "SA-WORKSHOP";
-const COMPANY_NAME = process.env.SULU_APPAREL_COMPANY_NAME || "Sulu Apparel";
-const BRANCH_NAME = process.env.SULU_APPAREL_BRANCH_NAME || "Sulu Apparel Workshop";
+const HOLDING_CODE = process.env.MIZU_APPAREL_HOLDING_CODE || "PROLOGE";
+const COMPANY_CODE = process.env.MIZU_APPAREL_COMPANY_CODE || "MIZU-APPAREL";
+const BRANCH_CODE = process.env.MIZU_APPAREL_BRANCH_CODE || "SA-WORKSHOP";
+const COMPANY_NAME = process.env.MIZU_APPAREL_COMPANY_NAME || "Mizu Apparel";
+const BRANCH_NAME = process.env.MIZU_APPAREL_BRANCH_NAME || "Mizu Apparel Workshop";
 
 // Gudang produksi (stok bahan baku, WIP, produk jadi) + outlet toko workshop.
 const MAIN_WAREHOUSE_CODE = "MAIN";
@@ -55,7 +55,7 @@ function resolveDatabaseUrl() {
   return url;
 }
 
-/** Buat/ambil holding → company → branch SULU-APPAREL + gudang produksi MAIN + outlet Workshop Store. */
+/** Buat/ambil holding → company → branch MIZU-APPAREL + gudang produksi MAIN + outlet Workshop Store. */
 async function ensureScope(client) {
   const holding = await client.query(
     `INSERT INTO configuration.holdings (name, code) VALUES ('Prologe', $1)
@@ -106,7 +106,7 @@ async function ensureScope(client) {
   };
 }
 
-/** Ambil id gudang/outlet per kode untuk cabang SULU-APPAREL. */
+/** Ambil id gudang/outlet per kode untuk cabang MIZU-APPAREL. */
 async function outletMap(client, branchId) {
   const { rows } = await client.query(
     `SELECT id, code FROM configuration.warehouses WHERE branch_id = $1 AND is_active`,

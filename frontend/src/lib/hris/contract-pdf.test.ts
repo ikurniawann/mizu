@@ -24,7 +24,7 @@ const baseData: ContractDocumentData = {
     probation_end_date: null,
     position_title: "Kasir",
     department_name: "Operasional",
-    work_location: "Outlet Sulu Bandung",
+    work_location: "Outlet Mizu Bandung",
     base_salary: 4_500_000,
     signed_at: "2026-07-20",
   },

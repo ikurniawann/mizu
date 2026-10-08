@@ -31,6 +31,7 @@ import type {
   PublicBookingInput,
   PublicBookingResult,
   PublicOutlet,
+  PublicSlot,
   PublicTreatment,
   SpaCustomer,
   Therapist,
@@ -179,5 +180,16 @@ export const spaApi = {
 export const publicSpaApi = {
   outlets: () => call<PublicOutlet[]>(`${PUBLIC_BASE}/outlets`),
   treatments: (branchId: string) => call<PublicTreatment[]>(`${PUBLIC_BASE}/outlets/${enc(branchId)}/treatments`),
+  slots: (branchId: string, date: string, variantIds: string[], pref: string) =>
+    call<PublicSlot[]>(withQuery(`${PUBLIC_BASE}/outlets/${enc(branchId)}/slots`, {
+      date,
+      variant_ids: variantIds.join(","),
+      therapist_gender_pref: pref,
+    })),
+  booking: (token: string) => call<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}`),
   createBooking: (input: PublicBookingInput) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings`, input),
+  changeCode: (token: string) => send<{ phone_hint: string }>(`${PUBLIC_BASE}/bookings/${enc(token)}/change-code`, {}),
+  verifyCode: (token: string, code: string) => send<{ grant: string }>(`${PUBLIC_BASE}/bookings/${enc(token)}/verify-code`, { code }),
+  changeBooking: (token: string, grant: string, action: "cancel" | "reschedule", scheduledAt?: string) =>
+    send<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}/change`, { grant, action, scheduled_at: scheduledAt }),
 };

@@ -30,7 +30,7 @@ export function isCashFlowCategory(
 }
 
 /**
- * Map compact code → account type for SULU seed/import heuristics.
+ * Map compact code → account type for MIZU seed/import heuristics.
  * Class 8 splits: subgroup starting with 2 → OTHER_INCOME, else OTHER_EXPENSE.
  */
 export function inferAccountTypeCode(code: string): AccountTypeCode {

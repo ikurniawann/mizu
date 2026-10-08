@@ -122,12 +122,12 @@ async function resolveModuleTypeFromPo(
   return poModuleType;
 }
 
-/** Scope bisnis mengikuti gudang penerimaan (mis. Company Sulu / Cabang Sulu Bandung). */
+/** Scope bisnis mengikuti gudang penerimaan (mis. Company Mizu / Cabang Mizu Bandung). */
 async function resolveReceivingScope(warehouseId: string): Promise<BusinessScope> {
   const scope = await getApiUserScope();
   const businessScope =
     (await resolveBusinessScopeFromWarehouse(warehouseId)) ??
-    (await resolveBusinessScopeByCodes("SULU", "SULU-BANDUNG"));
+    (await resolveBusinessScopeByCodes("MIZU", "MIZU-BANDUNG"));
 
   const warehouseCheck = await validateWarehouseForReceivingScope(
     warehouseId,

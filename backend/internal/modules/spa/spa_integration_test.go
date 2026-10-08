@@ -2,6 +2,8 @@ package spa_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"testing"
@@ -310,6 +312,10 @@ func TestSpaPublicBookingAndAuth(t *testing.T) {
 		"variants": []any{map[string]any{"name": "45 menit", "duration_min": 45, "price_idr": 150000}},
 	}, http.StatusCreated)
 	v45 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	emp := e.employee("Terapis Booking Online", nil)
+	e.data(admin, "POST", "/api/spa/therapists", map[string]any{
+		"employee_id": emp, "home_branch_id": branch, "gender": "female",
+	}, http.StatusCreated)
 
 	outlets := e.list(nil, "/api/public/spa/outlets")
 	found := false
@@ -334,6 +340,21 @@ func TestSpaPublicBookingAndAuth(t *testing.T) {
 	if res["booking_code"] == "" || res["total_idr"] != float64(150000) {
 		t.Fatalf("public booking = %v", res)
 	}
+	token, ok := res["access_token"].(string)
+	if !ok || token == "" {
+		t.Fatalf("public booking missing access token: %v", res)
+	}
+	confirmed := e.data(nil, "GET", "/api/public/spa/bookings/"+token, nil, http.StatusOK)
+	if confirmed["booking_code"] != res["booking_code"] {
+		t.Fatalf("confirmation lookup = %v", confirmed)
+	}
+	e.call(nil, "POST", "/api/public/spa/bookings", body("2026-10-09T05:00:00.000Z"), http.StatusConflict)
+	slots := e.list(nil, "/api/public/spa/outlets/"+branch+"/slots?date=2026-10-09&variant_ids="+v45)
+	for _, raw := range slots {
+		if raw.(map[string]any)["starts_at"] == "2026-10-09T05:00:00.000Z" {
+			t.Fatalf("occupied slot offered: %v", raw)
+		}
+	}
 	var source, status string
 	if err := e.tx.QueryRow(e.ctx, `SELECT source, status FROM spa.bookings WHERE booking_code = $1`, res["booking_code"]).Scan(&source, &status); err != nil {
 		t.Fatal(err)
@@ -341,10 +362,72 @@ func TestSpaPublicBookingAndAuth(t *testing.T) {
 	if source != "public" || status != "unassigned" {
 		t.Fatalf("stored public booking %s/%s", source, status)
 	}
-	for i := 0; i < 2; i++ {
-		e.data(nil, "POST", "/api/public/spa/bookings", body("2026-10-09T06:00:00.000Z"), http.StatusCreated)
+	for _, at := range []string{"2026-10-09T06:00:00.000Z", "2026-10-09T07:00:00.000Z"} {
+		e.data(nil, "POST", "/api/public/spa/bookings", body(at), http.StatusCreated)
 	}
-	e.call(nil, "POST", "/api/public/spa/bookings", body("2026-10-09T07:00:00.000Z"), http.StatusTooManyRequests)
+	e.call(nil, "POST", "/api/public/spa/bookings", body("2026-10-09T08:00:00.000Z"), http.StatusTooManyRequests)
+	// A previously cancelled treatment must not return when the guest moves the booking.
+	var cancelledItemID string
+	if err := e.tx.QueryRow(e.ctx, `INSERT INTO spa.booking_items
+	  (booking_id, variant_id, treatment_name, variant_name, duration_min, buffer_min, price_idr,
+	   starts_at, ends_at, status, sort_order)
+	  SELECT booking_id, variant_id, treatment_name, variant_name, duration_min, buffer_min,
+	         price_idr, starts_at, ends_at, 'cancelled', 99
+	    FROM spa.booking_items WHERE booking_id = (SELECT id FROM spa.bookings WHERE public_token = $1::uuid)
+	    LIMIT 1 RETURNING id::text`, token).Scan(&cancelledItemID); err != nil {
+		t.Fatal(err)
+	}
+	grant := "10000000-0000-4000-8000-000000000001"
+	digest := sha256.Sum256([]byte(grant))
+	if _, err := e.tx.Exec(e.ctx, `INSERT INTO spa.public_booking_challenges
+	  (booking_id, code_hash, expires_at, grant_hash, grant_expires_at)
+	  SELECT id, 'test', now() + interval '5 minutes', $2, now() + interval '15 minutes'
+	  FROM spa.bookings WHERE public_token = $1::uuid`, token, hex.EncodeToString(digest[:])); err != nil {
+		t.Fatal(err)
+	}
+	changed := e.data(nil, "POST", "/api/public/spa/bookings/"+token+"/change", map[string]any{
+		"grant": grant, "action": "reschedule", "scheduled_at": "2026-10-09T04:00:00.000Z",
+	}, http.StatusOK)
+	if changed["scheduled_at"] != "2026-10-09T04:00:00.000Z" || changed["status"] != "unassigned" {
+		t.Fatalf("rescheduled public booking = %v", changed)
+	}
+	var cancelledItemStatus string
+	if err := e.tx.QueryRow(e.ctx, `SELECT status FROM spa.booking_items WHERE id = $1`, cancelledItemID).Scan(&cancelledItemStatus); err != nil {
+		t.Fatal(err)
+	}
+	if cancelledItemStatus != "cancelled" {
+		t.Fatalf("reschedule revived cancelled item: %s", cancelledItemStatus)
+	}
+	e.call(nil, "POST", "/api/public/spa/bookings/"+token+"/change", map[string]any{
+		"grant": grant, "action": "cancel",
+	}, http.StatusForbidden) // grant is one-use
+	grant2 := "10000000-0000-4000-8000-000000000002"
+	digest2 := sha256.Sum256([]byte(grant2))
+	if _, err := e.tx.Exec(e.ctx, `INSERT INTO spa.public_booking_challenges
+	  (booking_id, code_hash, expires_at, grant_hash, grant_expires_at)
+	  SELECT id, 'test', now() + interval '5 minutes', $2, now() + interval '15 minutes'
+	  FROM spa.bookings WHERE public_token = $1::uuid`, token, hex.EncodeToString(digest2[:])); err != nil {
+		t.Fatal(err)
+	}
+	cancelled := e.data(nil, "POST", "/api/public/spa/bookings/"+token+"/change", map[string]any{
+		"grant": grant2, "action": "cancel",
+	}, http.StatusOK)
+	if cancelled["status"] != "cancelled" {
+		t.Fatalf("cancelled public booking = %v", cancelled)
+	}
+	if _, err := e.tx.Exec(e.ctx, `INSERT INTO spa.public_booking_funnel_events (session_id, step)
+	  VALUES ('12345678-1234-4234-8234-123456789abc', 'open'),
+	         ('12345678-1234-4234-8234-123456789abc', 'outlet')`); err != nil {
+		t.Fatal(err)
+	}
+	today := time.Now().In(time.FixedZone("WIB", 7*3600)).Format("2006-01-02")
+	funnel := e.list(admin, "/api/spa/booking-funnel?from="+today+"&to="+today)
+	if len(funnel) != 7 {
+		t.Fatalf("funnel stages = %v", funnel)
+	}
+	if funnel[0].(map[string]any)["reached"] != float64(1) || funnel[1].(map[string]any)["reached"] != float64(1) {
+		t.Fatalf("funnel progress = %v", funnel)
+	}
 
 	// A login without a spa menu, and anonymous callers, are refused.
 	viewer := e.therapist

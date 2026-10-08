@@ -120,7 +120,7 @@ func BuildFlashReportMessage(d FlashReportData, dateWib, brand string) string {
 		"Revenue : "+rp(d.Revenue),
 		"Nett Sales : "+rp(d.NettSales),
 		"Discount : "+rp(d.Discount),
-		"SULU Citizen : "+validate.JSNumber(d.CitizenCardTx)+" Card",
+		"MIZU Citizen : "+validate.JSNumber(d.CitizenCardTx)+" Card",
 		"Disc 100% : "+validate.JSNumber(d.FullDiscountTx)+" Transaksi",
 	)
 	if d.KolCompTx > 0 {

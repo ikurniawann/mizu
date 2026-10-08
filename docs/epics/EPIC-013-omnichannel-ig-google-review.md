@@ -46,7 +46,7 @@ Facebook, aplikasi Meta, izin `instagram_manage_messages`, dan **App Review +
 verifikasi bisnis** — proses panjang yang sama seperti WhatsApp Cloud API.
 
 **Pustaka tidak resmi ditolak.** Untuk WhatsApp kita menerima risiko blokir
-karena memakai nomor khusus. Akun Instagram Sulu adalah aset marketing
+karena memakai nomor khusus. Akun Instagram Mizu adalah aset marketing
 ber-follower; kehilangannya jauh lebih mahal daripada kehilangan satu nomor.
 Risikonya tidak sebanding.
 
@@ -173,7 +173,7 @@ ulang** tanpa ditulis ulang.
   4 unit test baru (id sama walau akun/lokasi berbeda). Gate: 596 test hijau,
   build sukses, halaman tetap normal.
   Catatan untuk owner: akun yang dipakai WAJIB punya akses pengelola pada
-  Business Profile lokasi Sulu — akun pribadi tanpa akses tidak bisa menarik
+  Business Profile lokasi Mizu — akun pribadi tanpa akses tidak bisa menarik
   ulasan sama sekali, jadi bukan sekadar "sementara pakai apa saja".
 - 2026-07-20 — **Kredensial Google bisa diisi dari halaman, bukan `.env`**
   (pertanyaan owner: "masukannya di halaman mana?"). Sebelumnya hanya lewat

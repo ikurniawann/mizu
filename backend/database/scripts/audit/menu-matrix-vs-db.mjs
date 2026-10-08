@@ -527,8 +527,8 @@ async function main() {
     const { rows } = await client.query("SELECT current_database() AS db");
     console.log(`Database : ${host} / ${rows[0].db} (sesi read-only)`);
 
-    const companyCode = args.opts.company || process.env.SEED_COMPANY_CODE || "SULU";
-    const branchCode = args.opts.branch || process.env.SEED_BRANCH_CODE || "SULU-DAGO";
+    const companyCode = args.opts.company || process.env.SEED_COMPANY_CODE || "MIZU";
+    const branchCode = args.opts.branch || process.env.SEED_BRANCH_CODE || "MIZU-DAGO";
     const scopeResult = await client.query(
       `SELECT c.id AS company_id, b.id AS branch_id, c.name AS company_name, b.name AS branch_name
          FROM configuration.companies c

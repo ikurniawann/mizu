@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Reset purchasing.suppliers (scope SULU / SULU-DAGO) dari kolom Vendor
+ * Reset purchasing.suppliers (scope MIZU / MIZU-DAGO) dari kolom Vendor
  * di sheet Market List (SIW Menu Matrix).
  *
  * Data dummy lama (CV Segar Nusantara, dst.) diganti vendor unik Market List.
  * Nama gabungan "A / B" dipecah jadi dua master. Nilai "WIP" dilewati.
  *
  * Usage:
- *   npm run db:seed:purchasing-sulu-suppliers -- --dry-run
- *   npm run db:seed:purchasing-sulu-suppliers
- *   npm run db:seed:purchasing-sulu-suppliers -- --xlsx="docs/SIW - Menu Matrix Update.xlsx"
+ *   npm run db:seed:purchasing-mizu-suppliers -- --dry-run
+ *   npm run db:seed:purchasing-mizu-suppliers
+ *   npm run db:seed:purchasing-mizu-suppliers -- --xlsx="docs/SIW - Menu Matrix Update.xlsx"
  */
 
 const fs = require("fs");
@@ -25,8 +25,8 @@ const {
 
 const ROOT = path.join(__dirname, "..", "..");
 const HOLDING_CODE = "PROLOGE";
-const COMPANY_CODE = "SULU";
-const BRANCH_CODE = "SULU-DAGO";
+const COMPANY_CODE = "MIZU";
+const BRANCH_CODE = "MIZU-DAGO";
 const DEFAULT_KOTA = "Bandung";
 const DEFAULT_PAYMENT_TERMS = "TOP30";
 const SKIP_VENDOR_KEYS = new Set(["wip", "n/a", "na", "-", "tbd", "todo"]);
@@ -245,7 +245,7 @@ async function insertSuppliers(client, scope, vendors) {
   const inserted = [];
   for (let i = 0; i < vendors.length; i++) {
     const vendor = vendors[i];
-    const kode = `SUP-SULU-${String(i + 1).padStart(3, "0")}`;
+    const kode = `SUP-MIZU-${String(i + 1).padStart(3, "0")}`;
     const catatanParts = [
       "Diimpor dari Market List SIW.",
       `${vendor.count} baris bahan.`,

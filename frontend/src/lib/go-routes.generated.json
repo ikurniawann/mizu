@@ -4127,7 +4127,22 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/public/spa/bookings/{token}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/public/spa/bookings/{token}/change"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/public/spa/outlets"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/public/spa/outlets/{branchId}/slots"
   },
   {
     "module": "spa",
@@ -6003,6 +6018,11 @@
     "module": "spa",
     "method": "GET",
     "path": "/api/spa/board"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/booking-funnel"
   },
   {
     "module": "spa",

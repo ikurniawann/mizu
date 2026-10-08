@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate SULU Bandung import Excel files from docs/data/SULU-bdg.xlsx."""
+"""Generate MIZU Bandung import Excel files from docs/data/MIZU-bdg.xlsx."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "docs/data/SULU-bdg.xlsx"
-OUT = ROOT / "docs/data/sulu-import"
+SRC = ROOT / "docs/data/MIZU-bdg.xlsx"
+OUT = ROOT / "docs/data/mizu-import"
 
 WAREHOUSES = {
     "main storage": "WH-01",
@@ -438,7 +438,7 @@ WIP_OWNER_HINTS = {
     "cucumber pickles": "Yokocho 2",
     "marinasi beef": "Hikiniku Bar",
     "egg tartar": "Yokocho 2",
-    "sulu spice": "Yokocho 2",
+    "mizu spice": "Yokocho 2",
     "kimchi based": "Yokocho 7",
     "okonomiyaki sauce": "Yokocho 3",
     "soy chicken": "Yokocho 7",
@@ -874,7 +874,7 @@ def main():
         ["note"],
         [
             {
-                "note": "Tidak dipakai. Sub-recipe SULU dipetakan sebagai Product WIP + Product BOM (lihat 02-products.xlsx dan 03-product-bom.xlsx)."
+                "note": "Tidak dipakai. Sub-recipe MIZU dipetakan sebagai Product WIP + Product BOM (lihat 02-products.xlsx dan 03-product-bom.xlsx)."
             }
         ],
     )

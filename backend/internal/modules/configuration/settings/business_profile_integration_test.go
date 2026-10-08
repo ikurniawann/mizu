@@ -26,7 +26,7 @@ func TestBranchProfile(t *testing.T) {
 	}
 
 	expect(t, e.do(&admin, "PUT", path, map[string]any{"slug": "Bad Slug"}), 400, "")
-	expect(t, e.do(&admin, "PUT", path, map[string]any{"slug": "sulu-test", "lat": 95}), 400, "")
+	expect(t, e.do(&admin, "PUT", path, map[string]any{"slug": "mizu-test", "lat": 95}), 400, "")
 
 	slug := "go-test-" + testutil.RandomHex(3)
 	r = e.do(&admin, "PUT", path, map[string]any{

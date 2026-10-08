@@ -1,5 +1,5 @@
 -- Backfill STOCK_* journal mapping accounts using company-scoped COA
--- (SULU seed tidak menyimpan template global company_id IS NULL).
+-- (MIZU seed tidak menyimpan template global company_id IS NULL).
 
 WITH coa AS (
   SELECT DISTINCT ON (code) id, code

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Gateway WhatsApp mandiri (Baileys) untuk OTP portal member & notifikasi Sulu In Wounderland",
+  "description": "Gateway WhatsApp mandiri (Baileys) untuk OTP portal member & notifikasi Mizu In Wounderland",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

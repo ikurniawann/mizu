@@ -10,7 +10,7 @@ Merombak total modul CRM menjadi sistem loyalty berbasis **identitas member
 global lintas tenant**: XP sebagai skor seumur hidup (append-only, penentu
 tier), ARK Coin sebagai satu-satunya jalur perolehan XP, dua tipe member
 (terdaftar vs kartu), dan portal member self-service
-(`member.suluindwounderland.com`) dengan login OTP WhatsApp. Menjadi fondasi
+(`member.mizuindwounderland.com`) dengan login OTP WhatsApp. Menjadi fondasi
 untuk Omnichannel CRM (broadcast, inbox WA) yang menyusul di epic berikutnya.
 
 ## Keputusan Owner (2026-07-19)
@@ -48,7 +48,7 @@ Hasil diskusi desain — SEMUA sudah diputuskan owner:
    (topup 1jt → saldo 1,1jt), persentase konfigurable Super Admin. Bonus
    dicatat sebagai transaksi wallet terpisah (`topup_bonus`) untuk akuntansi.
    ARK Coin **non-refundable**.
-9. **Portal member** `member.suluindwounderland.com`, login **OTP WhatsApp**
+9. **Portal member** `member.mizuindwounderland.com`, login **OTP WhatsApp**
    (via Fonnte existing). Member melengkapi profil → 100% komplit dapat
    **Free XP** (nominal konfigurable Super Admin, sekali seumur hidup,
    idempotent). Free XP berlaku untuk SEMUA member (satu-satunya pengecualian
@@ -100,7 +100,7 @@ Hasil diskusi desain — SEMUA sudah diputuskan owner:
 - Produk khusus ber-syarat min XP/tier di kasir.
 
 ### Fase D — Portal member
-- `member.suluindwounderland.com`: login OTP WA (Fonnte), lihat saldo/XP/tier,
+- `member.mizuindwounderland.com`: login OTP WA (Fonnte), lihat saldo/XP/tier,
   lengkapi profil (progress %), Free XP saat 100% (idempotent), riwayat
   transaksi.
 
@@ -156,7 +156,7 @@ Hasil diskusi desain — SEMUA sudah diputuskan owner:
     `crm_xp_ledger`, `pos_orders` (+index) — FK ke `configuration.companies/branches`.
   - `crm.crm_settings` (key-value): `topup_bonus_percent`=10,
     `profile_completion_free_xp`=100, `default_company_id`/`default_branch_id`
-    terisi otomatis dari hierarchy (single-venue Sulu).
+    terisi otomatis dari hierarchy (single-venue Mizu).
   - RPC `public.process_ark_topup`: topup atomik (FOR UPDATE), TIDAK menambah
     `total_spent`, stempel venue; route `POST /api/pos/topup` memakainya.
   - Fix audit: diskon tier kasir dibaca dari `crm_membership_tiers` via
@@ -202,9 +202,9 @@ Hasil diskusi desain — SEMUA sudah diputuskan owner:
     (baseline lama 466, 0 baru — turun karena kode legacy terhapus).
   - Sisa ke Fase C: topup member-kartu-only + bonus % dari settings dipakai
     route topup, produk privilege min XP/tier di kasir.
-- 2026-07-19 — **Fase B di-deploy ke dev (sulu.within.ventures) + menu sidebar.**
+- 2026-07-19 — **Fase B di-deploy ke dev (mizu.within.ventures) + menu sidebar.**
   - Deploy: `next build` (BUILD_ID 11:10) + `pm2 restart arkiv-pos-saas`
-    (`next start -p 3459`, Cloudflare Tunnel `sulu.within.ventures` → :3459).
+    (`next start -p 3459`, Cloudflare Tunnel `mizu.within.ventures` → :3459).
     Migrasi Fase B sudah masuk DB dev (postgres :5435 `arkiv_local`).
   - Menu sidebar baru via migrasi `20260719190000_crm_settings_menu.sql`
     (diterapkan ke dev): grup `crm.settings` "Pengaturan" (level 2, parent
@@ -281,7 +281,7 @@ Hasil diskusi desain — SEMUA sudah diputuskan owner:
   - **Routing subdomain**: proxy.ts rewrite host `member.*` → /member
     (API & _next tak disentuh); middleware publicRoutes + `/member` +
     `/api/member-portal`. ⚠ INFRA di luar repo: tambahkan ingress
-    Cloudflare Tunnel `member.suluindwounderland.com` → :3459.
+    Cloudflare Tunnel `member.mizuindwounderland.com` → :3459.
   - **UI /member** (mobile-first, layout mandiri): login 2 langkah
     (nomor→OTP), kartu saldo/tier/progres XP, banner Free XP, tab
     Beranda/Profil/Riwayat, form profil + consent WA (switch), riwayat
@@ -361,7 +361,7 @@ Hasil diskusi desain — SEMUA sudah diputuskan owner:
     super_admin/admin/direksi — filter periode, angka rekonsiliasi cocok
     dengan topup/belanja uji; (3) role lain tidak melihat menu Laporan; (4)
     infra di luar repo: ingress Cloudflare Tunnel
-    `member.suluindwounderland.com` → :3459 masih perlu ditambahkan.
+    `member.mizuindwounderland.com` → :3459 masih perlu ditambahkan.
 - 2026-07-19 — **Fix minor pasca-analisa: benefits jsonb + fallback tier
   regular.** (1) `POST /api/crm/tiers` mengirim array JS mentah ke kolom
   jsonb `benefits` — driver pg menserialisasinya jadi literal array
@@ -522,13 +522,13 @@ Hasil diskusi desain — SEMUA sudah diputuskan owner:
     nomor member uji ke nomor asli (SQL di runbook) lalu jalankan skenario
     UAT Fase F.
 - 2026-07-25 — **Verifikasi infra portal: TIDAK ADA pekerjaan tersisa.**
-  Catatan lama "ingress `member.suluindwounderland.com` belum dibuat" sudah
+  Catatan lama "ingress `member.mizuindwounderland.com` belum dibuat" sudah
   BASI — keputusan berjalan memakai domain dev `within.ventures`:
   - Portal member LIVE di `https://member.within.ventures` (200, judul
-    "Portal Member — Sulu in Wounderland") via tunnel `within-ventures`
-    → :3459; app utama di `https://sulu.within.ventures` (307 → login, normal).
+    "Portal Member — Mizu in Wounderland") via tunnel `within-ventures`
+    → :3459; app utama di `https://mizu.within.ventures` (307 → login, normal).
   - `proxy.ts` me-rewrite semua host `member.*` ke `/member`, jadi domain
-    produksi apa pun (mis. `member.suluinwounderland.com` — perhatikan ejaan
+    produksi apa pun (mis. `member.mizuinwounderland.com` — perhatikan ejaan
     zona Cloudflare yang benar TANPA "d") tinggal ditambah di ingress nanti
     bila owner minta; tidak diperlukan untuk QA.
   - Portal = single page `/member` (login OTP inline) — `/login` 404 itu

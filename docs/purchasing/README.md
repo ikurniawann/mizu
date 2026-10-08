@@ -1,6 +1,6 @@
-# Sulu In Wounderland OS — Purchasing Module
+# Mizu In Wounderland OS — Purchasing Module
 
-Dokumentasi untuk modul Purchasing / Procurement pada Sulu In Wounderland OS ERP.
+Dokumentasi untuk modul Purchasing / Procurement pada Mizu In Wounderland OS ERP.
 
 ## Business Flow
 

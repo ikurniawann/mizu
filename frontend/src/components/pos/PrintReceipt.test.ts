@@ -45,7 +45,7 @@ describe("receipt header/footer dari konfigurasi (EPIC-040)", () => {
   const decorated: ReceiptPayload = {
     ...mixedPayload,
     receiptHeader: ["BCD COFFEE", "Jl. Alamat Outlet No. 1"],
-    receiptFooter: ["Terima kasih!", "WiFi: SULU-GUEST"],
+    receiptFooter: ["Terima kasih!", "WiFi: MIZU-GUEST"],
   };
 
   it("customer copy memuat header di atas dan footer sebelum copy marker", () => {
@@ -189,7 +189,7 @@ describe("QR member portal di bawah struk", () => {
     // GS ( k fn 165 pilih model QR — penanda blok QR dimulai
     expect(ascii).toContain("\x1d\x28\x6b\x04\x00\x31\x41\x32\x00");
     expect(ascii).toContain(MEMBER_PORTAL_URL);
-    expect(ascii).toContain("member.suluinwounderland.com");
+    expect(ascii).toContain("member.mizuinwounderland.com");
     const kitchen = bytesToAscii(buildReceiptEscPosBytes(mixedPayload, "KITCHEN"));
     expect(kitchen).not.toContain(MEMBER_PORTAL_URL);
   });
@@ -197,7 +197,7 @@ describe("QR member portal di bawah struk", () => {
   it("HTML customer copy memuat SVG QR + caption; dapur tidak", () => {
     const html = buildReceiptHtml(mixedPayload, "CUSTOMER");
     expect(html).toContain("viewBox=\"0 0 29 29\"");
-    expect(html).toContain("member.suluinwounderland.com");
+    expect(html).toContain("member.mizuinwounderland.com");
     const kitchen = buildReceiptHtml(mixedPayload, "KITCHEN");
     expect(kitchen).not.toContain("viewBox=\"0 0 29 29\"");
   });

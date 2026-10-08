@@ -44,7 +44,7 @@ Hasil diskusi perencanaan dengan owner:
 
 ### Menunggu konfirmasi owner (tidak memblokir Fase A)
 
-- Nama app di store ("Sulu Member"? "ARK Pass"?) + ikon/splash final.
+- Nama app di store ("Mizu Member"? "ARK Pass"?) + ikon/splash final.
 - Akun Apple Developer ($99/th) & Google Play ($25 sekali) — infra di luar repo.
 - Peristiwa push V1 yang disetujui (usulan: status redeem berubah + topup sukses).
 
@@ -52,7 +52,7 @@ Hasil diskusi perencanaan dengan owner:
 
 ### Fase A — Fondasi app & auth mobile
 - Scaffold Expo (expo-router, TypeScript, nativewind) di `mobile/`; API client
-  berbasis `EXPO_PUBLIC_API_URL` (dev → tunnel `sulu.within.ventures`).
+  berbasis `EXPO_PUBLIC_API_URL` (dev → tunnel `mizu.within.ventures`).
 - Backend: verify kembalikan token utk klien app + `getMemberSession()` baca
   Bearer header (perilaku cookie lama tak berubah — portal web aman).
 - Login 2 langkah (nomor → OTP WA via gateway existing), simpan token di
@@ -151,7 +151,7 @@ Hasil diskusi perencanaan dengan owner:
     token divalidasi ke /me saat app dibuka — sesi mati → guest),
     `app/login.tsx` (2 langkah nomor→OTP), grup `(app)` dengan guard layout,
     `app/(app)/home.tsx` (bukti /me hidup: nama/tier/XP/saldo). `app.json`:
-    nama "Sulu Member", scheme `sulumember`. `.env` lokal gitignored.
+    nama "Mizu Member", scheme `mizumember`. `.env` lokal gitignored.
   - **Catatan deviasi kecil:** nativewind DITUNDA — template SDK 57 membawa
     theming sendiri (ThemedText/ThemedView + token warna); StyleSheet cukup
     utk Fase A dan nativewind bisa menyusul saat UI Fase B menuntut.

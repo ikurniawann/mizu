@@ -67,7 +67,7 @@ func TestBearerToken(t *testing.T) {
 
 const (
 	localDB  = "postgresql://ilham@localhost:5432/arkiv"
-	remoteDB = "postgresql://user:pw@db.suluinwounderland.com:5432/arkiv"
+	remoteDB = "postgresql://user:pw@db.mizuinwounderland.com:5432/arkiv"
 )
 
 func TestIsLocalDatabase(t *testing.T) {

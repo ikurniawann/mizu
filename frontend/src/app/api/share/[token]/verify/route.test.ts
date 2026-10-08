@@ -31,7 +31,7 @@ vi.mock("@/lib/security/attempt-limit", async (orig) => ({
   clearFailures: (...a: unknown[]) => clearFailures(...a),
 }));
 
-async function post(pin: string, url = "https://sulu.example.com/api/share/x/verify", ip = "203.0.113.1") {
+async function post(pin: string, url = "https://mizu.example.com/api/share/x/verify", ip = "203.0.113.1") {
   const { POST } = await import("./route");
   const req = new NextRequest(url, {
     method: "POST",

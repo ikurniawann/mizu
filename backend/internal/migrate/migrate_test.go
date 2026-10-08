@@ -63,6 +63,16 @@ func TestGuards(t *testing.T) {
 	}
 }
 
+func TestRenamedMigrationKeepsAppliedHistory(t *testing.T) {
+	applied := map[string]bool{"20260707120000_previous_name.sql": true}
+	if !migrationApplied("20260707120000_rename_mizu_braga_to_bandung.sql", applied) {
+		t.Fatal("renamed migration would run again")
+	}
+	if migrationApplied("20260707120001_new_migration.sql", applied) {
+		t.Fatal("new migration skipped")
+	}
+}
+
 // TestSearchPathMatchesSchemaMap compares with searchPathSchemas() when node
 // is available.
 func TestSearchPathMatchesSchemaMap(t *testing.T) {

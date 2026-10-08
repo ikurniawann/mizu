@@ -95,13 +95,13 @@
 ## Xendit POS webhook
 - Kolom Webhook merah di dashboard Xendit = HTTP non-2xx / URL tak terjangkau, bukan “Settlement Pending” (cair T+2 itu normal).
 - QRIS POS biasa (`pos-{uuid}`) diselesaikan poll kasir, bukan webhook. Webhook hanya topup + checkout campur (`pos-chk-`).
-- Sulu production: `callback_url` = `https://dashboard.suluinwounderland.com/api/payments/xendit/webhook`. Jangan `sulu.within.ventures` (domain lama).
+- Mizu production: `callback_url` = `https://dashboard.mizuinwounderland.com/api/payments/xendit/webhook`. Jangan `mizu.within.ventures` (domain lama).
 - Path itu HARUS masuk `publicRoutes` middleware. Tanpa itu Xendit dapat 401 "Authentication required" → webhook failed. Token tetap dicek di route.
 - Lookup `pos_checkouts` di webhook jangan sampai 500 kalau tabel/kolom belum ada.
 
-## POS menu baru di server-sulu
+## POS menu baru di server-mizu
 - `deploy-docker.sh` tidak menjalankan `db:migrate:apply`. Push kode saja tidak membuat menu IAM.
-- Menu Void harus di-apply ke DB `arkiv` di server-sulu (`--allow-remote`). Relogin setelah grant.
+- Menu Void harus di-apply ke DB `arkiv` di server-mizu (`--allow-remote`). Relogin setelah grant.
 
 ## Deploy DB credentials
 - Produksi: `postgres@5432/arkiv` + `DB_PASS_URLENCODED` (CI).

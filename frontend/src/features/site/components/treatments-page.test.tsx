@@ -5,7 +5,7 @@ import { CONTENT_DEFAULTS } from "../content-defaults";
 import { pickOutlet, TreatmentsPage } from "./treatments-page";
 
 const outlet = (branch_id: string, name: string): PublicOutlet => ({
-  branch_id, name, address: "Jl. Westhoff No. 1", city: "Bandung", phone: null, open_time: "10:00", close_time: "22:00", slot_minutes: 30,
+  branch_id, slug: branch_id, name, address: "Jl. Westhoff No. 1", city: "Bandung", phone: null, open_time: "10:00", close_time: "22:00", slot_minutes: 30,
 });
 const OUTLETS = [outlet("b1", "Mizu 1.0"), outlet("b2", "Mizu Signature")];
 const MENU: PublicTreatment[] = [
@@ -26,7 +26,7 @@ describe("TreatmentsPage", () => {
     expect(html).toContain("Refleksi Kaki");
     expect(html).toMatch(/Rp150\.000/);
     expect(html).toContain('href="/treatments?outlet=b2"');
-    expect(html).toContain('href="/booking/spa"');
+    expect(html).toContain('href="/booking/spa?outlet=b1&amp;treatment=t1"');
     expect(html).toContain("10:00 – 22:00");
   });
 

@@ -11,7 +11,7 @@ import { brandName } from "@/lib/branding";
  * - Revenue      = Σ subtotal (harga sebelum diskon) order LUNAS non-void
  * - Discount     = Σ discount_amount
  * - Nett Sales   = Σ total_amount (Revenue − Discount)
- * - SULU Citizen = jumlah transaksi member ber-KARTU (member_type = 'card')
+ * - MIZU Citizen = jumlah transaksi member ber-KARTU (member_type = 'card')
  * - Disc 100%    = transaksi yang diskonnya menutup seluruh subtotal
  * - No of Guest  = Σ guest_count (order tanpa guest_count dihitung 1 tamu)
  * - Average/Pax  = Nett Sales / No of Guest
@@ -216,7 +216,7 @@ export function buildFlashReportMessage(data: FlashReportData, dateWib: string):
     `Revenue : ${rp(data.revenue)}`,
     `Nett Sales : ${rp(data.nettSales)}`,
     `Discount : ${rp(data.discount)}`,
-    `SULU Citizen : ${data.citizenCardTx} Card`,
+    `MIZU Citizen : ${data.citizenCardTx} Card`,
     `Disc 100% : ${data.fullDiscountTx} Transaksi`,
     ...(data.kolCompTx > 0
       ? [`KOL Comp : ${rp(data.kolCompIdr)} (${data.kolCompTx} Trx)`]

@@ -12,6 +12,10 @@ import { getSessionToken } from "./session";
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3459";
 
+/** Public Next.js site where guests complete spa bookings. */
+export const SITE_BASE_URL =
+  process.env.EXPO_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export interface ApiResult<T> {
   ok: boolean;
   status: number;
@@ -138,6 +142,21 @@ export function fetchMe(): Promise<ApiResult<MemberProfileResponse>> {
 /** GET /api/member-portal/transactions — riwayat wallet + order milik sendiri. */
 export function fetchTransactions(): Promise<ApiResult<TransactionsResponse>> {
   return request<TransactionsResponse>("/api/member-portal/transactions");
+}
+
+export interface SpaBooking {
+  id: string;
+  booking_code: string;
+  scheduled_at: string;
+  status: string;
+  payment_status: string;
+  branch_name: string;
+  branch_phone: string | null;
+  items: { treatment_name: string; variant_name: string; duration_min: number; price_idr: number }[];
+}
+
+export function fetchSpaBookings(): Promise<ApiResult<SpaBooking[]>> {
+  return request<SpaBooking[]>("/api/member-portal/spa/bookings");
 }
 
 /** POST /api/member-portal/logout — matikan sesi di server. */

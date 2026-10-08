@@ -230,7 +230,7 @@ teruji, 0 regresi booking harian → **ready-for-qa**.
   `passes`/`pass`/`pass-status`; webhook Xendit diperluas prefix `tkt-pass-` (PAID→active
   rolling valid_from/until + WA via `pass-wa.ts`; EXPIRED→cancelled); lib pass-wa.
   **Fix**: allowlist middleware `/pass`. Terverifikasi DB rollback (katalog online→beli
-  pending→webhook aktivasi) + `/pass/sulu` 200. Xendit MOCK aktif dev. Build hijau.
+  pending→webhook aktivasi) + `/pass/mizu` 200. Xendit MOCK aktif dev. Build hijau.
 - 2026-07-24 — **Tambahan owner**: (a) flag `has_gate` per ticket + halaman **Gate Mapping**
   scaffold (list gate=yes, slot controller) menu `20260724200000`; (b) **COGS/HPP** per
   ticket (fondasi laporan omzet kotor/bersih). Keputusan: non-gate ticket TETAP di Ticketing

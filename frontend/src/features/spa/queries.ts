@@ -98,3 +98,12 @@ export const usePublicSpaTreatments = (branchId: string) =>
     enabled: !!branchId,
     staleTime: 5 * 60_000,
   });
+
+export const usePublicSpaSlots = (branchId: string, date: string, variantIds: string[], pref: string) =>
+  useQuery({
+    queryKey: spaKeys.publicSlots(branchId, date, variantIds, pref),
+    queryFn: () => publicSpaApi.slots(branchId, date, variantIds, pref),
+    enabled: !!branchId && !!date && variantIds.length > 0,
+    refetchInterval: 60_000,
+    staleTime: 15_000,
+  });

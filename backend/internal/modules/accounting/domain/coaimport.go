@@ -38,7 +38,7 @@ type CoaIssue struct {
 var CashFlowCategories = []string{"OPERATING", "INVESTING", "FINANCING", "NON_CASH"}
 
 // ParseCoaSpreadsheet is parseCoaSpreadsheet: the sheet named COA (any
-// case) or the first one, read as the SULU layout or the standard one.
+// case) or the first one, read as the MIZU layout or the standard one.
 func ParseCoaSpreadsheet(data []byte) ([]CoaRow, []CoaIssue, error) {
 	matrix, err := xlsx.ParseMatrix(data, xlsx.ReadOptions{PreferSheet: "coa"})
 	if err != nil {
@@ -47,8 +47,8 @@ func ParseCoaSpreadsheet(data []byte) ([]CoaRow, []CoaIssue, error) {
 	if len(matrix) == 0 {
 		return nil, []CoaIssue{{Row: 0, Message: "Workbook tidak punya sheet"}}, nil
 	}
-	if isSuluCoaLayout(matrix) {
-		rows, issues := parseSuluCoaSheet(matrix)
+	if isMizuCoaLayout(matrix) {
+		rows, issues := parseMizuCoaSheet(matrix)
 		return rows, issues, nil
 	}
 	rows, issues := parseStandardCoaSheet(matrix)
@@ -64,8 +64,8 @@ func cellAt(row []string, i int) string {
 
 var codeHeader = regexp.MustCompile(`(?i)^(code$|kode)`)
 
-// isSuluCoaLayout: the first cell is an account code, not a "code" header.
-func isSuluCoaLayout(rows [][]string) bool {
+// isMizuCoaLayout: the first cell is an account code, not a "code" header.
+func isMizuCoaLayout(rows [][]string) bool {
 	if len(rows) < 2 {
 		return false
 	}
@@ -78,7 +78,7 @@ func isSuluCoaLayout(rows [][]string) bool {
 
 var roundingGain = regexp.MustCompile(`(?i)rounding gain`)
 
-func parseSuluCoaSheet(rows [][]string) ([]CoaRow, []CoaIssue) {
+func parseMizuCoaSheet(rows [][]string) ([]CoaRow, []CoaIssue) {
 	issues := []CoaIssue{}
 	type staged struct {
 		code, name string
@@ -106,7 +106,7 @@ func parseSuluCoaSheet(rows [][]string) ([]CoaRow, []CoaIssue) {
 			issues = append(issues, CoaIssue{Row: sourceRow, Code: code, Message: "Nama kosong — baris dilewati"})
 			continue
 		}
-		// The SULU workbook lists Rounding Gain under Rounding Loss's code.
+		// The MIZU workbook lists Rounding Gain under Rounding Loss's code.
 		if code == "8301001" && roundingGain.MatchString(name) {
 			code = "8201003"
 		}

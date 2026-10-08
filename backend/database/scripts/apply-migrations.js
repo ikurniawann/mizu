@@ -109,7 +109,7 @@ async function main() {
     } catch (err) {
       console.error(err.message);
       console.error(
-        "Untuk target remote (mis. server-sulu), tambahkan --allow-remote."
+        "Untuk target remote (mis. server-mizu), tambahkan --allow-remote."
       );
       process.exit(1);
     }
@@ -145,7 +145,23 @@ async function main() {
     applied = new Set(rows.map((r) => r.filename));
   }
 
-  const pending = files.filter((f) => !applied.has(f.name));
+  // These historical migrations changed filenames during the Mizu rename.
+  // An existing database records their previous filenames; the timestamp is
+  // stable, so a matching applied migration must not run a second time.
+  const renamedMigrationPrefixes = new Set([
+    "20260629120000",
+    "20260701180000",
+    "20260707120000",
+    "20260804001000",
+  ]);
+  const pending = files.filter((f) => {
+    if (applied.has(f.name)) return false;
+    const prefix = f.name.slice(0, 14);
+    return !(
+      renamedMigrationPrefixes.has(prefix) &&
+      [...applied].some((name) => name.startsWith(prefix))
+    );
+  });
 
   if (pending.length === 0) {
     console.log("Semua migrasi sudah diterapkan.");

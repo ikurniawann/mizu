@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Reset item master + transaksi terkait, lalu import Draft Menu (hijau)
- * dari docs/SULU-bdg FoodTesting.xlsx.
+ * dari docs/MIZU-bdg FoodTesting.xlsx.
  *
  * Preserve: CRM members / loyalty wallet+XP, users, business hierarchy
  *   (kecuali create warehouse Yokocho 11 bila belum ada).
@@ -28,10 +28,10 @@ const {
 } = require("../scripts/pg-utils");
 
 const ROOT = path.join(__dirname, "..", "..");
-const DEFAULT_XLSX = path.join(ROOT, "..", "docs", "SULU-bdg FoodTesting.xlsx");
+const DEFAULT_XLSX = path.join(ROOT, "..", "docs", "MIZU-bdg FoodTesting.xlsx");
 const HOLDING_CODE = "PROLOGE";
-const COMPANY_CODE = "SULU";
-const BRANCH_CODE = "SULU-DAGO";
+const COMPANY_CODE = "MIZU";
+const BRANCH_CODE = "MIZU-DAGO";
 const YOKOCHO_11 = { code: "STALL-15", name: "Yokocho 11" };
 
 /** Excel Yokocho label → warehouse name (case-insensitive match on warehouse.name). */

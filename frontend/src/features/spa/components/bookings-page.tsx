@@ -17,6 +17,7 @@ import { BOOKING_STATUS, BOOKING_STATUSES, BOOKING_TYPE_LABEL, PAYMENT_STATUS, P
 import { addDaysToDate } from "../time";
 import type { BookingStatus, PaymentStatus } from "../types";
 import { BookingCreateDialog } from "./booking-create-dialog";
+import { BookingFunnelCard } from "./booking-funnel-card";
 import {
   BookingStatusBadge,
   OutletSelect,
@@ -73,6 +74,8 @@ export function SpaBookingsPage() {
           </Button>
         }
       />
+
+      <BookingFunnelCard />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9.5rem_9.5rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Input

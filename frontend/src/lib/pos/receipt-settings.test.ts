@@ -25,7 +25,7 @@ describe("normalizeReceiptLines", () => {
 
   it("returns [] for non-arrays", () => {
     expect(normalizeReceiptLines(null)).toEqual([]);
-    expect(normalizeReceiptLines("SULU")).toEqual([]);
+    expect(normalizeReceiptLines("MIZU")).toEqual([]);
   });
 });
 

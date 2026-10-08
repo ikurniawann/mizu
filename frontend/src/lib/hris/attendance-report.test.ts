@@ -51,14 +51,14 @@ describe("statusLabel", () => {
 describe("buildAttendanceXlsx", () => {
   it("workbook memuat judul, periode, dan baris data", async () => {
     const buffer = await buildAttendanceXlsx([contoh()], {
-      companyName: "Sulu",
+      companyName: "Mizu",
       periodLabel: "1–31 Agustus 2026",
       employeeLabel: "Nanda Romdona",
       generatedAt: new Date("2026-08-28T03:00:00Z"),
     });
     const matrix = await parseXlsxToMatrix(buffer);
     const text = JSON.stringify(matrix);
-    expect(text).toContain("Sulu — Rekap Absensi");
+    expect(text).toContain("Mizu — Rekap Absensi");
     expect(text).toContain("Periode: 1–31 Agustus 2026");
     expect(text).toContain("Nanda Romdona");
     expect(text).toContain("Hadir");
@@ -70,7 +70,7 @@ describe("buildAttendancePdf", () => {
     const buffer = await buildAttendancePdf(
       [contoh(), contoh({ date: "2026-08-28", isLate: true, lateMinutes: 12, status: "late" })],
       {
-        companyName: "Sulu",
+        companyName: "Mizu",
         periodLabel: "1–31 Agustus 2026",
         employeeLabel: null,
         generatedAt: new Date("2026-08-28T03:00:00Z"),

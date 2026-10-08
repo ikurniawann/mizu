@@ -38,7 +38,7 @@ Langkah ini dilakukan manual:
 1. Daftar di <https://fonnte.com> lalu masuk ke dashboard.
 2. Aktifkan paket. Fonnte berbayar; ada masa uji coba terbatas. **Perkirakan
    kuota** dari jumlah login member per bulan — 1 login = 1 pesan.
-3. Menu **Device** → **Add Device**. Isi nama device (mis. `Sulu Wonderland`).
+3. Menu **Device** → **Add Device**. Isi nama device (mis. `Mizu Wonderland`).
 4. Fonnte menampilkan **QR code**. Buka WhatsApp di HP nomor bisnis →
    *Perangkat Tertaut* → *Tautkan Perangkat* → pindai QR.
 5. Setelah status device **connected**, salin **Token** device tersebut.

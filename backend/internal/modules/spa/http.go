@@ -84,6 +84,7 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/bookings/{id}/checkout", iam.SpaBookings, h.checkout),
 		staff("GET "+p+"/availability", iam.SpaBookings, h.availability),
 		staff("GET "+p+"/board", iam.SpaBookings, h.board),
+		staff("GET "+p+"/booking-funnel", iam.SpaBookings, h.bookingFunnel),
 
 		staff("GET "+p+"/commission-rules", iam.SpaCommissions, h.listRules),
 		staff("POST "+p+"/commission-rules", iam.SpaCommissions, h.createRule),
@@ -98,6 +99,9 @@ func (h *Handler) Routes() []module.Route {
 
 		public("GET "+publicPrefix+"/outlets", h.publicOutlets),
 		public("GET "+publicPrefix+"/outlets/{branchId}/treatments", h.publicTreatments),
+		public("GET "+publicPrefix+"/outlets/{branchId}/slots", h.publicSlots),
+		public("GET "+publicPrefix+"/bookings/{token}", h.publicBooking),
+		public("POST "+publicPrefix+"/bookings/{token}/change", h.publicChangeBooking),
 		public("POST "+publicPrefix+"/bookings", h.publicBook),
 	}
 }
@@ -983,6 +987,35 @@ func (h *Handler) publicTreatments(w http.ResponseWriter, r *http.Request) error
 	return ok(w, list)
 }
 
+func (h *Handler) publicSlots(w http.ResponseWriter, r *http.Request) error {
+	branchID, err := pathUUID(r, "branchId")
+	if err != nil {
+		return err
+	}
+	date := r.URL.Query().Get("date")
+	ids := strings.Split(r.URL.Query().Get("variant_ids"), ",")
+	if len(ids) == 0 || len(ids) > 5 {
+		return httpx.BadRequest("Pilih 1–5 treatment")
+	}
+	for _, id := range ids {
+		if !validate.IsUUID(id) {
+			return httpx.BadRequest("Treatment tidak valid")
+		}
+	}
+	pref := r.URL.Query().Get("therapist_gender_pref")
+	if pref == "" {
+		pref = "any"
+	}
+	if pref != "any" && pref != "male" && pref != "female" {
+		return httpx.BadRequest("Preferensi terapis tidak valid")
+	}
+	slots, err := h.svc.PublicSlots(r.Context(), branchID, date, ids, pref)
+	if err != nil {
+		return err
+	}
+	return ok(w, slots)
+}
+
 func (h *Handler) publicBook(w http.ResponseWriter, r *http.Request) error {
 	f := body(r)
 	in := publicBookingInput{
@@ -1007,4 +1040,57 @@ func (h *Handler) publicBook(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	return created(w, res)
+}
+
+func (h *Handler) publicBooking(w http.ResponseWriter, r *http.Request) error {
+	token, err := pathUUID(r, "token")
+	if err != nil {
+		return err
+	}
+	booking, err := h.svc.PublicBooking(r.Context(), token)
+	if err != nil {
+		return err
+	}
+	return ok(w, booking)
+}
+
+func (h *Handler) publicChangeBooking(w http.ResponseWriter, r *http.Request) error {
+	token, err := pathUUID(r, "token")
+	if err != nil {
+		return err
+	}
+	f := body(r)
+	grant := str(f.Str("grant", req, uuidOpts))
+	action := str(f.Str("action", req, validate.StrOpts{Trim: true, Check: validate.EnumCheck([]string{"cancel", "reschedule"})}))
+	var at time.Time
+	if action == "reschedule" {
+		if parsed := parseTime(f.Str("scheduled_at", req, datetimeOpts)); parsed != nil {
+			at = *parsed
+		}
+	}
+	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+		return err
+	}
+	result, err := h.svc.PublicChangeBooking(r.Context(), token, grant, action, at)
+	if err != nil {
+		return err
+	}
+	return ok(w, result)
+}
+
+func (h *Handler) bookingFunnel(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+	today := time.Now().In(domain.WIB)
+	from := r.URL.Query().Get("from")
+	to := r.URL.Query().Get("to")
+	if from == "" {
+		from = today.AddDate(0, 0, -6).Format("2006-01-02")
+	}
+	if to == "" {
+		to = today.Format("2006-01-02")
+	}
+	stages, err := h.svc.BookingFunnel(r.Context(), from, to)
+	if err != nil {
+		return err
+	}
+	return ok(w, stages)
 }

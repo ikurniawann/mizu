@@ -18,10 +18,10 @@ function instagramHref(handle: string): string {
   return `https://instagram.com/${handle.replace(/^@/, "")}`;
 }
 
-function BranchActions() {
+function BranchActions({ outlet }: { outlet: string }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <BookingButton size="lg">Booking di outlet ini</BookingButton>
+      <BookingButton size="lg" outlet={outlet}>Booking di outlet ini</BookingButton>
       <Button asChild size="lg" variant="onInk">
         <Link href="/treatments">
           <Sparkles /> Lihat treatment
@@ -54,7 +54,7 @@ export function BranchPage({ branch }: { branch: BranchProfile }) {
             <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-6xl">{branch.name}</h1>
             {address ? <p className="max-w-xl text-on-ink-muted">{address}</p> : null}
           </div>
-          <BranchActions />
+          <BranchActions outlet={branch.slug} />
         </Container>
       </section>
 

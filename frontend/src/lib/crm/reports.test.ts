@@ -115,8 +115,8 @@ describe("mapVenueReconciliationRow", () => {
     const row = mapVenueReconciliationRow({
       company_id: "co1",
       branch_id: "br1",
-      company_name: "Sulu",
-      branch_name: "Sulu Bandung",
+      company_name: "Mizu",
+      branch_name: "Mizu Bandung",
       topup_amount: "1000000",
       bonus_amount: "100000",
       spend_amount: "400000",
@@ -154,7 +154,7 @@ describe("mapVenueReconciliationRow", () => {
 describe("mapVenueReconciliationRow — topup FOC", () => {
   it("FOC dipisah dari topup berbayar tapi tetap menambah liabilitas (net)", () => {
     const row = mapVenueReconciliationRow({
-      company_id: "co1", branch_id: "br1", company_name: "Sulu", branch_name: "Dago",
+      company_id: "co1", branch_id: "br1", company_name: "Mizu", branch_name: "Dago",
       topup_amount: "500000", foc_topup_amount: "150000", bonus_amount: "0",
       spend_amount: "100000", other_amount: "0",
       topup_count: "3", foc_topup_count: "1", payment_count: "2",

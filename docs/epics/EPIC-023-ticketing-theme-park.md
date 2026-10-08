@@ -440,7 +440,7 @@ di-skip MVP). 4 task group PR-sized, urut:
 **Prasyarat (owner/user):** akun Xendit + `XENDIT_SECRET_KEY`
 (test mode) & `XENDIT_WEBHOOK_TOKEN` di `.env` (jangan commit);
 set webhook URL di dashboard Xendit →
-`https://sulu.within.ventures/api/public/booking/webhook/xendit`.
+`https://mizu.within.ventures/api/public/booking/webhook/xendit`.
 
 **Non-MVP (ditunda):** kuota harian, refund via API Xendit, email,
 multi-hari/paket, pembatalan mandiri oleh pemesan.
@@ -715,7 +715,7 @@ multi-hari/paket, pembatalan mandiri oleh pemesan.
   kurang di-ignore → PAID sah → terbayar → dobel no-op → 404 token
   ngawur; halaman wizard & status 200) — booking smoke dihapus.
   Catatan dev: `XENDIT_MOCK=1` + `XENDIT_WEBHOOK_TOKEN` dev sudah di
-  `.env`; slug venue `sulu`; distribusi website TKT-0001 dinyalakan
+  `.env`; slug venue `mizu`; distribusi website TKT-0001 dinyalakan
   utk QA. PRASYARAT PRODUKSI tetap: key Xendit asli + set webhook URL
   di dashboard Xendit. Sisa: D4 redeem loket → visit prepaid net-0,
   D5 dashboard kelola booking.

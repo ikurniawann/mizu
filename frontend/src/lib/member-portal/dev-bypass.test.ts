@@ -15,7 +15,7 @@ function setEnv(nodeEnv: string, code: string | undefined, dbUrl: string) {
 }
 
 const LOCAL = "postgresql://ilham@localhost:5432/arkiv";
-const REMOTE = "postgresql://user:pw@db.suluinwounderland.com:5432/arkiv";
+const REMOTE = "postgresql://user:pw@db.mizuinwounderland.com:5432/arkiv";
 
 describe("isLocalDatabase", () => {
   it("hanya localhost/127.0.0.1 yang dianggap lokal", () => {

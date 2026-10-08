@@ -24,7 +24,7 @@ describe("panel registry", () => {
   });
 
   it("reads the remembered branch from the cookie", () => {
-    expect(readBranchCookie("a=1; nh_branch=sulu-bandung; b=2")).toBe("sulu-bandung");
+    expect(readBranchCookie("a=1; nh_branch=mizu-bandung; b=2")).toBe("mizu-bandung");
     expect(readBranchCookie("nh_branch=")).toBeUndefined();
     expect(readBranchCookie("")).toBeUndefined();
   });

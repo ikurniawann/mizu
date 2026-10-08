@@ -1,5 +1,5 @@
 -- =============================================================================
--- Backfill master items & inventory ke Company Sulu / Branch Sulu Bandung
+-- Backfill master items & inventory ke Company Mizu / Branch Mizu Bandung
 -- =============================================================================
 
 DO $$
@@ -12,14 +12,14 @@ BEGIN
     INTO v_company_id, v_branch_id
     FROM configuration.companies c
     JOIN configuration.branches b ON b.company_id = c.id
-    WHERE c.code = 'SULU'
-      AND b.code = 'SULU-BANDUNG'
+    WHERE c.code = 'MIZU'
+      AND b.code = 'MIZU-BANDUNG'
       AND c.is_active = true
       AND b.is_active = true
     LIMIT 1;
 
     IF v_company_id IS NULL OR v_branch_id IS NULL THEN
-        RAISE NOTICE 'Sulu / Sulu Bandung tidak ditemukan — skip backfill items scope';
+        RAISE NOTICE 'Mizu / Mizu Bandung tidak ditemukan — skip backfill items scope';
         RETURN;
     END IF;
 

@@ -1,11 +1,11 @@
 # Accounting — Chart of Accounts Design
 
 Date: 2026-07-20  
-Source: `docs/data/SULU - COA .xlsx` (sheet `COA`)
+Source: `docs/data/MIZU - COA .xlsx` (sheet `COA`)
 
 ## Goal
 
-Fase 1 Accounting master data: **Account Types** + hierarchical **Chart of Accounts**, company-scoped, seeded/imported from SULU COA Excel.
+Fase 1 Accounting master data: **Account Types** + hierarchical **Chart of Accounts**, company-scoped, seeded/imported from MIZU COA Excel.
 
 ## Decisions
 
@@ -72,7 +72,7 @@ Cash flow heuristics on seed: cash/bank/AR/AP → OPERATING; fixed assets → IN
 - `/api/accounting/account-types`, `/api/accounting/chart-of-accounts` (+ `[id]`, `/import`)
 - Roles: `super_admin`, `admin`, `finance_staff`
 - CoA UI: tree table (menus pattern); Account Types: flat list (departments pattern)
-- Import: standard columns or SULU layout; preview then commit
+- Import: standard columns or MIZU layout; preview then commit
 
 ## Out of scope
 

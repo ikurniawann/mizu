@@ -1,5 +1,5 @@
-import { BookingsPage } from "@/features/member-app/classes/bookings-page";
+import { MemberBookingsHub } from "@/features/member-app/spa/bookings-hub";
 
 export default function Page() {
-  return <BookingsPage />;
+  return <MemberBookingsHub />;
 }

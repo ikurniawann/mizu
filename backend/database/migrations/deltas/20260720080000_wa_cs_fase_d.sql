@@ -68,7 +68,7 @@ SELECT seed.key, seed.value::jsonb FROM (VALUES
   ('cs_business_hours_end', '22'),
   ('cs_auto_reply_enabled', 'true'),
   ('cs_auto_reply_text',
-   to_jsonb('Terima kasih sudah menghubungi Sulu Wonderland. Saat ini di luar jam operasional kami (10.00-22.00 WIB). Pesan Anda sudah kami terima dan akan dibalas pada jam operasional berikutnya.'::text)::text),
+   to_jsonb('Terima kasih sudah menghubungi Mizu Wonderland. Saat ini di luar jam operasional kami (10.00-22.00 WIB). Pesan Anda sudah kami terima dan akan dibalas pada jam operasional berikutnya.'::text)::text),
   ('cs_csat_enabled', 'true'),
   ('cs_csat_text',
    to_jsonb('Terima kasih sudah menghubungi kami. Boleh beri penilaian layanan kami? Balas dengan angka 1-5 (5 = sangat puas).'::text)::text)

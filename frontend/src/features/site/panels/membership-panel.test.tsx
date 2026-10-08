@@ -3,12 +3,12 @@ import { render, screen } from "@testing-library/react";
 import MembershipPanel from "./membership-panel";
 
 const branches = [
-  { slug: "sulu-bandung", name: "Sulu Bandung", city: "Bandung" },
+  { slug: "mizu-bandung", name: "Mizu Bandung", city: "Bandung" },
   { slug: "jakarta", name: "Jakarta", city: "Jakarta" },
 ];
 
 const plans = {
-  branch: { id: "b1", name: "Sulu Bandung", slug: "sulu-bandung" },
+  branch: { id: "b1", name: "Mizu Bandung", slug: "mizu-bandung" },
   plans: [
     { id: "c1", name: "Starter 5", kind: "credits", description: "", credits: 5, validity_days: 60, price_idr: 800000, badge: null, sort_order: 1 },
     { id: "p1", name: "4-Week Pass", kind: "pass", description: "", credits: 0, validity_days: 28, price_idr: 1000000, badge: "Most popular", sort_order: 2 },
@@ -35,7 +35,7 @@ describe("MembershipPanel", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("groups passes before credit packs with the branch price and links each to /join", async () => {
-    render(<MembershipPanel branchSlug="sulu-bandung" onClose={() => {}} />);
+    render(<MembershipPanel branchSlug="mizu-bandung" onClose={() => {}} />);
     const pass = await screen.findByRole("region", { name: "Passes" });
     const credits = screen.getByRole("region", { name: "Credit Packs" });
     expect(pass.compareDocumentPosition(credits) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -45,8 +45,8 @@ describe("MembershipPanel", () => {
     expect(pass).toHaveTextContent("Valid for 4 weeks");
     expect(pass).toHaveTextContent("Unlimited class bookings");
     expect(credits).toHaveTextContent("5 class credits");
-    expect(screen.getAllByRole("link", { name: "Choose" })[0]).toHaveAttribute("href", "/join?plan=p1&branch=sulu-bandung");
-    expect(calls).toContain("/api/public/site/plans?branch=sulu-bandung");
+    expect(screen.getAllByRole("link", { name: "Choose" })[0]).toHaveAttribute("href", "/join?plan=p1&branch=mizu-bandung");
+    expect(calls).toContain("/api/public/site/plans?branch=mizu-bandung");
   });
 
   it("falls back to the cookie branch", async () => {
@@ -59,6 +59,6 @@ describe("MembershipPanel", () => {
   it("falls back to the first public branch without a cookie", async () => {
     render(<MembershipPanel onClose={() => {}} />);
     await screen.findByRole("region", { name: "Passes" });
-    expect(calls).toContain("/api/public/site/plans?branch=sulu-bandung");
+    expect(calls).toContain("/api/public/site/plans?branch=mizu-bandung");
   });
 });

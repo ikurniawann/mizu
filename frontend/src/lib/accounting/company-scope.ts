@@ -13,7 +13,7 @@ export function accountingCompanyId(
 
 /**
  * Wajib punya company_id di profil user.
- * Tidak me-default ke Sulu atau company lain.
+ * Tidak me-default ke Mizu atau company lain.
  */
 export function requireAccountingCompanyId(
   scope: UserScope | null,
