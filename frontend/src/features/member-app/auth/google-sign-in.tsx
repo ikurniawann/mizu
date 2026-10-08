@@ -71,6 +71,7 @@ export function GoogleSignIn({
   text = "signin_with",
   withDivider = true,
   showWhenDisabled = false,
+  locale,
 }: {
   onSignedIn: () => void;
   onNeedsPhone: (identity: GoogleNeedsPhone) => void;
@@ -79,6 +80,8 @@ export function GoogleSignIn({
   withDivider?: boolean;
   /** Tanpa Client ID: tetap tampilkan tombol nonaktif (pilihan terlihat, belum bisa dipakai). */
   showWhenDisabled?: boolean;
+  /** Bahasa teks tombol Google; bawaan mengikuti bahasa aplikasi member. */
+  locale?: string;
 }) {
   const t = useT();
   const lang = useLang();
@@ -122,14 +125,14 @@ export function GoogleSignIn({
           width: Math.min(parent.clientWidth || 320, 400),
           text,
           shape: "pill",
-          locale: lang,
+          locale: locale ?? lang,
         });
       })
       .catch(() => setError(t("Google sign-in is unavailable right now.")));
     return () => {
       cancelled = true;
     };
-  }, [onSignedIn, onNeedsPhone, t, text, lang]);
+  }, [onSignedIn, onNeedsPhone, t, text, lang, locale]);
 
   if (!CLIENT_ID) {
     if (!showWhenDisabled) return null;

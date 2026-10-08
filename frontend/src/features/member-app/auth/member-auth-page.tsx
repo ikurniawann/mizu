@@ -164,6 +164,7 @@ function AuthFlow({ mode }: { mode: "login" | "register" }) {
             text={isLogin ? "continue_with" : "signup_with"}
             withDivider={false}
             showWhenDisabled
+            locale="id"
           />
           <Divider>{isLogin ? "atau masuk dengan nomor HP" : "atau daftar dengan nomor HP"}</Divider>
         </>
