@@ -16,7 +16,7 @@ omnichannel, POS & loyalty, ticketing theme park, purchasing & inventory, serta
 keuangan (AR) & accounting — dengan RBAC per-menu dan isolasi tenant
 (company/branch/warehouse).
 
-Tenant referensi di dev: grup **SULU** (SULU-Dago / SULU-Bandung).
+Tenant referensi di dev: grup **MIZU** (MIZU-Dago / MIZU-Bandung).
 
 ---
 
@@ -32,7 +32,7 @@ Tenant referensi di dev: grup **SULU** (SULU-Dago / SULU-Bandung).
 | UI | Tailwind + komponen `src/components/ui` (shadcn-style) + `src/components/shared` |
 | Auth | Session cookie `nuhabit_session` (sha256 token; `arkiv_session` lama masih dibaca) + IAM RBAC |
 | Deploy dev | **PM2** `next start -p 3459` (production build; wajib rebuild+restart) |
-| Public | **cloudflared** tunnel → `sulu.within.ventures` & `member.within.ventures` |
+| Public | **cloudflared** tunnel → `mizu.within.ventures` & `member.within.ventures` |
 | Service samping | `services/wa-gateway` (Baileys, PM2 port 3471), `services/pos-nfc-bridge` |
 | Pembayaran | Xendit (QRIS dinamis, mock di dev), gateway loyalty |
 
@@ -281,7 +281,7 @@ QA finance butuh akun `finance_staff` ber-scope company.
 
 - **App dev:** PM2 `arkiv-pos-saas` → `next start -p 3459` (**production build**). Ubah kode ⇒ `npm run build` **lalu** `pm2 restart arkiv-pos-saas`. Cek `.next/BUILD_ID` ada sebelum restart (build|tail menelan exit code).
 - **Service samping:** `services/wa-gateway` (Baileys, PM2, `127.0.0.1:3471`), `services/pos-nfc-bridge` (jembatan NFC POS).
-- **Public URL:** `sulu.within.ventures` (tunnel within-ventures) & `member.within.ventures` (dev-tunnel) → cloudflared → `localhost:3459`. Ubah config ⇒ `systemctl restart cloudflared-*`.
+- **Public URL:** `mizu.within.ventures` (tunnel within-ventures) & `member.within.ventures` (dev-tunnel) → cloudflared → `localhost:3459`. Ubah config ⇒ `systemctl restart cloudflared-*`.
 - **Port lookalike yang harus DIHINDARI:** 3000 (Express Basic-Auth lain), 3004 (Docker `arkiv` stale, kredensial DB lama), 3005 (`~/Arkiv` repo lain).
 - **Migrasi:** `npm run db:migrate:apply`; ledger checksum; idempoten.
 - **Push:** `git -c credential.helper='store --file=~/.git-credentials-arkiv' push origin development`.

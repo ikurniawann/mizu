@@ -11,7 +11,7 @@ Menambah modul **Resort** ke ERP: penjualan kamar menginap dari master tipe
 kamar sampai check-out, lengkap dengan **folio tamu** yang menampung tagihan
 kamar, F&B, dan aktivitas. Modul ini kebutuhan wisata bertipe Dusun Bambu
 (cabin, glamping, village residence) dan berguna juga untuk unit menginap
-Sulu di masa depan — karena itu dibangun di basis kode yang sama, bukan repo
+Mizu di masa depan — karena itu dibangun di basis kode yang sama, bukan repo
 terpisah.
 
 ## Keputusan Perencanaan (2026-09-06)
@@ -36,7 +36,7 @@ Hasil diskusi dengan owner setelah meninjau dusunbambu.id:
 `src/lib/branding.ts` (client & server) + `src/lib/branding-server.ts`
 (resolusi dari DB). Urutan sumber nama merek: **nama perusahaan pemilik
 data** → `configuration.app_settings.app_brand_name` → env
-`NEXT_PUBLIC_APP_NAME` → default `Sulu in Wounderland`.
+`NEXT_PUBLIC_APP_NAME` → default `Mizu in Wounderland`.
 
 Diterapkan pada keluaran yang dilihat pengguna/penerima dokumen: watermark
 Dataroom, email & halaman publik `/share`, judul ekspor Excel laporan POS

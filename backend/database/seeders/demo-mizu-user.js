@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * Seeder: Demo user cabang Sulu Bandung (branch-scoped, bukan super_admin).
+ * Seeder: Demo user cabang Mizu Bandung (branch-scoped, bukan super_admin).
  *
- *   Email   : demo@sulu.id
- *   Password: DEMO_SULU_PASSWORD, atau acak (dicetak sekali) bila kosong
+ *   Email   : demo@mizu.id
+ *   Password: DEMO_MIZU_PASSWORD, atau acak (dicetak sekali) bila kosong
  *   Role    : purchasing_admin (API / auth metadata)
- *   Menus   : sulu_bandung_demo (IAM sidebar — Items + POS, tanpa Finance/Accounting/Laporan)
- *   Scope   : Prologe → Sulu → Sulu Bandung
+ *   Menus   : mizu_bandung_demo (IAM sidebar — Items + POS, tanpa Finance/Accounting/Laporan)
+ *   Scope   : Prologe → Mizu → Mizu Bandung
  *
  * Usage:
- *   node database/seeders/demo-sulu-user.js
- *   npm run db:seed:demo-sulu
+ *   node database/seeders/demo-mizu-user.js
+ *   npm run db:seed:demo-mizu
  */
 
 const fs = require("fs");
@@ -22,18 +22,18 @@ const { seedPassword, passwordSource } = require("./lib/seed-password");
 
 const ROOT = path.join(__dirname, "..", "..");
 
-const EMAIL = process.env.DEMO_SULU_EMAIL || "demo@sulu.id";
-const FULL_NAME = process.env.DEMO_SULU_NAME || "Demo Sulu Bandung";
-const NIP = process.env.DEMO_SULU_NIP || "DEMOSULU";
-const PHONE = process.env.DEMO_SULU_PHONE || "-";
+const EMAIL = process.env.DEMO_MIZU_EMAIL || "demo@mizu.id";
+const FULL_NAME = process.env.DEMO_MIZU_NAME || "Demo Mizu Bandung";
+const NIP = process.env.DEMO_MIZU_NIP || "DEMOMIZU";
+const PHONE = process.env.DEMO_MIZU_PHONE || "-";
 /** Auth + API role (unchanged for purchasing module access). */
 const PROFILE_ROLE = "purchasing_admin";
 /** IAM sidebar role (see database/seeders/iam-role-permissions.sql). */
-const MENU_ROLE = "sulu_bandung_demo";
+const MENU_ROLE = "mizu_bandung_demo";
 
 const HOLDING_CODE = "PROLOGE";
-const COMPANY_CODE = "SULU";
-const BRANCH_CODE = "SULU-DAGO";
+const COMPANY_CODE = "MIZU";
+const BRANCH_CODE = "MIZU-DAGO";
 
 function loadEnv() {
   const shellKeys = new Set(Object.keys(process.env));
@@ -91,7 +91,7 @@ async function main() {
     process.exit(1);
   }
 
-  const password = seedPassword("DEMO_SULU_PASSWORD");
+  const password = seedPassword("DEMO_MIZU_PASSWORD");
 
   const c = new Client({ connectionString: url, ssl: sslForUrl(url) });
   await c.connect();
@@ -176,7 +176,7 @@ async function main() {
        USING iam.roles r
        WHERE ur.user_id = $1
          AND ur.role_id = r.id
-         AND r.code IN ('purchasing_admin', 'sulu_bandung_demo', 'sulu_dago_demo')`,
+         AND r.code IN ('purchasing_admin', 'mizu_bandung_demo', 'mizu_dago_demo')`,
       [userId]
     );
 
@@ -215,7 +215,7 @@ async function main() {
     await c.query("COMMIT");
     console.log("\nDemo user siap:");
     console.log("  Email   :", EMAIL);
-    console.log("  Password:", passwordSource("DEMO_SULU_PASSWORD"));
+    console.log("  Password:", passwordSource("DEMO_MIZU_PASSWORD"));
     console.log("  Role    :", PROFILE_ROLE, "(API)");
     console.log("  Menus   :", MENU_ROLE);
     console.log(

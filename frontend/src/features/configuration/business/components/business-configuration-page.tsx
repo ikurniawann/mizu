@@ -446,7 +446,7 @@ export function BusinessConfigurationPage() {
         description="Holding berisi Company, Company berisi Branch, dan setiap Branch wajib memiliki minimal 1 Stall (Main Storage sebagai default)."
         toolbar={
           <p className="text-xs text-gray-400">
-            Contoh: Prologe → Sulu → Sulu Bandung → Main Storage, Stall 1, …
+            Contoh: Prologe → Mizu → Mizu Bandung → Main Storage, Stall 1, …
           </p>
         }
       >

@@ -77,21 +77,21 @@ ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, updated_at = now();
 DO $$
 DECLARE
     v_holding_id uuid;
-    v_sulu_id uuid;
+    v_mizu_id uuid;
     v_bandung_id uuid;
 BEGIN
     SELECT id INTO v_holding_id FROM configuration.holdings WHERE code = 'PROLOGE';
 
     INSERT INTO configuration.companies (holding_id, name, code)
-    VALUES (v_holding_id, 'Sulu', 'SULU')
+    VALUES (v_holding_id, 'Mizu', 'MIZU')
     ON CONFLICT (holding_id, code) DO UPDATE SET name = EXCLUDED.name, updated_at = now()
-    RETURNING id INTO v_sulu_id;
-    IF v_sulu_id IS NULL THEN
-        SELECT id INTO v_sulu_id FROM configuration.companies WHERE holding_id = v_holding_id AND code = 'SULU';
+    RETURNING id INTO v_mizu_id;
+    IF v_mizu_id IS NULL THEN
+        SELECT id INTO v_mizu_id FROM configuration.companies WHERE holding_id = v_holding_id AND code = 'MIZU';
     END IF;
 
     INSERT INTO configuration.branches (company_id, name, code)
-    VALUES (v_sulu_id, 'Sulu Bandung', 'SULU-BANDUNG')
+    VALUES (v_mizu_id, 'Mizu Bandung', 'MIZU-BANDUNG')
     ON CONFLICT (company_id, code) DO UPDATE SET name = EXCLUDED.name, updated_at = now()
     RETURNING id INTO v_bandung_id;
 END $$;

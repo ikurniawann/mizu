@@ -57,7 +57,7 @@ SELECT r.id, m.id, COALESCE(m.permission_context->'actions', '["read"]'::jsonb)
 FROM iam.roles r CROSS JOIN iam.menus m
 WHERE r.code IN ('super_admin', 'admin', 'purchasing_admin', 'purchasing_manager',
                  'purchasing_staff', 'qc_staff', 'warehouse_admin', 'warehouse_staff',
-                 'sulu_bandung_demo')
+                 'mizu_bandung_demo')
   AND m.code IN ('items.general', 'items.general.master',
                  'items.general.master.items', 'items.general.master.categories')
 ON CONFLICT (role_id, menu_id) DO UPDATE SET

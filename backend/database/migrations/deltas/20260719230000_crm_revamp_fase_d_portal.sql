@@ -1,4 +1,4 @@
--- EPIC-011 Fase D: portal member (member.suluindwounderland.com) —
+-- EPIC-011 Fase D: portal member (member.mizuindwounderland.com) —
 -- login OTP WhatsApp (Fonnte) + sesi portal terpisah dari arkiv_session.
 
 CREATE TABLE IF NOT EXISTS crm.member_portal_otp (

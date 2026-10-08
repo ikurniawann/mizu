@@ -1,12 +1,12 @@
-# SULU Bandung → Import Excel Mapping
+# MIZU Bandung → Import Excel Mapping
 
 Date: 2026-07-20  
-Source: `docs/data/SULU-bdg.xlsx`  
-Output: `docs/data/sulu-import/`
+Source: `docs/data/MIZU-bdg.xlsx`
+Output: `docs/data/mizu-import/`
 
 ## Goal
 
-Map SULU Bandung food-testing workbook into Excel files aligned with dashboard import templates for raw materials and products, plus reference BOM sheets (no BOM import UI yet).
+Map MIZU Bandung food-testing workbook into Excel files aligned with dashboard import templates for raw materials and products, plus reference BOM sheets (no BOM import UI yet).
 
 ## Decisions (approved)
 
@@ -62,5 +62,5 @@ Map SULU Bandung food-testing workbook into Excel files aligned with dashboard i
 ## Regenerating
 
 ```bash
-python3 docs/data/generate_sulu_import_excels.py
+python3 docs/data/generate_mizu_import_excels.py
 ```

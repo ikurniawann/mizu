@@ -102,6 +102,31 @@ func Checksum(sql []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// Four historical files were renamed with the Mizu brand. Existing databases
+// still record their previous basenames, so their stable timestamp identifies
+// them without rerunning their SQL.
+var renamedMigrationPrefixes = map[string]bool{
+	"20260629120000": true,
+	"20260701180000": true,
+	"20260707120000": true,
+	"20260804001000": true,
+}
+
+func migrationApplied(name string, applied map[string]bool) bool {
+	if applied[name] {
+		return true
+	}
+	if len(name) < 14 || !renamedMigrationPrefixes[name[:14]] {
+		return false
+	}
+	for prior := range applied {
+		if strings.HasPrefix(prior, name[:14]) {
+			return true
+		}
+	}
+	return false
+}
+
 // applyLockKey is the pg_advisory_lock key held while Run applies files.
 const applyLockKey int64 = 0x6e75686162697401 // "nuhabit" + 1
 
@@ -181,7 +206,7 @@ func Run(ctx context.Context, opts Options) error {
 
 	var pending []File
 	for _, f := range files {
-		if !applied[f.Name] {
+		if !migrationApplied(f.Name, applied) {
 			pending = append(pending, f)
 		}
 	}

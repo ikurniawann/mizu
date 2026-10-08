@@ -174,7 +174,7 @@ export function GeneralSettingsSection() {
               <Label htmlFor="booking_slug">Slug Booking Online</Label>
               <Input
                 id="booking_slug"
-                placeholder="mis. sulu-wonderland"
+                placeholder="mis. mizu-wonderland"
                 value={form.booking_slug}
                 onChange={(e) =>
                   setForm({ booking_slug: e.target.value.toLowerCase() })

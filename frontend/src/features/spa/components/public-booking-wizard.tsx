@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, Check, CheckCircle2, Clock, Loader2, MapPin, Phone } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Check, Clock, Loader2, MapPin, Phone } from "lucide-react";
 import { formatDateLong, formatRupiah, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCreatePublicBooking } from "../mutations";
-import { usePublicSpaOutlets, usePublicSpaTreatments } from "../queries";
+import { usePublicSpaOutlets, usePublicSpaSlots, usePublicSpaTreatments } from "../queries";
 import { GENDER_PREF_LABEL, isValidPhone } from "../rules";
-import { addDaysToDate, generateSlots, shortClock, wibDateOf } from "../time";
-import type { GenderPref, PublicBookingResult, PublicOutlet, PublicVariant } from "../types";
+import { resetBookingFunnel, trackBookingStep } from "../booking-funnel";
+import { addDaysToDate, shortClock, wibDateOf } from "../time";
+import type { GenderPref, PublicOutlet, PublicVariant } from "../types";
 
 const BRAND = "Mizu";
 const MAX_DAYS_AHEAD = 30;
@@ -32,12 +34,12 @@ interface Picked {
 }
 
 /** Booking spa publik tanpa login: outlet → treatment → tanggal & jam (WIB) → data diri → kode booking. */
-export function PublicSpaBookingWizard() {
-  const [step, setStep] = useState<Step>("outlet");
-  const [outlet, setOutlet] = useState<PublicOutlet | null>(null);
-  const [picked, setPicked] = useState<Picked[]>([]);
+export function PublicSpaBookingWizard({ initialOutletSlug, initialTreatmentId }: { initialOutletSlug?: string; initialTreatmentId?: string }) {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>(initialOutletSlug ? "treatment" : "outlet");
+  const [selectedOutlet, setSelectedOutlet] = useState<PublicOutlet | null>(null);
+  const [selectedPicked, setSelectedPicked] = useState<Picked[] | null>(null);
   const [today, setToday] = useState(() => wibDateOf(new Date()));
-  const [now, setNow] = useState(() => new Date());
   const [date, setDate] = useState(today);
   const [slotIso, setSlotIso] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -45,17 +47,30 @@ export function PublicSpaBookingWizard() {
   const [pref, setPref] = useState<GenderPref>("any");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const [result, setResult] = useState<PublicBookingResult | null>(null);
+  const [fieldError, setFieldError] = useState<"name" | "phone" | null>(null);
 
   const outlets = usePublicSpaOutlets();
+  const outlet = selectedOutlet ?? outlets.data?.find((item) => item.slug === initialOutletSlug) ?? (initialOutletSlug ? outlets.data?.[0] : null) ?? null;
   const treatments = usePublicSpaTreatments(outlet?.branch_id ?? "");
+  const initialTreatment = treatments.data?.find((item) => item.id === initialTreatmentId);
+  const picked = selectedPicked ?? (initialTreatment?.variants.length === 1 ? [{ variant: initialTreatment.variants[0], treatmentName: initialTreatment.name }] : []);
+  const availableSlots = usePublicSpaSlots(outlet?.branch_id ?? "", date, picked.map((item) => item.variant.id), pref);
   const create = useCreatePublicBooking();
+  const nameInput = useRef<HTMLInputElement>(null);
+  const phoneInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    trackBookingStep("open", outlet?.branch_id);
+  }, [outlet?.branch_id]);
+
+  useEffect(() => {
+    trackBookingStep(step === "waktu" ? "time" : step === "kontak" ? "contact" : step, outlet?.branch_id);
+  }, [step, outlet?.branch_id]);
 
   // Slot "masa depan" dihitung terhadap jam sekarang; segarkan tiap menit.
   useEffect(() => {
     const timer = setInterval(() => {
       const d = new Date();
-      setNow(d);
       setToday(wibDateOf(d));
     }, 60_000);
     return () => clearInterval(timer);
@@ -63,20 +78,7 @@ export function PublicSpaBookingWizard() {
 
   const totalDuration = picked.reduce((sum, p) => sum + p.variant.duration_min, 0);
   const totalPrice = picked.reduce((sum, p) => sum + p.variant.price_idr, 0);
-  const slots = useMemo(
-    () =>
-      outlet
-        ? generateSlots({
-            date,
-            open_time: outlet.open_time,
-            close_time: outlet.close_time,
-            slot_minutes: outlet.slot_minutes,
-            duration_min: totalDuration,
-            now,
-          })
-        : [],
-    [outlet, date, totalDuration, now]
-  );
+  const slots = (availableSlots.data ?? []).map((slot) => ({ iso: slot.starts_at, time: formatTime(slot.starts_at) }));
   const slotStillValid = !!slotIso && slots.some((s) => s.iso === slotIso);
   const stepIndex = STEPS.indexOf(step);
 
@@ -85,11 +87,14 @@ export function PublicSpaBookingWizard() {
   };
 
   const toggleVariant = (variant: PublicVariant, treatmentName: string) =>
-    setPicked((rows) =>
-      rows.some((r) => r.variant.id === variant.id)
-        ? rows.filter((r) => r.variant.id !== variant.id)
-        : [...rows, { variant, treatmentName }]
-    );
+    setSelectedPicked((previous) => {
+      const rows = previous ?? picked;
+      return (
+        rows.some((r) => r.variant.id === variant.id)
+          ? rows.filter((r) => r.variant.id !== variant.id)
+          : [...rows, { variant, treatmentName }]
+      );
+    });
 
   const submit = () => {
     if (!outlet || !slotIso || picked.length === 0) return;
@@ -98,9 +103,19 @@ export function PublicSpaBookingWizard() {
       setStep("waktu");
       return;
     }
-    if (name.trim().length < 2) return setFormError("Isi nama Anda.");
-    if (!isValidPhone(phone)) return setFormError("Nomor HP/WhatsApp tidak valid.");
+    if (name.trim().length < 2) {
+      setFieldError("name");
+      nameInput.current?.focus();
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setFieldError("phone");
+      phoneInput.current?.focus();
+      return;
+    }
+    setFieldError(null);
     setFormError(null);
+    trackBookingStep("submit", outlet.branch_id);
     create.mutate(
       {
         branch_id: outlet.branch_id,
@@ -112,13 +127,22 @@ export function PublicSpaBookingWizard() {
         variant_ids: picked.map((p) => p.variant.id),
       },
       {
-        onSuccess: (res) => setResult(res),
-        onError: (err) => setFormError(err.message),
+        onSuccess: (res) => {
+          trackBookingStep("success", outlet.branch_id);
+          resetBookingFunnel();
+          router.replace(`/booking/spa/status/${res.access_token}`);
+        },
+        onError: (err) => {
+          trackBookingStep("error", outlet.branch_id);
+          setFormError(err.message);
+          if (err.message.includes("penuh")) {
+            setStep("waktu");
+            void availableSlots.refetch();
+          }
+        },
       }
     );
   };
-
-  if (result) return <SuccessScreen result={result} outlet={outlet} />;
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-card text-foreground md:max-w-2xl">
@@ -164,10 +188,10 @@ export function PublicSpaBookingWizard() {
                   type="button"
                   onClick={() => {
                     if (outlet?.branch_id !== o.branch_id) {
-                      setPicked([]);
+                      setSelectedPicked([]);
                       setSlotIso(null);
                     }
-                    setOutlet(o);
+                    setSelectedOutlet(o);
                     setStep("treatment");
                   }}
                   className={cn(
@@ -198,6 +222,9 @@ export function PublicSpaBookingWizard() {
           </section>
         )}
 
+        {step === "treatment" && !outlet && (
+          outlets.isLoading ? <Spinner /> : <ErrorNote>Booking online sedang tidak tersedia. Pilih outlet lain.</ErrorNote>
+        )}
         {step === "treatment" && outlet && (
           <section className="space-y-4">
             <div>
@@ -211,8 +238,9 @@ export function PublicSpaBookingWizard() {
             ) : (treatments.data ?? []).length === 0 ? (
               <ErrorNote>Belum ada treatment yang bisa dipesan di outlet ini.</ErrorNote>
             ) : (
-              (treatments.data ?? []).map((t) => (
+              [...(treatments.data ?? [])].sort((a, b) => Number(b.id === initialTreatmentId) - Number(a.id === initialTreatmentId)).map((t) => (
                 <div key={t.id} className="rounded-2xl border border-border p-4">
+                  {t.id === initialTreatmentId && <p className="mb-2 text-xs font-semibold text-forest">Treatment yang Anda lihat</p>}
                   <p className="font-semibold">{t.name}</p>
                   {t.category && <p className="text-xs tracking-wide text-muted-foreground uppercase">{t.category}</p>}
                   {t.description && <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>}
@@ -264,6 +292,7 @@ export function PublicSpaBookingWizard() {
                 {shortClock(outlet.close_time)}.
               </p>
             </div>
+            {formError && <ErrorNote>{formError}</ErrorNote>}
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">Tanggal</span>
               <input
@@ -280,7 +309,9 @@ export function PublicSpaBookingWizard() {
               />
             </label>
             <p className="text-sm font-medium">{formatDateLong(date)}</p>
-            {slots.length === 0 ? (
+            {availableSlots.isLoading ? <Spinner /> : availableSlots.error ? (
+              <ErrorNote>Jam belum bisa dimuat. Coba lagi sebentar.</ErrorNote>
+            ) : slots.length === 0 ? (
               <ErrorNote>Tidak ada jam tersedia pada tanggal ini. Coba tanggal lain.</ErrorNote>
             ) : (
               <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
@@ -289,7 +320,7 @@ export function PublicSpaBookingWizard() {
                     key={s.iso}
                     type="button"
                     aria-pressed={slotIso === s.iso}
-                    onClick={() => setSlotIso(s.iso)}
+                    onClick={() => { setSlotIso(s.iso); setFormError(null); }}
                     className={cn(
                       "h-11 rounded-xl border text-sm font-medium tabular-nums transition-colors",
                       slotIso === s.iso ? "border-foreground bg-foreground text-card" : "border-border hover:bg-surface"
@@ -309,21 +340,27 @@ export function PublicSpaBookingWizard() {
         {step === "kontak" && outlet && slotIso && (
           <section className="space-y-4">
             <h1 className="text-2xl font-bold">Data diri</h1>
+            {formError && <ErrorNote>{formError}</ErrorNote>}
             <Summary outletName={outlet.name} slotIso={slotIso} picked={picked} total={totalPrice} />
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">Nama</span>
-              <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+              <input ref={nameInput} className={INPUT} value={name} onChange={(e) => { setName(e.target.value); if (fieldError === "name") setFieldError(null); }} autoComplete="name" aria-invalid={fieldError === "name"} aria-describedby={fieldError === "name" ? "spa-name-error" : undefined} />
+              {fieldError === "name" && <span id="spa-name-error" role="alert" className="mt-1 block text-sm text-danger">Isi nama Anda (minimal 2 huruf).</span>}
             </label>
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">Nomor HP / WhatsApp</span>
               <input
+                ref={phoneInput}
                 className={INPUT}
                 value={phone}
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder="08…"
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => { setPhone(e.target.value); if (fieldError === "phone") setFieldError(null); }}
+                aria-invalid={fieldError === "phone"}
+                aria-describedby={fieldError === "phone" ? "spa-phone-error" : undefined}
               />
+              {fieldError === "phone" && <span id="spa-phone-error" role="alert" className="mt-1 block text-sm text-danger">Nomor HP/WhatsApp tidak valid.</span>}
             </label>
             <fieldset>
               <legend className="mb-1.5 text-sm font-medium">Preferensi terapis</legend>
@@ -353,7 +390,6 @@ export function PublicSpaBookingWizard() {
                 placeholder="Keluhan, area fokus, atau permintaan khusus"
               />
             </label>
-            {formError && <ErrorNote>{formError}</ErrorNote>}
           </section>
         )}
       </main>
@@ -429,44 +465,6 @@ function Summary({
       <p className="mt-2 flex justify-between border-t border-border pt-2 font-semibold">
         <span>Total</span>
         <span className="tabular-nums">{formatRupiah(total)}</span>
-      </p>
-    </div>
-  );
-}
-
-function SuccessScreen({ result, outlet }: { result: PublicBookingResult; outlet: PublicOutlet | null }) {
-  return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center bg-card px-5 py-12 text-center text-foreground">
-      <p className="text-lg font-bold tracking-tight">{BRAND}</p>
-      <CheckCircle2 className="mt-8 size-16 text-success" />
-      <h1 className="mt-4 text-2xl font-bold">Booking diterima</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tunjukkan kode ini ke resepsionis saat tiba.</p>
-      <p className="mt-6 rounded-2xl border-2 border-dashed border-border px-6 py-4 font-mono text-3xl font-bold tracking-widest select-all">
-        {result.booking_code}
-      </p>
-      <div className="mt-6 w-full rounded-2xl bg-surface-2 p-4 text-left text-sm">
-        <p className="font-semibold">{result.branch_name}</p>
-        <p className="text-muted-foreground">
-          {formatDateLong(result.scheduled_at)} · {formatTime(result.scheduled_at)} WIB
-        </p>
-        <ul className="mt-2 space-y-1">
-          {result.items.map((item, i) => (
-            <li key={i} className="flex justify-between gap-3">
-              <span>
-                {item.treatment_name} — {item.variant_name} ({item.duration_min} mnt)
-              </span>
-              <span className="tabular-nums">{formatRupiah(item.price_idr)}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2 flex justify-between border-t border-border pt-2 font-semibold">
-          <span>Total</span>
-          <span className="tabular-nums">{formatRupiah(result.total_idr)}</span>
-        </p>
-      </div>
-      <p className="mt-4 text-xs text-muted-foreground">
-        Pembayaran dilakukan di outlet setelah treatment.
-        {outlet?.phone ? ` Perlu mengubah jadwal? Hubungi ${outlet.phone}.` : ""}
       </p>
     </div>
   );

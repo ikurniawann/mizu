@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useMyLocation } from "@/features/member-app/lib/geolocation";
 import { formatKm, sortByDistance, type LatLng } from "../lib/distance";
 import type { BranchSummary } from "../types";
-import { BOOKING_HREF } from "./booking-link";
+import { bookingHref } from "./booking-link";
 import { BranchMap, type MapPin as Pin } from "./branch-map";
 import { Container, EmptyNote, Picture, Section, SectionHeading } from "./site-section";
 
@@ -104,7 +104,7 @@ export function LocationsPage({ branches }: { branches: BranchSummary[] }) {
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Button asChild size="sm">
-                          <Link href={BOOKING_HREF}>Booking</Link>
+                          <Link href={bookingHref({ outlet: item.slug })}>Booking</Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
                           <Link href={`/locations/${item.slug}`}>Lihat outlet</Link>

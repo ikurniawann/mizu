@@ -9,7 +9,7 @@
 --     debit BPJS expense, credit the BPJS Ketenagakerjaan / Kesehatan payable),
 --     with their template lines;
 --   * points every empty line at the company's postable account matched by
---     the seeded COA code first, then by name (SULU COA conventions:
+--     the seeded COA code first, then by name (MIZU COA conventions:
 --     6401012 Human Capital Expense, 2104001 A/E Payroll & Related,
 --     2102002 Tax PPh 21, 1203001 AR Employee Loan, 1102001 BANK BCA,
 --     2103002 BPJS Ketenagakerjaan, 2103003 BPJS Kesehatan);

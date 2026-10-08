@@ -61,16 +61,16 @@ Hasil audit kode & database lokal bersama owner. Semua sudah dikunci:
 
 ## Tasks
 
-### Fase 0 — Company `SULU-APPAREL` + master dasar (seeder lokal) ✅
+### Fase 0 — Company `MIZU-APPAREL` + master dasar (seeder lokal) ✅
 
 Turunan `items-footwear.js` + `dusun-bambu.js` / `lib/dusun-bambu-scope.js`.
 Tidak ada kode aplikasi yang berubah di fase ini.
 
-- [x] `database/seeders/lib/apparel-scope.js`: kode `PROLOGE` / `SULU-APPAREL` /
+- [x] `database/seeders/lib/apparel-scope.js`: kode `PROLOGE` / `MIZU-APPAREL` /
       `SA-WORKSHOP`, `loadEnv`, `ensureScope` (company + branch + gudang
       produksi `MAIN` + outlet `Workshop Store`), `assertLocalTarget`.
 - [x] `database/seeders/apparel.js` (`npm run db:seed:apparel-business`):
-      user demo `demo@suluapparel.id` (role `admin`, scope cabang), departemen
+      user demo `demo@mizuapparel.id` (role `admin`, scope cabang), departemen
       HRIS *Produksi & Jahit*, *Gudang & QC*, *Toko*.
 - [x] `database/seeders/apparel-items.js` (`npm run db:seed:apparel-items`):
       unit per company (PCS, LUSIN, M, ROLL, KG, CONE, PASANG); kategori bahan
@@ -83,25 +83,25 @@ Tidak ada kode aplikasi yang berubah di fase ini.
 - [x] Update `EPIC-047` + `docs/modules/README.md` dengan hasil jalankan
       (jumlah bahan/produk/BOM), dan catatan bahwa harga adalah asumsi.
 
-**Done signal:** login `demo@suluapparel.id` → Items menampilkan master
-apparel, F&B Sulu tidak terlihat, super admin Sulu tidak terganggu.
+**Done signal:** login `demo@mizuapparel.id` → Items menampilkan master
+apparel, F&B Mizu tidak terlihat, super admin Mizu tidak terganggu.
 
 **Hasil jalankan (2026-09-09, lokal, `npm run db:seed:apparel-business` lalu
 `npm run db:seed:apparel-items`, idempoten — dijalankan 2× tanpa duplikasi):**
 
-- Company `SULU-APPAREL` (holding `PROLOGE`) → cabang `SA-WORKSHOP` (Sulu
+- Company `MIZU-APPAREL` (holding `PROLOGE`) → cabang `SA-WORKSHOP` (Mizu
   Apparel Workshop) → gudang produksi `MAIN` (default) + outlet
   `WORKSHOP-STORE` (Workshop Store).
 - Departemen HRIS baru: `SA-PRODUKSI` (Produksi & Jahit), `SA-GUDANG-QC`
   (Gudang & QC), `SA-TOKO` (Toko).
-- User demo `demo@suluapparel.id` / `suluapparel` (role `admin`, scope
+- User demo `demo@mizuapparel.id` / `mizuapparel` (role `admin`, scope
   cabang).
 - User pemilik `apparel@arkivworld.com` (ditambah 2026-09-11): role `admin`
   (222/223 menu — hanya tanpa Notifikasi WA milik owner holding) dengan
-  `business_scope = 'company'` → "super admin" Sulu Apparel: semua cabang
-  apparel, tidak melihat SULU (F&B) / DUSUN-BAMBU. Sengaja bukan role
+  `business_scope = 'company'` → "super admin" Mizu Apparel: semua cabang
+  apparel, tidak melihat MIZU (F&B) / DUSUN-BAMBU. Sengaja bukan role
   `super_admin` karena role itu selalu unscoped. Password default seeder
-  (override `SULU_APPAREL_OWNER_PASSWORD`), lokal saja.
+  (override `MIZU_APPAREL_OWNER_PASSWORD`), lokal saja.
 - Unit per company: 7 (`PCS, LUSIN, M, ROLL, KG, CONE, PASANG`).
 - Kategori bahan baku per company: 9 (`KAIN, BENANG, AKSESORIS, LABEL,
   KEMASAN, SOL, KULIT, PEREKAT, WIP`).
@@ -126,8 +126,8 @@ apparel, F&B Sulu tidak terlihat, super admin Sulu tidak terganggu.
   `source_product_id` ke produk apparel, SKU prefix `APL-<kode>` (sengaja
   beda dari prefix `PUR-` yang dipakai `items-footwear.js`/Dusun Bambu agar
   tidak bentrok — kode produk `SND-00x`/`SPT-00x` kebetulan sama dengan
-  footwear Sulu tapi scoped per company, sedangkan SKU POS bersifat global).
-- Isolasi terbukti: `item.products` SULU tetap 108 baris dan Dusun Bambu
+  footwear Mizu tapi scoped per company, sedangkan SKU POS bersifat global).
+- Isolasi terbukti: `item.products` MIZU tetap 108 baris dan Dusun Bambu
   tetap 20 baris sebelum & sesudah seeding; `pos_products` footwear
   (`PUR-SND-001`, `PUR-SPT-001`, dst.) tidak berubah `source_product_id`.
 - **Harga bahan baku & harga jual adalah ASUMSI demo lokal**, bukan hasil
@@ -158,7 +158,7 @@ apparel, F&B Sulu tidak terlihat, super admin Sulu tidak terganggu.
 - [x] Tampilkan ringkasan varian di daftar produk Items (`/dashboard/items`)
       untuk produk yang tertaut ke POS merchandise: badge `12 varian`.
 
-**Acceptance:** produk *Kaos Sulu Basic* dengan sumbu 4 ukuran × 2 warna →
+**Acceptance:** produk *Kaos Mizu Basic* dengan sumbu 4 ukuran × 2 warna →
 tepat 8 baris `pos_product_skus`, kode unik, `options = {ukuran, warna}`;
 generate ulang dengan warna ketiga → +4 baris, 8 lama utuh; hapus satu ukuran
 yang ber-stok → 409 dengan pesan jelas.
@@ -198,7 +198,7 @@ Jahitan utama epic ini. Semua di rute
       = `actual_qty − Σ`, tombol *Bagi rata*, dan validasi sisa harus 0.
 - [x] Detail production order menampilkan rincian varian yang sudah diposting.
 
-**Acceptance:** PO produksi *Kaos Sulu Basic* 100 pcs, complete dengan
+**Acceptance:** PO produksi *Kaos Mizu Basic* 100 pcs, complete dengan
 S 20 / M 30 / L 30 / XL 20 → `pos_product_skus.stock_quantity` bertambah
 persis itu, `finished_goods_inventory` +100, 4 baris `finished_goods_movements`
 ber-`pos_sku_id`, HPP per pcs tidak berubah dari perhitungan lama; kirim
@@ -217,7 +217,7 @@ regresi.
       produk ber-varian (opsional bila waktu; bila ditunda, catat di *Tidak
       termasuk*).
 
-**Acceptance:** setelah Fase 1B, kasir menjual *Kaos Sulu Basic M Hitam* →
+**Acceptance:** setelah Fase 1B, kasir menjual *Kaos Mizu Basic M Hitam* →
 stok SKU M-Hitam turun 1, SKU lain utuh, void mengembalikan ke SKU yang sama.
 
 ### Fase 2 — GRN per varian (beli barang jadi dari vendor) ✅
@@ -269,7 +269,7 @@ Dusun Bambu (tanpa varian) selesai persis seperti sebelumnya.
 
 ## Acceptance Criteria
 
-- Apparel hidup sebagai company `SULU-APPAREL` terpisah; data Sulu F&B dan
+- Apparel hidup sebagai company `MIZU-APPAREL` terpisah; data Mizu F&B dan
   Dusun Bambu tidak berubah satu baris pun (diff `item.*` per `company_id`).
 - Master produk merchandise bisa mendefinisikan matriks ukuran × warna dan
   menghasilkan SKU deterministik; generate ulang idempoten; SKU ber-stok tidak
@@ -289,7 +289,7 @@ Dusun Bambu (tanpa varian) selesai persis seperti sebelumnya.
 
 ## Verifikasi lokal yang direncanakan
 
-E2E lewat API sebagai `demo@suluapparel.id`: seed → buat matriks 4×2 →
+E2E lewat API sebagai `demo@mizuapparel.id`: seed → buat matriks 4×2 →
 buat PO produksi 100 pcs → complete tanpa split **ditolak** → complete dengan
 split 20/30/30/20 → cek stok SKU & `finished_goods_inventory` → jual 1 M-Hitam
 di kasir → void → stok kembali. Lalu ulangi complete pada order F&B Dusun
@@ -325,13 +325,13 @@ Jalankan hanya bila owner memanggil `MODULE-APPAREL`:
 
 - 2026-09-09 — Epic dibuat dari audit kode & DB bersama owner; status
   `backlog` sampai owner menyalakan.
-- 2026-09-09 /task-work EPIC-047 #1 "Fase 0 — Company `SULU-APPAREL` + master
+- 2026-09-09 /task-work EPIC-047 #1 "Fase 0 — Company `MIZU-APPAREL` + master
   dasar (seeder lokal)" → PASS (attempts: 1). Gate: review-qa PASS (3 catatan
   LOW/INFO), security PASS (assertLocalTarget sebelum koneksi di ketiga entry
   point, bcrypt, semua DELETE/UPDATE ber-scope), test PASS (node --check,
-  seeder end-to-end + rerun idempoten, isolasi SULU=108 / Dusun Bambu=20 tetap,
+  seeder end-to-end + rerun idempoten, isolasi MIZU=108 / Dusun Bambu=20 tetap,
   vitest 221 berkas / 1828 test). Verifikasi browser sebagai
-  `demo@suluapparel.id`: 35 bahan baku dan 15 produk apparel tampil di Items.
+  `demo@mizuapparel.id`: 35 bahan baku dan 15 produk apparel tampil di Items.
   MR dibuat via `push -o merge_request.create` ke `development` (nomor dicatat
   saat merge). Tidak ada GitLab issue yang cocok dengan judul task — dilanjutkan
   tanpa referensi penutup.
@@ -432,7 +432,7 @@ Jalankan hanya bila owner memanggil `MODULE-APPAREL`:
     `super@arkivworld.com` berubah 2026-09-10 15:14:06 tanpa
     `last_sign_in_at` yang menyertai — tulisan bukan-login saat sebuah
     subagent "mencoba reset" password sebelum diblokir classifier; login
-    `suluin123` setelahnya 401. Diff tidak menyentuh `auth`. Owner
+    `mizuin123` setelahnya 401. Diff tidak menyentuh `auth`. Owner
     diberi tahu; pemulihan lewat `npm run db:seed:super-admin` (lokal
     saja) adalah keputusan owner. Semua gate dilarang menyentuh akun itu.
   - MR dibuat via `push -o merge_request.create` ke `development`; nomor
@@ -488,7 +488,7 @@ Jalankan hanya bila owner memanggil `MODULE-APPAREL`:
   akhir (double-complete → 400, rollback) → security PASS, test PASS (tsc 0
   error di berkas opname — 5 error tipe mock di test complete diperbaiki
   dengan `vi.fn<…>` bertipe; vitest 234 berkas / 1974 test).
-  - Bukti hidup sebagai `demo@suluapparel.id` (server lokal): POPN-2026-001
+  - Bukti hidup sebagai `demo@mizuapparel.id` (server lokal): POPN-2026-001
     16 baris SKU KAOS-001, M-Hitam −2 / S-Putih +1 → SKU tepat, fgi −1,
     3 mutasi (2 SKU + 1 Σ); POPN-2026-002 produk tanpa varian +2 identik jalur
     lama; POPN-2026-003 XL-Hitam 20→19, M-Hitam tetap 33, fgi 233→232, kartu

@@ -2,7 +2,7 @@
 
 **Date Completed:** 2026-05-03  
 **Status:** Production Ready  
-**Deployed:** https://suluinwounderland.com/arkiv-os
+**Deployed:** https://mizuinwounderland.com/arkiv-os
 
 ---
 

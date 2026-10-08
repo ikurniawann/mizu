@@ -134,7 +134,7 @@ karena menyentuh angka gaji.
    yang sudah ada di [`AttendanceCalendar.tsx:49`](../../src/components/hris/AttendanceCalendar.tsx)
    dan `dateColToIso` di payroll — jebakan yang sudah pernah menggigit di EPIC-008.
 5. **Instance kedua.** Habitat punya database sendiri; seed libur harus dijalankan
-   di kedua instance, bukan sekali di Sulu saja.
+   di kedua instance, bukan sekali di Mizu saja.
 6. **Outbound network saat impor.** Fase E menambah dependency jaringan keluar dari
    container. Harus gagal dengan pesan jelas dan tidak memblokir halaman admin
    kalau ICS tak terjangkau.

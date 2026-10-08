@@ -60,7 +60,7 @@ function OutletSwitcher({ outlets, selected }: { outlets: PublicOutlet[]; select
   );
 }
 
-function TreatmentCard({ treatment }: { treatment: PublicTreatment }) {
+function TreatmentCard({ treatment, outlet }: { treatment: PublicTreatment; outlet: PublicOutlet }) {
   return (
     <article className="flex h-full flex-col gap-4 rounded-card bg-card p-6 shadow-card">
       <div className="space-y-1.5">
@@ -76,14 +76,15 @@ function TreatmentCard({ treatment }: { treatment: PublicTreatment }) {
           </li>
         ))}
       </ul>
-      <BookingButton size="sm" className="self-start" aria-label={`Booking ${treatment.name}`}>
+      <BookingButton size="sm" className="self-start" outlet={outlet.slug} treatment={treatment.id} aria-label={`Booking ${treatment.name}`}>
         Booking
       </BookingButton>
     </article>
   );
 }
 
-function Menu({ treatments, outletName }: { treatments: Loaded<PublicTreatment[]>; outletName: string }) {
+function Menu({ treatments, outlet }: { treatments: Loaded<PublicTreatment[]>; outlet: PublicOutlet }) {
+  const outletName = outlet.name;
   if (!treatments.ok) {
     return <EmptyNote>Menu treatment {outletName} belum bisa dimuat. Muat ulang halaman sebentar lagi, atau langsung lanjut ke booking.</EmptyNote>;
   }
@@ -100,7 +101,7 @@ function Menu({ treatments, outletName }: { treatments: Loaded<PublicTreatment[]
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {group.treatments.map((t) => (
-              <TreatmentCard key={t.id} treatment={t} />
+              <TreatmentCard key={t.id} treatment={t} outlet={outlet} />
             ))}
           </div>
         </section>
@@ -134,7 +135,7 @@ export function TreatmentsPage({ guide, outlets, selected, treatments }: {
           ) : (
             <>
               <OutletSwitcher outlets={outlets.data} selected={selected} />
-              <Menu treatments={treatments} outletName={selected.name} />
+              <Menu treatments={treatments} outlet={selected} />
             </>
           )}
         </Container>

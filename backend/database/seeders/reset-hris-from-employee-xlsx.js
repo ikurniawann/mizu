@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Reset HRIS + seed Master Data dari docs/DATABASE - SULU IN WONDERLAND EMPLOYEE.xlsx
+ * Reset HRIS + seed Master Data dari docs/DATABASE - MIZU IN WONDERLAND EMPLOYEE.xlsx
  *
  * - Hapus auth.users kecuali keep-list
  * - Wipe data operasional HRIS + employees
@@ -10,7 +10,7 @@
  * - Role by jabatan: Cashier→pos; Head Bar/SPV/Captain/CDP/Demi→pos_supervisor; else→employee
  *
  * Safety: default hanya Postgres lokal (localhost / 127.0.0.1).
- * Remote (mis. server-sulu) butuh --allow-remote; apply destruktif butuh
+ * Remote (mis. server-mizu) butuh --allow-remote; apply destruktif butuh
  * --confirm-remote-wipe juga.
  *
  * Usage:
@@ -18,7 +18,7 @@
  *     npm run db:seed:hris-from-xlsx
  *   … -- --dry-run
  *
- *   # remote server-sulu (dari .env):
+ *   # remote server-mizu (dari .env):
  *   npm run db:seed:hris-from-xlsx -- --allow-remote --dry-run
  *   npm run db:seed:hris-from-xlsx -- --allow-remote --confirm-remote-wipe
  */
@@ -41,7 +41,7 @@ const DEFAULT_XLSX = path.join(
   ROOT,
   "..",
   "docs",
-  "DATABASE - SULU IN WONDERLAND EMPLOYEE.xlsx"
+  "DATABASE - MIZU IN WONDERLAND EMPLOYEE.xlsx"
 );
 const KEEP_EMAILS = [
   "super@arkivworld.com",
@@ -49,8 +49,8 @@ const KEEP_EMAILS = [
   "agussugiman@gmail.com",
 ];
 const HOLDING_CODE = "PROLOGE";
-const COMPANY_CODE = "SULU";
-const BRANCH_CODE = "SULU-DAGO";
+const COMPANY_CODE = "MIZU";
+const BRANCH_CODE = "MIZU-DAGO";
 
 const MONTHS_ID = {
   januari: 1,

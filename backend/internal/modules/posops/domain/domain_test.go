@@ -63,7 +63,7 @@ func TestShiftReportMessage(t *testing.T) {
 	eq(t, NormalizeWaPhone("12"), (*string)(nil))
 	opened := time.Date(2026, 8, 14, 1, 0, 0, 0, time.UTC)
 	closed := time.Date(2026, 8, 14, 9, 0, 0, 0, time.UTC)
-	msg := ShiftReportMessage(ShiftReport{OutletName: "Sulu", ShiftNumber: "SH-014", CashierName: "Ani", OpenedAt: &opened,
+	msg := ShiftReportMessage(ShiftReport{OutletName: "Mizu", ShiftNumber: "SH-014", CashierName: "Ani", OpenedAt: &opened,
 		ClosedAt: &closed, TotalOrders: 42, TotalSales: 3_500_000, OpeningCash: 500_000, ExpectedCash: 2_100_000,
 		ClosingCash: 2_095_000, Variance: -5_000})
 	for _, want := range []string{"SH-014", "Ani", "Jumlah transaksi: 42", "Rp 3.500.000", "-Rp 5.000", "Buka: 14 Agu 2026, 08.00 WIB"} {

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Seeder: accounting Chart of Accounts from docs/data/SULU - COA .xlsx
+ * Seeder: accounting Chart of Accounts from docs/data/MIZU - COA .xlsx
  *
  * Idempotent upsert by (company_id, code). Default: global template (company_id NULL).
  *
  * Usage:
- *   node database/seeders/accounting-sulu-coa.js
- *   node database/seeders/accounting-sulu-coa.js --company=SULU
- *   npm run db:seed:accounting-sulu-coa
+ *   node database/seeders/accounting-mizu-coa.js
+ *   node database/seeders/accounting-mizu-coa.js --company=MIZU
+ *   npm run db:seed:accounting-mizu-coa
  */
 
 const fs = require("fs");
@@ -17,7 +17,7 @@ const XLSX = require("xlsx");
 const { sslForUrl, assertLocalTarget } = require("../scripts/pg-utils");
 
 const ROOT = path.join(__dirname, "..", "..");
-const DEFAULT_XLSX = path.join(ROOT, "..", "docs", "data", "SULU - COA .xlsx");
+const DEFAULT_XLSX = path.join(ROOT, "..", "docs", "data", "MIZU - COA .xlsx");
 
 function loadEnv() {
   const shellKeys = new Set(Object.keys(process.env));
@@ -116,7 +116,7 @@ function inferCashFlow(code, name, level) {
   return null;
 }
 
-function parseSuluSheet(xlsxPath) {
+function parseMizuSheet(xlsxPath) {
   const wb = XLSX.readFile(xlsxPath);
   const sheetName =
     wb.SheetNames.find((n) => n.toLowerCase() === "coa") || wb.SheetNames[0];
@@ -191,7 +191,7 @@ async function main() {
   }
 
   console.log(`Parsing ${xlsxPath}...`);
-  const accounts = parseSuluSheet(xlsxPath);
+  const accounts = parseMizuSheet(xlsxPath);
   console.log(`  ${accounts.length} accounts`);
 
   const client = new Client({ connectionString: url, ssl: sslForUrl(url) });

@@ -163,9 +163,9 @@ func (store) upsertOutlet(ctx context.Context, q Q, branchID string, in outletIn
 func (store) publicOutlets(ctx context.Context, q Q) ([]PublicOutlet, error) {
 	return many(ctx, q, func(r pgx.Row) (PublicOutlet, error) {
 		var o PublicOutlet
-		err := r.Scan(&o.BranchID, &o.Name, &o.Address, &o.City, &o.Phone, &o.OpenTime, &o.CloseTime, &o.SlotMinutes)
+		err := r.Scan(&o.BranchID, &o.Slug, &o.Name, &o.Address, &o.City, &o.Phone, &o.OpenTime, &o.CloseTime, &o.SlotMinutes)
 		return o, err
-	}, `SELECT b.id::text, b.name, b.address, b.city, b.phone,
+	}, `SELECT b.id::text, b.slug, b.name, b.address, b.city, b.phone,
 	        to_char(so.open_time, 'HH24:MI'), to_char(so.close_time, 'HH24:MI'), so.slot_minutes
 	   FROM spa.outlets so JOIN configuration.branches b ON b.id = so.branch_id
 	  WHERE so.is_active AND so.public_booking AND b.is_active
@@ -616,6 +616,7 @@ type bookingRow struct {
 	CustomerID    *string
 	CustomerName  string
 	CustomerPhone string
+	GenderPref    string
 	Status        string
 	PaymentStatus string
 	PosOrderID    *string
@@ -625,14 +626,14 @@ type bookingRow struct {
 
 func (store) bookingRow(ctx context.Context, q Q, id string, lock bool) (*bookingRow, error) {
 	sql := `SELECT id::text, booking_code, company_id::text, branch_id::text, warehouse_id::text, customer_id::text,
-	        customer_name, customer_phone, status, payment_status, pos_order_id::text, checked_out_at, scheduled_at
+	        customer_name, customer_phone, therapist_gender_pref, status, payment_status, pos_order_id::text, checked_out_at, scheduled_at
 	   FROM spa.bookings WHERE id = $1`
 	if lock {
 		sql += ` FOR UPDATE`
 	}
 	var b bookingRow
 	err := q.QueryRow(ctx, sql, id).Scan(&b.ID, &b.Code, &b.CompanyID, &b.BranchID, &b.WarehouseID, &b.CustomerID,
-		&b.CustomerName, &b.CustomerPhone, &b.Status, &b.PaymentStatus, &b.PosOrderID, &b.CheckedOutAt, &b.ScheduledAt)
+		&b.CustomerName, &b.CustomerPhone, &b.GenderPref, &b.Status, &b.PaymentStatus, &b.PosOrderID, &b.CheckedOutAt, &b.ScheduledAt)
 	return one(&b, err)
 }
 
@@ -983,6 +984,131 @@ func (store) openPublicBookings(ctx context.Context, q Q, phone string, now time
 	  WHERE source = 'public' AND customer_phone = $1 AND scheduled_at > $2 AND status IN ('unassigned', 'assigned')`,
 		phone, now).Scan(&n)
 	return n, err
+}
+
+// Unassigned bookings reserve therapist capacity before a receptionist assigns one.
+func (store) unassignedOverlaps(ctx context.Context, q Q, branchID string, start, end time.Time) (int, error) {
+	var n int
+	err := q.QueryRow(ctx, `SELECT count(*) FROM spa.booking_items i
+	  JOIN spa.bookings b ON b.id = i.booking_id
+	 WHERE b.branch_id = $1 AND i.status = 'unassigned'
+	   AND b.status NOT IN ('cancelled', 'expired')
+	   AND i.starts_at < $3 AND i.ends_at + make_interval(mins => i.buffer_min) > $2`,
+		branchID, start, end).Scan(&n)
+	return n, err
+}
+
+func (store) lockPublicBookingBranch(ctx context.Context, q Q, branchID string) error {
+	_, err := q.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext($1))`, "spa-public:"+branchID)
+	return err
+}
+
+func (store) publicToken(ctx context.Context, q Q, bookingID string) (string, error) {
+	var token string
+	err := q.QueryRow(ctx, `SELECT public_token::text FROM spa.bookings WHERE id = $1`, bookingID).Scan(&token)
+	return token, err
+}
+
+func (store) publicBookingID(ctx context.Context, q Q, token string) (string, error) {
+	var id string
+	err := q.QueryRow(ctx, `SELECT id::text FROM spa.bookings WHERE public_token = $1::uuid AND source = 'public'`, token).Scan(&id)
+	if database.IsNoRows(err) {
+		return "", httpx.NotFound("Booking tidak ditemukan")
+	}
+	return id, err
+}
+
+func (store) usePublicChangeGrant(ctx context.Context, q Q, bookingID, grantHash string) (bool, error) {
+	var id string
+	err := q.QueryRow(ctx, `UPDATE spa.public_booking_challenges SET grant_used_at = now()
+	 WHERE id = (SELECT id FROM spa.public_booking_challenges
+	              WHERE booking_id = $1 AND grant_hash = $2 AND grant_expires_at > now()
+	                AND grant_used_at IS NULL ORDER BY created_at DESC LIMIT 1)
+	 RETURNING id::text`, bookingID, grantHash).Scan(&id)
+	if database.IsNoRows(err) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func (store) releasePublicItemsForReschedule(ctx context.Context, q Q, bookingID string) error {
+	_, err := q.Exec(ctx, `UPDATE spa.booking_items
+	 SET status = 'cancelled', therapist_id = NULL, updated_at = now()
+	 WHERE booking_id = $1 AND status IN ('unassigned', 'assigned')`, bookingID)
+	return err
+}
+
+func (store) movePublicItem(ctx context.Context, q Q, itemID string, at time.Time, minutes int) error {
+	_, err := q.Exec(ctx, `UPDATE spa.booking_items
+	 SET starts_at = $2, ends_at = $3, status = 'unassigned', therapist_id = NULL, updated_at = now()
+	 WHERE id = $1`, itemID, at, at.Add(time.Duration(minutes)*time.Minute))
+	return err
+}
+
+func (store) setPublicBookingTime(ctx context.Context, q Q, bookingID string, at time.Time) error {
+	_, err := q.Exec(ctx, `UPDATE spa.bookings SET scheduled_at = $2, status = 'unassigned', updated_at = now() WHERE id = $1`, bookingID, at)
+	return err
+}
+
+func (store) publicBookingByToken(ctx context.Context, q Q, token string) (*PublicBookingResult, error) {
+	var bookingID string
+	var at time.Time
+	result := &PublicBookingResult{AccessToken: token, Items: []PublicItem{}}
+	err := q.QueryRow(ctx, `SELECT b.id::text, b.branch_id::text, b.booking_code, b.scheduled_at, br.name, br.phone,
+	    b.therapist_gender_pref, b.status, b.payment_status,
+	    (b.status IN ('unassigned', 'assigned') AND b.payment_status = 'unpaid'
+	      AND b.pos_order_id IS NULL AND b.scheduled_at >= now() + interval '24 hours')
+	  FROM spa.bookings b JOIN configuration.branches br ON br.id = b.branch_id
+	 WHERE b.public_token = $1::uuid AND b.source = 'public'`, token).Scan(
+		&bookingID, &result.BranchID, &result.BookingCode, &at, &result.BranchName, &result.BranchPhone, &result.GenderPref,
+		&result.Status, &result.PaymentStatus, &result.CanManage)
+	if database.IsNoRows(err) {
+		return nil, httpx.NotFound("Booking tidak ditemukan")
+	}
+	if err != nil {
+		return nil, err
+	}
+	result.ScheduledAt = jsTime(at)
+	items, err := many(ctx, q, func(r pgx.Row) (PublicItem, error) {
+		var item PublicItem
+		err := r.Scan(&item.VariantID, &item.TreatmentName, &item.VariantName, &item.DurationMin, &item.PriceIDR)
+		return item, err
+	}, `SELECT variant_id::text, treatment_name, variant_name, duration_min, price_idr
+	      FROM spa.booking_items WHERE booking_id = $1 ORDER BY sort_order`, bookingID)
+	if err != nil {
+		return nil, err
+	}
+	result.Items = items
+	for _, item := range items {
+		result.TotalIDR += item.PriceIDR
+	}
+	return result, nil
+}
+
+func (store) publicBookingFunnel(ctx context.Context, q Q, from, to time.Time) ([]BookingFunnelStage, error) {
+	return many(ctx, q, func(r pgx.Row) (BookingFunnelStage, error) {
+		var stage BookingFunnelStage
+		err := r.Scan(&stage.Step, &stage.Reached, &stage.Abandoned)
+		return stage, err
+	}, `WITH events AS (
+	   SELECT session_id, step, created_at FROM spa.public_booking_funnel_events
+	   WHERE created_at >= $1 AND created_at < $2
+	 ), progress AS (
+	   SELECT session_id, max(CASE step
+	     WHEN 'open' THEN 1 WHEN 'outlet' THEN 2 WHEN 'treatment' THEN 3
+	     WHEN 'time' THEN 4 WHEN 'contact' THEN 5 WHEN 'submit' THEN 6
+	     WHEN 'error' THEN 6 WHEN 'success' THEN 7 ELSE 0 END) AS furthest,
+	     max(created_at) AS last_at, bool_or(step = 'success') AS converted
+	   FROM events GROUP BY session_id
+	 ), stages(step, ordinal) AS (
+	   VALUES ('open', 1), ('outlet', 2), ('treatment', 3), ('time', 4),
+	          ('contact', 5), ('submit', 6), ('success', 7)
+	 )
+	 SELECT s.step, count(*) FILTER (WHERE p.furthest >= s.ordinal)::int,
+	   count(*) FILTER (WHERE p.furthest = s.ordinal AND NOT p.converted
+	                     AND p.last_at < now() - interval '30 minutes')::int
+	 FROM stages s LEFT JOIN progress p ON true
+	 GROUP BY s.step, s.ordinal ORDER BY s.ordinal`, from, to)
 }
 
 /* ── commissions ─────────────────────────────────────────────────────── */

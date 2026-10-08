@@ -2,7 +2,7 @@
 /**
  * Reset duplikat master Items (global template + copy company-scoped).
  *
- * Penyebab duplikat: seeder global (company_id NULL) + backfill ke company SULU.
+ * Penyebab duplikat: seeder global (company_id NULL) + backfill ke company MIZU.
  *
  * Usage:
  *   node database/seeders/items-reset-duplicates.js

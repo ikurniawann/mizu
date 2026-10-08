@@ -418,6 +418,7 @@ export interface MeResponse {
 
 export interface PublicOutlet {
   branch_id: string;
+  slug: string;
   name: string;
   address: string | null;
   city: string | null;
@@ -432,6 +433,10 @@ export interface PublicVariant {
   name: string;
   duration_min: number;
   price_idr: number;
+}
+
+export interface PublicSlot {
+  starts_at: string;
 }
 
 export interface PublicTreatment {
@@ -453,9 +458,16 @@ export interface PublicBookingInput {
 }
 
 export interface PublicBookingResult {
+  access_token: string;
+  branch_id: string;
   booking_code: string;
   scheduled_at: string;
   branch_name: string;
-  items: { treatment_name: string; variant_name: string; duration_min: number; price_idr: number }[];
+  branch_phone: string | null;
+  therapist_gender_pref: GenderPref;
+  status: BookingStatus;
+  payment_status: PaymentStatus;
+  can_manage: boolean;
+  items: { variant_id: string; treatment_name: string; variant_name: string; duration_min: number; price_idr: number }[];
   total_idr: number;
 }

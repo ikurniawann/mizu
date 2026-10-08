@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Seeder: Business hierarchy — Prologe → Sulu → Sulu Bandung
+ * Seeder: Business hierarchy — Prologe → Mizu → Mizu Bandung
  *
  * Usage:
  *   node database/seeders/business-hierarchy.js
@@ -75,7 +75,7 @@ async function main() {
 
     await client.query(
       `INSERT INTO configuration.companies (holding_id, name, code)
-       VALUES ($1, 'Sulu', $2)
+       VALUES ($1, 'Mizu', $2)
        ON CONFLICT (holding_id, code) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()`,
       [holdingId, COMPANY_CODE]
     );
@@ -90,8 +90,8 @@ async function main() {
       `SELECT id, code, name
        FROM configuration.branches
        WHERE company_id = $1
-         AND code IN ('SULU-BRAGA', 'SULU-DAGO')
-       ORDER BY CASE code WHEN 'SULU-BRAGA' THEN 0 WHEN 'SULU-DAGO' THEN 1 ELSE 2 END
+         AND code IN ('MIZU-BRAGA', 'MIZU-DAGO')
+       ORDER BY CASE code WHEN 'MIZU-BRAGA' THEN 0 WHEN 'MIZU-DAGO' THEN 1 ELSE 2 END
        LIMIT 1`,
       [companyId]
     );

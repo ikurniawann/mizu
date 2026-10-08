@@ -136,7 +136,7 @@ function SignatureTreatments({ outlet, treatments }: { outlet: PublicOutlet | nu
             );
           })}
         </div>
-        <BookingButton>Booking treatment</BookingButton>
+        <BookingButton outlet={outlet.slug}>Booking treatment</BookingButton>
       </Container>
     </Section>
   );
@@ -178,7 +178,7 @@ function Moments({ instagram, promoHref }: { instagram: string; promoHref: strin
               <p className="text-sm text-on-ink-muted">Setiap hari kerja di Mizu 1.0, Jl. Westhoff No. 1. Tanyakan detail promo ke tim outlet.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <BookingButton size="sm">Booking</BookingButton>
+              <BookingButton size="sm" outlet={PROMO_BRANCH_SLUG}>Booking</BookingButton>
               <Button asChild size="sm" variant="onInk">
                 <Link href={promoHref}>Lihat outlet</Link>
               </Button>
@@ -239,7 +239,7 @@ function Outlets({ branches }: { branches: BranchSummary[] }) {
                 {[b.address, b.city].filter(Boolean).join(", ") || "Alamat segera hadir"}
               </p>
               <div className="mt-auto flex flex-wrap gap-2 pt-3">
-                <BookingButton size="sm">Booking</BookingButton>
+                <BookingButton size="sm" outlet={b.slug}>Booking</BookingButton>
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/locations/${b.slug}`}>Lihat outlet</Link>
                 </Button>

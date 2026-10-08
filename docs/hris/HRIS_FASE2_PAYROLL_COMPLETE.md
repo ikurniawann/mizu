@@ -202,7 +202,7 @@ HRIS_FASE2_PAYROLL_COMPLETE.md (this file)
 
 ## 🚀 DEPLOYMENT
 
-**Production URL:** https://suluinwounderland.com/arkiv-os
+**Production URL:** https://mizuinwounderland.com/arkiv-os
 
 **Access:**
 - Login dengan account HRD/Finance

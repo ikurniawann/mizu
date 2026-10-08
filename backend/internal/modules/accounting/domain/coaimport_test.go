@@ -107,7 +107,7 @@ func TestParseCoaStandardSheet(t *testing.T) {
 	}
 }
 
-func TestParseCoaSuluSheet(t *testing.T) {
+func TestParseCoaMizuSheet(t *testing.T) {
 	data := book(t, xlsx.SheetSpec{Name: "Sheet1", Rows: [][]any{
 		{"8 0 00 000", "OTHER INCOME/EXPENSES"},
 		{"8 2 00 000", "", "NON OPERATING INCOME"},

@@ -14,7 +14,7 @@ const OPERATOR_ROLES = [
   "admin",
   "pos",
   "pos_supervisor",
-  "sulu_bandung_demo",
+  "mizu_bandung_demo",
 ];
 
 export default async function Page() {

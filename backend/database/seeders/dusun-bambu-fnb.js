@@ -22,7 +22,7 @@ const { loadEnv, ensureScope, outletMap } = require("./lib/dusun-bambu-scope");
 const DEMO_PREFIX = "PROD-DB";
 const SEED_REF = "seed_dusun_bambu";
 
-// Satuan wajib ada per perusahaan (unit Sulu tidak terlihat oleh tenant lain)
+// Satuan wajib ada per perusahaan (unit Mizu tidak terlihat oleh tenant lain)
 const UNITS = [
   ["GR", "Gram", "KECIL"], ["ML", "Mililiter", "KECIL"], ["PCS", "Pieces", "KECIL"],
   ["BUTIR", "Butir", "KECIL"], ["LBR", "Lembar", "KECIL"], ["PORSI", "Porsi", "KECIL"],

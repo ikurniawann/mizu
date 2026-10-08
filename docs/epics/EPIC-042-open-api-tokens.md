@@ -23,7 +23,7 @@ langsung — CRUD penuh — tanpa membajak sesi manusia.
   Ini wajib karena sebagian route lama tidak punya cek sesi sendiri dan
   mengandalkan gerbang cookie middleware. Route yang punya cek sesi sendiri
   me-resolve ulang user via fallback Bearer di `getSessionUserFromCookies`.
-- Host member (`member.suluinwounderland.com/api/*`) kini juga melewati
+- Host member (`member.mizuinwounderland.com/api/*`) kini juga melewati
   gerbang yang sama (sebelumnya /api lolos tanpa gerbang di host member).
 
 ### Scopes
@@ -67,7 +67,7 @@ di deploy baru dan pembuatan token gagal 503. Folder legacy itu sudah dihapus.
 
 1. Admin buat token di Settings → Integrasi (section Open API Tokens) (scope `*` untuk akses penuh),
    salin sekali.
-2. Konfigurasi agent: base URL `https://dashboard.suluinwounderland.com`,
+2. Konfigurasi agent: base URL `https://dashboard.mizuinwounderland.com`,
    header `Authorization: Bearer <token>`.
 3. Auto-discovery: ambil `GET /api/openapi.json` dengan token yang sama.
 

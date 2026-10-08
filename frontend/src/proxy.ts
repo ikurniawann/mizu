@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/auth/middleware";
 import { goBackendTarget } from "@/lib/backend-routes";
+import { legacyRedirectTarget } from "@/lib/legacy-host-redirect";
 
 /**
  * Serves the member portal at its own hostname.
  *
- *   member.suluinwounderland.com/            -> /member
- *   member.suluinwounderland.com/coins       -> /member/coins
+ *   member.mizuinwounderland.com/            -> /member
+ *   member.mizuinwounderland.com/coins       -> /member/coins
  *
  * The pages keep living under src/app/member; only the public URL changes.
- * dashboard.suluinwounderland.com is untouched and still serves /member too,
+ * dashboard.mizuinwounderland.com is untouched and still serves /member too,
  * so nothing breaks while the new hostname is being rolled out.
  *
  * Next.js 16 renamed this file convention from `middleware.ts` to `proxy.ts`
@@ -24,8 +25,8 @@ import { goBackendTarget } from "@/lib/backend-routes";
 /**
  * True when any DNS label of the host is exactly "member". Matching the label
  * rather than a "member." prefix is what makes this work across environments:
- * production is member.suluinwounderland.com (label first), while the dev
- * hostname is dev.sulu.member.wit.id (label in the middle). A prefix check
+ * production is member.mizuinwounderland.com (label first), while the dev
+ * hostname is dev.mizu.member.wit.id (label in the middle). A prefix check
  * silently served the dashboard on dev.
  */
 function isMemberHost(hostHeader: string): boolean {
@@ -34,6 +35,10 @@ function isMemberHost(hostHeader: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
+  if (request.method === "GET" || request.method === "HEAD") {
+    const target = legacyRedirectTarget(request.headers.get("host") ?? "", request.nextUrl, process.env.MIZU_LEGACY_HOST_REDIRECTS);
+    if (target) return NextResponse.redirect(target, 308);
+  }
   // Strangler migration: /api prefixes ported to the Go backend go there
   // first, on every host. Method, query, body and cookies travel with the
   // rewrite; the Go service applies the same auth gate as updateSession.

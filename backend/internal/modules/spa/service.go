@@ -2,6 +2,8 @@ package spa
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -1421,6 +1423,242 @@ func (s *Service) PublicTreatments(ctx context.Context, branchID string) ([]Publ
 	return s.st.publicTreatments(ctx, s.db, branchID)
 }
 
+// publicCapacity checks assigned work and reservations that have not yet been assigned.
+// The booking write repeats this check under an outlet lock because a displayed slot can age.
+func (s *Service) publicCapacity(ctx context.Context, q Q, branchID string, items []newItem, pref string) (bool, error) {
+	for _, item := range items {
+		interval := domain.ItemInterval(item.StartsAt, item.Variant.DurationMin, item.Variant.BufferMin)
+		eligible, err := s.st.eligibleTherapists(ctx, q, branchID, domain.WIBDate(item.StartsAt))
+		if err != nil {
+			return false, err
+		}
+		ids := make([]string, 0, len(eligible))
+		employees := make([]string, 0, len(eligible))
+		for _, therapist := range eligible {
+			if pref != "any" && (therapist.Gender == nil || *therapist.Gender != pref) {
+				continue
+			}
+			ids = append(ids, therapist.ID)
+			employees = append(employees, therapist.EmployeeID)
+		}
+		if len(ids) == 0 {
+			return false, nil
+		}
+		rosters, err := s.ports.People.Rosters(ctx, q, employees, domain.WIBDate(item.StartsAt))
+		if err != nil {
+			return false, err
+		}
+		conflicts, err := s.st.conflicts(ctx, q, ids, interval.Start, interval.End, "")
+		if err != nil {
+			return false, err
+		}
+		reserved, err := s.st.unassignedOverlaps(ctx, q, branchID, interval.Start, interval.End)
+		if err != nil {
+			return false, err
+		}
+		free := 0
+		for _, therapist := range eligible {
+			if pref != "any" && (therapist.Gender == nil || *therapist.Gender != pref) {
+				continue
+			}
+			roster := rosters[therapist.EmployeeID]
+			if !roster.OnLeave && !roster.DayOff && len(conflicts[therapist.ID]) == 0 {
+				free++
+			}
+		}
+		if free <= reserved {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// PublicSlots only returns times with capacity at the moment of the read.
+func (s *Service) PublicSlots(ctx context.Context, branchID, date string, variantIDs []string, pref string) ([]PublicSlot, error) {
+	outlet, err := s.publicOutlet(ctx, s.db, branchID)
+	if err != nil {
+		return nil, err
+	}
+	day, _, valid := domain.DayBounds(date)
+	if !valid {
+		return nil, httpx.BadRequest("Tanggal tidak valid")
+	}
+	open, openOK := domain.ClockMinutes(outlet.OpenTime)
+	closeAt, closeOK := domain.ClockMinutes(outlet.CloseTime)
+	if !openOK || !closeOK || outlet.SlotMinutes <= 0 {
+		return []PublicSlot{}, nil
+	}
+	reqs := make([]itemRequest, len(variantIDs))
+	for i, id := range variantIDs {
+		reqs[i] = itemRequest{VariantID: id}
+	}
+	baseItems, err := s.planItems(ctx, s.db, branchID, day, reqs)
+	if err != nil {
+		return nil, err
+	}
+	duration := 0
+	for _, item := range baseItems {
+		duration += item.Variant.DurationMin
+	}
+	now := s.clock()
+	slots := []PublicSlot{}
+	for minute := open; minute+duration <= closeAt; minute += outlet.SlotMinutes {
+		at := day.Add(time.Duration(minute) * time.Minute)
+		if !at.After(now) || at.After(now.AddDate(0, 0, 30)) {
+			continue
+		}
+		items := make([]newItem, len(baseItems))
+		for i, item := range baseItems {
+			items[i] = item
+			items[i].StartsAt = item.StartsAt.Add(at.Sub(day))
+		}
+		available, err := s.publicCapacity(ctx, s.db, branchID, items, pref)
+		if err != nil {
+			return nil, err
+		}
+		if available {
+			slots = append(slots, PublicSlot{StartsAt: jsTime(at)})
+		}
+	}
+	return slots, nil
+}
+
+func (s *Service) PublicBooking(ctx context.Context, token string) (*PublicBookingResult, error) {
+	return s.st.publicBookingByToken(ctx, s.db, token)
+}
+
+func (s *Service) BookingFunnel(ctx context.Context, from, to string) ([]BookingFunnelStage, error) {
+	start, end, ok := domain.RangeBounds(from, to)
+	if !ok {
+		return nil, httpx.BadRequest("Periode tidak valid")
+	}
+	return s.st.publicBookingFunnel(ctx, s.db, start, end)
+}
+
+// PublicChangeBooking applies one verified cancellation or time change.
+// The grant is scoped to one booking, lasts 15 minutes and is consumed on success.
+func (s *Service) PublicChangeBooking(ctx context.Context, token, grant, action string, newAt time.Time) (*PublicBookingResult, error) {
+	if action != "cancel" && action != "reschedule" {
+		return nil, httpx.BadRequest("Aksi tidak valid")
+	}
+	now := s.clock()
+	if action == "reschedule" && (newAt.Before(now.Add(24*time.Hour)) || newAt.After(now.AddDate(0, 0, 30))) {
+		return nil, httpx.BadRequest("Pilih jam antara 24 jam dan 30 hari dari sekarang")
+	}
+	digest := sha256.Sum256([]byte(grant))
+	grantHash := hex.EncodeToString(digest[:])
+	err := s.tx(ctx, func(q Q) error {
+		id, err := s.st.publicBookingID(ctx, q, token)
+		if err != nil {
+			return err
+		}
+		b, err := s.st.bookingRow(ctx, q, id, true)
+		if err != nil {
+			return err
+		}
+		if b == nil {
+			return httpx.NotFound("Booking tidak ditemukan")
+		}
+		if b.ScheduledAt.Sub(now) < 24*time.Hour || (b.Status != domain.BookingUnassigned && b.Status != domain.BookingAssigned) || b.PaymentStatus != domain.PaymentUnpaid || b.PosOrderID != nil {
+			return httpx.Conflict("Perubahan mandiri hanya tersedia sampai 24 jam sebelum kunjungan untuk booking yang belum dibayar")
+		}
+		if err := s.st.lockPublicBookingBranch(ctx, q, b.BranchID); err != nil {
+			return err
+		}
+		used, err := s.st.usePublicChangeGrant(ctx, q, id, grantHash)
+		if err != nil {
+			return err
+		}
+		if !used {
+			return httpx.Forbidden("Verifikasi kedaluwarsa. Minta kode baru")
+		}
+		items, err := s.st.itemRows(ctx, q, id, true)
+		if err != nil {
+			return err
+		}
+		activeItems := make([]itemRow, 0, len(items))
+		for _, item := range items {
+			if item.Status != domain.ItemCancelled {
+				activeItems = append(activeItems, item)
+			}
+		}
+		items = activeItems
+		if len(items) == 0 {
+			return httpx.Conflict("Booking tidak memiliki treatment aktif")
+		}
+		statuses := make([]string, len(items))
+		for i, item := range items {
+			statuses[i] = item.Status
+		}
+		if err := domain.CanCancelBooking(b.Status, false, statuses); err != nil {
+			return ruleErr(err)
+		}
+		if action == "cancel" {
+			if err := s.st.cancelBooking(ctx, q, id, "Dibatalkan pelanggan melalui tautan booking", now); err != nil {
+				return err
+			}
+			return s.st.event(ctx, q, id, nil, "cancel", &b.Status, ptr(domain.BookingCancelled), "", "Dibatalkan pelanggan setelah verifikasi nomor HP")
+		}
+		o, err := s.publicOutlet(ctx, q, b.BranchID)
+		if err != nil {
+			return err
+		}
+		total := 0
+		for _, item := range items {
+			total += item.DurationMin
+		}
+		if err := domain.WithinHours(newAt, total, o.OpenTime, o.CloseTime); err != nil {
+			return ruleErr(err)
+		}
+		open, ok := domain.ClockMinutes(o.OpenTime)
+		if !ok || o.SlotMinutes <= 0 || (newAt.In(domain.WIB).Hour()*60+newAt.In(domain.WIB).Minute()-open)%o.SlotMinutes != 0 {
+			return httpx.BadRequest("Pilih jam dari daftar yang tersedia")
+		}
+		if err := s.st.releasePublicItemsForReschedule(ctx, q, id); err != nil {
+			return err
+		}
+		ids := make([]string, len(items))
+		for i, item := range items {
+			ids[i] = item.VariantID
+		}
+		variants, err := s.st.variants(ctx, q, ids, b.BranchID)
+		if err != nil {
+			return err
+		}
+		planned := make([]newItem, len(items))
+		cursor := newAt
+		for i, item := range items {
+			variant, exists := variants[item.VariantID]
+			if !exists {
+				return httpx.Conflict("Treatment booking tidak ditemukan")
+			}
+			variant.DurationMin, variant.BufferMin = item.DurationMin, item.BufferMin
+			planned[i] = newItem{Variant: variant, StartsAt: cursor, Status: domain.ItemUnassigned, SortOrder: i}
+			cursor = cursor.Add(time.Duration(item.DurationMin) * time.Minute)
+		}
+		available, err := s.publicCapacity(ctx, q, b.BranchID, planned, b.GenderPref)
+		if err != nil {
+			return err
+		}
+		if !available {
+			return httpx.Conflict("Jam ini sudah penuh. Pilih jam lain")
+		}
+		for i, item := range items {
+			if err := s.st.movePublicItem(ctx, q, item.ID, planned[i].StartsAt, item.DurationMin); err != nil {
+				return err
+			}
+		}
+		if err := s.st.setPublicBookingTime(ctx, q, id, newAt); err != nil {
+			return err
+		}
+		return s.st.event(ctx, q, id, nil, "reschedule", &b.Status, ptr(domain.BookingUnassigned), "", "Diubah pelanggan setelah verifikasi nomor HP")
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.PublicBooking(ctx, token)
+}
+
 type publicBookingInput struct {
 	BranchID            string
 	ScheduledAt         time.Time
@@ -1450,6 +1688,9 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 		if err != nil {
 			return err
 		}
+		if err := s.st.lockPublicBookingBranch(ctx, q, in.BranchID); err != nil {
+			return err
+		}
 		open, err := s.st.openPublicBookings(ctx, q, phone, now)
 		if err != nil {
 			return err
@@ -1472,6 +1713,13 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 		if err := domain.WithinHours(in.ScheduledAt, total, o.OpenTime, o.CloseTime); err != nil {
 			return ruleErr(err)
 		}
+		available, err := s.publicCapacity(ctx, q, o.BranchID, items, in.TherapistGenderPref)
+		if err != nil {
+			return err
+		}
+		if !available {
+			return httpx.Conflict("Jam ini sudah penuh. Silakan pilih jam lain atau hubungi outlet.")
+		}
 		customerID, err := s.ports.Customers.FindOrCreate(ctx, q, in.CustomerName, phone)
 		if err != nil {
 			return err
@@ -1488,14 +1736,22 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 		if err := s.st.event(ctx, q, id, nil, "create", nil, ptr(domain.BookingUnassigned), "", "Booking online"); err != nil {
 			return err
 		}
-		result = &PublicBookingResult{BookingCode: code, ScheduledAt: jsTime(in.ScheduledAt), BranchName: o.BranchName, Items: []PublicItem{}}
+		result = &PublicBookingResult{BookingCode: code, BranchID: o.BranchID, ScheduledAt: jsTime(in.ScheduledAt), BranchName: o.BranchName, Items: []PublicItem{}}
+		result.Status = domain.BookingUnassigned
+		result.PaymentStatus = domain.PaymentUnpaid
+		result.GenderPref = in.TherapistGenderPref
+		result.CanManage = in.ScheduledAt.Sub(now) >= 24*time.Hour
+		result.AccessToken, err = s.st.publicToken(ctx, q, id)
+		if err != nil {
+			return err
+		}
 		for i := range items {
 			items[i].BookingID = id
 			if _, err := s.st.insertItem(ctx, q, items[i]); err != nil {
 				return err
 			}
 			v := items[i].Variant
-			result.Items = append(result.Items, PublicItem{TreatmentName: v.TreatmentName, VariantName: v.Name,
+			result.Items = append(result.Items, PublicItem{VariantID: v.ID, TreatmentName: v.TreatmentName, VariantName: v.Name,
 				DurationMin: v.DurationMin, PriceIDR: v.Price})
 			result.TotalIDR += v.Price
 		}

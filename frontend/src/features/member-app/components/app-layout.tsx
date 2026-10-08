@@ -15,7 +15,7 @@ import "../member-app.css";
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/classes", label: "Classes", icon: CalendarDays },
+  { to: "/bookings", label: "Booking", icon: CalendarDays },
   { to: "/qr", label: "QR", icon: QrCode, emphasized: true },
   { to: "/train", label: "Train", icon: Activity },
   { to: "/profile", label: "Profile", icon: User },

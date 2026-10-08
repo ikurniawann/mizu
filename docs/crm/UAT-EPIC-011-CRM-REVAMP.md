@@ -1,7 +1,7 @@
 # Skenario UAT & QA Manual — EPIC-011 CRM Revamp
 
 Status epic: `ready-for-qa` · Lingkungan: **DEV**
-App utama: `https://sulu.within.ventures` · Portal member: `https://member.within.ventures`
+App utama: `https://mizu.within.ventures` · Portal member: `https://member.within.ventures`
 
 ## Prasyarat
 

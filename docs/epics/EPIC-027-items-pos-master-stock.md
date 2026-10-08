@@ -6,7 +6,7 @@ retries: 0
 
 ## Goal
 
-Venue **SULU-Dago** siap jual di POS tanpa “barang hantu”: master raw
+Venue **MIZU-Dago** siap jual di POS tanpa “barang hantu”: master raw
 material / product / BOM bersih, opening stock + opname akurat, katalog
 POS = mirror `item.products` (satu sumber kebenaran), dan penjualan
 diblok bila resep atau kebijakan stok tidak terpenuhi.
@@ -36,8 +36,8 @@ Hasil scoping breakdown:
   purchasing, approval, production) di `database/seeders/iam-menus.sql`.
 - Route kanonik: `RM_ROUTES` / `PRODUCT_ROUTES`
   (`src/modules/purchasing/constants/item-routes.ts`).
-- Import SULU: `docs/data/generate_sulu_import_excels.py` →
-  `docs/data/sulu-import/` (RM, products, BOM).
+- Import MIZU: `docs/data/generate_mizu_import_excels.py` →
+  `docs/data/mizu-import/` (RM, products, BOM).
 - Bridge sudah ada: `pos.pos_products.source_product_id` +
   `src/lib/pos/purchasing-sync.ts` +
   `POST /api/pos/products/sync-purchasing`.
@@ -56,7 +56,7 @@ Hasil scoping breakdown:
 
 | Task group | Scope (PR-sized) |
 |---|---|
-| **A1 Seed & import SULU-Dago** | Warehouse/stall codes (WH-01, STALL-*), generate + jalankan import RM + products + BOM; validasi jumlah baris & mapping stall |
+| **A1 Seed & import MIZU-Dago** | Warehouse/stall codes (WH-01, STALL-*), generate + jalankan import RM + products + BOM; validasi jumlah baris & mapping stall |
 | **A2 Opening stock + opname** | Opening stock per gudang; sesi opname RM (produk bila perlu); selisih → adjustment ter-audit |
 | **A3 Inventory Product gap** | Tutup placeholder Product Stock Transfer; samakan UX stock / adjustment / opname Product dengan pola RM |
 | **A4 Master hygiene** | Laporan orphan: unit/kategori kosong, produk tanpa satuan, RM tanpa `stok_minimum`; perbaikan batch |
@@ -131,7 +131,7 @@ A1 → A2 ─┬→ A4
 
 ### Data & stok (wajib go-live)
 
-- [ ] Import SULU-Dago: RM, products, BOM masuk dengan stall/warehouse
+- [ ] Import MIZU-Dago: RM, products, BOM masuk dengan stall/warehouse
       terpetakan; laporan baris gagal kosong atau terdokumentasi.
 - [ ] Opening stock + minimal satu siklus opname RM selesai; qty on-hand
       cocok dengan hasil opname untuk sampel gudang utama (WH-01).
@@ -166,7 +166,7 @@ A1 → A2 ─┬→ A4
   bergerak; sync-purchasing idempotent.
 - **UI:** kasir menampilkan lock/badge; POS Products tidak punya form
   master penuh setelah C1.
-- **UAT venue:** checklist D3 di branch SULU-DAGO (dev dulu, lalu staging
+- **UAT venue:** checklist D3 di branch MIZU-DAGO (dev dulu, lalu staging
   bila ada).
 
 ## Catatan Keterkaitan
@@ -176,8 +176,8 @@ A1 → A2 ─┬→ A4
   harus mempertahankan field POS-only (station, min_xp, dll.).
 - Purchasing admin access (`admin` di API purchasing) — prasyarat operasional
   import/seed, bukan deliverable utama epic ini.
-- Generator import: `docs/data/generate_sulu_import_excels.py` (nama sumber
-  masih “SULU Bandung”; target branch operasional = SULU-DAGO).
+- Generator import: `docs/data/generate_mizu_import_excels.py` (nama sumber
+  masih “MIZU Bandung”; target branch operasional = MIZU-DAGO).
 
 ## Automation Log
 

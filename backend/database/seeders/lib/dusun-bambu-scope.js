@@ -1,7 +1,7 @@
 /**
  * Scope tenant Dusun Bambu (owner 2026-09-06). Dipakai ketiga seeder Dusun
  * Bambu supaya kode perusahaan/cabang/gudang konsisten dan tidak bercampur
- * dengan data Sulu in Wounderland di database lokal yang sama.
+ * dengan data Mizu in Wounderland di database lokal yang sama.
  */
 const fs = require("fs");
 const path = require("path");

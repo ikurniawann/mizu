@@ -207,7 +207,7 @@ export function ReceiptSettingsCard() {
                 rows={3}
                 className={textareaClass}
                 placeholder={
-                  "Terima kasih atas kunjungan Anda\nWiFi: SULU-GUEST"
+                  "Terima kasih atas kunjungan Anda\nWiFi: MIZU-GUEST"
                 }
                 value={footerText}
                 onChange={(e) => edit({ footerText: e.target.value })}

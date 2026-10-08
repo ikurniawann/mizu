@@ -29,7 +29,7 @@ import (
 type fakeCompany struct{}
 
 func (fakeCompany) GetMany(_ context.Context, _ database.Querier, keys []string) (map[string]*string, error) {
-	values := map[string]string{"company_legal_name": "PT Sulu Nusantara", "company_city": "Bandung",
+	values := map[string]string{"company_legal_name": "PT Mizu Nusantara", "company_city": "Bandung",
 		"company_signer_name": "Ilham Kurniawan", "company_signer_title": "Direktur"}
 	out := map[string]*string{}
 	for _, k := range keys {
@@ -43,7 +43,7 @@ func (fakeCompany) GetMany(_ context.Context, _ database.Querier, keys []string)
 }
 
 func (fakeCompany) FirstCompanyName(context.Context, database.Querier) (*string, error) {
-	name := "Sulu"
+	name := "Mizu"
 	return &name, nil
 }
 
@@ -235,7 +235,7 @@ func TestAttendanceExport(t *testing.T) {
 		t.Fatal(err)
 	}
 	text, _ := json.Marshal(matrix)
-	for _, want := range []string{"Sulu — Rekap Absensi", "Periode: 1–30 Juni 2099", "Karyawan: Nanda Ekspor",
+	for _, want := range []string{"Mizu — Rekap Absensi", "Periode: 1–30 Juni 2099", "Karyawan: Nanda Ekspor",
 		"Dicetak: 5 Okt 2026, 10.00 WIB", "Sen, 01 Jun 2099", "Sel, 02 Jun 2099", "08.58", "Hadir"} {
 		if !strings.Contains(string(text), want) {
 			t.Fatalf("xlsx misses %q: %s", want, text)
@@ -251,7 +251,7 @@ func TestAttendanceExport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Sulu — Rekap Absensi", "Nanda Ekspor", "Hadir +5m", "foto tidak dapat", "kata \"kutip\""} {
+	for _, want := range []string{"Mizu — Rekap Absensi", "Nanda Ekspor", "Hadir +5m", "foto tidak dapat", "kata \"kutip\""} {
 		if !strings.Contains(pdfText, want) {
 			t.Fatalf("pdf misses %q: %s", want, pdfText)
 		}
@@ -348,7 +348,7 @@ func TestContractDocuments(t *testing.T) {
 	number := "GO-" + testutil.RandomHex(3) + "/PKWT/VII/2026"
 	contract := h.scalar(`INSERT INTO hris.employment_contracts (employee_id, contract_number, contract_type, start_date, end_date,
 		position_title, department_name, work_location, base_salary, signed_at)
-		VALUES ($1, $2, 'pkwt', '2026-08-01', '2027-08-01', 'Kasir', 'Operasional', 'Outlet Sulu Bandung', 4500000, '2026-07-20')
+		VALUES ($1, $2, 'pkwt', '2026-08-01', '2027-08-01', 'Kasir', 'Operasional', 'Outlet Mizu Bandung', 4500000, '2026-07-20')
 		RETURNING id::text`, worker, number)
 	base := "/api/hris/contracts/" + contract
 

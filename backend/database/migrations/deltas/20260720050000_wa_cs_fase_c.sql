@@ -22,7 +22,7 @@ CREATE TRIGGER wa_reply_templates_set_updated_at
 INSERT INTO crm.wa_reply_templates (title, body)
 SELECT * FROM (VALUES
   ('Salam pembuka',
-   'Halo! Terima kasih sudah menghubungi Sulu Wonderland. Ada yang bisa kami bantu?'),
+   'Halo! Terima kasih sudah menghubungi Mizu Wonderland. Ada yang bisa kami bantu?'),
   ('Minta detail komplain',
    'Mohon maaf atas ketidaknyamanannya. Boleh diinformasikan nomor pesanan/tanggal kunjungan dan detail kendalanya agar bisa segera kami cek?'),
   ('Penutup',

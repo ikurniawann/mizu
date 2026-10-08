@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 /**
- * Seeder TENANT SULU-APPAREL — bagian 1: perusahaan, cabang, gudang produksi,
+ * Seeder TENANT MIZU-APPAREL — bagian 1: perusahaan, cabang, gudang produksi,
  * outlet toko, departemen HRIS, dan user demo (data lokal, owner 2026-09-09,
  * EPIC-047 Fase 0).
  *
  * Lini bisnis baru — produksi kaos, kemeja, celana, sandal, dan sepatu — di
- * bawah holding Prologe, terpisah dari company SULU (F&B) dan DUSUN-BAMBU.
+ * bawah holding Prologe, terpisah dari company MIZU (F&B) dan DUSUN-BAMBU.
  * Tidak ada kode aplikasi yang berubah di fase ini (seeder-only).
  *
  * Mengisi (idempoten, satu transaksi, HANYA database lokal):
- *   - configuration.companies/branches/warehouses : Sulu Apparel → Workshop →
+ *   - configuration.companies/branches/warehouses : Mizu Apparel → Workshop →
  *     gudang produksi MAIN + outlet Workshop Store
  *   - hris.departments                            : Produksi & Jahit, Gudang & QC, Toko
- *   - auth.users + configuration.users            : demo@suluapparel.id (role admin, scope cabang)
+ *   - auth.users + configuration.users            : demo@mizuapparel.id (role admin, scope cabang)
  *                                                   apparel@arkivworld.com (role admin, scope COMPANY —
- *                                                   "super admin" Sulu Apparel: semua menu admin,
+ *                                                   "super admin" Mizu Apparel: semua menu admin,
  *                                                   semua cabang apparel, tidak melihat company lain)
  *
  * Master item/produk dibuat seeder terpisah (apparel-items.js).
@@ -33,14 +33,14 @@ const {
 } = require("./lib/apparel-scope");
 const { seedPassword, passwordSource } = require("./lib/seed-password");
 
-const DEMO_EMAIL = process.env.SULU_APPAREL_EMAIL || "demo@suluapparel.id";
-// Akun pemilik Sulu Apparel: role `admin` (222/223 menu — hanya tanpa
+const DEMO_EMAIL = process.env.MIZU_APPAREL_EMAIL || "demo@mizuapparel.id";
+// Akun pemilik Mizu Apparel: role `admin` (222/223 menu — hanya tanpa
 // Notifikasi WA milik owner holding), business_scope `company` sehingga
-// melihat seluruh cabang SULU-APPAREL tetapi bukan SULU (F&B) / DUSUN-BAMBU.
+// melihat seluruh cabang MIZU-APPAREL tetapi bukan MIZU (F&B) / DUSUN-BAMBU.
 // Sengaja BUKAN role `super_admin`: role itu selalu unscoped (lihat
 // src/lib/api/scope.ts → isUnscoped). Password dari env atau acak
 // (lib/seed-password.js); hanya berlaku di database lokal.
-const OWNER_EMAIL = process.env.SULU_APPAREL_OWNER_EMAIL || "apparel@arkivworld.com";
+const OWNER_EMAIL = process.env.MIZU_APPAREL_OWNER_EMAIL || "apparel@arkivworld.com";
 
 // ── Departemen HRIS (kode harus unik global — lihat hris.departments) ──────
 const DEPARTMENTS = [
@@ -107,7 +107,7 @@ function seedDemoUser(c, scope, password) {
   return upsertAdminUser(c, scope, {
     email: DEMO_EMAIL,
     password,
-    fullName: "Demo Sulu Apparel",
+    fullName: "Demo Mizu Apparel",
     businessScope: "branch",
     branchId: scope.branch_id,
   });
@@ -117,7 +117,7 @@ function seedOwnerUser(c, scope, password) {
   return upsertAdminUser(c, scope, {
     email: OWNER_EMAIL,
     password,
-    fullName: "Admin Sulu Apparel",
+    fullName: "Admin Mizu Apparel",
     businessScope: "company",
     branchId: scope.branch_id, // cabang default; scope company tetap melihat semua cabang
   });
@@ -132,8 +132,8 @@ async function main() {
     process.exit(1);
   }
 
-  const demoPassword = seedPassword("SULU_APPAREL_PASSWORD");
-  const ownerPassword = seedPassword("SULU_APPAREL_OWNER_PASSWORD");
+  const demoPassword = seedPassword("MIZU_APPAREL_PASSWORD");
+  const ownerPassword = seedPassword("MIZU_APPAREL_OWNER_PASSWORD");
 
   const c = new Client({ connectionString: url, ssl: sslForUrl(url) });
   await c.connect();
@@ -147,9 +147,9 @@ async function main() {
     console.log(`✓ Departemen: ${DEPARTMENTS.length} dicek, ${deptAdded} baru ditambahkan`);
 
     const demoUser = await seedDemoUser(c, scope, demoPassword);
-    console.log(`✓ User demo: ${DEMO_EMAIL}, password ${passwordSource("SULU_APPAREL_PASSWORD")} (role admin, scope cabang ${BRANCH_NAME})`);
+    console.log(`✓ User demo: ${DEMO_EMAIL}, password ${passwordSource("MIZU_APPAREL_PASSWORD")} (role admin, scope cabang ${BRANCH_NAME})`);
     const ownerUser = await seedOwnerUser(c, scope, ownerPassword);
-    console.log(`✓ User pemilik: ${OWNER_EMAIL}, password ${passwordSource("SULU_APPAREL_OWNER_PASSWORD")} (role admin, scope company ${COMPANY_CODE}) id ${ownerUser}`);
+    console.log(`✓ User pemilik: ${OWNER_EMAIL}, password ${passwordSource("MIZU_APPAREL_OWNER_PASSWORD")} (role admin, scope company ${COMPANY_CODE}) id ${ownerUser}`);
 
     await c.query("COMMIT");
     console.log(`\nSelesai bagian 1. User demo id ${demoUser}.`);

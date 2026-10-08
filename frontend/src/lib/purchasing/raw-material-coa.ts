@@ -1,6 +1,6 @@
 /**
- * Mapping kategori bahan baku → default Chart of Accounts (SULU).
- * Sumber kategori Market List / Inv. Storage di docs/data/SULU - COA .xlsx
+ * Mapping kategori bahan baku → default Chart of Accounts (MIZU).
+ * Sumber kategori Market List / Inv. Storage di docs/data/MIZU - COA .xlsx
  * dan sheet Market List Menu Matrix.
  *
  * Opsi A: kategori mengisi default `coa_asset` (akun inventori).

@@ -1,6 +1,6 @@
 /**
  * Nama merek instance (owner 2026-09-06). Satu basis kode dipakai beberapa
- * perusahaan (NüHabit, Sulu in Wounderland, …) lewat deployment
+ * perusahaan (NüHabit, Mizu in Wounderland, …) lewat deployment
  * terpisah, jadi nama merek TIDAK boleh ditulis langsung di komponen/dokumen.
  *
  * Sumber (paling spesifik dulu): nama perusahaan di DB (lihat

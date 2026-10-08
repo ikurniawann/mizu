@@ -37,8 +37,8 @@ describe("isSecureRequest", () => {
 
   it("nama domain tanpa header proxy tetap dianggap HTTPS", () => {
     // Tidak ada 80/443 terbuka di server; domain hanya terjangkau lewat tunnel.
-    expect(isSecureRequest(req({ host: "dashboard.suluinwounderland.com" }))).toBe(true);
-    expect(isSecureRequest(req({ host: "member.suluinwounderland.com" }))).toBe(true);
+    expect(isSecureRequest(req({ host: "dashboard.mizuinwounderland.com" }))).toBe(true);
+    expect(isSecureRequest(req({ host: "member.mizuinwounderland.com" }))).toBe(true);
   });
 
   it("XFP https menang; XFP http tidak menurunkan host domain", () => {
@@ -49,7 +49,7 @@ describe("isSecureRequest", () => {
     // itu tidak boleh menurunkan host domain yang jelas lewat tunnel TLS.
     expect(
       isSecureRequest(
-        req({ host: "dashboard.suluinwounderland.com", "x-forwarded-proto": "http" })
+        req({ host: "dashboard.mizuinwounderland.com", "x-forwarded-proto": "http" })
       )
     ).toBe(true);
   });

@@ -44,7 +44,7 @@ SELECT * FROM (VALUES
    'Membantu rekan, komunikasi baik antar stall/departemen.',
    'Sulit bekerja sama', 'Kooperatif dalam tim', 'Perekat tim, membantu lintas departemen'),
   ('Pelayanan', 'Orientasi Pelayanan',
-   'Ramah dan sigap terhadap tamu, menjaga standar pengalaman Sulu.',
+   'Ramah dan sigap terhadap tamu, menjaga standar pengalaman Mizu.',
    'Sering dikomplain tamu', 'Pelayanan standar, jarang dikomplain', 'Dipuji tamu, jadi contoh pelayanan'),
   ('Integritas', 'Integritas & Kejujuran',
    'Jujur menangani uang/stok, transparan dalam laporan.',

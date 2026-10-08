@@ -1,6 +1,6 @@
 /**
  * Sample rows aligned with items-units + items-raw-material-categories seeders.
- * Codes match npm run db:seed:items-* defaults for Sulu Bandung scope.
+ * Codes match npm run db:seed:items-* defaults for Mizu Bandung scope.
  */
 export const RAW_MATERIAL_IMPORT_SAMPLE_ROWS: Array<Record<string, string>> = [
   {

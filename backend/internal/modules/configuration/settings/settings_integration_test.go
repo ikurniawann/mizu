@@ -161,10 +161,10 @@ func TestCompanyProfileSalesTargetStaticQris(t *testing.T) {
 		`{"success":false,"error":"Validation failed","details":[{"code":"invalid_type","path":["legal_name"],"message":"Invalid input: expected string, received number"},{"code":"too_big","path":["city"],"message":"Too big: expected string to have <=500 characters"}]}`)
 	e.setting("company_city", "Bandung")
 	expect(t, e.do(&admin, "PUT", "/api/settings/company-profile",
-		map[string]any{"legal_name": "  PT Sulu  ", "address": "", "signer_name": "   ", "signer_title": nil}), 200,
+		map[string]any{"legal_name": "  PT Mizu  ", "address": "", "signer_name": "   ", "signer_title": nil}), 200,
 		`{"message":"Profil perusahaan tersimpan"}`)
 	expect(t, e.do(&admin, "GET", "/api/settings/company-profile", nil), 200,
-		`{"data":{"legal_name":"PT Sulu","address":null,"city":"Bandung","signer_name":"","signer_title":null}}`)
+		`{"data":{"legal_name":"PT Mizu","address":null,"city":"Bandung","signer_name":"","signer_title":null}}`)
 
 	expect(t, e.do(&admin, "GET", "/api/settings/sales-target", nil), 200, `{"data":{"config":{"harianRp":0,"bulananRp":0}}}`)
 	expect(t, e.do(&admin, "PUT", "/api/settings/sales-target", map[string]any{"harianRp": "abc"}), 400,

@@ -101,7 +101,7 @@ export async function GET() {
       description:
         "Seluruh endpoint /api/* Mizu OS. Autentikasi: header 'Authorization: Bearer nh_...' (Open API token, dikelola admin di dashboard; token lama 'arkiv_...' tetap diterima sampai dicabut) atau cookie sesi 'nuhabit_session'. Webhook keluar dari workflow CRM ditandatangani HMAC-SHA256 hex di header 'X-NuHabit-Signature' (header lama 'X-BCDCoffee-Signature' masih dikirim dengan nilai yang sama). Scope token: '*' atau '<modul>:read|write' (modul: pos, member, hris, inventory, crm, config, reports, other). Method GET=read, selainnya write.",
     },
-    servers: [{ url: "https://dashboard.suluinwounderland.com" }],
+    servers: [{ url: "https://dashboard.mizuinwounderland.com" }],
     components: {
       securitySchemes: {
         bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "nh_<hex>" },

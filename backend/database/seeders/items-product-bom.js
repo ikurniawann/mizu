@@ -3,10 +3,10 @@
  * Seeder: demo produk BOM + sync ke pos.pos_products.
  *
  * - Upsert 5 menu demo (kode MENU-*) ke item.products (butuh warehouse_id)
- * - Replace manufacturing.bom_items dari bahan SULU yang sudah ada di DB
+ * - Replace manufacturing.bom_items dari bahan MIZU yang sudah ada di DB
  * - Upsert pos.pos_products by SKU PUR-{kode}
  *
- * Idempotent. Scope: PROLOGE / SULU / SULU-DAGO.
+ * Idempotent. Scope: PROLOGE / MIZU / MIZU-DAGO.
  *
  * Usage:
  *   node database/seeders/items-product-bom.js
@@ -42,7 +42,7 @@ function loadEnv() {
 }
 
 /**
- * Menu demo + BOM dari bahan yang sudah ada di DB SULU.
+ * Menu demo + BOM dari bahan yang sudah ada di DB MIZU.
  * components: [material_kode, qty, unit_kode]
  */
 const DEMO_MENUS = [
@@ -117,7 +117,7 @@ const DEMO_MENUS = [
     pos_category: "Minuman",
     stall_code: "STALL-05",
     components: [
-      ["BB-KERING-011", 18, "GR"], // Matcha Powder (proxy biji kopi di data SULU)
+      ["BB-KERING-011", 18, "GR"], // Matcha Powder (proxy biji kopi di data MIZU)
       ["BB-DAIRY-003", 0.15, "L"], // Fresh Milk white
       ["BB-BUMBU-005", 10, "GR"], // Gula Putih
     ],
@@ -330,7 +330,7 @@ async function main() {
     const missingMaterials = neededMaterials.filter((k) => !materialMap.has(k));
     if (missingMaterials.length) {
       throw new Error(
-        `Bahan baku SULU belum ada: ${missingMaterials.join(", ")}`
+        `Bahan baku MIZU belum ada: ${missingMaterials.join(", ")}`
       );
     }
 
