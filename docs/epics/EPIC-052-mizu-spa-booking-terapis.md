@@ -266,4 +266,11 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   `settings/domain/appearance.go`; judul memakai Playfair Display; logo tumpukan batu + wordmark MIZU dihasilkan oleh
   `frontend/scripts/generate-brand-assets.mjs` (wordmark 640×165, lockup 1200×165, mark 210×210, ikon app, pola, wallpaper).
   Default venue CRM di mizu-db diarahkan ke Mizu Spa / Mizu Dago. Deploy image `mizu:brand-1`, `mizu-api:brand-1`.
+- 2026-10-08 — Outlet demo disesuaikan ke outlet asli (bio Instagram): Mizu 1.0 (Jl. Westhoff No. 1, `MZ-WESTHOFF`) dan
+  Mizu Signature (Jl. Riau No. 142, `MZ-RIAU`, harga & komisi premium); Dago/Setiabudi + login demo lamanya dinonaktifkan.
+  Jam buka 10:00–22:00 masih asumsi (belum dikonfirmasi pemilik); telepon & koordinat sengaja kosong.
+- 2026-10-08 — Website publik diubah dari gym ke spa: konten default Go + TS, halaman `/treatments` (katalog live per outlet),
+  navigasi spa, `/training` `/equipment` `/franchise` → `/treatments`, `/join` → `/booking/spa`. Kode gym lama (join/plans,
+  timetable, panel trial) masih ada tetapi tidak terhubung — kandidat pembersihan terpisah.
+  Deploy `mizu:site-1`, `mizu-api:site-1`; commit `fab1145b`.
 
