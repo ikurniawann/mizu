@@ -25,16 +25,19 @@ type Repository interface {
 
 // Service holds the member portal use cases.
 type Service struct {
-	repo       Repository
-	notifier   Notifier
-	pusher     Pusher
-	payments   Payments
-	wallet     WalletLedger
-	loyalty    Loyalty
-	log        *slog.Logger
-	now        func() time.Time
-	limits     *ratelimit.Limiter
-	bypass     func() domain.DevBypass
+	repo     Repository
+	notifier Notifier
+	pusher   Pusher
+	payments Payments
+	wallet   WalletLedger
+	loyalty  Loyalty
+	log      *slog.Logger
+	now      func() time.Time
+	limits   *ratelimit.Limiter
+	bypass   func() domain.DevBypass
+	// demoCode (MEMBER_OTP_DEMO_CODE) replaces every random OTP with a fixed
+	// code and skips WhatsApp; "" in normal operation.
+	demoCode   string
 	brand      string
 	production bool
 	appOrigin  string

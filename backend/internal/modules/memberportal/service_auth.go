@@ -81,6 +81,8 @@ func (s *Service) ipBrake(ctx context.Context, kind, ip string) error {
 type OTPIssued struct {
 	WADelivered bool
 	DevBypass   bool
+	// DemoCode is the fixed demo code when MEMBER_OTP_DEMO_CODE is set.
+	DemoCode string
 }
 
 // RequestLoginOTP sends a code to a registered member. Unknown numbers get
@@ -108,7 +110,7 @@ func (s *Service) RequestLoginOTP(ctx context.Context, ip string, rawPhone any) 
 	if err != nil {
 		return nil, err
 	}
-	return &OTPIssued{WADelivered: delivered, DevBypass: s.bypass().Active()}, nil
+	return &OTPIssued{WADelivered: delivered, DevBypass: s.bypass().Active(), DemoCode: s.demoCode}, nil
 }
 
 // RequestRegisterOTP sends a code for self registration. The answer is the
@@ -131,7 +133,7 @@ func (s *Service) RequestRegisterOTP(ctx context.Context, ip string, rawPhone an
 	if err != nil {
 		return nil, err
 	}
-	return &OTPIssued{WADelivered: delivered}, nil
+	return &OTPIssued{WADelivered: delivered, DemoCode: s.demoCode}, nil
 }
 
 // phoneArg mirrors normalizePhoneDigits(body.phone): missing is empty, a
@@ -159,8 +161,17 @@ func (s *Service) issueOTP(ctx context.Context, phone string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if s.demoCode != "" {
+		// Demo mode: a known code, nothing sent. Never enable it where real
+		// members sign in — anyone knowing the code can open any account.
+		code = s.demoCode
+	}
 	if err := s.repo.InsertOTP(ctx, phone, domain.HashSecret(code), domain.OTPTTL); err != nil {
 		return false, err
+	}
+	if s.demoCode != "" {
+		s.log.Warn("[member-portal] MODE DEMO OTP: kode tetap dipakai, WhatsApp tidak dikirim", "phone", phone)
+		return false, nil
 	}
 	sent := s.notifier.SendOTP(ctx, phone, code, domain.OTPMessage(s.brand, code))
 	if !sent.Delivered {

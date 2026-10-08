@@ -112,6 +112,17 @@ func BearerToken(header string) string {
 
 var sixDigits = regexp.MustCompile(`^\d{6}$`)
 
+// DemoOTPCode is the fixed demo code from MEMBER_OTP_DEMO_CODE: every OTP
+// issued while it is set uses this code instead of a random one (demo
+// environments without a WhatsApp sender). "" when unset or not 6 digits.
+func DemoOTPCode(raw string) string {
+	code := strings.TrimSpace(raw)
+	if !IsOTPCode(code) {
+		return ""
+	}
+	return code
+}
+
 // IsOTPCode reports whether code has the 6 digit shape.
 func IsOTPCode(code string) bool { return sixDigits.MatchString(code) }
 

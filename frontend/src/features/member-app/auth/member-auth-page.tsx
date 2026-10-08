@@ -313,7 +313,11 @@ function OtpStep({
         }}
       >
         <OtpInput value={code} onChange={(v) => { setCode(v); setProblem(null); }} onComplete={(v) => void confirm(v)} invalid={Boolean(problem)} disabled={busy} />
-        {!sent.waDelivered && !sent.devBypass ? (
+        {sent.demoCode ? (
+          <p className="rounded-xl border border-nh-lime/60 bg-nh-lime-soft p-3 text-sm">
+            <b>Mode demo:</b> masukkan kode <b className="tracking-widest">{sent.demoCode}</b>.
+          </p>
+        ) : !sent.waDelivered && !sent.devBypass ? (
           <p className="rounded-xl bg-nh-warn/10 p-3 text-sm text-nh-warn">
             Kode belum berhasil dikirim ke WhatsApp. Tunggu sebentar lalu kirim ulang, atau hubungi outlet Mizu.
           </p>

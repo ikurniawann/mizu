@@ -649,3 +649,43 @@ func routeExists(m *Module, pattern string) bool {
 	}
 	return false
 }
+
+func TestIntegrationDemoOTP(t *testing.T) {
+	h := newHarness(t)
+	h.mod.handler.svc.demoCode = "123456"
+	db := testutil.DB(t)
+	phone := randomLocalPhone()
+	digits := digitsOf(phone)
+	cleanupOTP(t, digits)
+	t.Cleanup(func() {
+		ctx := context.Background()
+		_, _ = db.Exec(ctx, `DELETE FROM crm.crm_marketing_optouts WHERE customer_id IN (SELECT id FROM pos.pos_customers WHERE phone = $1)`, domain.LocalPhoneFormat(digits))
+		_, _ = db.Exec(ctx, `DELETE FROM pos.pos_customers WHERE phone = $1`, domain.LocalPhoneFormat(digits))
+	})
+
+	status, body, _ := h.do(testutil.Request("POST", "/api/member-portal/register/otp", map[string]any{"phone": phone}))
+	if status != 200 || body["demo_code"] != "123456" || body["wa_delivered"] != false {
+		t.Fatalf("demo register otp: %d %v", status, body)
+	}
+	if h.notifier.code(digits) != "" {
+		t.Fatal("demo mode must not send WhatsApp")
+	}
+	// The code is still required: a wrong one fails, the demo code works.
+	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/register", map[string]any{"phone": phone, "name": "Demo Mizu", "code": "654321"}))
+	if status == 200 {
+		t.Fatalf("wrong code accepted: %v", body)
+	}
+	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/register", map[string]any{"phone": phone, "name": "Demo Mizu", "code": "123456"}))
+	if status != 200 {
+		t.Fatalf("demo register: %d %v", status, body)
+	}
+	// Login: same fixed code.
+	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/otp", map[string]any{"phone": phone}))
+	if status != 200 || body["demo_code"] != "123456" {
+		t.Fatalf("demo login otp: %d %v", status, body)
+	}
+	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/verify", map[string]any{"phone": phone, "code": "123456"}))
+	if status != 200 || body["success"] != true {
+		t.Fatalf("demo verify: %d %v", status, body)
+	}
+}

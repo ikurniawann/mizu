@@ -12,6 +12,8 @@ type otpSentBody struct {
 	Message     string `json:"message,omitempty"`
 	WADelivered bool   `json:"wa_delivered"`
 	DevBypass   bool   `json:"dev_bypass"`
+	// DemoCode is set only in demo mode (MEMBER_OTP_DEMO_CODE).
+	DemoCode string `json:"demo_code,omitempty"`
 }
 
 // POST /otp { phone } sends a WhatsApp login code to a registered member.
@@ -23,7 +25,7 @@ func (h *Handler) requestOTP(w http.ResponseWriter, r *http.Request) error {
 	}
 	return httpx.JSON(w, http.StatusOK, otpSentBody{
 		Success: true, Message: "Kode OTP dikirim ke WhatsApp Anda",
-		WADelivered: issued.WADelivered, DevBypass: issued.DevBypass,
+		WADelivered: issued.WADelivered, DevBypass: issued.DevBypass, DemoCode: issued.DemoCode,
 	})
 }
 
@@ -34,7 +36,7 @@ func (h *Handler) requestRegisterOTP(w http.ResponseWriter, r *http.Request) err
 	if err != nil {
 		return err
 	}
-	return httpx.JSON(w, http.StatusOK, otpSentBody{Success: true, WADelivered: issued.WADelivered, DevBypass: issued.DevBypass})
+	return httpx.JSON(w, http.StatusOK, otpSentBody{Success: true, WADelivered: issued.WADelivered, DevBypass: issued.DevBypass, DemoCode: issued.DemoCode})
 }
 
 type signedInData struct {

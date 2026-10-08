@@ -40,6 +40,7 @@ func New(deps module.Deps, opts Options) *Module {
 		now:        deps.Now,
 		limits:     ratelimit.New(deps.DB),
 		bypass:     bypassFromEnv(deps.Config.IsProduction(), getenv, deps.Config.DatabaseURL),
+		demoCode:   domain.DemoOTPCode(getenv("MEMBER_OTP_DEMO_CODE")),
 		brand:      domain.BrandName(getenv("NEXT_PUBLIC_APP_NAME")),
 		production: deps.Config.IsProduction(),
 		appOrigin:  firstNonEmpty(getenv("NEXT_PUBLIC_APP_URL"), getenv("NEXT_PUBLIC_BASE_URL")),
@@ -51,6 +52,9 @@ func New(deps module.Deps, opts Options) *Module {
 		svc.google = newGoogleKeys(GoogleJWKSURL, safehttp.NewClient(10*time.Second), deps.Now)
 	}
 	svc.ticketSecret = ticketSecret(getenv("MEMBER_TICKET_SECRET"), deps.Config.DatabaseURL)
+	if svc.demoCode != "" && deps.Log != nil {
+		deps.Log.Warn("[member-portal] MODE DEMO OTP aktif (MEMBER_OTP_DEMO_CODE): semua OTP memakai kode tetap")
+	}
 	return &Module{handler: &Handler{svc: svc, auth: deps.Auth, log: deps.Log, credits: opts.Credits}}
 }
 

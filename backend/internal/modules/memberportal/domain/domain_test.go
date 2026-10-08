@@ -372,3 +372,11 @@ func TestWalletRules(t *testing.T) {
 		t.Fatal("qr paid")
 	}
 }
+
+func TestDemoOTPCode(t *testing.T) {
+	for raw, want := range map[string]string{"123456": "123456", " 123456 ": "123456", "": "", "12345": "", "abcdef": "", "1234567": ""} {
+		if got := DemoOTPCode(raw); got != want {
+			t.Errorf("DemoOTPCode(%q) = %q, want %q", raw, got, want)
+		}
+	}
+}

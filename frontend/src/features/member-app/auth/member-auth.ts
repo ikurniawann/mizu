@@ -25,6 +25,8 @@ export interface CodeSent {
   devBypass: boolean;
   /** Daftar dialihkan ke masuk karena nomor sudah member. */
   switchedToLogin?: boolean;
+  /** Mode demo server (MEMBER_OTP_DEMO_CODE): kode tetap yang berlaku. */
+  demoCode?: string;
 }
 
 /** Galat yang ditampilkan; `reason` membedakan kasus yang punya aksi lanjutan. */
@@ -37,7 +39,15 @@ export class MemberAuthError extends Error {
   }
 }
 
-type Json = { success?: boolean; error?: string; field?: string; code?: string; wa_delivered?: boolean; dev_bypass?: boolean };
+type Json = {
+  success?: boolean;
+  error?: string;
+  field?: string;
+  code?: string;
+  wa_delivered?: boolean;
+  dev_bypass?: boolean;
+  demo_code?: string;
+};
 
 type Fetch = typeof fetch;
 
@@ -96,7 +106,13 @@ export function formatCountdown(seconds: number): string {
 }
 
 function sent(json: Json, mode: AuthMode, switchedToLogin = false): CodeSent {
-  return { mode, waDelivered: Boolean(json.wa_delivered), devBypass: Boolean(json.dev_bypass), switchedToLogin };
+  return {
+    mode,
+    waDelivered: Boolean(json.wa_delivered),
+    devBypass: Boolean(json.dev_bypass),
+    switchedToLogin,
+    ...(json.demo_code ? { demoCode: json.demo_code } : {}),
+  };
 }
 
 /** Masuk: kirim kode ke member. Nomor baru → MemberAuthError("not_registered"). */

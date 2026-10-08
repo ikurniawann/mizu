@@ -85,6 +85,11 @@ describe("kirim kode", () => {
     expect(calls.map((c) => c.path)).toEqual(["/register/otp"]);
   });
 
+  it("mode demo: kode tetap ikut dikembalikan", async () => {
+    const { fn } = fakeFetch({ "/otp": { body: { success: true, wa_delivered: false, demo_code: "123456" } } });
+    await expect(requestLoginCode("81234567890", fn)).resolves.toMatchObject({ demoCode: "123456", waDelivered: false });
+  });
+
   it("galat lain diteruskan", async () => {
     const { fn } = fakeFetch({ "/otp": { status: 429, body: { success: false, error: "Terlalu banyak permintaan" } } });
     await expect(requestLoginCode("81234567890", fn)).rejects.toThrow("Terlalu banyak permintaan");
