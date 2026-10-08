@@ -1,5 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { confirmCode, confirmProblem, isPlausiblePhone, requestCode, safeReturnPath, type ConfirmInput } from "./member-auth";
+import {
+  confirmCode,
+  formatCountdown,
+  formatNational,
+  isValidName,
+  isValidNational,
+  MemberAuthError,
+  nationalDigits,
+  requestLoginCode,
+  requestRegisterCode,
+  safeReturnPath,
+  toApiPhone,
+  type ConfirmInput,
+} from "./member-auth";
 
 function fakeFetch(routes: Record<string, { status?: number; body: unknown }>) {
   const calls: { path: string; body: unknown }[] = [];
@@ -13,67 +26,105 @@ function fakeFetch(routes: Record<string, { status?: number; body: unknown }>) {
   return { fn, calls };
 }
 
+const notRegistered = { status: 404, body: { success: false, code: "not_registered", error: "Nomor belum terdaftar" } };
 const google = { ticket: "t1", email: "ani@gmail.com", name: "Ani" };
 
-describe("requestCode", () => {
-  it("member lama: jalur masuk", async () => {
-    const { fn, calls } = fakeFetch({ "/otp": { body: { success: true, wa_delivered: true } } });
-    await expect(requestCode("0812", null, fn)).resolves.toEqual({ mode: "login", waDelivered: true, devBypass: false });
-    expect(calls.map((c) => c.path)).toEqual(["/otp"]);
+describe("nomor HP", () => {
+  it.each([
+    ["0812-3456-7890", "81234567890"],
+    ["+62 812 3456 7890", "81234567890"],
+    ["6281234567890", "81234567890"],
+    ["81234567890", "81234567890"],
+  ])("nationalDigits(%s)", (input, want) => {
+    expect(nationalDigits(input)).toBe(want);
   });
 
-  it("nomor baru: lanjut ke jalur daftar", async () => {
-    const { fn, calls } = fakeFetch({
-      "/otp": { status: 404, body: { success: false, code: "not_registered", error: "Nomor belum terdaftar" } },
-      "/register/otp": { body: { success: true, wa_delivered: false } },
-    });
-    await expect(requestCode("0812", null, fn)).resolves.toMatchObject({ mode: "register", waDelivered: false });
-    expect(calls.map((c) => c.path)).toEqual(["/otp", "/register/otp"]);
+  it("format berkelompok & API", () => {
+    expect(formatNational("81234567890")).toBe("812-3456-7890");
+    expect(formatNational("8123")).toBe("812-3");
+    expect(toApiPhone("0812-3456-7890")).toBe("+6281234567890");
   });
 
-  it("Google: langsung jalur daftar", async () => {
-    const { fn, calls } = fakeFetch({ "/register/otp": { body: { success: true, wa_delivered: true } } });
-    await expect(requestCode("0812", google, fn)).resolves.toMatchObject({ mode: "register" });
-    expect(calls.map((c) => c.path)).toEqual(["/register/otp"]);
-  });
-
-  it("galat lain diteruskan (rate limit)", async () => {
-    const { fn } = fakeFetch({ "/otp": { status: 429, body: { success: false, error: "Terlalu banyak permintaan" } } });
-    await expect(requestCode("0812", null, fn)).rejects.toThrow("Terlalu banyak permintaan");
+  it("validasi", () => {
+    expect(isValidNational("81234567890")).toBe(true);
+    expect(isValidNational("8123")).toBe(false);
+    expect(isValidNational("21234567890")).toBe(false); // bukan seluler
+    expect(isValidName(" A ")).toBe(false);
+    expect(isValidName("Ani")).toBe(true);
   });
 });
 
-describe("confirmCode", () => {
-  const base: ConfirmInput = { mode: "login", phone: "0812", code: "123456", name: "", google: null, devBypass: false };
+describe("kirim kode", () => {
+  it("masuk: member lama", async () => {
+    const { fn, calls } = fakeFetch({ "/otp": { body: { success: true, wa_delivered: true } } });
+    await expect(requestLoginCode("81234567890", fn)).resolves.toMatchObject({ mode: "login", waDelivered: true });
+    expect(calls[0].body).toEqual({ phone: "+6281234567890" });
+  });
 
-  it("validasi lokal", () => {
-    expect(confirmProblem({ ...base, code: "12" })).toBe("Kode OTP harus 6 digit");
-    expect(confirmProblem({ ...base, mode: "register", name: " " })).toBe("Isi nama lengkap");
-    expect(confirmProblem({ ...base, code: "", devBypass: true })).toBeNull();
+  it("masuk: nomor baru → not_registered", async () => {
+    const { fn } = fakeFetch({ "/otp": notRegistered });
+    const err = await requestLoginCode("81234567890", fn).catch((e) => e);
+    expect(err).toBeInstanceOf(MemberAuthError);
+    expect(err.reason).toBe("not_registered");
+  });
+
+  it("daftar: nomor baru → jalur daftar", async () => {
+    const { fn, calls } = fakeFetch({ "/otp": notRegistered, "/register/otp": { body: { success: true } } });
+    await expect(requestRegisterCode("81234567890", null, fn)).resolves.toMatchObject({ mode: "register", switchedToLogin: false });
+    expect(calls.map((c) => c.path)).toEqual(["/otp", "/register/otp"]);
+  });
+
+  it("daftar: nomor sudah member → otomatis masuk", async () => {
+    const { fn } = fakeFetch({ "/otp": { body: { success: true, wa_delivered: true } } });
+    await expect(requestRegisterCode("81234567890", null, fn)).resolves.toMatchObject({ mode: "login", switchedToLogin: true });
+  });
+
+  it("daftar dengan Google: langsung jalur daftar", async () => {
+    const { fn, calls } = fakeFetch({ "/register/otp": { body: { success: true } } });
+    await requestRegisterCode("81234567890", google, fn);
+    expect(calls.map((c) => c.path)).toEqual(["/register/otp"]);
+  });
+
+  it("galat lain diteruskan", async () => {
+    const { fn } = fakeFetch({ "/otp": { status: 429, body: { success: false, error: "Terlalu banyak permintaan" } } });
+    await expect(requestLoginCode("81234567890", fn)).rejects.toThrow("Terlalu banyak permintaan");
+  });
+});
+
+describe("verifikasi kode", () => {
+  const base: ConfirmInput = { mode: "login", phone: "81234567890", code: "123456", name: "", google: null, devBypass: false };
+
+  it("kode harus 6 digit", async () => {
+    const { fn } = fakeFetch({});
+    await expect(confirmCode({ ...base, code: "12" }, fn)).rejects.toThrow("6 digit");
   });
 
   it("masuk lewat /verify", async () => {
     const { fn, calls } = fakeFetch({ "/verify": { body: { success: true } } });
     await confirmCode(base, fn);
-    expect(calls[0]).toEqual({ path: "/verify", body: { phone: "0812", code: "123456" } });
+    expect(calls[0]).toEqual({ path: "/verify", body: { phone: "+6281234567890", code: "123456" } });
   });
 
-  it("daftar membawa tiket Google dan email", async () => {
+  it("daftar membawa nama, email & tiket Google", async () => {
     const { fn, calls } = fakeFetch({ "/register": { body: { success: true } } });
     await confirmCode({ ...base, mode: "register", name: " Ani ", google }, fn);
-    expect(calls[0].body).toEqual({ phone: "0812", code: "123456", name: "Ani", email: "ani@gmail.com", google_ticket: "t1", wa_consent: false });
+    expect(calls[0].body).toEqual({
+      phone: "+6281234567890", code: "123456", name: "Ani", email: "ani@gmail.com", google_ticket: "t1", wa_consent: false,
+    });
   });
 
-  it("kode salah", async () => {
-    const { fn } = fakeFetch({ "/verify": { status: 400, body: { success: false, error: "Kode salah" } } });
-    await expect(confirmCode(base, fn)).rejects.toThrow("Kode salah");
+  it("daftar: nomor sudah terdaftar → already_registered", async () => {
+    const { fn } = fakeFetch({ "/register": { status: 409, body: { success: false, field: "phone", error: "Nomor ini sudah terdaftar." } } });
+    const err = await confirmCode({ ...base, mode: "register", name: "Ani" }, fn).catch((e) => e);
+    expect(err.reason).toBe("already_registered");
   });
 });
 
-describe("helpers", () => {
-  it("nomor masuk akal", () => {
-    expect(isPlausiblePhone("0812-3456-789")).toBe(true);
-    expect(isPlausiblePhone("0812")).toBe(false);
+describe("bantuan", () => {
+  it("hitung mundur", () => {
+    expect(formatCountdown(60)).toBe("1:00");
+    expect(formatCountdown(9)).toBe("0:09");
+    expect(formatCountdown(-3)).toBe("0:00");
   });
   it("return path aman", () => {
     expect(safeReturnPath("/member/bookings", "/member")).toBe("/member/bookings");

@@ -222,7 +222,7 @@ writeIco(path.join(ROOT, "public", "favicon.ico"), [16, 32, 48].map((s) => ({
 })));
 console.log("ok public/favicon.ico (16, 32, 48)");
 // Aplikasi member memakai salinan logonya sendiri (public/member-assets/brand).
-for (const f of ["mark-lime.png", "mark-white.png", "wordmark-black.png", "wordmark-white.png", "pattern.png"]) {
+for (const f of ["mark-lime.png", "mark-white.png", "wordmark-black.png", "wordmark-white.png", "lockup-white.png", "pattern.png", "wallpaper.webp"]) {
   copyFileSync(path.join(BRAND, f), path.join(ROOT, "public", "member-assets", "brand", f));
 }
 console.log("ok public/member-assets/brand/*");
