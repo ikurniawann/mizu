@@ -352,7 +352,7 @@ function Shell({ children }: { children: ReactNode }) {
       <div className="flex min-h-dvh">
         <aside className="relative hidden flex-1 overflow-hidden bg-nh-ink lg:flex lg:flex-col lg:justify-between lg:p-12">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/brand/wallpaper.webp")} alt="" className="absolute inset-0 size-full object-cover opacity-80" />
+          <img src={asset("/brand/mizu-wallpaper.webp")} alt="" className="absolute inset-0 size-full object-cover opacity-80" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={asset("/brand/lockup-white.png")} alt="Mizu" className="relative w-80" />
           <div className="relative text-white">

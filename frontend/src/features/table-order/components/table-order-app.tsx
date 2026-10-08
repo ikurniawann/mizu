@@ -62,7 +62,7 @@ import { OrderTracking } from "./order-tracking";
 import { VariantSheet } from "./variant-sheet";
 import { DecrementSheet } from "./decrement-sheet";
 
-const HERO_IMAGE = "/brand/wallpaper.webp";
+const HERO_IMAGE = "/brand/mizu-wallpaper.webp";
 
 type View = "menu" | "tracking" | "orders";
 

@@ -125,7 +125,7 @@ function wallpaper() {
   return page(2560, 1600, `<div style="position:relative;width:2560px;height:1600px;overflow:hidden;
       background:radial-gradient(60% 70% at 78% 30%, #5a4334 0%, transparent 60%), radial-gradient(70% 80% at 10% 100%, #4a3628 0%, transparent 65%), linear-gradient(135deg, ${COLORS.espresso}, #2f231b 55%, ${COLORS.mocha})">
     ${veins(2560, 1600, COLORS.gold, 0.28, 7, 11)}
-    <svg style="position:absolute;right:220px;top:330px;opacity:.16" width="900" height="900" viewBox="0 0 100 100">${stones(COLORS.gold, 1.4)}</svg>
+    <svg style="position:absolute;left:640px;top:360px;opacity:.18" width="880" height="880" viewBox="0 0 100 100">${stones(COLORS.gold, 1.4)}</svg>
   </div>`, COLORS.espresso);
 }
 
@@ -154,6 +154,7 @@ const JOBS = [
   ["apple-touch-icon.png", appIcon(180, 0), false, MEMBER_ICONS],
   ["pattern.png", pattern(), true],
   ["wallpaper.webp", wallpaper(), false],
+  ["mizu-wallpaper.webp", wallpaper(), false],
 ];
 
 /** ICO berisi PNG (didukung semua browser modern). */
@@ -222,7 +223,7 @@ writeIco(path.join(ROOT, "public", "favicon.ico"), [16, 32, 48].map((s) => ({
 })));
 console.log("ok public/favicon.ico (16, 32, 48)");
 // Aplikasi member memakai salinan logonya sendiri (public/member-assets/brand).
-for (const f of ["mark-lime.png", "mark-white.png", "wordmark-black.png", "wordmark-white.png", "lockup-white.png", "pattern.png", "wallpaper.webp"]) {
+for (const f of ["mark-lime.png", "mark-white.png", "wordmark-black.png", "wordmark-white.png", "lockup-white.png", "pattern.png", "wallpaper.webp", "mizu-wallpaper.webp"]) {
   copyFileSync(path.join(BRAND, f), path.join(ROOT, "public", "member-assets", "brand", f));
 }
 console.log("ok public/member-assets/brand/*");

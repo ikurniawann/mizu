@@ -9,7 +9,7 @@
    Fungsional: Dark Jungle #33271f, Everglade #5a4334, Lettuce #c49a5c,
    Lemon Lime #f2e3c6, Mint Cream #fffaf2, Golden Ochre #b8893f. Judul Outfit, isi Manrope.
    Palet `pink-*` (dipakai ratusan halaman lama sebagai warna merek) ditimpa skala
-   lime → forest; `gray-*`, `slate-*`, `zinc-*`, `neutral-*` ditimpa tangga netral
+   emas → mocha Mizu; `gray-*`, `slate-*`, `zinc-*`, `neutral-*` ditimpa tangga netral
    hangat dari beige ke ink. Ribuan kelas lama ikut tanpa menyentuh tiap file. */
 @theme {
   --color-pink-50: #fbf3e4;
@@ -17,12 +17,12 @@
   --color-pink-200: #ecd3a6;
   --color-pink-300: #d6b47a;
   --color-pink-400: #c49a5c;
-  --color-pink-500: #4d8a1c;
+  --color-pink-500: #a8834d;
   --color-pink-600: #5a4334;
   --color-pink-700: #3d2b20;
-  --color-pink-800: #001f14;
-  --color-pink-900: #00160e;
-  --color-pink-950: #000d08;
+  --color-pink-800: #2a1f18;
+  --color-pink-900: #1a120d;
+  --color-pink-950: #0d0a08;
 
   --color-gray-50: #f8f4ee;
   --color-gray-100: #f3ece2;
