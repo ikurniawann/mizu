@@ -221,6 +221,11 @@ writeIco(path.join(ROOT, "public", "favicon.ico"), [16, 32, 48].map((s) => ({
   size: s, data: readFileSync(path.join(BRAND, `mizu-favicon-${s}.png`)),
 })));
 console.log("ok public/favicon.ico (16, 32, 48)");
+// Aplikasi member memakai salinan logonya sendiri (public/member-assets/brand).
+for (const f of ["mark-lime.png", "mark-white.png", "wordmark-black.png", "wordmark-white.png", "pattern.png"]) {
+  copyFileSync(path.join(BRAND, f), path.join(ROOT, "public", "member-assets", "brand", f));
+}
+console.log("ok public/member-assets/brand/*");
 // Konvensi Next (app/icon.png, app/apple-icon.png) ikut diperbarui.
 copyFileSync(path.join(BRAND, "mizu-favicon-64.png"), path.join(ROOT, "src", "app", "icon.png"));
 copyFileSync(path.join(BRAND, "apple-touch-icon.png"), path.join(ROOT, "src", "app", "apple-icon.png"));

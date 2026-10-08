@@ -1,5 +1,5 @@
 /*
- * NüHabit Member: service worker portal /member.
+ * Mizu Member: service worker portal /member.
  * Disajikan lewat /member/sw.js (src/app/member/sw.js/route.ts) dengan header
  * Service-Worker-Allowed supaya scope-nya /member, juga di host member.
  *
@@ -11,7 +11,8 @@
  * Push: payload JSON {title, body, url, tag} dari src/lib/member-portal/push.ts.
  * Mode dev (?dev=1): hanya push, tanpa cache.
  */
-const VERSION = 'nuhabit-member-v1';
+// Naikkan saat aset /member-assets berganti: cache lama (nuhabit-member-*) dihapus saat activate.
+const VERSION = 'mizu-member-v1';
 // Didaftarkan dengan ?dev=1 saat `next dev`: tanpa cache supaya kode baru langsung terpakai.
 const DEV = new URL(self.location.href).searchParams.has('dev');
 const CACHE_STATIC = `${VERSION}-static`;
@@ -40,7 +41,7 @@ self.addEventListener('activate', (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((key) => (key.startsWith('bcd-member-') || key.startsWith('nuhabit-member-')) && !key.startsWith(VERSION))
+          .filter((key) => (key.startsWith('bcd-member-') || key.startsWith('nuhabit-member-') || key.startsWith('mizu-member-')) && !key.startsWith(VERSION))
           .map((key) => caches.delete(key))
       );
       await self.clients.claim();
