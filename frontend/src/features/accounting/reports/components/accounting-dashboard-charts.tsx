@@ -6,7 +6,7 @@ import { ApexChart } from "@/features/pos/reports/components/apex-chart";
 import type { AccountingDashboard } from "@/lib/accounting/dashboard-store";
 import { formatLedgerAmount } from "@/lib/accounting/format";
 
-const FALLBACK_PRIMARY = "#00281a";
+const FALLBACK_PRIMARY = "#3d2b20";
 
 const noSubscribe = () => () => {};
 

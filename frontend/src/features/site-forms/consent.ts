@@ -7,7 +7,7 @@
 export const CONSENT_TEXT_VERSION = "2026-10-07.v2";
 
 export const CONSENT_EMAIL_TEXT =
-  "I agree to receive emails from NüHabit about class schedules, programs and offers. I can opt out at any time.";
+  "I agree to receive emails from Mizu about class schedules, programs and offers. I can opt out at any time.";
 
 export const CONSENT_SMS_TEXT =
-  "I agree to receive SMS and WhatsApp messages from NüHabit about my trial session and offers. I can opt out at any time.";
+  "I agree to receive SMS and WhatsApp messages from Mizu about my trial session and offers. I can opt out at any time.";

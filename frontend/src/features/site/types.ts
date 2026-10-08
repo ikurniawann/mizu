@@ -86,11 +86,12 @@ export interface BranchProfile extends BranchSummary {
 export const ARTICLE_CATEGORIES = ["training", "events", "apparel", "news"] as const;
 export type ArticleCategory = (typeof ARTICLE_CATEGORIES)[number];
 
+/** Category ids are stored values from the gym era; the labels speak spa. */
 export const CATEGORY_LABELS: Record<ArticleCategory, string> = {
-  training: "Training",
-  events: "Events",
-  apparel: "Apparel",
-  news: "News",
+  training: "Tips Wellness",
+  events: "Acara",
+  apparel: "Produk",
+  news: "Kabar",
 };
 
 export type PublishStatus = "draft" | "published";

@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-const BRAND_PRIMARY_FALLBACK = "#00281a";
+const BRAND_PRIMARY_FALLBACK = "#3d2b20";
 const noopSubscribe = () => () => {};
 
 /** Warna --brand-primary dari tema aktif untuk grafik (fallback saat SSR / belum diset). */

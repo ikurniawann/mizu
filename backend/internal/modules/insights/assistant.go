@@ -329,7 +329,7 @@ func (s *Service) assistantAsk(w http.ResponseWriter, r *http.Request) {
 		userName = *prof.FullName
 	}
 	summary := domain.EmptySummary(domain.ISO(s.now()))
-	fallback := "Do belum bisa menghubungi tingkat yang dipilih saat ini. Coba lagi sebentar atau pilih tingkat lain di NüHabit OS Settings."
+	fallback := "Do belum bisa menghubungi tingkat yang dipilih saat ini. Coba lagi sebentar atau pilih tingkat lain di Mizu OS Settings."
 	if includeProject {
 		intent = domain.DetectIntent(req.prompt)
 		summary = s.buildSystemSummary(ctx, intent)

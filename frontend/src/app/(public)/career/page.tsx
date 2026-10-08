@@ -62,15 +62,15 @@ export default function CareerPage() {
   }, [jobs]);
 
   return (
-    <div id="top" lang="en" className="min-h-screen bg-[#f8f4ee] text-[#131a1c] career-roundo">
+    <div id="top" lang="en" className="min-h-screen bg-[#f8f4ee] text-[#241b16] career-roundo">
       <nav className="fixed top-0 z-50 w-full border-b border-[#e3dbcc] bg-[#f8f4ee]/95 backdrop-blur">
         <div className="mx-auto flex h-20 max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-10">
-          <Link href="/career" className="flex h-full items-center" aria-label="NüHabit careers">
-            <img src={logoUrl} alt="NüHabit" className="h-7 w-auto sm:h-8" />
+          <Link href="/career" className="flex h-full items-center" aria-label="Mizu careers">
+            <img src={logoUrl} alt="Mizu" className="h-7 w-auto sm:h-8" />
           </Link>
           <a
             href="#open-roles"
-            className="rounded-full bg-[#00281a] px-6 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#203b32] active:scale-95"
+            className="rounded-full bg-[#3d2b20] px-6 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#5a4334] active:scale-95"
           >
             Open Roles
           </a>
@@ -82,9 +82,9 @@ export default function CareerPage() {
           <h1 className="mb-6 text-4xl font-semibold leading-tight tracking-normal sm:text-5xl lg:text-6xl">
             Join our team
           </h1>
-          <div className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-[#2a332e]">
+          <div className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-[#3a302a]">
             <p>
-              NüHabit is growing a team that builds warm, imaginative, and precise experiences across hospitality,
+              Mizu is growing a team that builds warm, imaginative, and precise experiences across hospitality,
               media, design, and technology.
             </p>
             <p>
@@ -96,14 +96,14 @@ export default function CareerPage() {
 
         <section className="mb-20 w-full overflow-hidden">
           <div className="mx-auto mb-6 max-w-[1280px] px-4 sm:px-6 lg:px-10">
-            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[#2a332e]">Our Studio Space</h2>
+            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[#3a302a]">Our Studio Space</h2>
           </div>
           <div className="relative flex w-full overflow-hidden">
             <div className="career-marquee flex whitespace-nowrap">
               {[...studioImages, ...studioImages].map((src, index) => (
                 <div key={`${src}-${index}`} className="group relative mx-2 aspect-[3/4] w-[58vw] shrink-0 cursor-crosshair sm:w-[35vw] md:w-[25vw]">
                   <img src={src} alt={`Studio ${index + 1}`} className="h-full w-full object-cover grayscale" />
-                  <div className="absolute inset-0 bg-[#00281a] opacity-60 mix-blend-multiply transition-opacity duration-700 group-hover:opacity-20" />
+                  <div className="absolute inset-0 bg-[#3d2b20] opacity-60 mix-blend-multiply transition-opacity duration-700 group-hover:opacity-20" />
                 </div>
               ))}
             </div>
@@ -113,13 +113,13 @@ export default function CareerPage() {
         <section id="open-roles" className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
           <div className="space-y-3">
             {jobsLoading && (
-              <div className="border-y border-[#e3dbcc] py-10 text-center text-[#2a332e]">
+              <div className="border-y border-[#e3dbcc] py-10 text-center text-[#3a302a]">
                 Loading open roles...
               </div>
             )}
 
             {!jobsLoading && departments.length === 0 && (
-              <div className="border-y border-[#e3dbcc] py-10 text-center text-[#2a332e]">
+              <div className="border-y border-[#e3dbcc] py-10 text-center text-[#3a302a]">
                 No open positions at this time. Check back later.
               </div>
             )}
@@ -129,7 +129,7 @@ export default function CareerPage() {
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6">
                   <h2 className="text-2xl font-medium leading-tight tracking-normal">{department.name}</h2>
                   <div className="flex items-center gap-4">
-                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#2a332e]">
+                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#3a302a]">
                       {department.roles.length} Positions
                     </span>
                     <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
@@ -137,20 +137,20 @@ export default function CareerPage() {
                 </summary>
 
                 {department.roles.length === 0 ? (
-                  <div className="py-6 text-center italic text-[#2a332e]">No open positions at this time. Check back later.</div>
+                  <div className="py-6 text-center italic text-[#3a302a]">No open positions at this time. Check back later.</div>
                 ) : (
                   <div className="space-y-2 px-1">
                     {department.roles.map((job) => (
                       <Link
                         key={job.id}
                         href={`/portal?job_opening_id=${job.id}&position_id=${job.position_id || ""}&brand_id=${job.brand_id || ""}`}
-                        className="group/item flex flex-col justify-between gap-4 rounded-lg border border-[#e3dbcc] bg-white p-6 transition-all duration-300 hover:border-[#203b32] md:flex-row md:items-center"
+                        className="group/item flex flex-col justify-between gap-4 rounded-lg border border-[#e3dbcc] bg-white p-6 transition-all duration-300 hover:border-[#5a4334] md:flex-row md:items-center"
                       >
                         <div>
-                          <h3 className="text-2xl font-medium leading-tight transition-colors group-hover/item:text-[#203b32]">
+                          <h3 className="text-2xl font-medium leading-tight transition-colors group-hover/item:text-[#5a4334]">
                             {job.title}
                           </h3>
-                          <div className="mt-3 flex flex-wrap items-center gap-6 text-sm font-medium text-[#2a332e]">
+                          <div className="mt-3 flex flex-wrap items-center gap-6 text-sm font-medium text-[#3a302a]">
                             <span className="flex items-center gap-1.5">
                               <MapPin className="h-4 w-4" />
                               {job.location}
@@ -161,7 +161,7 @@ export default function CareerPage() {
                             </span>
                           </div>
                           {job.description && (
-                            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#2a332e]">
+                            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#3a302a]">
                               {job.description}
                             </p>
                           )}
@@ -173,7 +173,7 @@ export default function CareerPage() {
                           <span className="hidden rounded-full border border-[#e3dbcc] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] md:inline-block">
                             {job.work_mode}
                           </span>
-                          <ArrowRight className="h-5 w-5 -translate-x-2 text-[#203b32] opacity-0 transition-all duration-300 group-hover/item:translate-x-0 group-hover/item:opacity-100" />
+                          <ArrowRight className="h-5 w-5 -translate-x-2 text-[#5a4334] opacity-0 transition-all duration-300 group-hover/item:translate-x-0 group-hover/item:opacity-100" />
                         </div>
                       </Link>
                     ))}
@@ -187,18 +187,18 @@ export default function CareerPage() {
         <section className="mx-auto mt-20 max-w-[1280px] px-4 sm:px-6 lg:px-10">
           <div className="flex flex-col items-center justify-between gap-10 rounded-lg border border-[#e3dbcc] bg-[#f3ece2] p-8 text-center md:flex-row md:p-16 md:text-left">
             <div className="max-w-xl">
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#203b32]">
+              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#5a4334]">
                 <BriefcaseBusiness className="h-5 w-5" />
               </div>
               <h2 className="mb-3 text-3xl font-semibold leading-tight">Don&apos;t see a role for you?</h2>
-              <p className="text-base leading-relaxed text-[#2a332e]">
+              <p className="text-base leading-relaxed text-[#3a302a]">
                 We are always on the lookout for exceptional talent. Send us your profile and let&apos;s start a conversation
                 about future possibilities.
               </p>
             </div>
             <Link
               href="/portal"
-              className="whitespace-nowrap rounded-full border border-[#131a1c] px-10 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-[#131a1c] transition-colors hover:bg-[#131a1c] hover:text-white"
+              className="whitespace-nowrap rounded-full border border-[#241b16] px-10 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-[#241b16] transition-colors hover:bg-[#241b16] hover:text-white"
             >
               General Application
             </Link>
@@ -210,26 +210,26 @@ export default function CareerPage() {
         <div className="mx-auto grid max-w-[1280px] grid-cols-1 gap-10 px-4 sm:px-6 md:grid-cols-2 lg:px-10">
           <div className="space-y-6">
             <div className="flex h-12 items-center">
-              <img src={logoUrl} alt="NüHabit" className="h-7 w-auto sm:h-8" />
+              <img src={logoUrl} alt="Mizu" className="h-7 w-auto sm:h-8" />
             </div>
-            <p className="max-w-sm text-base leading-relaxed text-[#2a332e]">
+            <p className="max-w-sm text-base leading-relaxed text-[#3a302a]">
               Designing emotional experiences at the intersection of technology, art, and service.
             </p>
-            <p className="text-base text-[#2a332e]">© 2026 NüHabit. All rights reserved.</p>
+            <p className="text-base text-[#3a302a]">© 2026 Mizu. All rights reserved.</p>
           </div>
           <div className="flex flex-col justify-between gap-10 md:items-end">
             <div className="flex flex-wrap gap-6">
               {["LinkedIn", "Instagram", "Vimeo", "Privacy Policy", "Terms"].map((item) => (
-                <a key={item} href="#" className="text-base text-[#2a332e] transition-colors hover:text-[#203b32]">
+                <a key={item} href="#" className="text-base text-[#3a302a] transition-colors hover:text-[#5a4334]">
                   {item}
                 </a>
               ))}
             </div>
-            <a href="#top" className="group flex items-center gap-1 text-[#2a332e]">
-              <span className="text-sm font-semibold uppercase tracking-[0.12em] transition-colors group-hover:text-[#203b32]">
+            <a href="#top" className="group flex items-center gap-1 text-[#3a302a]">
+              <span className="text-sm font-semibold uppercase tracking-[0.12em] transition-colors group-hover:text-[#5a4334]">
                 Back to top
               </span>
-              <ArrowUp className="h-4 w-4 text-[#203b32]" />
+              <ArrowUp className="h-4 w-4 text-[#5a4334]" />
             </a>
           </div>
         </div>
@@ -237,7 +237,7 @@ export default function CareerPage() {
 
       {showNotice && (
         <div className="fixed bottom-4 right-4 z-50 max-w-sm px-2 sm:bottom-6 sm:right-6">
-          <div className="rounded-lg border border-[#2e3132] bg-[#131a1c] p-6 text-white shadow-2xl">
+          <div className="rounded-lg border border-[#2e3132] bg-[#241b16] p-6 text-white shadow-2xl">
             <p className="mb-5 text-xs font-semibold leading-relaxed opacity-80">
               All current job openings are posted first on our official website. Please avoid filling out forms on
               third-party platforms, downloading apps, or sharing personal information outside official channels.
@@ -245,7 +245,7 @@ export default function CareerPage() {
             <button
               type="button"
               onClick={() => setShowNotice(false)}
-              className="w-full rounded-full border border-[#e3dbcc] py-3 text-sm font-semibold uppercase tracking-[0.12em] transition-colors hover:bg-[#e3dbcc] hover:text-[#131a1c]"
+              className="w-full rounded-full border border-[#e3dbcc] py-3 text-sm font-semibold uppercase tracking-[0.12em] transition-colors hover:bg-[#e3dbcc] hover:text-[#241b16]"
             >
               OK
             </button>

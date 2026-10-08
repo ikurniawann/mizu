@@ -3,6 +3,7 @@ import { appOrigin } from "@/lib/app-origin";
 import { backendUrl } from "@/lib/env";
 import { withDefaults } from "../content-defaults";
 import { addDays, weekWindow, type PublicSession, type PublicTimetable } from "./timetable";
+import type { PublicOutlet, PublicTreatment } from "@/features/spa/types";
 import type { Article, BranchProfile, BranchSummary, ContentByKey, ContentKey, PublicPlansView, SiteEvent } from "../types";
 
 /**
@@ -15,9 +16,10 @@ function base(): string {
   return backendUrl() || appOrigin();
 }
 
-async function read<T>(path: string): Promise<T | null> {
+/** One public API read: the envelope's data, or null when it failed. */
+async function readApi<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${base()}/api/public/site${path}`, { cache: "no-store" });
+    const res = await fetch(`${base()}${path}`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = (await res.json()) as { success?: boolean; data?: T };
     return json.success ? (json.data ?? null) : null;
@@ -25,6 +27,10 @@ async function read<T>(path: string): Promise<T | null> {
     console.error(`[site] fetch ${path} failed:`, error);
     return null;
   }
+}
+
+function read<T>(path: string): Promise<T | null> {
+  return readApi<T>(`/api/public/site${path}`);
 }
 
 export async function fetchContent<K extends ContentKey>(key: K): Promise<ContentByKey[K]> {
@@ -78,4 +84,22 @@ export async function fetchPlans(branchSlug?: string): Promise<PublicPlansView> 
     if (priced) return priced;
   }
   return (await read<PublicPlansView>("/plans")) ?? NO_PLANS;
+}
+
+/** A list read that keeps "the API failed" apart from "nothing published". */
+export type Loaded<T> = { ok: true; data: T } | { ok: false };
+
+async function loadList<T>(path: string): Promise<Loaded<T[]>> {
+  const data = await readApi<T[]>(path);
+  return Array.isArray(data) ? { ok: true, data } : { ok: false };
+}
+
+/** Spa outlets open for online booking (GET /api/public/spa/outlets). */
+export function fetchSpaOutlets(): Promise<Loaded<PublicOutlet[]>> {
+  return loadList<PublicOutlet>("/api/public/spa/outlets");
+}
+
+/** The treatment menu of one outlet, with that outlet's prices. */
+export function fetchSpaTreatments(branchId: string): Promise<Loaded<PublicTreatment[]>> {
+  return loadList<PublicTreatment>(`/api/public/spa/outlets/${encodeURIComponent(branchId)}/treatments`);
 }

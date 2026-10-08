@@ -31,15 +31,15 @@ function pinStyle(label: string, selected: boolean): Style {
   return new Style({
     image: new CircleStyle({
       radius: selected ? 11 : 9,
-      fill: new Fill({ color: selected ? "#00281a" : "#daff59" }),
-      stroke: new Stroke({ color: selected ? "#daff59" : "#00281a", width: 3 }),
+      fill: new Fill({ color: selected ? "#3d2b20" : "#d6b47a" }),
+      stroke: new Stroke({ color: selected ? "#d6b47a" : "#3d2b20", width: 3 }),
     }),
     text: new Text({
       text: label,
       offsetY: -18,
       font: "600 12px Manrope, system-ui, sans-serif",
-      fill: new Fill({ color: "#131a1c" }),
-      stroke: new Stroke({ color: "#fdfff2", width: 3 }),
+      fill: new Fill({ color: "#241b16" }),
+      stroke: new Stroke({ color: "#fffaf2", width: 3 }),
     }),
   });
 }

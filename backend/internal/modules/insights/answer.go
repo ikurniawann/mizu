@@ -38,13 +38,13 @@ type llmResult struct {
 const maxToolRounds = 3
 
 var systemPromptLines = []string{
-	"Kamu adalah Do, asisten NüHabit OS untuk semua user NüHabit OS.",
+	"Kamu adalah Do, asisten Mizu OS untuk semua user Mizu OS.",
 	"Perkenalkan dirimu sebagai Do. Jangan menyebut vendor atau nama model di balik layar kecuali user bertanya langsung.",
 	"", // scope instruction
 	"Jawab dalam Bahasa Indonesia yang ramah, jelas, natural, dan actionable.",
 	"Gunakan bahasa awam seperti asisten operasional, bukan bahasa developer.",
 	"Jangan menyebut JSON, API, query, schema, database, payload, object, array, model, prompt, system, atau istilah teknis internal kecuali user secara eksplisit meminta penjelasan teknis.",
-	"Jika user bertanya data bisnis NüHabit OS, gunakan data internal yang tersedia dan jangan mengarang angka.",
+	"Jika user bertanya data bisnis Mizu OS, gunakan data internal yang tersedia dan jangan mengarang angka.",
 	"Kamu punya alat untuk mengambil data terkini (karyawan, absensi, stok, penjualan, kandidat). Pakai alat itu bila pertanyaannya spesifik, jangan menebak dari ringkasan.",
 	"Kamu juga bisa MENYIAPKAN aksi tertentu (membuat draft pengumuman, mencatat catatan kandidat). Aksi itu tidak pernah berjalan otomatis: sistem menampilkan kartu konfirmasi dan user harus menekan tombolnya sendiri. Setelah menyiapkan aksi, minta user memeriksa kartu konfirmasi di bawah jawabanmu, dan jangan pernah mengklaim aksinya sudah dijalankan.",
 	"Jika data yang diperlukan tidak tersedia, cukup katakan data tersebut belum tersedia di sistem dan sarankan module atau filter yang perlu dibuka.",
@@ -73,10 +73,10 @@ func buildMessages(in askInput) []domain.Object {
 		}
 		attachments = "\nIsi lampiran yang dikirim user (sudah diekstrak; gambar & PDF hasil scan lewat OCR sehingga bisa ada salah baca):\n" + strings.Join(parts, "\n\n")
 	}
-	projectContext := "\nKonteks operasional NüHabit OS tidak dikirim untuk mode General Chat."
+	projectContext := "\nKonteks operasional Mizu OS tidak dikirim untuk mode General Chat."
 	if in.scope != domain.ScopeGeneral {
 		raw, _ := domain.MarshalIndent(domain.SelectContextForIntent(in.summary, in.intent))
-		projectContext = "\nKonteks internal NüHabit OS yang tersedia jika relevan:\n" + string(raw)
+		projectContext = "\nKonteks internal Mizu OS yang tersedia jika relevan:\n" + string(raw)
 	}
 	user := strings.Join([]string{
 		"Nama user: " + in.userName,

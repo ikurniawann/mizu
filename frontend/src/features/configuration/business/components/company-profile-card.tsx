@@ -23,7 +23,7 @@ const FIELD_DEFS: {
   {
     key: "legal_name",
     label: "Nama legal perusahaan",
-    placeholder: "cth. PT NüHabit",
+    placeholder: "cth. PT Mizu",
   },
   {
     key: "address",

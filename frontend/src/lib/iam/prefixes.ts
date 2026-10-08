@@ -119,6 +119,13 @@ export const IAM = {
   siteContent: ["site.content"],
   siteArticles: ["site.articles"],
   siteEvents: ["site.events"],
+  /** Spa (Mizu): booking, terapis, treatment, komisi, outlet. */
+  spa: ["spa"],
+  spaBookings: ["spa.bookings", "spa.book-order"],
+  spaTreatments: ["spa.treatments"],
+  spaTherapists: ["spa.therapists"],
+  spaCommissions: ["spa.commissions"],
+  spaOutlets: ["spa.outlets"],
   /** Items → approval PR per modul. */
   itemsPrApproval: [
     "items.general.purchasing.approval-pr",

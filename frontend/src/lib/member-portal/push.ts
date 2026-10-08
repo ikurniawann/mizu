@@ -39,7 +39,7 @@ const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0
 export function buildPushPayload(message: PushMessage): string {
   const link = message.link ?? (message.type ? linkForNotificationType(message.type) : null);
   return JSON.stringify({
-    title: clip(message.title.trim() || "NüHabit", TITLE_MAX),
+    title: clip(message.title.trim() || "Mizu", TITLE_MAX),
     body: clip((message.body ?? "").trim(), BODY_MAX),
     url: portalUrl(link),
     tag: message.type ?? "member",

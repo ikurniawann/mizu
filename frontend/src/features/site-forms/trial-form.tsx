@@ -100,7 +100,7 @@ export function TrialForm({ branches: given, defaultBranch, sourcePath }: {
         <CheckCircle2 className="mx-auto h-14 w-14 text-forest" />
         <p className="mt-4 text-2xl font-bold text-foreground">Request received</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Thanks, {values.first_name.trim()}. The {sentBranch || "NüHabit"} team will contact you on WhatsApp to set up your first session.
+          Thanks, {values.first_name.trim()}. The {sentBranch || "Mizu"} team will contact you on WhatsApp to set up your first session.
         </p>
       </div>
     );

@@ -135,7 +135,7 @@ func TestAssistantHistoryAndJSONTurn(t *testing.T) {
 	system := msgs[0].(map[string]any)["content"].(string)
 	userPrompt := msgs[1].(map[string]any)["content"].(string)
 	if !strings.Contains(system, "Mode General Chat aktif.") ||
-		userPrompt != "Nama user: Kasir Go\nMode konteks: general\nIntent terdeteksi: all\nPertanyaan user: Halo   Do\n\n\nKonteks operasional NüHabit OS tidak dikirim untuk mode General Chat." {
+		userPrompt != "Nama user: Kasir Go\nMode konteks: general\nIntent terdeteksi: all\nPertanyaan user: Halo   Do\n\n\nKonteks operasional Mizu OS tidak dikirim untuk mode General Chat." {
 		t.Fatalf("%q", userPrompt)
 	}
 
@@ -296,7 +296,7 @@ func TestAssistantStreamWithTools(t *testing.T) {
 	}
 	// The project context is the inventory intent's modules only.
 	prompt := msgs[len(msgs)-5].(map[string]any)["content"].(string)
-	if !strings.Contains(prompt, "Konteks internal NüHabit OS yang tersedia jika relevan:\n{\n  \"dibuatPada\": ") ||
+	if !strings.Contains(prompt, "Konteks internal Mizu OS yang tersedia jika relevan:\n{\n  \"dibuatPada\": ") ||
 		!strings.Contains(prompt, `"modul": {`+"\n"+`    "inventory": {`) || strings.Contains(prompt, `"hris": {`) {
 		t.Fatal(prompt)
 	}

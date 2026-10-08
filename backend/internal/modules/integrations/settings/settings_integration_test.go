@@ -398,7 +398,7 @@ func TestWaNotificationsTestSend(t *testing.T) {
 	f.exec(`INSERT INTO configuration.app_settings (key, value) VALUES ('wa_gateway_url', $1), ('wa_gateway_token', 'tok-123456789')`, g.URL)
 	expect(t, f.staff("POST", "/api/settings/wa-notifications/test", nil), 200,
 		`{"data":{"results":[{"target":"6281200000001","success":true,"reason":null},{"target":"6281200000002","success":false,"reason":"Nomor tidak terdaftar"}],"allOk":false}}`)
-	if want := "6281200000001: NüHabit OS — pesan uji notifikasi.\nNomor ini akan menerima notifikasi bisnis otomatis.\n4 Okt 2026, 14.30 WIB"; g.sent[0] != want {
+	if want := "6281200000001: Mizu OS — pesan uji notifikasi.\nNomor ini akan menerima notifikasi bisnis otomatis.\n4 Okt 2026, 14.30 WIB"; g.sent[0] != want {
 		t.Errorf("message = %q", g.sent[0])
 	}
 	f.staff("POST", "/api/settings/wa-notifications/test", map[string]any{"flash": true, "date": "2026-10-01"})

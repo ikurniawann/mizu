@@ -71,15 +71,15 @@ export function ApplicationForm({ prefill, onSubmitted }: { prefill: Application
           placeholder="Anything else you want us to know..."
           rows={3}
           {...form.register("notes")}
-          className={`min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[#00281a] disabled:cursor-not-allowed disabled:opacity-50 ${form.formState.errors.notes ? "border-[#00281a]" : "border-[#e3dbcc]"}`}
+          className={`min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[#3d2b20] disabled:cursor-not-allowed disabled:opacity-50 ${form.formState.errors.notes ? "border-[#3d2b20]" : "border-[#e3dbcc]"}`}
         />
         {form.formState.errors.notes && (
-          <p className="mt-1 text-xs text-[#00281a]">{form.formState.errors.notes.message}</p>
+          <p className="mt-1 text-xs text-[#3d2b20]">{form.formState.errors.notes.message}</p>
         )}
       </div>
 
       {submit.error && (
-        <div className="rounded-lg border border-[#00281a] bg-[#eeffb1] p-4 text-sm text-[#00281a]">
+        <div className="rounded-lg border border-[#3d2b20] bg-[#f2e3c6] p-4 text-sm text-[#3d2b20]">
           {submit.error.message}
         </div>
       )}
@@ -87,7 +87,7 @@ export function ApplicationForm({ prefill, onSubmitted }: { prefill: Application
       <button
         type="submit"
         disabled={submit.isPending || !files.cvFile || !files.photoFile}
-        className="w-full rounded-full bg-[#00281a] px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#203b32] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-full bg-[#3d2b20] px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#5a4334] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submit.isPending ? (
           <>
@@ -100,7 +100,7 @@ export function ApplicationForm({ prefill, onSubmitted }: { prefill: Application
       </button>
 
       {!files.cvFile && (
-        <p className="-mt-3 text-center text-xs text-[#2a332e]">* Upload your CV to submit the application</p>
+        <p className="-mt-3 text-center text-xs text-[#3a302a]">* Upload your CV to submit the application</p>
       )}
     </form>
   );

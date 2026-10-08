@@ -1,25 +1,25 @@
 @import url("https://api.fontshare.com/v2/css?f[]=roundo@400,500,600,700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Karla:wght@400;500;600;700&family=Lato:wght@400;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Mulish:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Rubik:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Urbanist:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Karla:wght@400;500;600;700&family=Lato:wght@400;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Mulish:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Rubik:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Urbanist:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
 
 /* NüHabit Brand Guideline 2026 (docs/frontend-conventions.md), di atas tata letak WIT.
-   Warna utama: White Beige #f3ece2, Deep Forest Green #00281a, Pale Lime #daff59.
-   Fungsional: Dark Jungle #1c261b, Everglade #203b32, Lettuce #abde67,
-   Lemon Lime #eeffb1, Mint Cream #fdfff2, Golden Ochre #c9a227. Judul Outfit, isi Manrope.
+   Warna utama: White Beige #f3ece2, Deep Forest Green #3d2b20, Pale Lime #d6b47a.
+   Fungsional: Dark Jungle #33271f, Everglade #5a4334, Lettuce #c49a5c,
+   Lemon Lime #f2e3c6, Mint Cream #fffaf2, Golden Ochre #b8893f. Judul Outfit, isi Manrope.
    Palet `pink-*` (dipakai ratusan halaman lama sebagai warna merek) ditimpa skala
    lime → forest; `gray-*`, `slate-*`, `zinc-*`, `neutral-*` ditimpa tangga netral
    hangat dari beige ke ink. Ribuan kelas lama ikut tanpa menyentuh tiap file. */
 @theme {
-  --color-pink-50: #f7ffe0;
-  --color-pink-100: #eeffb1;
-  --color-pink-200: #e3ff8a;
-  --color-pink-300: #daff59;
-  --color-pink-400: #abde67;
+  --color-pink-50: #fbf3e4;
+  --color-pink-100: #f2e3c6;
+  --color-pink-200: #ecd3a6;
+  --color-pink-300: #d6b47a;
+  --color-pink-400: #c49a5c;
   --color-pink-500: #4d8a1c;
-  --color-pink-600: #203b32;
-  --color-pink-700: #00281a;
+  --color-pink-600: #5a4334;
+  --color-pink-700: #3d2b20;
   --color-pink-800: #001f14;
   --color-pink-900: #00160e;
   --color-pink-950: #000d08;
@@ -28,85 +28,85 @@
   --color-gray-100: #f3ece2;
   --color-gray-200: #e3dbcc;
   --color-gray-300: #d4cbbb;
-  --color-gray-400: #9a958a;
-  --color-gray-500: #5f6b62;
-  --color-gray-600: #4a544d;
-  --color-gray-700: #2a332e;
-  --color-gray-800: #1c261b;
-  --color-gray-900: #131a1c;
-  --color-gray-950: #0b100f;
+  --color-gray-400: #9c8f82;
+  --color-gray-500: #75665a;
+  --color-gray-600: #574a40;
+  --color-gray-700: #3a302a;
+  --color-gray-800: #33271f;
+  --color-gray-900: #241b16;
+  --color-gray-950: #110d0a;
   --color-slate-50: #f8f4ee;
   --color-slate-100: #f3ece2;
   --color-slate-200: #e3dbcc;
   --color-slate-300: #d4cbbb;
-  --color-slate-400: #9a958a;
-  --color-slate-500: #5f6b62;
-  --color-slate-600: #4a544d;
-  --color-slate-700: #2a332e;
-  --color-slate-800: #1c261b;
-  --color-slate-900: #131a1c;
-  --color-slate-950: #0b100f;
+  --color-slate-400: #9c8f82;
+  --color-slate-500: #75665a;
+  --color-slate-600: #574a40;
+  --color-slate-700: #3a302a;
+  --color-slate-800: #33271f;
+  --color-slate-900: #241b16;
+  --color-slate-950: #110d0a;
   --color-zinc-50: #f8f4ee;
   --color-zinc-100: #f3ece2;
   --color-zinc-200: #e3dbcc;
   --color-zinc-300: #d4cbbb;
-  --color-zinc-400: #9a958a;
-  --color-zinc-500: #5f6b62;
-  --color-zinc-600: #4a544d;
-  --color-zinc-700: #2a332e;
-  --color-zinc-800: #1c261b;
-  --color-zinc-900: #131a1c;
-  --color-zinc-950: #0b100f;
+  --color-zinc-400: #9c8f82;
+  --color-zinc-500: #75665a;
+  --color-zinc-600: #574a40;
+  --color-zinc-700: #3a302a;
+  --color-zinc-800: #33271f;
+  --color-zinc-900: #241b16;
+  --color-zinc-950: #110d0a;
   --color-neutral-50: #f8f4ee;
   --color-neutral-100: #f3ece2;
   --color-neutral-200: #e3dbcc;
   --color-neutral-300: #d4cbbb;
-  --color-neutral-400: #9a958a;
-  --color-neutral-500: #5f6b62;
-  --color-neutral-600: #4a544d;
-  --color-neutral-700: #2a332e;
-  --color-neutral-800: #1c261b;
-  --color-neutral-900: #131a1c;
-  --color-neutral-950: #0b100f;
+  --color-neutral-400: #9c8f82;
+  --color-neutral-500: #75665a;
+  --color-neutral-600: #574a40;
+  --color-neutral-700: #3a302a;
+  --color-neutral-800: #33271f;
+  --color-neutral-900: #241b16;
+  --color-neutral-950: #110d0a;
 
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Portal member (/member): palet NüHabit mobile — White Beige ground, Deep
      Forest Green, Pale Lime accent; Outfit untuk judul, Manrope untuk isi. */
   --color-nh-beige: #f3ece2;
-  --color-nh-cream: #fdfff2;
+  --color-nh-cream: #fffaf2;
   --color-nh-raised: #ece5d8;
   --color-nh-line: #e3dbcc;
-  --color-nh-ink: #131a1c;
-  --color-nh-ink-soft: #1c261b;
-  --color-nh-forest: #00281a;
-  --color-nh-lime: #daff59;
-  --color-nh-lime-soft: #eeffb1;
-  --color-nh-lettuce: #abde67;
-  --color-nh-muted: #5f6b62;
+  --color-nh-ink: #241b16;
+  --color-nh-ink-soft: #33271f;
+  --color-nh-forest: #3d2b20;
+  --color-nh-lime: #d6b47a;
+  --color-nh-lime-soft: #f2e3c6;
+  --color-nh-lettuce: #c49a5c;
+  --color-nh-muted: #75665a;
   --color-nh-ok: #4d8a1c;
   --color-nh-warn: #9c7a14;
   --color-nh-danger: #d13b40;
-  --font-nh-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-nh-display: "Playfair Display", Georgia, ui-serif, serif;
   --font-nh-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 1.5rem;
   --radius-hero: 1.75rem;
   --radius-pill: 9999px;
 
-  --shadow-card: 0 1px 2px rgb(0 40 26 / 0.03), 0 10px 30px -14px rgb(0 40 26 / 0.12);
-  --shadow-float: 0 14px 40px -12px rgb(19 26 28 / 0.28);
-  --shadow-up: 0 -10px 30px -14px rgb(19 26 28 / 0.25);
+  --shadow-card: 0 1px 2px rgb(61 43 32 / 0.03), 0 10px 30px -14px rgb(61 43 32 / 0.12);
+  --shadow-float: 0 14px 40px -12px rgb(36 27 22 / 0.28);
+  --shadow-up: 0 -10px 30px -14px rgb(36 27 22 / 0.25);
 
   /* Warna merek bernama, untuk kode baru. */
-  --color-forest: #00281a;
-  --color-everglade: #203b32;
-  --color-jungle: #1c261b;
-  --color-lettuce: #abde67;
-  --color-lemon: #eeffb1;
-  --color-mint: #fdfff2;
-  --color-ochre: #c9a227;
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-forest: #3d2b20;
+  --color-everglade: #5a4334;
+  --color-jungle: #33271f;
+  --color-lettuce: #c49a5c;
+  --color-lemon: #f2e3c6;
+  --color-mint: #fffaf2;
+  --color-ochre: #b8893f;
+  --font-display: "Playfair Display", Georgia, ui-serif, serif;
 }
 
 /* Bind the `dark:` variant to our explicit theme attribute (manual + auto). */
@@ -177,9 +177,9 @@
 
 :root {
   /* Brand inputs — overridden at runtime by ThemeProvider. */
-  --brand-primary: #daff59;
-  --brand-secondary: #00281a;
-  --primary-foreground: #00281a;
+  --brand-primary: #d6b47a;
+  --brand-secondary: #3d2b20;
+  --primary-foreground: #3d2b20;
 
   /* Derived brand scales (perceptual mix in OKLCH). */
   --primary-50: color-mix(in oklch, var(--brand-primary) 8%, white);
@@ -203,49 +203,49 @@
      info-soft 10.0, success 4.5, warning 4.9, danger 5.4 pada tint masing-masing. */
   --wit-accent-strong: var(--brand-primary);
   --wit-accent-dark: color-mix(in oklch, var(--brand-primary) 88%, black);
-  --wit-accent-soft: #eeffb1;
-  --wit-accent-foreground: #00281a;
-  --wit-brand-text: #00281a;
-  --wit-info: #203b32;
-  --wit-info-soft: #e3ece6;
+  --wit-accent-soft: #f2e3c6;
+  --wit-accent-foreground: #3d2b20;
+  --wit-brand-text: #3d2b20;
+  --wit-info: #5a4334;
+  --wit-info-soft: #efe5da;
   --wit-success: #3f7a12;
   --wit-success-soft: #e6f2d8;
   --wit-warning: #835f00;
   --wit-warning-soft: #f7ecc8;
   --wit-danger: #b3262c;
   --wit-danger-soft: #fbe5e5;
-  --wit-ink: #131a1c;
-  --wit-ink-2: #1c261b;
-  --wit-ink-3: #203b32;
-  --wit-on-ink-muted: #b9c2b4;
+  --wit-ink: #241b16;
+  --wit-ink-2: #33271f;
+  --wit-ink-3: #5a4334;
+  --wit-on-ink-muted: #c9bcae;
   --wit-surface: #f3ece2;
   --wit-surface-2: #f8f4ee;
-  --wit-body: #2a332e;
+  --wit-body: #3a302a;
   --wit-silver: #b9b0a2;
   --wit-chart-muted: #d4cbbb;
 
   /* Semantic — light (shadcn). */
-  --background: #fdfff2;
-  --foreground: #131a1c;
-  --card: #fdfff2;
-  --card-foreground: #131a1c;
-  --popover: #fdfff2;
-  --popover-foreground: #131a1c;
+  --background: #fffaf2;
+  --foreground: #241b16;
+  --card: #fffaf2;
+  --card-foreground: #241b16;
+  --popover: #fffaf2;
+  --popover-foreground: #241b16;
   --primary: var(--wit-accent-strong);
   --secondary: #f3ece2;
-  --secondary-foreground: #131a1c;
+  --secondary-foreground: #241b16;
   --muted: #f8f4ee;
-  --muted-foreground: #5f6b62;
+  --muted-foreground: #75665a;
   --destructive: #b3262c;
   --success: #3f7a12;
   --warning: #835f00;
   --border: #e3dbcc;
   --input: #e3dbcc;
-  --ring: #203b32;
+  --ring: #5a4334;
 
   /* Legacy glass tokens: kartu WIT tidak memakai kaca, tapi beberapa modul
      (Arkiv OS desktop) masih membacanya. */
-  --glass-bg: #fdfff2;
+  --glass-bg: #fffaf2;
   --glass-border: transparent;
   --glass-blur: 0px;
   --glass-saturate: 1;
@@ -253,13 +253,13 @@
   --glass-highlight: 0 0 #0000;
 
   /* Chrome — overridden by company appearance. */
-  --sidebar-background: #131a1c;
-  --sidebar-foreground: #fdfff2;
-  --sidebar-active-background: #daff59;
-  --sidebar-active-foreground: #00281a;
+  --sidebar-background: #241b16;
+  --sidebar-foreground: #fffaf2;
+  --sidebar-active-background: #d6b47a;
+  --sidebar-active-foreground: #3d2b20;
   --sidebar-border: transparent;
   --navbar-background: transparent;
-  --navbar-foreground: #131a1c;
+  --navbar-foreground: #241b16;
   --navbar-border: transparent;
   --font-sans-stack: "Manrope", Inter, system-ui, sans-serif;
   --font-size-base: 16px;
@@ -279,35 +279,35 @@
 /* !important: ThemeProvider writes the Appearance colours inline on <html>,
    and inline values would otherwise keep light surfaces in dark mode. */
 [data-theme="dark"] {
-  --wit-brand-text: #daff59;
-  --background: #0d1213 !important;
-  --foreground: #eef1ea !important;
-  --card: #172019 !important;
-  --card-foreground: #eef1ea !important;
-  --popover: #172019;
-  --popover-foreground: #eef1ea;
-  --secondary: #1f2a24;
-  --secondary-foreground: #eef1ea;
-  --muted: #1f2a24;
-  --muted-foreground: #a4ada6;
-  --border: #2a3530 !important;
-  --input: #33403a !important;
+  --wit-brand-text: #d6b47a;
+  --background: #14100d !important;
+  --foreground: #f4eee6 !important;
+  --card: #1f1813 !important;
+  --card-foreground: #f4eee6 !important;
+  --popover: #1f1813;
+  --popover-foreground: #f4eee6;
+  --secondary: #2a211b;
+  --secondary-foreground: #f4eee6;
+  --muted: #2a211b;
+  --muted-foreground: #b3a597;
+  --border: #3a2e25 !important;
+  --input: #45372c !important;
 
-  --wit-surface: #0d1213;
-  --wit-surface-2: #1f2a24;
-  --wit-body: #d6dbd2;
-  --wit-accent-soft: #2c3a12;
-  --wit-info: #a8d5bd;
-  --wit-info-soft: #16261f;
-  --wit-success: #abde67;
+  --wit-surface: #14100d;
+  --wit-surface-2: #2a211b;
+  --wit-body: #e2d9cf;
+  --wit-accent-soft: #3d3020;
+  --wit-info: #d9c2a3;
+  --wit-info-soft: #261d17;
+  --wit-success: #c49a5c;
   --wit-success-soft: #182a12;
   --wit-warning: #e5b93a;
   --wit-warning-soft: #2e2208;
   --wit-danger: #f28b8f;
   --wit-danger-soft: #331415;
-  --wit-ink: #070b0b;
+  --wit-ink: #0d0a08;
 
-  --glass-bg: #172019;
+  --glass-bg: #1f1813;
   --surface-subtle: rgba(255, 255, 255, 0.06);
   --surface-hover: rgba(255, 255, 255, 0.1);
 }
@@ -315,35 +315,35 @@
 /* Auto mode follows the OS when nothing explicit is chosen. */
 @media (prefers-color-scheme: dark) {
   [data-theme="auto"] {
-    --wit-brand-text: #daff59;
-    --background: #0d1213 !important;
-    --foreground: #eef1ea !important;
-    --card: #172019 !important;
-    --card-foreground: #eef1ea !important;
-    --popover: #172019;
-    --popover-foreground: #eef1ea;
-    --secondary: #1f2a24;
-    --secondary-foreground: #eef1ea;
-    --muted: #1f2a24;
-    --muted-foreground: #a4ada6;
-    --border: #2a3530 !important;
-    --input: #33403a !important;
+    --wit-brand-text: #d6b47a;
+    --background: #14100d !important;
+    --foreground: #f4eee6 !important;
+    --card: #1f1813 !important;
+    --card-foreground: #f4eee6 !important;
+    --popover: #1f1813;
+    --popover-foreground: #f4eee6;
+    --secondary: #2a211b;
+    --secondary-foreground: #f4eee6;
+    --muted: #2a211b;
+    --muted-foreground: #b3a597;
+    --border: #3a2e25 !important;
+    --input: #45372c !important;
 
-    --wit-surface: #0d1213;
-    --wit-surface-2: #1f2a24;
-    --wit-body: #d6dbd2;
-    --wit-accent-soft: #2c3a12;
-    --wit-info: #a8d5bd;
-    --wit-info-soft: #16261f;
-    --wit-success: #abde67;
+    --wit-surface: #14100d;
+    --wit-surface-2: #2a211b;
+    --wit-body: #e2d9cf;
+    --wit-accent-soft: #3d3020;
+    --wit-info: #d9c2a3;
+    --wit-info-soft: #261d17;
+    --wit-success: #c49a5c;
     --wit-success-soft: #182a12;
     --wit-warning: #e5b93a;
     --wit-warning-soft: #2e2208;
     --wit-danger: #f28b8f;
     --wit-danger-soft: #331415;
-    --wit-ink: #070b0b;
+    --wit-ink: #0d0a08;
 
-    --glass-bg: #172019;
+    --glass-bg: #1f1813;
     --surface-subtle: rgba(255, 255, 255, 0.06);
     --surface-hover: rgba(255, 255, 255, 0.1);
   }
@@ -376,13 +376,15 @@ body {
 }
 
 ::selection {
-  background: #daff59;
-  color: #00281a;
+  background: #d6b47a;
+  color: #3d2b20;
 }
 
-/* Judul memakai Outfit (brand guideline: Title), isi Manrope. */
+/* Judul memakai Playfair Display (brand Mizu: serif elegan), isi Manrope.
+   Angka di judul tetap rata (lining) supaya nominal/statistik mudah dibaca. */
 :where(h1, h2, h3, [data-slot="card-title"], [data-slot="dialog-title"]) {
   font-family: var(--font-display);
+  font-variant-numeric: lining-nums;
 }
 
 @utility safe-b {
@@ -703,7 +705,7 @@ select:focus-visible,
 [data-slot="select-trigger"]:focus-visible,
 [data-slot="textarea"]:focus,
 [data-slot="textarea"]:focus-visible {
-  border-color: #203b32 !important;
+  border-color: #5a4334 !important;
   box-shadow: 0 0 0 3px rgb(32 59 50 / 0.18) !important;
   outline: none !important;
 }
@@ -1328,21 +1330,21 @@ hr {
     [class^="bg-pink-100/"],
     [class*=" bg-pink-100/"]
   ) {
-    background-color: color-mix(in oklch, #abde67 14%, transparent) !important;
-    border-color: color-mix(in oklch, #abde67 30%, transparent) !important;
+    background-color: color-mix(in oklch, #c49a5c 14%, transparent) !important;
+    border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important;
   }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .hover\:bg-pink-50:hover,
     [class*="hover:bg-pink-50/"]:hover,
     .hover\:bg-pink-100:hover,
     [class*="hover:bg-pink-100/"]:hover
-  ) { background-color: color-mix(in oklch, #abde67 22%, transparent) !important; }
+  ) { background-color: color-mix(in oklch, #c49a5c 22%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .text-pink-600,
     .text-pink-700,
     .text-pink-800,
     .text-pink-900
-  ) { color: color-mix(in oklch, #abde67 42%, white) !important; }
+  ) { color: color-mix(in oklch, #c49a5c 42%, white) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .border-pink-100,
     [class*=" border-pink-100/"],
@@ -1350,7 +1352,7 @@ hr {
     [class*=" border-pink-200/"],
     .border-pink-300,
     [class*=" border-pink-300/"]
-  ) { border-color: color-mix(in oklch, #abde67 30%, transparent) !important; }
+  ) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .bg-rose-50,
     [class^="bg-rose-50/"],
@@ -1412,7 +1414,7 @@ hr {
     input:not([type="checkbox"]):not([type="radio"]), textarea, select,
     [data-slot="input"], [data-slot="select-trigger"], [data-slot="textarea"]
   ) {
-    background: rgba(15, 23, 42, 0.94) !important;
+    background: rgba(31, 24, 19, 0.94) !important;
     border-color: var(--input) !important;
     color: var(--foreground) !important;
   }
@@ -1470,17 +1472,17 @@ hr {
     .from-pink-50,
     .from-pink-100,
     .from-pink-200
-  ) { --tw-gradient-from: color-mix(in oklch, #abde67 14%, transparent) !important; }
+  ) { --tw-gradient-from: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .via-pink-50,
     .via-pink-100,
     .via-pink-200
-  ) { --tw-gradient-via: color-mix(in oklch, #abde67 14%, transparent) !important; }
+  ) { --tw-gradient-via: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .to-pink-50,
     .to-pink-100,
     .to-pink-200
-  ) { --tw-gradient-to: color-mix(in oklch, #abde67 14%, transparent) !important; }
+  ) { --tw-gradient-to: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .from-amber-50,
     .from-amber-100,
@@ -1790,13 +1792,13 @@ hr {
     .divide-pink-100,
     .divide-pink-200,
     .divide-pink-300
-  ) > :not(:last-child) { border-color: color-mix(in oklch, #abde67 30%, transparent) !important; }
+  ) > :not(:last-child) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .ring-pink-50,
     .ring-pink-100,
     .ring-pink-200,
     .ring-pink-300
-  ) { --tw-ring-color: color-mix(in oklch, #abde67 30%, transparent) !important; }
+  ) { --tw-ring-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .divide-rose-50,
     .divide-rose-100,
@@ -2310,21 +2312,21 @@ hr {
   [class^="bg-pink-100/"],
   [class*=" bg-pink-100/"]
 ) {
-  background-color: color-mix(in oklch, #abde67 14%, transparent) !important;
-  border-color: color-mix(in oklch, #abde67 30%, transparent) !important;
+  background-color: color-mix(in oklch, #c49a5c 14%, transparent) !important;
+  border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important;
 }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .hover\:bg-pink-50:hover,
   [class*="hover:bg-pink-50/"]:hover,
   .hover\:bg-pink-100:hover,
   [class*="hover:bg-pink-100/"]:hover
-) { background-color: color-mix(in oklch, #abde67 22%, transparent) !important; }
+) { background-color: color-mix(in oklch, #c49a5c 22%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .text-pink-600,
   .text-pink-700,
   .text-pink-800,
   .text-pink-900
-) { color: color-mix(in oklch, #abde67 42%, white) !important; }
+) { color: color-mix(in oklch, #c49a5c 42%, white) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .border-pink-100,
   [class*=" border-pink-100/"],
@@ -2332,7 +2334,7 @@ hr {
   [class*=" border-pink-200/"],
   .border-pink-300,
   [class*=" border-pink-300/"]
-) { border-color: color-mix(in oklch, #abde67 30%, transparent) !important; }
+) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .bg-rose-50,
   [class^="bg-rose-50/"],
@@ -2394,7 +2396,7 @@ hr {
   input:not([type="checkbox"]):not([type="radio"]), textarea, select,
   [data-slot="input"], [data-slot="select-trigger"], [data-slot="textarea"]
 ) {
-  background: rgba(15, 23, 42, 0.94) !important;
+  background: rgba(31, 24, 19, 0.94) !important;
   border-color: var(--input) !important;
   color: var(--foreground) !important;
 }
@@ -2452,17 +2454,17 @@ hr {
   .from-pink-50,
   .from-pink-100,
   .from-pink-200
-) { --tw-gradient-from: color-mix(in oklch, #abde67 14%, transparent) !important; }
+) { --tw-gradient-from: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .via-pink-50,
   .via-pink-100,
   .via-pink-200
-) { --tw-gradient-via: color-mix(in oklch, #abde67 14%, transparent) !important; }
+) { --tw-gradient-via: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .to-pink-50,
   .to-pink-100,
   .to-pink-200
-) { --tw-gradient-to: color-mix(in oklch, #abde67 14%, transparent) !important; }
+) { --tw-gradient-to: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .from-amber-50,
   .from-amber-100,
@@ -2772,13 +2774,13 @@ hr {
   .divide-pink-100,
   .divide-pink-200,
   .divide-pink-300
-) > :not(:last-child) { border-color: color-mix(in oklch, #abde67 30%, transparent) !important; }
+) > :not(:last-child) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .ring-pink-50,
   .ring-pink-100,
   .ring-pink-200,
   .ring-pink-300
-) { --tw-ring-color: color-mix(in oklch, #abde67 30%, transparent) !important; }
+) { --tw-ring-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .divide-rose-50,
   .divide-rose-100,
@@ -2803,15 +2805,15 @@ hr {
 
 /* Datepicker — dark surface when portaled inside a dark theme. */
 [data-theme="dark"] .react-datepicker {
-  background-color: #0f172a;
+  background-color: #1f1813;
   border-color: rgba(148, 163, 184, 0.28);
   color: #e5e7eb;
 }
-[data-theme="dark"] .react-datepicker__header { background-color: #0f172a; }
+[data-theme="dark"] .react-datepicker__header { background-color: #1f1813; }
 [data-theme="dark"] .react-datepicker__current-month { color: #f1f5f9; }
 [data-theme="dark"] .react-datepicker__day-name { color: #94a3b8; }
 [data-theme="dark"] .react-datepicker__day { color: #cbd5e1; }
-[data-theme="dark"] .react-datepicker__day:hover { background-color: rgba(30, 41, 59, 0.9); }
+[data-theme="dark"] .react-datepicker__day:hover { background-color: rgba(42, 33, 27, 0.9); }
 [data-theme="dark"] .react-datepicker__day--outside-month { color: #475569; }
 
 /* Custom react-datepicker styles */

@@ -6,7 +6,7 @@ import { Upload, X } from "lucide-react";
 import { FormSection } from "./form-field";
 import type { ApplicationFiles } from "./use-application-files";
 
-const LABEL = "text-xs font-bold uppercase tracking-[0.12em] text-[#2a332e]";
+const LABEL = "text-xs font-bold uppercase tracking-[0.12em] text-[#3a302a]";
 const sizeMb = (file: File) => `${(file.size / 1024 / 1024).toFixed(2)} MB`;
 
 function SelectedFile({ file, preview, onRemove }: { file: File; preview?: ReactNode; onRemove: () => void }) {
@@ -14,11 +14,11 @@ function SelectedFile({ file, preview, onRemove }: { file: File; preview?: React
     <div className="flex items-center gap-3 rounded-lg border border-[#e3dbcc] bg-[#f8f4ee] p-4">
       {preview}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[#131a1c]">{file.name}</p>
-        <p className="text-xs text-[#2a332e]">{sizeMb(file)}</p>
+        <p className="truncate text-sm font-medium text-[#241b16]">{file.name}</p>
+        <p className="text-xs text-[#3a302a]">{sizeMb(file)}</p>
       </div>
       <button type="button" onClick={onRemove} aria-label={`Remove ${file.name}`} className="rounded p-1 transition-colors hover:bg-[#e3dbcc]">
-        <X className="h-4 w-4 text-[#00281a]" />
+        <X className="h-4 w-4 text-[#3d2b20]" />
       </button>
     </div>
   );
@@ -26,9 +26,9 @@ function SelectedFile({ file, preview, onRemove }: { file: File; preview?: React
 
 function DropZone({ label, accept, onChange }: { label: string; accept: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void }) {
   return (
-    <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[#e3dbcc] p-6 transition-colors hover:border-[#00281a] hover:bg-[#f3ece2]">
-      <Upload className="h-5 w-5 text-[#2a332e]" />
-      <span className="text-xs font-medium text-[#131a1c]">{label}</span>
+    <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[#e3dbcc] p-6 transition-colors hover:border-[#3d2b20] hover:bg-[#f3ece2]">
+      <Upload className="h-5 w-5 text-[#3a302a]" />
+      <span className="text-xs font-medium text-[#241b16]">{label}</span>
       <input type="file" accept={accept} className="hidden" onChange={onChange} />
     </label>
   );
@@ -41,13 +41,13 @@ export function DocumentSection({ files }: { files: ApplicationFiles }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <label className={LABEL}>
-            CV <span className="text-[#00281a]">*</span>
+            CV <span className="text-[#3d2b20]">*</span>
           </label>
-          <span className="text-xs text-[#2a332e]">PDF/DOC, up to 2MB</span>
+          <span className="text-xs text-[#3a302a]">PDF/DOC, up to 2MB</span>
           {files.cvFile ? (
             <SelectedFile
               file={files.cvFile}
-              preview={<Upload className="h-5 w-5 shrink-0 text-[#00281a]" />}
+              preview={<Upload className="h-5 w-5 shrink-0 text-[#3d2b20]" />}
               onRemove={files.removeCv}
             />
           ) : (
@@ -61,9 +61,9 @@ export function DocumentSection({ files }: { files: ApplicationFiles }) {
 
         <div className="space-y-1.5">
           <label className={LABEL}>
-            Photo <span className="text-[#00281a]">*</span>
+            Photo <span className="text-[#3d2b20]">*</span>
           </label>
-          <span className="text-xs text-[#2a332e]">JPG/PNG, up to 2MB</span>
+          <span className="text-xs text-[#3a302a]">JPG/PNG, up to 2MB</span>
           {files.photoFile ? (
             <SelectedFile
               file={files.photoFile}
@@ -80,7 +80,7 @@ export function DocumentSection({ files }: { files: ApplicationFiles }) {
         </div>
 
         {files.fileError && (
-          <div className="rounded-lg border border-[#00281a] bg-[#eeffb1] p-4 text-sm text-[#00281a]">
+          <div className="rounded-lg border border-[#3d2b20] bg-[#f2e3c6] p-4 text-sm text-[#3d2b20]">
             {files.fileError}
           </div>
         )}

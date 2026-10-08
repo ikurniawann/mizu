@@ -182,5 +182,5 @@ func (posOpsDirectory) BrandName(ctx context.Context, q database.Querier, compan
 			return name
 		}
 	}
-	return "NüHabit"
+	return "Mizu"
 }

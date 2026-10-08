@@ -187,7 +187,7 @@ func (s *Service) UpdateWholesaleAccount(ctx context.Context, id string, in Whol
 
 var (
 	errWholesaleCredentials = httpx.Unauthorized("Incorrect email or password")
-	errWholesaleDisabled    = httpx.Forbidden("This partner account is disabled. Contact the NüHabit team.")
+	errWholesaleDisabled    = httpx.Forbidden("This partner account is disabled. Contact the Mizu team.")
 	errWholesaleLocked      = httpx.TooManyRequests("Too many sign-in attempts. Try again in 15 minutes.")
 )
 

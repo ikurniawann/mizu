@@ -47,7 +47,7 @@ export function LoginPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-[#f3ece2]" />
           <div className="absolute inset-x-0 top-0 p-6 pt-[max(env(safe-area-inset-top),1.5rem)]">
             {/* Wordmark lime di atas hero gelap (PNG putih sebagai mask). */}
-            <div className="nh-logo-lime h-7 w-[204px]" role="img" aria-label="NüHabit" />
+            <div className="nh-logo-lime h-7 w-[204px]" role="img" aria-label="Mizu" />
           </div>
           <div className="absolute inset-x-0 bottom-14 px-6">
             <h1 className="nh-display text-4xl leading-[1.05] text-white drop-shadow-[0_2px_12px_rgb(0_0_0/0.4)]">

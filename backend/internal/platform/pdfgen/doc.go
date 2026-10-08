@@ -99,7 +99,7 @@ func New(o Options) *Doc {
 		now = time.Now()
 	}
 	pdf.SetCreationDate(now)
-	pdf.SetProducer("NüHabit", true)
+	pdf.SetProducer("Mizu", true)
 	d := &Doc{pdf: pdf, tr: pdf.UnicodeTranslatorFromDescriptor(""), margin: margin}
 	d.AddPage()
 	d.Font(Helvetica, 12).Color("#000000")

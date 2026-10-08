@@ -1,9 +1,7 @@
 import { OsDesktopLoader } from "@/features/os-desktop/components/os-desktop-loader";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { HomePage } from "@/features/site/components/home-page";
-import { BRANCH_COOKIE } from "@/features/site/lib/branch-cookie";
-import { fetchArticles, fetchBranches, fetchContent, fetchEvents, fetchPlans, fetchUpcomingSessions } from "@/features/site/lib/public-api";
+import { fetchArticles, fetchBranches, fetchContent, fetchEvents, fetchSpaOutlets, fetchSpaTreatments } from "@/features/site/lib/public-api";
 import { SiteLayout } from "@/features/site/site-layout";
 import { getUser } from "@/lib/auth/require-user";
 import { isEssOnlyUser } from "@/lib/iam/get-user-menus";
@@ -15,17 +13,26 @@ export default async function HomeRoute() {
   const { user } = await getUser();
 
   if (!user) {
-    const branchSlug = (await cookies()).get(BRANCH_COOKIE)?.value || undefined;
-    const [home, branches, plans, training, articles, events] = await Promise.all([
-      fetchContent("home"), fetchBranches(), fetchPlans(branchSlug), fetchContent("training"), fetchArticles(), fetchEvents(),
+    const [home, guide, social, branches, outlets, articles, events] = await Promise.all([
+      fetchContent("home"), fetchContent("training"), fetchContent("social"), fetchBranches(), fetchSpaOutlets(), fetchArticles(), fetchEvents(),
     ]);
-    const selectedBranch = branches.find((branch) => branch.slug === branchSlug) ?? branches[0];
+    // The treatment teaser shows the first outlet's menu and prices.
+    const outlet = outlets.ok ? (outlets.data[0] ?? null) : null;
+    const treatments = outlet ? await fetchSpaTreatments(outlet.branch_id) : null;
     const now = new Date();
-    const sessions = selectedBranch ? await fetchUpcomingSessions(selectedBranch.slug, now) : [];
     const upcomingEvents = events.filter((event) => new Date(event.starts_at).getTime() >= now.getTime()).slice(0, 1);
     return (
       <SiteLayout>
-        <HomePage home={home} branches={branches} plans={plans} training={training} sessions={sessions} selectedBranch={selectedBranch ?? null} articles={articles.slice(0, upcomingEvents.length ? 1 : 2)} events={upcomingEvents} />
+        <HomePage
+          home={home}
+          guide={guide}
+          social={social}
+          branches={branches}
+          outlet={outlet}
+          treatments={treatments?.ok ? treatments.data : []}
+          articles={articles.slice(0, 3 - upcomingEvents.length)}
+          events={upcomingEvents}
+        />
       </SiteLayout>
     );
   }

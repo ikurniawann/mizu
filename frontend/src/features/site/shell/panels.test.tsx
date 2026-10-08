@@ -7,7 +7,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
 beforeEach(() => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(JSON.stringify({ success: true, data: [{ slug: "bandung", name: "NüHabit Bandung" }] }), { status: 200 }),
+    new Response(JSON.stringify({ success: true, data: [{ slug: "bandung", name: "Mizu Bandung" }] }), { status: 200 }),
   );
 });
 
@@ -60,7 +60,7 @@ describe("SitePanelsProvider", () => {
     fireEvent.click(screen.getByText("open trial"));
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent("Start a trial");
-    expect(await screen.findByRole("option", { name: "NüHabit Bandung" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Mizu Bandung" })).toBeInTheDocument();
     expect(screen.getByLabelText("Branch")).toHaveValue("bandung");
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));

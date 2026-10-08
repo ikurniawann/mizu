@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Camera, Mail, MapPin, MessageCircle, Music2, Play } from "lucide-react";
 import type { BranchSummary, SocialContent } from "../types";
+import { BookingButton } from "./booking-link";
 import { LeadFormPage } from "./lead-form-page";
 import { Tile } from "./site-section";
 
@@ -19,20 +20,20 @@ export function ContactPage({ social, branches }: { social: SocialContent; branc
 
   return (
     <LeadFormPage
-      kicker="Contact"
-      title="Get in touch"
-      intro="Questions about classes, apparel orders or anything else. We reply by email during business hours; for anything urgent, WhatsApp is faster."
+      kicker="Kontak"
+      title="Hubungi kami"
+      intro="Ada pertanyaan tentang treatment, booking atau hal lain? Tinggalkan pesan dan tim kami akan membalas pada jam operasional. Untuk booking, kamu bisa langsung memesan secara online."
       slug="contact"
       aside={
         <>
           <Tile className="space-y-4">
-            <h2 className="font-display text-lg font-semibold">Head office</h2>
+            <h2 className="font-display text-lg font-semibold">Mizu</h2>
             <dl className="space-y-3 text-sm">
               {hq ? (
                 <div className="flex gap-3">
                   <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                   <div>
-                    <dt className="sr-only">Address</dt>
+                    <dt className="sr-only">Alamat</dt>
                     <dd className="text-body">
                       <span className="font-semibold text-foreground">{hq.name}</span>
                       <br />
@@ -86,9 +87,14 @@ export function ContactPage({ social, branches }: { social: SocialContent; branc
               </ul>
             ) : null}
           </Tile>
+          <Tile className="space-y-3">
+            <h2 className="font-display text-lg font-semibold">Mau booking treatment?</h2>
+            <p className="text-sm text-body">Pilih outlet, treatment dan jam secara online. Pembayaran dilakukan di outlet.</p>
+            <BookingButton size="sm">Booking sekarang</BookingButton>
+          </Tile>
           {branches.length > 1 ? (
             <Tile className="space-y-3">
-              <h2 className="font-display text-lg font-semibold">Our gyms</h2>
+              <h2 className="font-display text-lg font-semibold">Outlet kami</h2>
               <ul className="space-y-2 text-sm">
                 {branches.map((b) => (
                   <li key={b.slug}>

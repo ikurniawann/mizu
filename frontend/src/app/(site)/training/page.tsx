@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
-import { TrainingPage } from "@/features/site/components/training-page";
-import { fetchContent } from "@/features/site/lib/public-api";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Training" };
-
-export default async function Page() {
-  return <TrainingPage training={await fetchContent("training")} />;
+/** The gym's training page; the spa's treatment guide lives on /treatments. */
+export default function Page() {
+  redirect("/treatments");
 }

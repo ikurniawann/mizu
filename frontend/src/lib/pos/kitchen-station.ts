@@ -7,6 +7,7 @@ export const POS_STATIONS = [
   "dessert",
   "merchandise",
   "photobooth",
+  "spa",
 ] as const;
 
 export type PosStation = (typeof POS_STATIONS)[number];
@@ -18,6 +19,7 @@ export const POS_STATION_OPTIONS: { value: PosStation; label: string }[] = [
   { value: "dessert", label: "Dessert" },
   { value: "merchandise", label: "Merchandise" },
   { value: "photobooth", label: "Photobooth" },
+  { value: "spa", label: "Spa / Treatment" },
 ];
 
 export function posStationLabel(value?: string | null): string {
@@ -86,7 +88,7 @@ export function buildKitchenPrintJobs(
       item.product_name || "",
       item.kitchen_notes || ""
     );
-    if (station === "merchandise" || station === "photobooth") return;
+    if (station === "merchandise" || station === "photobooth" || station === "spa") return;
     stationGroups.set(station, [...(stationGroups.get(station) || []), item]);
   });
 

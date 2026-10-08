@@ -75,7 +75,7 @@ func (w svWhatsApp) NotifyFocTopup(ctx context.Context, n storedvalue.FocTopupNo
 		approved = strings.TrimSpace(*n.ApprovedName)
 	}
 	message := strings.Join([]string{
-		"NüHabit OS — Topup FOC (Gratis)",
+		"Mizu OS — Topup FOC (Gratis)",
 		"Customer : " + orDash(customer),
 		"Saldo ARK : Rp " + domain.GroupThousands(int64(domain.JSRound(n.AmountIdr))) + " (tanpa pembayaran, tanpa XP)",
 		"Disetujui : " + orDash(approved),

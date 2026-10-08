@@ -664,7 +664,7 @@ func buildPipelineReport(data *reportData, now time.Time) ([]byte, error) {
 
 	d.EachPage(func(page, total int) {
 		d.Font(pdfgen.Helvetica, 8).Color(colorMuted)
-		d.Text(sanitizeText("NüHabit HRIS · "+c.Str("full_name")+" · Halaman "+strconv.Itoa(page)+" dari "+strconv.Itoa(total)),
+		d.Text(sanitizeText("Mizu HRIS · "+c.Str("full_name")+" · Halaman "+strconv.Itoa(page)+" dari "+strconv.Itoa(total)),
 			d.Left(), d.PageHeight()-34, pdfgen.TextOpts{Width: d.ContentWidth(), Align: pdfgen.AlignCenter, NoWrap: true})
 	})
 	return d.Bytes()

@@ -1,8 +1,8 @@
 {
   "id": "/member",
-  "name": "NüHabit Member",
-  "short_name": "NüHabit",
-  "description": "Your NüHabit ARK Coin balance, XP, offers, and membership card.",
+  "name": "Mizu Member",
+  "short_name": "Mizu",
+  "description": "Your Mizu ARK Coin balance, XP, offers, and membership card.",
   "start_url": "/member",
   "scope": "/member",
   "display": "standalone",

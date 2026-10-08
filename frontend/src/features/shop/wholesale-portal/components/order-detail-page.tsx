@@ -109,7 +109,7 @@ export function WholesaleOrderDetailPage({ id }: { id: string }) {
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span>Shipping</span>
-            <span>{Number(detail.shipping_cost) > 0 ? formatRupiah(detail.shipping_cost) : "Arranged by the NüHabit team"}</span>
+            <span>{Number(detail.shipping_cost) > 0 ? formatRupiah(detail.shipping_cost) : "Arranged by the Mizu team"}</span>
           </div>
           <div className="flex justify-between text-base font-semibold">
             <span>Total</span>

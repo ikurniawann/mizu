@@ -4,8 +4,8 @@ import { CONSENT_EMAIL_TEXT } from "./consent";
 import { TrialForm } from "./trial-form";
 
 const branches = [
-  { slug: "kemang", name: "NüHabit Kemang" },
-  { slug: "bsd", name: "NüHabit BSD" },
+  { slug: "kemang", name: "Mizu Kemang" },
+  { slug: "bsd", name: "Mizu BSD" },
 ];
 
 afterEach(() => {
@@ -17,7 +17,7 @@ describe("TrialForm", () => {
   test("keeps submit disabled until the values are valid, then sends E.164 and the consents", async () => {
     window.dataLayer = [];
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ success: true, data: { lead_id: "lead-1", branch_name: "NüHabit Kemang" } }), { status: 200 }),
+      new Response(JSON.stringify({ success: true, data: { lead_id: "lead-1", branch_name: "Mizu Kemang" } }), { status: 200 }),
     );
     render(<TrialForm branches={branches} sourcePath="/locations/kemang" />);
 
@@ -35,7 +35,7 @@ describe("TrialForm", () => {
     expect(window.dataLayer).toContainEqual({ event: "studio_select", branch: "kemang" });
 
     fireEvent.click(submit);
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("The NüHabit Kemang team will contact you"));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("The Mizu Kemang team will contact you"));
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/public/site/trial");
@@ -72,6 +72,6 @@ describe("TrialForm", () => {
       new Response(JSON.stringify({ success: true, data: branches }), { status: 200 }),
     );
     render(<TrialForm />);
-    await waitFor(() => expect(screen.getByRole("option", { name: "NüHabit BSD" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("option", { name: "Mizu BSD" })).toBeInTheDocument());
   });
 });

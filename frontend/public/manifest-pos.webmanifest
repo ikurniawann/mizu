@@ -1,7 +1,7 @@
 {
-  "name": "NüHabit POS Kasir",
+  "name": "Mizu POS Kasir",
   "short_name": "POS Kasir",
-  "description": "Mode tablet / kiosk untuk kasir NüHabit POS",
+  "description": "Mode tablet / kiosk untuk kasir Mizu POS",
   "start_url": "/dashboard/pos/tablet",
   "scope": "/dashboard/pos/",
   "display": "standalone",

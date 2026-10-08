@@ -8,7 +8,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await fetchEvent((await params).slug);
-  return { title: event?.title ?? "Event" };
+  return { title: event?.title ?? "Acara" };
 }
 
 export default async function Page({ params }: Props) {

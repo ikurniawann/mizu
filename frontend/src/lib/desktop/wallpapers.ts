@@ -28,9 +28,9 @@ export interface WallpaperItem {
  */
 export const BUILTIN_WALLPAPERS: WallpaperItem[] = [
   { id: "arkiv", name: brandName(), src: "/brand/wallpaper.webp" },
-  { id: "pink", name: "Deep Forest", src: "linear-gradient(135deg,#00160e,#00281a 45%,#131a1c)" },
-  { id: "midnight", name: "Midnight", src: "linear-gradient(135deg,#0b100f,#131a1c 52%,#1c261b)" },
-  { id: "glass", name: "Everglade", src: "linear-gradient(135deg,#203b32,#131a1c 48%,#00281a)" },
+  { id: "pink", name: "Deep Forest", src: "linear-gradient(135deg,#00160e,#3d2b20 45%,#241b16)" },
+  { id: "midnight", name: "Midnight", src: "linear-gradient(135deg,#110d0a,#241b16 52%,#33271f)" },
+  { id: "glass", name: "Everglade", src: "linear-gradient(135deg,#5a4334,#241b16 48%,#3d2b20)" },
 ];
 
 export const DEFAULT_WALLPAPER: WallpaperItem = BUILTIN_WALLPAPERS[0];

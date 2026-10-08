@@ -7,7 +7,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const branch = await fetchBranch((await params).slug);
-  return { title: branch ? `${branch.name}${branch.city ? `, ${branch.city}` : ""}` : "Branch" };
+  return { title: branch ? `${branch.name}${branch.city ? `, ${branch.city}` : ""}` : "Outlet" };
 }
 
 export default async function Page({ params }: Props) {

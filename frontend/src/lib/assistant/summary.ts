@@ -292,7 +292,7 @@ export function generateSummaryAnswer(message: string, summary: Summary, name: s
   const includeAll = intent === "all" || !lower || lower.includes("semua") || lower.includes("summary") || lower.includes("ringkas") || lower.includes("overview");
 
   if (includeAll) {
-    sections.push(`Halo ${name}, berikut ringkasan NüHabit OS saat ini:`);
+    sections.push(`Halo ${name}, berikut ringkasan Mizu OS saat ini:`);
     sections.push(formatHris(summary));
     sections.push(formatPerformance(summary));
     sections.push(formatPayroll(summary));

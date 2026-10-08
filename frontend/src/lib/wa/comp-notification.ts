@@ -53,7 +53,7 @@ export function buildCompNotifMessage(
       ? `${input.orderNumber} (${input.orderCount} order)`
       : input.orderNumber;
   return [
-    `NüHabit OS — Komplimen ${compNotifLabel(input.compType)}`,
+    `Mizu OS — Komplimen ${compNotifLabel(input.compType)}`,
     `Order : ${orderLine}`,
     `Customer : ${input.customerName?.trim() || "-"}`,
     `Nilai : ${rp(input.grossIdr)}`,
@@ -120,7 +120,7 @@ export function buildFocTopupMessage(
     timeStyle: "short",
   });
   return [
-    "NüHabit OS — Topup FOC (Gratis)",
+    "Mizu OS — Topup FOC (Gratis)",
     `Customer : ${input.customerName?.trim() || "-"}`,
     `Saldo ARK : ${rp(input.amountIdr)} (tanpa pembayaran, tanpa XP)`,
     `Disetujui : ${input.approvedName?.trim() || "-"}`,

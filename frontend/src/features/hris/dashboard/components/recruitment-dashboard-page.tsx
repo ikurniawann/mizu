@@ -43,7 +43,7 @@ import { useDashboardBrands, useDashboardData } from "../queries";
 import { buildRecruitmentReportHtml } from "../recruitment-report";
 import type { DashboardSummary } from "../types";
 
-const SOURCE_COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#203b32"];
+const SOURCE_COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#5a4334"];
 const PURCHASING_ROLES = ["purchasing_manager", "purchasing_staff", "purchasing_admin", "warehouse_staff", "qc_staff"];
 const EMPTY_SUMMARY: DashboardSummary = { thisMonth: 0, activePipeline: 0, talentPool: 0, openPositions: 0 };
 

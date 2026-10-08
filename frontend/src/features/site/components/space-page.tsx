@@ -1,4 +1,5 @@
 import type { SpaceContent } from "../types";
+import { BookingButton } from "./booking-link";
 import { Container, Picture, Section, SectionHeading } from "./site-section";
 
 export function SpacePage({ space }: { space: SpaceContent }) {
@@ -6,7 +7,7 @@ export function SpacePage({ space }: { space: SpaceContent }) {
     <>
       <Section className="pb-6">
         <Container>
-          <SectionHeading as="h1" kicker="The Space" title={space.title} text={space.intro} />
+          <SectionHeading as="h1" kicker="Suasana" title={space.title} text={space.intro} />
         </Container>
       </Section>
       <Section className="pt-4">
@@ -23,6 +24,10 @@ export function SpacePage({ space }: { space: SpaceContent }) {
               </div>
             </article>
           ))}
+          <div className="flex flex-wrap items-center gap-4 pt-4">
+            <BookingButton size="lg">Booking treatment</BookingButton>
+            <p className="text-sm text-muted-foreground">Pilih outlet dan jam yang pas, bayar di outlet.</p>
+          </div>
         </Container>
       </Section>
     </>

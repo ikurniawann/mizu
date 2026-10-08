@@ -20,7 +20,7 @@ export function SiteShell({
 }) {
   return (
     <SitePanelsProvider>
-      <div lang="en" className="flex min-h-dvh flex-col bg-background text-foreground">
+      <div lang="id" className="flex min-h-dvh flex-col bg-background text-foreground">
         <SiteHeader memberLinked={memberLinked} />
         <main id="content" className="flex-1">
           {children}

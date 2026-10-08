@@ -16,7 +16,7 @@ function getErrorMessage(error: unknown) {
 
 function normalizeStation(value?: string) {
   const station = String(value || '').trim().toLowerCase();
-  if (['kitchen', 'bar', 'bakery', 'dessert', 'merchandise', 'photobooth'].includes(station)) {
+  if (['kitchen', 'bar', 'bakery', 'dessert', 'merchandise', 'photobooth', 'spa'].includes(station)) {
     return station;
   }
   return 'kitchen';

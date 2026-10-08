@@ -193,7 +193,7 @@ export function ReceiptSettingsCard() {
                 rows={4}
                 className={textareaClass}
                 placeholder={
-                  "NÜHABIT\nJl. Alamat Studio No. 1, Senopati\nIG @nuhabit"
+                  "MIZU\nJl. Westhoff No. 1, Bandung\nIG @mizufamily.id"
                 }
                 value={headerText}
                 onChange={(e) => edit({ headerText: e.target.value })}

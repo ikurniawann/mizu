@@ -66,7 +66,7 @@ func (s *service) loadVenue(ctx context.Context) (venue, error) {
 	v.CompanyID, v.BranchID = s.p.Directory.Venue(ctx, s.db)
 	brand, err := s.p.Settings.BrandName(ctx, s.db, v.CompanyID)
 	if err != nil {
-		brand = "NüHabit"
+		brand = "Mizu"
 	}
 	v.BrandName = brand
 	name, charges, err := s.p.Catalog.BillingProfile(ctx, s.db, v.BranchID)

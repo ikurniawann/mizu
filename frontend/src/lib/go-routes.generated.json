@@ -4120,6 +4120,21 @@
     "path": "/api/public/site/trial"
   },
   {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/public/spa/bookings"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/public/spa/outlets"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/public/spa/outlets/{branchId}/treatments"
+  },
+  {
     "module": "inventory",
     "method": "DELETE",
     "path": "/api/purchasing/bom/{id}"
@@ -5963,6 +5978,191 @@
     "module": "site",
     "method": "POST",
     "path": "/api/site/uploads"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/assists"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/assists"
+  },
+  {
+    "module": "spa",
+    "method": "DELETE",
+    "path": "/api/spa/assists/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/availability"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/board"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/bookings"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/bookings"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/bookings/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/bookings/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/bookings/{id}/cancel"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/bookings/{id}/checkout"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/bookings/{id}/items"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/bookings/{id}/items/{itemId}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/commission-rules"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/commission-rules"
+  },
+  {
+    "module": "spa",
+    "method": "DELETE",
+    "path": "/api/spa/commission-rules/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/commission-rules/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/commissions"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/customers"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/employees"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/assignments"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/me/assignments/{itemId}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/commissions"
+  },
+  {
+    "module": "spa",
+    "method": "DELETE",
+    "path": "/api/spa/outlet-pics"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/outlet-pics"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/outlet-pics"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/outlets"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/outlets/{branchId}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/outlets/{branchId}/sync-pos"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/therapists"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/therapists"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/therapists/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/treatments"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/treatments"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/treatments/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/treatments/{id}/prices"
   },
   {
     "module": "pos-sales",

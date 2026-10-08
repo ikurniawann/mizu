@@ -29,7 +29,7 @@ export function WholesaleShell({ children }: { children: React.ReactNode }) {
       <header className="bg-card shadow-card">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link href={account ? "/wholesale/catalog" : "/wholesale"} className="flex items-center gap-3">
-            <Image src="/brand/wordmark-black.png" alt="NüHabit" width={1200} height={165} className="h-6 w-auto" priority />
+            <Image src="/brand/wordmark-black.png" alt="Mizu" width={640} height={165} className="h-6 w-auto" priority />
             <span className="rounded-full bg-ink px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-on-ink">
               Partner
             </span>

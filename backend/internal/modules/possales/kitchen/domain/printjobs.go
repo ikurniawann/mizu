@@ -81,7 +81,7 @@ func JobTypeForStation(station string) string {
 
 // BuildKitchenPrintJobs is buildKitchenPrintJobs(order, insertedItems): one
 // pending job per station, stations in first-seen item order, merchandise and
-// photobooth items skipped. It returns nil when no item reaches a station.
+// photobooth and spa items skipped. It returns nil when no item reaches a station.
 func BuildKitchenPrintJobs(order PrintOrder, items []PrintItem) []PrintJobRow {
 	requestedAt := order.RequestedAt
 	if requestedAt.IsZero() {
@@ -96,7 +96,7 @@ func BuildKitchenPrintJobs(order PrintOrder, items []PrintItem) []PrintJobRow {
 	groups := map[string][]PrintItem{}
 	for _, item := range items {
 		station := NormalizeStation(item.Station, derefOr(item.ProductName), item.KitchenNotes)
-		if station == "merchandise" || station == "photobooth" {
+		if station == "merchandise" || station == "photobooth" || station == "spa" {
 			continue
 		}
 		if _, ok := groups[station]; !ok {

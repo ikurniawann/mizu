@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     email: ctx.session?.email ?? null, ip: clientIp(request), userAgent: request.headers.get("user-agent"),
   });
   const watermarkText = ctx.share.watermark
-    ? buildWatermarkText({ label: ctx.session?.email || `Dibagikan oleh ${ctx.share.created_by_name ?? "NüHabit"}` })
+    ? buildWatermarkText({ label: ctx.session?.email || `Dibagikan oleh ${ctx.share.created_by_name ?? "Mizu"}` })
     : null;
   return serveNodeFile(node, { inline: !download, watermarkText });
 }

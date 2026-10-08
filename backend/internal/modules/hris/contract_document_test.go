@@ -15,7 +15,7 @@ import (
 // align: "justify" (word spacing on wrapped lines); the text keeps its order.
 func TestContractPDFJustifiesParagraphs(t *testing.T) {
 	s := func(v string) *string { return &v }
-	co := map[string]*string{"company_city": s("Bandung"), "company_signer_name": s("Ilham"), "company_legal_name": s("PT NüHabit")}
+	co := map[string]*string{"company_city": s("Bandung"), "company_signer_name": s("Ilham"), "company_legal_name": s("PT Mizu")}
 	c := obj("contract_type", "pkwt", "contract_number", "K-1", "start_date", "2026-08-01", "end_date", "2027-08-01",
 		"signed_at", "2026-07-20", "position_title", "Kasir", "work_location", "Outlet Sulu Bandung", "base_salary", "4500000",
 		"full_name", "Budi Santoso")

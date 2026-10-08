@@ -1,50 +1,27 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Camera, Mail, MessageCircle, Music2, Play } from "lucide-react";
+import { Camera, Mail, MapPin, MessageCircle, Music2, Play } from "lucide-react";
+import { BOOKING_HREF } from "../components/booking-link";
 import type { BranchSummary, SocialContent } from "../types";
-import { BRANCH_COOKIE, readBranchCookie, useSitePanels, writeBranchCookie } from "./panels";
-import { BRAND_NAV, BUSINESS_NAV } from "./site-header";
+import { SECONDARY_NAV, SITE_NAV } from "./site-header";
 
-const listeners = new Set<() => void>();
-function subscribe(onChange: () => void) {
-  listeners.add(onChange);
-  return () => listeners.delete(onChange);
-}
-
-/** The remembered branch slug; "" on the server and before hydration. */
-function useBranchSlug(): [string, (slug: string) => void] {
-  const slug = useSyncExternalStore(subscribe, () => readBranchCookie(document.cookie) ?? "", () => "");
-  const set = (next: string) => {
-    writeBranchCookie(next);
-    listeners.forEach((fn) => fn());
-  };
-  return [slug, set];
-}
-
-function BranchSwitcher({ branches }: { branches: BranchSummary[] }) {
-  const [slug, setSlug] = useBranchSlug();
+function Outlets({ branches }: { branches: BranchSummary[] }) {
   if (branches.length === 0) return null;
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
-      <span className="font-semibold text-foreground">Your branch</span>
-      <select
-        name={BRANCH_COOKIE}
-        value={slug}
-        onChange={(e) => setSlug(e.target.value)}
-        className="h-10 rounded-full border border-border bg-card px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-forest/40"
-      >
-        <option value="">Choose a branch</option>
-        {branches.map((b) => (
-          <option key={b.slug} value={b.slug}>
-            {b.name}
-            {b.city ? ` · ${b.city}` : ""}
-          </option>
-        ))}
-      </select>
-      <span className="text-xs text-muted-foreground">The timetable, trial and membership follow this branch.</span>
-    </label>
+    <ul className="space-y-3 text-sm">
+      {branches.map((b) => (
+        <li key={b.slug} className="flex gap-2">
+          <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <span>
+            <Link href={`/locations/${b.slug}`} className="font-semibold text-foreground hover:underline">
+              {b.name}
+            </Link>
+            {b.address || b.city ? <span className="block text-body">{[b.address, b.city].filter(Boolean).join(", ")}</span> : null}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -78,42 +55,41 @@ function SocialLinks({ social }: { social: SocialContent }) {
 
 export function SiteFooter({ branches, social }: { branches: BranchSummary[]; social: SocialContent }) {
   const year = new Date().getFullYear();
-  const panels = useSitePanels();
   return (
     <footer className="mt-16 bg-surface">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-12 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] lg:px-6">
         <div className="space-y-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/wordmark-black.png" alt="NüHabit" className="h-6 w-auto dark:hidden" />
+          <img src="/brand/lockup-black.png" alt="Mizu Family Massage & Reflexology" className="h-8 w-auto max-w-full dark:hidden" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/wordmark-white.png" alt="NüHabit" className="hidden h-6 w-auto dark:block" />
+          <img src="/brand/lockup-white.png" alt="Mizu Family Massage & Reflexology" className="hidden h-8 w-auto max-w-full dark:block" />
           <p className="max-w-sm text-sm text-body">
-            A HYROX gym built around a measurable 8-week program. Training that turns into a habit.
+            Family massage & reflexology di Bandung. Magical places to rest, relax and rejuvenate.
           </p>
-          <BranchSwitcher branches={branches} />
+          <Outlets branches={branches} />
           <SocialLinks social={social} />
         </div>
-        <nav aria-label="Pages" className="text-sm">
-          <p className="mb-3 font-semibold text-foreground">Explore</p>
+        <nav aria-label="Halaman" className="text-sm">
+          <p className="mb-3 font-semibold text-foreground">Jelajahi</p>
           <ul className="space-y-2">
-            {BRAND_NAV.map((item) => (
+            {SITE_NAV.map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="text-body hover:text-foreground">
                   {item.label}
                 </Link>
               </li>
             ))}
-            <li>
-              <button type="button" onClick={() => panels.open("membership")} className="text-body hover:text-foreground">
-                Membership
-              </button>
-            </li>
           </ul>
         </nav>
-        <nav aria-label="Business" className="text-sm">
-          <p className="mb-3 font-semibold text-foreground">NüHabit</p>
+        <nav aria-label="Mizu" className="text-sm">
+          <p className="mb-3 font-semibold text-foreground">Mizu</p>
           <ul className="space-y-2">
-            {BUSINESS_NAV.map((item) => (
+            <li>
+              <Link href={BOOKING_HREF} className="font-semibold text-forest hover:underline dark:text-accent">
+                Booking treatment
+              </Link>
+            </li>
+            {SECONDARY_NAV.map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="text-body hover:text-foreground">
                   {item.label}
@@ -121,32 +97,23 @@ export function SiteFooter({ branches, social }: { branches: BranchSummary[]; so
               </li>
             ))}
             <li>
-              <Link href="/franchise" className="text-body hover:text-foreground">
-                Own a Gym
-              </Link>
-            </li>
-            <li>
-              <Link href="/wholesale" className="font-semibold text-forest hover:underline">
-                Partner Portal
-              </Link>
-            </li>
-            <li>
               <Link href="/member" className="text-body hover:text-foreground">
-                Member Area
+                Area Member
               </Link>
             </li>
           </ul>
+          <p className="mt-6 text-xs text-muted-foreground">Booking online, pembayaran di outlet.</p>
         </nav>
       </div>
       <div className="border-t border-border/60">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
-          <p>© {year} NüHabit. All rights reserved.</p>
+          <p>© {year} Mizu Family Massage & Reflexology.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-foreground">
-              Privacy Policy
+              Kebijakan Privasi
             </Link>
             <Link href="/terms" className="hover:text-foreground">
-              Terms & Conditions
+              Syarat & Ketentuan
             </Link>
           </div>
         </div>

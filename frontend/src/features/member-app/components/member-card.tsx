@@ -40,7 +40,7 @@ export function MemberCardSheet({ onClose }: { onClose: () => void }) {
           <div className="relative flex items-start justify-between">
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset("/brand/wordmark-white.png")} alt="NüHabit" className="h-5 w-auto" />
+              <img src={asset("/brand/wordmark-white.png")} alt="Mizu" className="h-5 w-auto" />
               <p className="mt-1.5 text-[10px] font-bold tracking-[0.24em] text-white/40 uppercase">
                 {t("Member card")}
               </p>

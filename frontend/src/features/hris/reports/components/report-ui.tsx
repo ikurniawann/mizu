@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DocumentArrowDownIcon } from "@heroicons/react/24/outline";
 
-const REPORT_COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#203b32", "#14b8a6", "#f97316"];
+const REPORT_COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#5a4334", "#14b8a6", "#f97316"];
 
 export const reportColor = (index: number) => REPORT_COLORS[index % REPORT_COLORS.length];
 

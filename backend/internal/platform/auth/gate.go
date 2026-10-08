@@ -15,6 +15,7 @@ var PublicAuthPrefixes = []string{
 	"/sw.js",
 	"/products/",
 	"/qris/",
+	"/site/sample/",
 	"/arkiv-os",
 	"/qa",
 	"/login",
@@ -61,6 +62,7 @@ var PublicAuthPrefixes = []string{
 	"/space",
 	"/brand",
 	"/locations",
+	"/treatments",
 	"/news",
 	"/events",
 	"/join",
@@ -70,6 +72,7 @@ var PublicAuthPrefixes = []string{
 	"/equipment",
 	"/contact",
 	"/api/public/site",
+	"/api/public/spa",
 	"/api/health",
 	"/api/ready",
 }

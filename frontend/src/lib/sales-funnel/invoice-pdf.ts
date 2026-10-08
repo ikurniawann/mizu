@@ -11,7 +11,7 @@ import { formatNumber, formatRupiah } from "@/lib/format";
 const COLOR_TEXT = "#111827";
 const COLOR_MUTED = "#6b7280";
 const COLOR_LINE = "#d1d5db";
-const COLOR_ACCENT = "#00281a";
+const COLOR_ACCENT = "#3d2b20";
 
 type Doc = InstanceType<typeof PDFDocument>;
 

@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     const fallbackAnswer = includeProjectData
       ? generateSummaryAnswer(prompt, summary, profile?.full_name ?? user.email ?? "User", intent)
-      : "Do belum bisa menghubungi tingkat yang dipilih saat ini. Coba lagi sebentar atau pilih tingkat lain di NüHabit OS Settings.";
+      : "Do belum bisa menghubungi tingkat yang dipilih saat ini. Coba lagi sebentar atau pilih tingkat lain di Mizu OS Settings.";
 
     // Create session if none exists (first user message in a fresh chat)
     if (!sessionId) {

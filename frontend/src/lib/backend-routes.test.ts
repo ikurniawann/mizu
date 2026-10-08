@@ -170,7 +170,7 @@ describe("Go route manifest", () => {
     ];
     // Routes born in Go: no TypeScript route ever existed under these
     // prefixes, so there is nothing to fall back to.
-    const goNativePrefixes = ["/api/shop/wholesale", "/api/wholesale", "/api/public/site", "/api/site"];
+    const goNativePrefixes = ["/api/shop/wholesale", "/api/wholesale", "/api/public/site", "/api/site", "/api/public/spa", "/api/spa"];
     const goNative = (p: string) =>
       goNativePrefixes.some((n) => p === n || p.startsWith(`${n}/`));
     const missing = switched

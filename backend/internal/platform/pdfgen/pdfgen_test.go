@@ -49,7 +49,7 @@ func TestMoney(t *testing.T) {
 
 func TestWatermarkText(t *testing.T) {
 	at := time.Date(2026, 10, 5, 7, 30, 0, 0, time.UTC)
-	if got := WatermarkText(" ", "NüHabit", at); got != "NüHabit - 05/10/2026 14.30" {
+	if got := WatermarkText(" ", "Mizu", at); got != "Mizu - 05/10/2026 14.30" {
 		t.Fatal(got)
 	}
 	if got := WatermarkText("budi@example.com", "x", at); got != "budi@example.com - 05/10/2026 14.30" {
@@ -60,7 +60,7 @@ func TestWatermarkText(t *testing.T) {
 // samplePDF is a two-page payslip-like document exercising every helper.
 func samplePDF(t *testing.T) []byte {
 	d := New(Options{Margin: 48, Title: "Slip Gaji — Oktober 2026", Now: time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)})
-	d.Font(HelveticaBold, 13).Color("#111827").Para("PT NüHabit Indonesia", TextOpts{})
+	d.Font(HelveticaBold, 13).Color("#111827").Para("PT Mizu Indonesia", TextOpts{})
 	d.Font(Helvetica, 8.5).Color("#6b7280").Para("Jl. Contoh No. 1 · Bandung", TextOpts{})
 	d.HLine(d.Y+4, "#d1d5db", 0.7)
 	d.Y += 12
@@ -91,7 +91,7 @@ func samplePDF(t *testing.T) []byte {
 	d.DrawTable(Table{Columns: []Column{{"No", 30, AlignLeft}, {"Item", 300, AlignLeft}, {"Total", 100, AlignRight}}, Zebra: "#f3f5fa"}, rows)
 	d.EachPage(func(page, total int) {
 		d.Font(Helvetica, 7.5).Color("#6b7280")
-		d.Text("NüHabit HRIS · Halaman "+strconv.Itoa(page)+" dari "+strconv.Itoa(total), d.Left(), d.PageHeight()-36, TextOpts{Width: d.ContentWidth(), Align: AlignCenter})
+		d.Text("Mizu HRIS · Halaman "+strconv.Itoa(page)+" dari "+strconv.Itoa(total), d.Left(), d.PageHeight()-36, TextOpts{Width: d.ContentWidth(), Align: AlignCenter})
 	})
 	out, err := d.Bytes()
 	if err != nil {
@@ -108,7 +108,7 @@ func TestDocument(t *testing.T) {
 		t.Fatalf("pages %d %v", n, err)
 	}
 	text := pdftotext(t, data)
-	for _, want := range []string{"PT NüHabit Indonesia", "Rp 4.500.000", "empat juta lima ratus ribu rupiah", "Halaman 1 dari " + strconv.Itoa(n), "Rp1.080.000"} {
+	for _, want := range []string{"PT Mizu Indonesia", "Rp 4.500.000", "empat juta lima ratus ribu rupiah", "Halaman 1 dari " + strconv.Itoa(n), "Rp1.080.000"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q", want)
 		}
@@ -141,7 +141,7 @@ func TestWatermarkPDF(t *testing.T) {
 	if ok, err := api.HasWatermarks(context.Background(), bytes.NewReader(out), conf); !ok || err != nil {
 		t.Fatalf("no watermark: %v", err)
 	}
-	if text := pdftotext(t, out); !strings.Contains(text, "PT NüHabit Indonesia") {
+	if text := pdftotext(t, out); !strings.Contains(text, "PT Mizu Indonesia") {
 		t.Fatal("content text lost")
 	}
 	if _, err := Watermark(context.Background(), []byte("%PDF-1.4 garbage"), "x"); err == nil {

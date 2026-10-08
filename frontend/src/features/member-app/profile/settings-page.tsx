@@ -89,7 +89,7 @@ export function SettingsPage() {
 
       <div className="nh-card text-sm text-nh-muted">
         <p className="nh-label">{t("About")}</p>
-        <p>{t("NüHabit member app. Units and reminders are saved to your account; language applies to this device.")}</p>
+        <p>{t("Mizu member app. Units and reminders are saved to your account; language applies to this device.")}</p>
       </div>
     </div>
   );

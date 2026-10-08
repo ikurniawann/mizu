@@ -4,11 +4,11 @@ import { normalizeHex } from "./palette";
 import { DEFAULT_PRESET_ID, getPreset, THEME_PRESETS } from "./presets";
 
 describe("THEME_PRESETS", () => {
-  it("defaults to the NüHabit preset (Pale Lime + Deep Forest Green)", () => {
+  it("defaults to the Mizu preset (Pale Lime + Deep Forest Green)", () => {
     const nuhabit = getPreset(DEFAULT_PRESET_ID);
     expect(nuhabit).toBeDefined();
-    expect(nuhabit!.primary).toBe("#daff59");
-    expect(nuhabit!.secondary).toBe("#00281a");
+    expect(nuhabit!.primary).toBe("#d6b47a");
+    expect(nuhabit!.secondary).toBe("#3d2b20");
   });
   it("has unique ids and valid hex values", () => {
     const ids = new Set<string>();

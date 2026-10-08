@@ -35,7 +35,7 @@ export function WholesaleLoginPage() {
           Sign in<span className="text-forest">.</span>
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          For partner gyms and resellers. The NüHabit team creates accounts; contact us if you do not have one yet.
+          For partner gyms and resellers. The Mizu team creates accounts; contact us if you do not have one yet.
         </p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <label className="block space-y-1.5 text-sm font-medium">

@@ -28,7 +28,7 @@ describe("buildPushPayload", () => {
 
   it("memotong judul dan isi panjang, judul kosong diganti nama brand", () => {
     const payload = JSON.parse(buildPushPayload({ title: "  ", body: "a".repeat(400) }));
-    expect(payload.title).toBe("NüHabit");
+    expect(payload.title).toBe("Mizu");
     expect(payload.body).toHaveLength(180);
     expect(payload.body.endsWith("…")).toBe(true);
   });

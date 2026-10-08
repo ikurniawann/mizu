@@ -25,7 +25,7 @@ const (
 	OTPRateLimitWindow  = 10 * time.Minute
 	SessionCookie       = "member_session"
 	SessionTTL          = 30 * 24 * time.Hour
-	DefaultBrandName    = "NüHabit"
+	DefaultBrandName    = "Mizu"
 	MaxPhoneDigits      = 15
 	MinPhoneDigits      = 10
 	registrationNameMax = 100

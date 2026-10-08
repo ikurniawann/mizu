@@ -212,7 +212,7 @@ func GenerateSummaryAnswer(message string, s Summary, name string, intent Intent
 	}
 	if includeAll {
 		return join(
-			"Halo "+name+", berikut ringkasan NüHabit OS saat ini:",
+			"Halo "+name+", berikut ringkasan Mizu OS saat ini:",
 			formatHris(s), formatPerformance(s), formatPayroll(s), formatProcurement(s),
 			formatInventory(s), formatPos(s), formatMaster(s), formatIntegration(s),
 			formatDetails(s, ""),
@@ -398,8 +398,8 @@ func BuildScopeInstruction(scope Scope) string {
 	case ScopeProjectOnly:
 		return strings.Join([]string{
 			"Mode Project Only aktif.",
-			"Jawab hanya berdasarkan konteks Talentpool/NüHabit OS, history percakapan, dan data internal yang diberikan.",
-			"Jika user bertanya pengetahuan umum atau hal di luar project, jelaskan singkat bahwa mode Project Only sedang aktif dan minta user mengganti mode di NüHabit OS Settings.",
+			"Jawab hanya berdasarkan konteks Talentpool/Mizu OS, history percakapan, dan data internal yang diberikan.",
+			"Jika user bertanya pengetahuan umum atau hal di luar project, jelaskan singkat bahwa mode Project Only sedang aktif dan minta user mengganti mode di Mizu OS Settings.",
 		}, " ")
 	case ScopeGeneral:
 		return strings.Join([]string{
@@ -410,7 +410,7 @@ func BuildScopeInstruction(scope Scope) string {
 	}
 	return strings.Join([]string{
 		"Mode Project + General aktif.",
-		"Untuk pertanyaan operasional Talentpool/NüHabit OS, prioritaskan data internal yang diberikan.",
+		"Untuk pertanyaan operasional Talentpool/Mizu OS, prioritaskan data internal yang diberikan.",
 		"Untuk ide, strategi, copywriting, SOP, analisis, coding, dan pertanyaan umum, jawab bebas dengan knowledge model tanpa memaksa data dashboard.",
 	}, " ")
 }

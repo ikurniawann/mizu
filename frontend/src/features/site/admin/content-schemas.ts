@@ -22,7 +22,7 @@ const url = (name: string, label: string): SchemaField => ({ name, label, kind: 
 export const CONTENT_SCHEMAS: Record<ContentKey, ContentSchema> = {
   home: {
     label: "Beranda",
-    description: "Hero, partner, pilar, cerita anggota dan foto latihan. Gunakan hanya foto dan testimoni asli yang sudah diizinkan untuk tayang.",
+    description: "Hero, partner, pilar, misi, cerita tamu dan foto suasana. Gunakan hanya foto dan testimoni asli yang sudah diizinkan untuk tayang.",
     fields: [
       {
         name: "hero",
@@ -39,44 +39,44 @@ export const CONTENT_SCHEMAS: Record<ContentKey, ContentSchema> = {
         fields: [{ name: "code", label: "Kode", kind: "text" }, { name: "title", label: "Judul", kind: "text" }, { name: "text", label: "Teks", kind: "long" }],
       },
       { name: "mission", label: "Misi", kind: "object", fields: [long("quote", "Kutipan"), text("author", "Penulis")] },
-      { name: "reel", label: "Reel komunitas", kind: "objects", addLabel: "Tambah foto", fields: [{ name: "image_url", label: "Foto", kind: "url" }, { name: "caption", label: "Keterangan", kind: "text" }] },
-      { name: "stories", label: "Cerita anggota terverifikasi", kind: "objects", addLabel: "Tambah cerita", fields: [{ name: "name", label: "Nama yang disetujui", kind: "text" }, { name: "role", label: "Keterangan anggota", kind: "text" }, { name: "quote", label: "Kutipan asli", kind: "long" }, { name: "outcome", label: "Hasil atau tonggak nyata (opsional)", kind: "text" }, { name: "image_url", label: "Foto berizin (opsional)", kind: "url" }] },
+      { name: "reel", label: "Galeri suasana", kind: "objects", addLabel: "Tambah foto", fields: [{ name: "image_url", label: "Foto", kind: "url" }, { name: "caption", label: "Keterangan", kind: "text" }] },
+      { name: "stories", label: "Cerita tamu terverifikasi", kind: "objects", addLabel: "Tambah cerita", fields: [{ name: "name", label: "Nama yang disetujui", kind: "text" }, { name: "role", label: "Keterangan tamu", kind: "text" }, { name: "quote", label: "Kutipan asli", kind: "long" }, { name: "outcome", label: "Hasil atau tonggak nyata (opsional)", kind: "text" }, { name: "image_url", label: "Foto berizin (opsional)", kind: "url" }] },
     ],
   },
   training: {
-    label: "Training",
-    description: "Jenis kelas, blok 8 minggu dan Hukum NüHabit.",
+    label: "Panduan Treatment",
+    description: "Pengantar halaman /treatments, rekomendasi treatment per kebutuhan, alur kunjungan dan tips sebelum treatment.",
     fields: [
       { name: "intro", label: "Pembuka", kind: "object", fields: [text("title", "Judul"), long("text", "Teks")] },
       {
         name: "class_types",
-        label: "Jenis kelas",
+        label: "Rekomendasi per kebutuhan",
         kind: "objects",
-        addLabel: "Tambah kelas",
-        fields: [{ name: "name", label: "Nama", kind: "text" }, { name: "duration", label: "Durasi", kind: "text" }, { name: "text", label: "Teks", kind: "long" }],
+        addLabel: "Tambah rekomendasi",
+        fields: [{ name: "name", label: "Kebutuhan", kind: "text" }, { name: "duration", label: "Treatment yang cocok", kind: "text" }, { name: "text", label: "Teks", kind: "long" }],
       },
       {
         name: "block",
-        label: "Blok 8 minggu",
+        label: "Alur kunjungan",
         kind: "object",
         fields: [
           text("title", "Judul"),
           long("text", "Teks"),
           {
             name: "phases",
-            label: "Fase",
+            label: "Langkah",
             kind: "objects",
-            addLabel: "Tambah fase",
-            fields: [{ name: "name", label: "Nama", kind: "text" }, { name: "weeks", label: "Minggu", kind: "text" }, { name: "text", label: "Teks", kind: "long" }],
+            addLabel: "Tambah langkah",
+            fields: [{ name: "name", label: "Nama", kind: "text" }, { name: "weeks", label: "Label langkah", kind: "text" }, { name: "text", label: "Teks", kind: "long" }],
           },
         ],
       },
-      { name: "laws", label: "Hukum NüHabit", kind: "object", fields: [text("title", "Judul"), { name: "items", label: "Daftar (satu per baris)", kind: "strings" }] },
+      { name: "laws", label: "Sebelum treatment", kind: "object", fields: [text("title", "Judul"), { name: "items", label: "Daftar (satu per baris)", kind: "strings" }] },
     ],
   },
   space: {
-    label: "Ruang Latihan",
-    description: "Judul, pengantar dan bagian bergambar.",
+    label: "Suasana",
+    description: "Halaman /space: judul, pengantar dan bagian bergambar tentang ruangan dan fasilitas.",
     fields: [
       text("title", "Judul"),
       long("intro", "Pengantar"),
@@ -84,7 +84,7 @@ export const CONTENT_SCHEMAS: Record<ContentKey, ContentSchema> = {
     ],
   },
   brand: {
-    label: "Cerita Kami",
+    label: "Tentang Mizu",
     description: "Cerita merek dalam markdown dan nilai-nilai.",
     fields: [
       text("title", "Judul"),

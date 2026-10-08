@@ -77,6 +77,7 @@ const PUBLIC_AUTH_PREFIXES = [
   "/space",
   "/brand",
   "/locations",
+  "/treatments",
   "/news",
   "/events",
   "/join",
@@ -86,6 +87,7 @@ const PUBLIC_AUTH_PREFIXES = [
   "/equipment",
   "/contact",
   "/api/public/site",
+  "/api/public/spa",
   // Probe liveness/readiness untuk Docker HEALTHCHECK & load balancer.
   "/api/health",
   "/api/ready",

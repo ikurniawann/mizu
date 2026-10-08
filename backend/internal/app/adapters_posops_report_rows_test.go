@@ -51,7 +51,7 @@ func TestPosOpsBrandName(t *testing.T) {
 	}
 	exec(`UPDATE configuration.app_settings SET value = '  ' WHERE key = 'app_brand_name'`)
 	t.Setenv("NEXT_PUBLIC_APP_NAME", "")
-	if got := dir.BrandName(ctx, tx, nil); got != "NüHabit" {
+	if got := dir.BrandName(ctx, tx, nil); got != "Mizu" {
 		t.Fatalf("default brand = %q", got)
 	}
 }

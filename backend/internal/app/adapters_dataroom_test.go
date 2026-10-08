@@ -14,7 +14,7 @@ func TestDataroomPortsReadTheTSEnv(t *testing.T) {
 	lookup := func(k string) (string, bool) { v, ok := env[k]; return v, ok }
 	p := dataroomPorts(module.Deps{}, getenv, lookup)
 	// Math.max(1, 0.5) GB; "abc" falls back to 100 MB; FROM_EMAIL "" is set.
-	if p.QuotaBytes != 1<<30 || p.MaxFileBytes != 100<<20 || p.MailFrom != "" || p.Brand != "NüHabit" || p.AppOrigin != "https://dr.example" {
+	if p.QuotaBytes != 1<<30 || p.MaxFileBytes != 100<<20 || p.MailFrom != "" || p.Brand != "Mizu" || p.AppOrigin != "https://dr.example" {
 		t.Fatalf("ports %+v", p)
 	}
 }

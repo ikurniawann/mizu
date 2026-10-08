@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import type { AnalyticsView } from "@/lib/recruitment/analytics-view";
 
-const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#203b32", "#14b8a6"];
+const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#5a4334", "#14b8a6"];
 const color = (i: number) => COLORS[i % COLORS.length];
 
 const rateColor = (rate: number) => (rate > 50 ? "#22c55e" : rate > 25 ? "#f59e0b" : "#ef4444");

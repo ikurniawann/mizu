@@ -223,7 +223,7 @@ export function WholesaleCatalogPage() {
             </label>
             <p className="mb-4 rounded-2xl bg-surface px-3 py-2 text-xs text-body">
               {account.payment_terms === "invoice"
-                ? "After the order is placed you will be taken to the Xendit invoice. The NüHabit team arranges shipping after payment."
+                ? "After the order is placed you will be taken to the Xendit invoice. The Mizu team arranges shipping after payment."
                 : "The order ships first; the invoice is due 30 days after the order is placed."}
             </p>
             {formError ? (

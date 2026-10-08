@@ -120,7 +120,7 @@ export function ShopStorefrontPage({ slug }: { slug: string }) {
       <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-forest">NüHabit Shop</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-forest">Mizu Shop</p>
             <p className="text-base font-semibold text-gray-900">{storefront.name}</p>
           </div>
           <button

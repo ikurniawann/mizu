@@ -10,6 +10,7 @@ export const STATION_OPTIONS = [
   { value: "dessert", label: "Dessert" },
   { value: "merchandise", label: "Merchandise" },
   { value: "photobooth", label: "Photobooth" },
+  { value: "spa", label: "Spa / Treatment" },
 ];
 
 export const ALL_CATEGORIES = "All";

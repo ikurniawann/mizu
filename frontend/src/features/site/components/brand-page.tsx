@@ -1,5 +1,6 @@
 import { Markdown } from "../lib/markdown";
 import type { BrandContent } from "../types";
+import { BookingButton } from "./booking-link";
 import { Container, Picture, Section, SectionHeading, Tile } from "./site-section";
 
 export function BrandPage({ brand }: { brand: BrandContent }) {
@@ -7,12 +8,15 @@ export function BrandPage({ brand }: { brand: BrandContent }) {
     <>
       <Section className="pb-6">
         <Container>
-          <SectionHeading as="h1" kicker="Our Story" title={brand.title} text={brand.intro} />
+          <SectionHeading as="h1" kicker="Tentang" title={brand.title} text={brand.intro} />
         </Container>
       </Section>
       <Section className="pt-4">
         <Container className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-12">
-          <Markdown source={brand.story_md} className="prose-site" />
+          <div className="space-y-8">
+            <Markdown source={brand.story_md} className="prose-site" />
+            <BookingButton>Booking treatment</BookingButton>
+          </div>
           {brand.image_url ? <Picture src={brand.image_url} alt="" className="aspect-[4/5] w-full rounded-card" /> : null}
         </Container>
       </Section>

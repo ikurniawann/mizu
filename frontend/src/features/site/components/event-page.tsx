@@ -9,7 +9,7 @@ function when(event: SiteEvent): string {
   const start = formatSiteDateTime(event.starts_at);
   if (!event.ends_at) return start;
   const sameDay = event.starts_at.slice(0, 10) === event.ends_at.slice(0, 10);
-  return sameDay ? `${start} to ${formatSiteTime(event.ends_at)}` : `${formatSiteDate(event.starts_at)} to ${formatSiteDate(event.ends_at)}`;
+  return sameDay ? `${start} – ${formatSiteTime(event.ends_at)}` : `${formatSiteDate(event.starts_at)} – ${formatSiteDate(event.ends_at)}`;
 }
 
 export function EventPage({ event, form }: { event: SiteEvent; form: PublicFormView | null }) {
@@ -17,18 +17,18 @@ export function EventPage({ event, form }: { event: SiteEvent; form: PublicFormV
     <article>
       <Section className="pb-6">
         <Container className="max-w-3xl space-y-4">
-          <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-accent">Event</p>
+          <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-accent">Acara</p>
           <h1 className="font-display text-3xl font-bold tracking-tight text-balance md:text-5xl">{event.title}</h1>
           <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-body">
             <div className="flex items-center gap-2">
               <CalendarDays className="size-4 text-muted-foreground" />
-              <dt className="sr-only">When</dt>
+              <dt className="sr-only">Waktu</dt>
               <dd>{when(event)}</dd>
             </div>
             {event.location_text ? (
               <div className="flex items-center gap-2">
                 <MapPin className="size-4 text-muted-foreground" />
-                <dt className="sr-only">Where</dt>
+                <dt className="sr-only">Tempat</dt>
                 <dd>{event.location_text}</dd>
               </div>
             ) : null}

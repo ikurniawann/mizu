@@ -88,7 +88,7 @@ export function GeoMap({
       line.setStyle(
         new Style({
           stroke: new Stroke({
-            color: track.color ?? `rgba(0, 40, 26, ${track.opacity ?? 1})`,
+            color: track.color ?? `rgba(61, 43, 32, ${track.opacity ?? 1})`,
             width: track.width ?? 4,
             lineCap: "round",
             lineJoin: "round",
@@ -98,9 +98,9 @@ export function GeoMap({
       source.addFeature(line);
       if (track.markers ?? current.length === 1) {
         const start = new Feature(new Point(coords[0]!));
-        start.setStyle(dotStyle(6, "#abde67", 2));
+        start.setStyle(dotStyle(6, "#c49a5c", 2));
         const end = new Feature(new Point(coords[coords.length - 1]!));
-        end.setStyle(dotStyle(6, "#131a1c", 2));
+        end.setStyle(dotStyle(6, "#241b16", 2));
         source.addFeatures([start, end]);
       }
     }

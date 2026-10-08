@@ -13,10 +13,10 @@ describe("TrialPanel", () => {
   test("renders the trial form with the panel's branch preselected", async () => {
     window.dataLayer = [];
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ success: true, data: [{ slug: "bsd", name: "NüHabit BSD" }] }), { status: 200 }),
+      new Response(JSON.stringify({ success: true, data: [{ slug: "bsd", name: "Mizu BSD" }] }), { status: 200 }),
     );
     render(<TrialPanel branchSlug="bsd" onClose={() => {}} />);
-    await waitFor(() => expect(screen.getByRole("option", { name: "NüHabit BSD" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("option", { name: "Mizu BSD" })).toBeInTheDocument());
     expect(screen.getByLabelText("Branch")).toHaveValue("bsd");
     expect(screen.getByRole("button", { name: /Request a free trial/ })).toBeInTheDocument();
     expect(window.dataLayer).toEqual([{ event: "trial_open", branch: "bsd" }]);

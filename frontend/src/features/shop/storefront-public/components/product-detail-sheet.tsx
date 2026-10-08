@@ -121,7 +121,7 @@ export function ProductDetailSheet({
             <summary className="cursor-pointer font-semibold text-gray-900">Delivery & returns</summary>
             <div className="mt-3 space-y-2 leading-6">
               <p>Choose your destination at checkout to see live courier options and the full shipping cost before payment. Delivery estimates appear when the courier provides them.</p>
-              <p>For return or exchange questions, <Link href="/contact" className="font-semibold text-forest underline">contact NüHabit</Link> with your product and order details. The team can confirm the available options before you order.</p>
+              <p>For return or exchange questions, <Link href="/contact" className="font-semibold text-forest underline">contact Mizu</Link> with your product and order details. The team can confirm the available options before you order.</p>
             </div>
           </details>
         </div>

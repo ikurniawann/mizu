@@ -55,7 +55,7 @@ func buildCompNotifMessage(n ports.CompNotice, customerName *string, now time.Ti
 		order += " (" + strconv.Itoa(n.OrderCount) + " order)"
 	}
 	return strings.Join([]string{
-		"NüHabit OS — Komplimen " + compNotifLabel(n.CompType),
+		"Mizu OS — Komplimen " + compNotifLabel(n.CompType),
 		"Order : " + order,
 		"Customer : " + trimOr(customerName, "-"),
 		"Nilai : Rp " + localeID(domain.RoundHalfUp(n.GrossIdr)),

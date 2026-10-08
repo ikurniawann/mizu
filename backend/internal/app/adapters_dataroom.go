@@ -24,7 +24,7 @@ import (
 func dataroomPorts(d module.Deps, getenv func(string) string, lookup func(string) (string, bool)) dataroom.Ports {
 	brand := strings.TrimSpace(getenv("NEXT_PUBLIC_APP_NAME"))
 	if brand == "" {
-		brand = "NüHabit"
+		brand = "Mizu"
 	}
 	from := "Dataroom <onboarding@resend.dev>"
 	if v, ok := lookup("DATAROOM_FROM_EMAIL"); ok {

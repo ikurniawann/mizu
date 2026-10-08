@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ApplicationPage } from "./_components/application-page";
 
-export const metadata: Metadata = { title: "Apply | NüHabit", robots: { index: false } };
+export const metadata: Metadata = { title: "Apply | Mizu", robots: { index: false } };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

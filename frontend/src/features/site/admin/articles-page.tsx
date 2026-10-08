@@ -100,7 +100,7 @@ export function ArticlesPage() {
       <PageHeader
         kicker="Situs"
         title="Artikel"
-        description="Berita, cerita training, event dan rilis apparel di /news. Hanya artikel berstatus tayang yang tampil."
+        description="Kabar, tips wellness, acara dan promo di /news. Hanya artikel berstatus tayang yang tampil."
         actions={
           <Button onClick={() => open("new")}>
             <Plus /> Artikel baru

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { WholesaleShell } from "@/features/shop/wholesale-portal";
 
 export const metadata: Metadata = {
-  title: "Wholesale Partner Portal | NüHabit",
+  title: "Wholesale Partner Portal | Mizu",
   robots: { index: false },
 };
 

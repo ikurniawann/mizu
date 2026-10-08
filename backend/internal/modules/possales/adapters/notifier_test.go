@@ -47,7 +47,7 @@ func TestCompNotifMessage(t *testing.T) {
 	approved := " Ricky Ardiansyah "
 	at, _ := time.Parse(time.RFC3339, "2026-08-24T08:30:00Z")
 	got := buildCompNotifMessage(ports.CompNotice{CompType: "foc_comp", OrderNumber: "POS-20260824-0044", GrossIdr: 20000, ApprovedName: &approved}, nil, at)
-	want := "NüHabit OS — Komplimen FOC (Free of Charge)\nOrder : POS-20260824-0044\nCustomer : -\nNilai : Rp 20.000\nDisetujui : Ricky Ardiansyah\n24 Agu 2026, 15.30 WIB"
+	want := "Mizu OS — Komplimen FOC (Free of Charge)\nOrder : POS-20260824-0044\nCustomer : -\nNilai : Rp 20.000\nDisetujui : Ricky Ardiansyah\n24 Agu 2026, 15.30 WIB"
 	if got != want {
 		t.Fatalf("got %q", got)
 	}

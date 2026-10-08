@@ -33,7 +33,7 @@ func (d *fakeDir) ActiveBranches(context.Context, database.Querier) ([]Branch, e
 	return []Branch{{ID: "b1", Name: "Kemang"}}, nil
 }
 func (d *fakeDir) FirstCompanyName(context.Context, database.Querier) (*string, error) {
-	return strPtr("NüHabit"), nil
+	return strPtr("Mizu"), nil
 }
 func (d *fakeDir) ArkCoinEnabled(context.Context, database.Querier) bool { return true }
 func (d *fakeDir) OrderNumbers(context.Context, database.Querier, []string) (map[string]string, error) {

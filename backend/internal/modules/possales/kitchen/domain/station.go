@@ -11,7 +11,7 @@ import (
 )
 
 // Stations is POS_STATIONS.
-var Stations = []string{"kitchen", "bar", "bakery", "dessert", "merchandise", "photobooth"}
+var Stations = []string{"kitchen", "bar", "bakery", "dessert", "merchandise", "photobooth", "spa"}
 
 // IsStation reports whether s is one of Stations (exact, already lowercased).
 func IsStation(s string) bool { return slices.Contains(Stations, s) }

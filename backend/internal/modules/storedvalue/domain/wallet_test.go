@@ -401,8 +401,8 @@ func TestReceiptsAndFormats(t *testing.T) {
 		}
 	}
 	balance := 75_000.0
-	msg := BuildTopupReceiptMessage(TopupReceipt{OutletName: "NüHabit", CustomerName: "Ani", Amount: 50_000, Method: "cash", BalanceAfter: &balance, At: at})
-	want := "*NüHabit* — Bukti Top-Up\nPelanggan: Ani\nWaktu: 4 Okt 2026, 10.05 WIB\n\n*Top-up: Rp 50.000*\nMetode: Tunai\nSaldo sekarang: Rp 75.000\n\nTerima kasih 🙏"
+	msg := BuildTopupReceiptMessage(TopupReceipt{OutletName: "Mizu", CustomerName: "Ani", Amount: 50_000, Method: "cash", BalanceAfter: &balance, At: at})
+	want := "*Mizu* — Bukti Top-Up\nPelanggan: Ani\nWaktu: 4 Okt 2026, 10.05 WIB\n\n*Top-up: Rp 50.000*\nMetode: Tunai\nSaldo sekarang: Rp 75.000\n\nTerima kasih 🙏"
 	if msg != want {
 		t.Fatalf("%q", msg)
 	}
@@ -410,7 +410,7 @@ func TestReceiptsAndFormats(t *testing.T) {
 	for i := range orders {
 		orders[i] = BillReminderOrder{OrderNumber: "POS-1", OrderedAt: at, Total: 10_000}
 	}
-	bill := BuildMemberBillReminderMessage(MemberBillReminder{OutletName: "NüHabit", CustomerName: "Ani", At: at, Orders: orders,
+	bill := BuildMemberBillReminderMessage(MemberBillReminder{OutletName: "Mizu", CustomerName: "Ani", At: at, Orders: orders,
 		OpenTotal: 170_000, Paid: 20_000, Outstanding: 150_000})
 	if !strings.Contains(bill, "15. POS-1 · 4 Okt 2026 — Rp 10.000\n… dan 2 order lainnya") || !strings.Contains(bill, "Sudah dibayar: Rp 20.000") {
 		t.Fatal(bill)

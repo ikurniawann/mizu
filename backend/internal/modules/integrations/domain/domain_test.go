@@ -276,8 +276,8 @@ func TestFlashReport(t *testing.T) {
 		ByCategory:  []FlashLine{{"Makanan", 7_527_000, 200}, {"Minuman", 2_570_500, 103}},
 		TopProducts: []FlashLine{{Name: "Yuzu Milk", Pcs: 24}, {Name: "Oolong Peach", Pcs: 23}},
 	}
-	msg := BuildFlashReportMessage(d, "2026-08-22", "NüHabit")
-	for _, want := range []string{"*Daily Flash Report*", "NÜHABIT", "Sabtu, 22 Agustus 2026", "Revenue : Rp 8.892.000",
+	msg := BuildFlashReportMessage(d, "2026-08-22", "Mizu")
+	for _, want := range []string{"*Daily Flash Report*", "MIZU", "Sabtu, 22 Agustus 2026", "Revenue : Rp 8.892.000",
 		"Nett Sales : Rp 3.806.000", "Discount : Rp 5.086.000", "SULU Citizen : 0 Card", "Disc 100% : 13 Transaksi",
 		"KOL Comp : Rp 350.000 (3 Trx)", "Komplimen FOC : Rp 120.000 (2 Trx)", "No of Guest : 70 Pax", "Average/Pax : Rp 54.371",
 		"Es Cekek Corner : Rp 2.570.500 (103 Pcs)", "Kobo Corner : Rp 0", "Makanan : Rp 7.527.000 (200 Pcs)", "1. Yuzu Milk : 24 pcs",
@@ -289,7 +289,7 @@ func TestFlashReport(t *testing.T) {
 	if strings.Contains(msg, "Owner Comp") {
 		t.Error("owner comp line without comps")
 	}
-	empty := BuildFlashReportMessage(FlashReportData{}, "2026-10-01", "NüHabit")
+	empty := BuildFlashReportMessage(FlashReportData{}, "2026-10-01", "Mizu")
 	if !strings.Contains(empty, "Average/Pax : Rp 0") || strings.Contains(empty, "Jam operasional") || !strings.Contains(empty, "—") ||
 		!strings.Contains(empty, "Kamis, 1 Oktober 2026") {
 		t.Errorf("empty report:\n%s", empty)

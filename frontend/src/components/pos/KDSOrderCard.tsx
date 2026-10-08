@@ -55,6 +55,7 @@ const STATION_LABELS: Record<string, string> = {
   dessert: 'Dessert',
   merchandise: 'Merch',
   photobooth: 'Photo',
+  spa: 'Spa',
 };
 
 function formatWaitTime(seconds: number): string {

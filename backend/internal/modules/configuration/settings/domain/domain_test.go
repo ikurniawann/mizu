@@ -79,7 +79,7 @@ func TestParseAppearance(t *testing.T) {
 	if p.PresetID != "ocean" || p.Sidebar.Border != "#aabbcc" || p.Navbar.Border != DefaultAppearance.Navbar.Border {
 		t.Fatalf("preset and hex: %+v", p)
 	}
-	if ParseAppearance(decode(t, `{"presetId":"unknown"}`)).PresetID != "nuhabit" {
+	if ParseAppearance(decode(t, `{"presetId":"unknown"}`)).PresetID != "mizu" {
 		t.Fatal("unknown preset falls back")
 	}
 	if len(fontFamilies) != 29 {

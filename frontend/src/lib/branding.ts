@@ -8,7 +8,7 @@
  * env NEXT_PUBLIC_APP_NAME → default di bawah.
  */
 
-export const DEFAULT_BRAND_NAME = "NüHabit";
+export const DEFAULT_BRAND_NAME = "Mizu";
 
 /** Aman dipanggil di client & server (hanya membaca env build-time). */
 export function brandName(): string {

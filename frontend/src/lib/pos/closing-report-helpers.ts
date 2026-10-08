@@ -7,6 +7,7 @@ export const STATION_SEGMENT: Record<string, SalesSegmentCode> = {
   bar: "BEV",
   merchandise: "BEV",
   photobooth: "OTHER",
+  spa: "OTHER",
 };
 
 export const SEGMENT_LABELS: Record<SalesSegmentCode, string> = {

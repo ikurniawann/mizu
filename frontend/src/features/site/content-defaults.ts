@@ -9,12 +9,12 @@ import type { ContentByKey, ContentKey } from "./types";
 export const CONTENT_DEFAULTS: ContentByKey = {
   home: {
     hero: {
-      kicker: "HYROX training gym",
-      title: "Training that makes you strong for life, not only for the gym.",
-      subtitle: "Small classes, certified coaches and a measurable 8-week program.",
+      kicker: "Family Massage & Reflexology · Bandung",
+      title: "Rest. Relax. Rejuvenate.",
+      subtitle: "Tempat yang tenang untuk berhenti sejenak. Pijat, refleksi dan perawatan tubuh di dua outlet Mizu di Bandung.",
       video_url: "",
       image_url: "",
-      cta_label: "Start a Trial",
+      cta_label: "Booking Sekarang",
     },
     partners: [],
     pillars: [],
@@ -22,17 +22,18 @@ export const CONTENT_DEFAULTS: ContentByKey = {
     reel: [],
     stories: [],
   },
+  // The treatment guide (/treatments and the home page); the key name predates the spa.
   training: {
-    intro: { title: "One method, three class types.", text: "" },
+    intro: { title: "Treatment untuk setiap kebutuhan.", text: "" },
     class_types: [],
-    block: { title: "An 8-week block in 4 phases", text: "", phases: [] },
-    laws: { title: "The NüHabit Laws", items: [] },
+    block: { title: "Alur kunjungan", text: "", phases: [] },
+    laws: { title: "Sebelum treatment", items: [] },
   },
-  space: { title: "The Space", intro: "", sections: [] },
-  brand: { title: "Our story", intro: "", story_md: "", values: [], image_url: "" },
-  social: { instagram: "", tiktok: "", youtube: "", whatsapp: "", email: "" },
-  legal_privacy: { title: "Privacy Policy", body_md: "" },
-  legal_terms: { title: "Terms & Conditions", body_md: "" },
+  space: { title: "Ruang yang tenang di tengah kota.", intro: "", sections: [] },
+  brand: { title: "Tentang Mizu", intro: "", story_md: "", values: [], image_url: "" },
+  social: { instagram: "https://instagram.com/mizufamily.id", tiktok: "", youtube: "", whatsapp: "", email: "" },
+  legal_privacy: { title: "Kebijakan Privasi", body_md: "" },
+  legal_terms: { title: "Syarat & Ketentuan", body_md: "" },
   analytics: { gtm_id: "", meta_pixel_id: "" },
 };
 

@@ -45,7 +45,7 @@ func Len16(s string) int { return len(utf16.Encode([]rune(s))) }
 /* ── Stations and channels ───────────────────────────────────────────── */
 
 // PosStations are the kitchen stations a product prints to.
-var PosStations = []string{"kitchen", "bar", "bakery", "dessert", "merchandise", "photobooth"}
+var PosStations = []string{"kitchen", "bar", "bakery", "dessert", "merchandise", "photobooth", "spa"}
 
 // NormalizeStation is the routes' normalizeStation: a known station or
 // "kitchen".

@@ -88,8 +88,8 @@ export const HOME_ID: Record<string, string> = {
   "Loading settings…": "Memuat pengaturan…",
   "Language / Bahasa": "Bahasa / Language",
   About: "Tentang",
-  "NüHabit member app. Units and reminders are saved to your account; language applies to this device.":
-    "Aplikasi member NüHabit. Satuan dan pengingat tersimpan di akunmu; bahasa berlaku di perangkat ini.",
+  "Mizu member app. Units and reminders are saved to your account; language applies to this device.":
+    "Aplikasi member Mizu. Satuan dan pengingat tersimpan di akunmu; bahasa berlaku di perangkat ini.",
   // Kontak darurat
   "Shown to studio staff if something happens during training.":
     "Ditampilkan ke staf studio bila terjadi sesuatu saat latihan.",
@@ -128,8 +128,8 @@ export const HOME_ID: Record<string, string> = {
   Other: "Lainnya",
   Continue: "Lanjut",
   "Digital waiver (v{v})": "Waiver digital (v{v})",
-  "I acknowledge that HYROX-style functional training involves inherent physical risks. I confirm I am medically fit to participate, and I release NüHabit, its staff and coaches from liability for injuries sustained during training, except in cases of gross negligence. I consent to the studio storing my membership and attendance data for operating the facility.":
-    "Saya memahami bahwa latihan fungsional bergaya HYROX memiliki risiko fisik bawaan. Saya menyatakan sehat secara medis untuk ikut serta, dan membebaskan NüHabit, staf, serta coach-nya dari tanggung jawab atas cedera selama latihan, kecuali karena kelalaian berat. Saya setuju studio menyimpan data membership dan kehadiran saya untuk operasional fasilitas.",
+  "I acknowledge that HYROX-style functional training involves inherent physical risks. I confirm I am medically fit to participate, and I release Mizu, its staff and coaches from liability for injuries sustained during training, except in cases of gross negligence. I consent to the studio storing my membership and attendance data for operating the facility.":
+    "Saya memahami bahwa latihan fungsional bergaya HYROX memiliki risiko fisik bawaan. Saya menyatakan sehat secara medis untuk ikut serta, dan membebaskan Mizu, staf, serta coach-nya dari tanggung jawab atas cedera selama latihan, kecuali karena kelalaian berat. Saya setuju studio menyimpan data membership dan kehadiran saya untuk operasional fasilitas.",
   "I have read and accept the digital waiver.": "Saya sudah membaca dan menyetujui waiver digital.",
   "I agree to the membership terms & conditions.": "Saya setuju dengan syarat & ketentuan membership.",
   "Create my membership": "Buat membership saya",

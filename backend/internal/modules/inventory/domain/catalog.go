@@ -271,7 +271,7 @@ func BuildHppReview(hargaModal, hppEstimasi, totalBahan float64) HppReview {
 }
 
 // PosStations are the KDS stations.
-var PosStations = []string{"kitchen", "bar", "bakery", "dessert", "merchandise", "photobooth"}
+var PosStations = []string{"kitchen", "bar", "bakery", "dessert", "merchandise", "photobooth", "spa"}
 
 var barWords = regexp.MustCompile(`kopi|coffee|tea|teh|minuman|drink|juice|jus|soda|es|latte|cappuccino|mocktail|milkshake|bar`)
 var bakeryWords = regexp.MustCompile(`roti|bread|pastry|cake|kue|croissant|donut|dessert|ice cream|gelato|bakery`)

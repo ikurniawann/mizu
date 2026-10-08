@@ -112,7 +112,7 @@ func newFixture(t *testing.T) *fixture {
 	tx := testutil.Tx(t)
 	f := &fixture{t: t, tx: tx, mail: &fakeMailer{}, staff: newUUID(t, tx), now: time.Now()}
 	f.dir = testDirectory{q: tx, dept: map[string]string{}}
-	f.svc = NewService(tx, Ports{Directory: f.dir, Mailer: f.mail, AppOrigin: "https://app.example", Brand: "NüHabit",
+	f.svc = NewService(tx, Ports{Directory: f.dir, Mailer: f.mail, AppOrigin: "https://app.example", Brand: "Mizu",
 		MailFrom: "Dataroom <x@y.id>", QuotaBytes: 50 * 1024 * 1024 * 1024, MaxFileBytes: 100 * 1024 * 1024}, nil, nil, false)
 	f.mux = testutil.Mux(mod{h: newHandler(f.svc, headerGuard{})})
 	return f
@@ -331,7 +331,7 @@ func TestSharesAdmin(t *testing.T) {
 		!strings.Contains(created.Raw, `"has_pin":true,"url":"https://app.example/share/`+token+`","node_name":"Data Room Investor","node_kind":"folder","access_count":0,"mail":{"sent":2,"failed":[]}}}`) {
 		t.Fatalf("create share: %s", created.Raw)
 	}
-	if len(f.mail.sent) != 2 || f.mail.sent[0].subject != `Dewi Arsip membagikan "Data Room Investor" (NüHabit Dataroom)` ||
+	if len(f.mail.sent) != 2 || f.mail.sent[0].subject != `Dewi Arsip membagikan "Data Room Investor" (Mizu Dataroom)` ||
 		!strings.Contains(f.mail.sent[0].html, "dan memasukkan PIN yang diberikan pengirim") {
 		t.Fatalf("mail: %+v", f.mail.sent)
 	}

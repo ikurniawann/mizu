@@ -398,7 +398,7 @@ export function JoinCheckout({
     <Section>
       <Container className="max-w-3xl space-y-8">
         <div className="space-y-4">
-          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Join NüHabit</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Join Mizu</h1>
           <Stepper current={step} />
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">

@@ -74,7 +74,7 @@ func TestWebPushEncryptionRoundTrip(t *testing.T) {
 func TestPushPayloadClipsAndDefaults(t *testing.T) {
 	var decoded map[string]string
 	_ = json.Unmarshal(pushPayload(PushMessage{Title: "  ", Body: strings.Repeat("x", 200)}), &decoded)
-	if decoded["title"] != "NüHabit" || decoded["url"] != "/member" || decoded["tag"] != "member" {
+	if decoded["title"] != "Mizu" || decoded["url"] != "/member" || decoded["tag"] != "member" {
 		t.Fatalf("defaults %v", decoded)
 	}
 	if n := len([]rune(decoded["body"])); n != 180 || !strings.HasSuffix(decoded["body"], "…") {

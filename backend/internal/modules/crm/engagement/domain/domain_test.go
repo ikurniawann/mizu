@@ -118,7 +118,7 @@ func TestPushPayload(t *testing.T) {
 		t.Fatal("unknown links fall back to /member")
 	}
 	long := decode(PushMessage{Title: "  ", Body: strings.Repeat("a", 400)})
-	if long["title"] != "NüHabit" || len([]rune(long["body"])) != 180 || !strings.HasSuffix(long["body"], "…") {
+	if long["title"] != "Mizu" || len([]rune(long["body"])) != 180 || !strings.HasSuffix(long["body"], "…") {
 		t.Fatalf("clip: %v", long)
 	}
 }

@@ -62,7 +62,7 @@ func (settingsSQL) BrandName(ctx context.Context, q database.Querier, companyID 
 			return name, nil
 		}
 	}
-	return "NüHabit", nil
+	return "Mizu", nil
 }
 
 // StaticQris is loadStaticQris: enabled and an image uploaded.

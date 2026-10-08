@@ -233,7 +233,7 @@ function AppSidebarContent({
             aria-label="Beranda"
             className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-ink shadow-card md:hidden"
           >
-            <Image src="/brand/mark-lime.png" width={600} height={210} alt="" className="h-auto w-7 select-none" draggable={false} />
+            <Image src="/brand/mark-lime.png" width={210} height={210} alt="" className="h-auto w-7 select-none" draggable={false} />
           </Link>
           <HeaderTitle navItems={navItems} branchName={user.branch_name ?? user.company_name} />
           <GlobalSearch
@@ -254,7 +254,7 @@ function AppSidebarContent({
               <Link
                 href="/os"
                 className={cn(ROUND_BUTTON, "hidden sm:inline-flex")}
-                title="Buka NüHabit OS desktop"
+                title="Buka Mizu OS desktop"
                 aria-label="Buka desktop"
               >
                 <MonitorSmartphone className="size-5" />
@@ -354,11 +354,11 @@ function RailHeader({ expanded }: { expanded: boolean }) {
       {expanded ? (
         <>
           {/* Wordmark putih di permukaan gelap (Logo Colorways, brand guideline). */}
-          <Image src="/brand/wordmark-white.png" width={1200} height={165} alt="" className="h-auto w-32 select-none" draggable={false} />
+          <Image src="/brand/wordmark-white.png" width={640} height={165} alt="" className="h-auto w-32 select-none" draggable={false} />
           <span className="mt-2 block truncate text-[11px] text-on-ink-muted">Operasional bisnis</span>
         </>
       ) : (
-        <Image src="/brand/mark-lime.png" width={600} height={210} alt="" className="h-auto w-9 select-none" draggable={false} />
+        <Image src="/brand/mark-lime.png" width={210} height={210} alt="" className="h-auto w-9 select-none" draggable={false} />
       )}
     </Link>
   );

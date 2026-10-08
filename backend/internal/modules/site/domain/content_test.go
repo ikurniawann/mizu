@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"nuhabit/backend/internal/platform/validate"
@@ -26,13 +27,43 @@ func TestDefaultsCoverEverySchema(t *testing.T) {
 	}
 }
 
+// The site is a spa now: no default copy may still read like the gym it replaced.
+func TestDefaultsAreSpaCopy(t *testing.T) {
+	var walk func(path string, v any)
+	walk = func(path string, v any) {
+		switch x := v.(type) {
+		case map[string]any:
+			for k, c := range x {
+				walk(path+"."+k, c)
+			}
+		case []any:
+			for _, c := range x {
+				walk(path, c)
+			}
+		case string:
+			low := strings.ToLower(x)
+			for _, word := range []string{"hyrox", "gym", "coach", "membership", "race"} {
+				if strings.Contains(low, word) {
+					t.Errorf("%s mentions %q: %s", path, word, x)
+				}
+			}
+		}
+	}
+	for _, key := range Keys() {
+		walk(key, Defaults[key])
+	}
+	if got := Defaults["social"]["instagram"]; got != "https://instagram.com/mizufamily.id" {
+		t.Fatalf("instagram %v", got)
+	}
+}
+
 func TestMergeKeepsDefaultsForMissingFields(t *testing.T) {
 	got := Merge("home", map[string]any{
 		"hero":     map[string]any{"title": "Judul baru"},
-		"partners": []any{map[string]any{"name": "Rogue", "logo_url": "/x.png"}},
+		"partners": []any{map[string]any{"name": "Mitra", "logo_url": "/x.png"}},
 	})
 	hero := got["hero"].(map[string]any)
-	if hero["title"] != "Judul baru" || hero["cta_label"] != "Start a Trial" {
+	if hero["title"] != "Judul baru" || hero["cta_label"] != "Booking Sekarang" {
 		t.Fatalf("hero %v", hero)
 	}
 	if len(got["partners"].([]any)) != 1 || len(got["pillars"].([]any)) != 3 {
@@ -63,7 +94,7 @@ func TestValidateCleansAndRejects(t *testing.T) {
 	if len(got["pillars"].([]any)) != 1 {
 		t.Fatalf("pillars %v", got["pillars"])
 	}
-	f = decode(t, `{"stories":[{"name":"  Ayu  ","quote":" My first race ","outcome":"Finished 8 weeks","image_url":"/member-photo.jpg"}]}`)
+	f = decode(t, `{"stories":[{"name":"  Ayu  ","quote":" Badan terasa ringan ","outcome":"Kunjungan pertama","image_url":"/guest-photo.jpg"}]}`)
 	got = Validate("home", f)
 	if !f.Valid() || got["stories"].([]any)[0].(map[string]any)["name"] != "Ayu" {
 		t.Fatalf("stories %v %v", got["stories"], f.Issues())

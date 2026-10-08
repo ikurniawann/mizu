@@ -6,9 +6,9 @@ const TONE_STYLES: Record<Tone, { background: string; color: string }> = {
   ok: { background: 'rgb(171 222 103 / 0.28)', color: '#3e7314' },
   warn: { background: 'rgb(201 162 39 / 0.2)', color: '#8a6a10' },
   danger: { background: 'rgb(209 59 64 / 0.14)', color: '#c2363b' },
-  info: { background: 'rgb(32 59 50 / 0.12)', color: '#203b32' },
-  neutral: { background: 'rgb(95 107 98 / 0.15)', color: '#5f6b62' },
-  brand: { background: 'rgb(218 255 89 / 0.5)', color: '#00281a' },
+  info: { background: 'rgb(32 59 50 / 0.12)', color: '#5a4334' },
+  neutral: { background: 'rgb(95 107 98 / 0.15)', color: '#75665a' },
+  brand: { background: 'rgb(218 255 89 / 0.5)', color: '#3d2b20' },
 };
 
 /** Maps every entity state in the system to a visual tone. */

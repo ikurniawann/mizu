@@ -86,7 +86,7 @@ func pushPayload(m PushMessage) []byte {
 	}
 	title := strings.TrimSpace(m.Title)
 	if title == "" {
-		title = "NüHabit"
+		title = "Mizu"
 	}
 	tag := m.Type
 	if tag == "" {

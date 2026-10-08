@@ -12,7 +12,7 @@ describe("withDefaults", () => {
   it("keeps stored values and fills missing nested fields", () => {
     const home = withDefaults("home", { hero: { title: "Judul" }, partners: [{ name: "A", logo_url: "/a.png" }] });
     expect(home.hero.title).toBe("Judul");
-    expect(home.hero.cta_label).toBe("Start a Trial");
+    expect(home.hero.cta_label).toBe("Booking Sekarang");
     expect(home.partners).toEqual([{ name: "A", logo_url: "/a.png" }]);
     expect(home.mission).toEqual({ quote: "", author: "" });
     expect(home.stories).toEqual([]);
@@ -20,11 +20,16 @@ describe("withDefaults", () => {
 
   it("lets a stored list replace the default list", () => {
     const training = withDefaults("training", { laws: { items: ["Satu"] } });
-    expect(training.laws).toEqual({ title: "The NüHabit Laws", items: ["Satu"] });
+    expect(training.laws).toEqual({ title: "Sebelum treatment", items: ["Satu"] });
+  });
+
+  it("carries spa copy, not the old gym copy", () => {
+    const text = JSON.stringify(CONTENT_DEFAULTS).toLowerCase();
+    for (const word of ["hyrox", "gym", "coach", "membership", "trial"]) expect(text).not.toContain(word);
   });
 
   it("does not mutate the defaults", () => {
     withDefaults("social", { instagram: "x" });
-    expect(CONTENT_DEFAULTS.social.instagram).toBe("");
+    expect(CONTENT_DEFAULTS.social.instagram).toBe("https://instagram.com/mizufamily.id");
   });
 });

@@ -7,9 +7,9 @@ export const maxDuration = 60;
 const spec = {
   openapi: "3.0.3",
   info: {
-    title: "NüHabit OS Purchasing Module API",
+    title: "Mizu OS Purchasing Module API",
     version: "1.0.0",
-    description: "REST API for NüHabit OS Purchasing Module — Suppliers, Purchase Orders, Materials",
+    description: "REST API for Mizu OS Purchasing Module — Suppliers, Purchase Orders, Materials",
   },
   servers: [{ url: appOrigin() || "http://localhost:3000" }],
   paths: {

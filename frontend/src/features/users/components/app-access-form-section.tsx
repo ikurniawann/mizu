@@ -144,7 +144,7 @@ export function AppAccessFormSection({
             htmlFor="is_access_app"
             className="cursor-pointer text-sm font-semibold text-gray-900"
           >
-            Enable NüHabit login access
+            Enable Mizu login access
           </label>
           <p className="mt-1 text-xs text-gray-500">
             Employee can sign in with the assigned role and data scope.

@@ -121,7 +121,7 @@ export function TableOrderApp({ tableCode }: { tableCode: string }) {
     [cart, charges, memberDiscountPct]
   );
   const tableLabel = session?.table_label || tableCode;
-  const brandName = session?.brand_name || "NüHabit";
+  const brandName = session?.brand_name || "Mizu";
 
   const showToast = useCallback((message: string) => {
     setToast(message);

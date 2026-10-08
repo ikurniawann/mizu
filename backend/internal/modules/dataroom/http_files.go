@@ -176,7 +176,7 @@ func (h *handler) shareFile(w http.ResponseWriter, r *http.Request) error {
 			label = *email
 		}
 		if label == "" {
-			by := "NüHabit"
+			by := "Mizu"
 			if sc.share.CreatedByName != nil {
 				by = *sc.share.CreatedByName
 			}

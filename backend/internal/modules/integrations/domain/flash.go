@@ -34,7 +34,7 @@ func BrandName(configured string) string {
 	if name := validate.JSTrim(configured); name != "" {
 		return name
 	}
-	return "NüHabit"
+	return "Mizu"
 }
 
 // TodayWib is todayWib: the WIB calendar date, YYYY-MM-DD.

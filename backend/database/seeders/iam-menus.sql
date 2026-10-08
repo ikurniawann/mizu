@@ -227,6 +227,9 @@ WHERE deleted_at IS NULL
     -- SETIAP migrasi menu baru WAJIB menambahkan code-nya ke daftar ini):
     'ess.home', 'ess.overtime', 'ess.loans', 'ess.payroll', 'ess.kpi',
     'ess.announcements', 'ess.team-shifts',
+    -- Spa Mizu (EPIC-052, 8 Okt 2026)
+    'ess.spa', 'spa', 'spa.bookings', 'spa.book-order', 'spa.treatments', 'spa.therapists',
+    'spa.commissions', 'spa.outlets',
     'hris.kepegawaian.overtime', 'hris.kepegawaian.loans',
     'hris.kepegawaian.announcements',
     'hris.performance.kpi-scorecard', 'hris.performance.dept-tasks', 'hris.performance.kpi-config',

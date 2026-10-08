@@ -102,10 +102,10 @@ function LoginContent() {
 
           <div className="flex items-start justify-between gap-4">
             <Image priority
-              src="/brand/wordmark-white.png" width={1200} height={165}
+              src="/brand/lockup-white.png" width={1200} height={165}
               alt={brandName()}
               draggable={false}
-              className="h-auto w-44 select-none lg:w-56"
+              className="h-auto w-72 select-none lg:w-[26rem]"
             />
             <div className="text-right" suppressHydrationWarning>
               <p className="font-display text-2xl leading-none font-semibold tabular-nums">{formattedTime}</p>
@@ -114,11 +114,11 @@ function LoginContent() {
           </div>
 
           <div className="mt-12">
-            <p className="font-display text-4xl leading-[1.05] font-light tracking-tight lg:text-6xl">
-              They say old habits die hard.
+            <p className="font-display text-4xl leading-[1.05] font-normal tracking-tight lg:text-6xl">
+              Rest. Relax.
             </p>
-            <p className="mt-2 font-display text-4xl leading-[1.05] font-semibold tracking-tight text-accent lg:text-6xl">
-              Get a New one.
+            <p className="mt-2 font-display text-4xl leading-[1.05] font-semibold tracking-tight text-accent italic lg:text-6xl">
+              Rejuvenate.
             </p>
             <p className="mt-6 text-sm text-on-ink-muted">{brandOsName()} · operasional bisnis dalam satu akun</p>
           </div>
@@ -128,7 +128,7 @@ function LoginContent() {
         <section className="flex items-center justify-center py-4">
           <div className="w-full max-w-md rounded-card bg-card p-6 shadow-card sm:p-8">
             <Image priority
-              src="/brand/wordmark-black.png" width={1200} height={165}
+              src="/brand/wordmark-black.png" width={640} height={165}
               alt={brandName()}
               draggable={false}
               className="block h-auto w-36 select-none"

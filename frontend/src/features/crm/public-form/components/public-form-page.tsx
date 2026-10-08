@@ -23,7 +23,7 @@ export function PublicFormPage({ form }: { form: PublicFormView }) {
           `.flex.min-h-screen` yang menimpa latar dengan page-mesh terang. */}
       <div className="relative mx-auto flex min-h-dvh max-w-3xl flex-col px-5 py-10 sm:py-16">
         <div className="flex items-center gap-3">
-          <Image src="/brand/wordmark-black.png" alt="NüHabit" width={1200} height={165} className="h-7 w-auto" priority />
+          <Image src="/brand/wordmark-black.png" alt="Mizu" width={640} height={165} className="h-7 w-auto" priority />
         </div>
 
         <div className="relative mt-8 rounded-2xl bg-card p-6 shadow-2xl sm:p-8">
@@ -35,7 +35,7 @@ export function PublicFormPage({ form }: { form: PublicFormView }) {
         </div>
 
         <p className="mt-auto pt-10 text-center text-xs text-white/50">
-          © {COPYRIGHT_YEAR} NüHabit
+          © {COPYRIGHT_YEAR} Mizu
         </p>
       </div>
     </main>

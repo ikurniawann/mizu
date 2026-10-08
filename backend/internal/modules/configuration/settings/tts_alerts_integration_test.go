@@ -193,7 +193,7 @@ func TestOrderAlerts(t *testing.T) {
 	r = post(map[string]any{"action": "approve", "chat_id": "111"})
 	expect(t, r, 200, "")
 	if got := tg.last(); got.path != "/bot"+token+"/sendMessage" ||
-		got.body != `{"chat_id":"111","text":"✅ Disetujui. Chat ini sekarang menerima notifikasi pesanan masuk NüHabit. Ketik /stop untuk berhenti.","disable_web_page_preview":true}` {
+		got.body != `{"chat_id":"111","text":"✅ Disetujui. Chat ini sekarang menerima notifikasi pesanan masuk Mizu. Ketik /stop untuk berhenti.","disable_web_page_preview":true}` {
 		t.Fatalf("approve message %+v", got)
 	}
 	expect(t, post(map[string]any{"action": "remove", "chat_id": "222"}), 200, "")
@@ -209,7 +209,7 @@ func TestOrderAlerts(t *testing.T) {
 	expect(t, post(map[string]any{"action": "test", "chat_id": 1}), 200,
 		`{"success":true,"data":{"result":{"wa":{"sent":1,"failed":0,"skippedNoPhone":0},"telegram":{"sent":2,"failed":1}}}}`)
 	if got := wa.last(); got.header.Get("x-gateway-token") != "gw" || !strings.Contains(got.body, `"target":"6281234567890"`) ||
-		!strings.Contains(got.body, "Tes notifikasi pesanan masuk NüHabit.") {
+		!strings.Contains(got.body, "Tes notifikasi pesanan masuk Mizu.") {
 		t.Fatalf("wa call %+v", got)
 	}
 	if got := e.text(`SELECT status FROM configuration.telegram_subscribers WHERE chat_id = 403`); got != "stopped" {

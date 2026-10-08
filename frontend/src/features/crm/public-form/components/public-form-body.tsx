@@ -126,7 +126,7 @@ export function PublicFormBody({ form, startedAt, onSubmitted }: {
         {form.submit_label}
       </Button>
       <p className="mt-3 text-xs text-muted-foreground">
-        By sending this, you agree that the NüHabit team may contact you about your request.
+        By sending this, you agree that the Mizu team may contact you about your request.
       </p>
     </form>
   );

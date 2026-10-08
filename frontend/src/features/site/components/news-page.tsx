@@ -7,11 +7,11 @@ import { Container, EmptyNote, Picture, Section, SectionHeading } from "./site-s
 
 function CategoryChips({ active }: { active: ArticleCategory | null }) {
   const chips: { value: ArticleCategory | null; label: string }[] = [
-    { value: null, label: "All" },
+    { value: null, label: "Semua" },
     ...ARTICLE_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] })),
   ];
   return (
-    <nav aria-label="Categories" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+    <nav aria-label="Kategori" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
       {chips.map((chip) => {
         const selected = chip.value === active;
         return (
@@ -54,10 +54,10 @@ export function NewsPage({ articles, category }: { articles: Article[]; category
   return (
     <Section>
       <Container className="space-y-8">
-        <SectionHeading as="h1" kicker="News" title="Stories, events and the latest releases" />
+        <SectionHeading as="h1" kicker="Berita" title="Kabar, tips dan promo dari Mizu" />
         <CategoryChips active={category} />
         {articles.length === 0 ? (
-          <EmptyNote>No articles yet{category ? ` in ${CATEGORY_LABELS[category]}` : ""}.</EmptyNote>
+          <EmptyNote>Belum ada artikel{category ? ` di kategori ${CATEGORY_LABELS[category]}` : ""}.</EmptyNote>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {articles.map((a) => (

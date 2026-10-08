@@ -79,6 +79,12 @@ var (
 	SiteContent             = []string{"site.content"}
 	SiteArticles            = []string{"site.articles"}
 	SiteEvents              = []string{"site.events"}
+	Spa                     = []string{"spa"}
+	SpaBookings             = []string{"spa.bookings", "spa.book-order"}
+	SpaTreatments           = []string{"spa.treatments"}
+	SpaTherapists           = []string{"spa.therapists"}
+	SpaCommissions          = []string{"spa.commissions"}
+	SpaOutlets              = []string{"spa.outlets"}
 	ItemsPrApproval         = []string{"items.general.purchasing.approval-pr", "items.product.approval.pr", "items.raw-material.approval.pr"}
 )
 
@@ -158,5 +164,11 @@ var ByKey = map[string][]string{
 	"siteContent":             SiteContent,
 	"siteArticles":            SiteArticles,
 	"siteEvents":              SiteEvents,
+	"spa":                     Spa,
+	"spaBookings":             SpaBookings,
+	"spaTreatments":           SpaTreatments,
+	"spaTherapists":           SpaTherapists,
+	"spaCommissions":          SpaCommissions,
+	"spaOutlets":              SpaOutlets,
 	"itemsPrApproval":         ItemsPrApproval,
 }

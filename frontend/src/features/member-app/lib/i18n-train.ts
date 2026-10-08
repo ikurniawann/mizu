@@ -104,7 +104,7 @@ export const TRAIN_ID: Record<string, string> = {
   "Location needs a secure connection (https). Open the app over https and try again.":
     "Lokasi butuh koneksi aman (https). Buka aplikasi lewat https lalu coba lagi.",
   "Location is blocked for this site. Turn it on in your browser settings for nuhabit, then try again.":
-    "Lokasi diblokir untuk situs ini. Nyalakan di pengaturan browser untuk NüHabit, lalu coba lagi.",
+    "Lokasi diblokir untuk situs ini. Nyalakan di pengaturan browser untuk Mizu, lalu coba lagi.",
   "Your device could not get a fix. Step outside or check that location services are on.":
     "Perangkatmu belum menemukan lokasi. Keluar ruangan atau pastikan layanan lokasi menyala.",
   "Finding you took too long. Try again somewhere with a clearer view of the sky.":

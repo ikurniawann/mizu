@@ -242,7 +242,7 @@ export function StockAlertsPage() {
             ? ` · Terakhir ${formatTime(data.updated_at)}`
             : ''}
         </span>
-        <span className="font-mono">NüHabit POS · Stok Alert</span>
+        <span className="font-mono">Mizu POS · Stok Alert</span>
       </footer>
     </div>
   );

@@ -129,7 +129,7 @@ function Register() {
       <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-6 py-8">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/brand/wordmark-black.png")} alt="NüHabit" className="mb-5 h-6 w-auto" />
+          <img src={asset("/brand/wordmark-black.png")} alt="Mizu" className="mb-5 h-6 w-auto" />
           <h1 className="nh-display text-3xl font-black">{t("Join the studio")}</h1>
           <div className="mt-4 flex gap-1.5">
             {STEPS.map((s, i) => (
@@ -274,7 +274,7 @@ function Register() {
               </p>
               <p>
                 {t(
-                  "I acknowledge that HYROX-style functional training involves inherent physical risks. I confirm I am medically fit to participate, and I release NüHabit, its staff and coaches from liability for injuries sustained during training, except in cases of gross negligence. I consent to the studio storing my membership and attendance data for operating the facility."
+                  "I acknowledge that HYROX-style functional training involves inherent physical risks. I confirm I am medically fit to participate, and I release Mizu, its staff and coaches from liability for injuries sustained during training, except in cases of gross negligence. I consent to the studio storing my membership and attendance data for operating the facility."
                 )}
               </p>
             </div>
