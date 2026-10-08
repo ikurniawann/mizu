@@ -8,7 +8,7 @@
  * Butuh Chromium Playwright: PLAYWRIGHT_CORE=/path/ke/playwright-core node scripts/generate-brand-assets.mjs
  */
 import { createRequire } from "node:module";
-import { mkdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,7 +16,9 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || "playwright-core");
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BRAND = path.join(ROOT, "public", "brand");
+const MEMBER_ICONS = path.join(ROOT, "public", "member-assets", "icons");
 mkdirSync(BRAND, { recursive: true });
+mkdirSync(MEMBER_ICONS, { recursive: true });
 
 export const COLORS = {
   espresso: "#241b16",
@@ -77,6 +79,24 @@ function appIcon(size, radius) {
     <svg width="${inner}" height="${inner}" viewBox="0 0 100 100">${stones(COLORS.gold, size < 100 ? 6 : 4.4)}</svg></div>`);
 }
 
+/**
+ * Favicon tab browser: digambar besar (256) dengan garis tebal lalu diperkecil
+ * browser, supaya tumpukan batu tetap terbaca di 16–48 px.
+ */
+function favicon(size) {
+  const inner = Math.round(size * 0.86);
+  return page(size, size, `<div style="width:${size}px;height:${size}px;border-radius:${Math.round(size * 0.22)}px;display:flex;align-items:center;justify-content:center;background:${COLORS.espresso}">
+    <svg width="${inner}" height="${inner}" viewBox="0 0 100 100">${stones(COLORS.gold, 9)}</svg></div>`);
+}
+
+/** Ikon maskable PWA: latar penuh, ikon di zona aman (radius 40%). */
+function maskableIcon(size) {
+  const inner = Math.round(size * 0.46);
+  return page(size, size, `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 120% at 30% 20%, ${COLORS.mocha}, ${COLORS.espresso} 70%)">
+    <svg width="${inner}" height="${inner}" viewBox="0 0 100 100">${stones(COLORS.gold, 4.6)}</svg></div>`);
+}
+
 function veins(w, h, color, opacity, count, seed) {
   let s = seed;
   const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
@@ -109,6 +129,7 @@ function wallpaper() {
   </div>`, COLORS.espresso);
 }
 
+// [file, html, transparent, dir?, downscaleTo?]
 const JOBS = [
   ["wordmark-black.png", wordmark(COLORS.mocha, COLORS.goldDeep), true],
   ["wordmark-white.png", wordmark(COLORS.ivory, COLORS.gold), true],
@@ -117,24 +138,91 @@ const JOBS = [
   ["mark-lime.png", mark(COLORS.gold), true],
   ["mark-black.png", mark(COLORS.mocha), true],
   ["mark-white.png", mark(COLORS.ivory), true],
-  ["favicon-64.png", appIcon(64, 14), true],
+  // Favicon: nama berawalan "mizu-" supaya browser tidak memakai cache favicon lama.
+  ["mizu-favicon-16.png", favicon(256), true, BRAND, 16],
+  ["mizu-favicon-32.png", favicon(256), true, BRAND, 32],
+  ["mizu-favicon-48.png", favicon(256), true, BRAND, 48],
+  ["mizu-favicon-64.png", favicon(256), true, BRAND, 64],
+  ["favicon-64.png", favicon(256), true, BRAND, 64],
   ["icon-192.png", appIcon(192, 42), true],
   ["icon-512.png", appIcon(512, 112), true],
   ["apple-touch-icon.png", appIcon(180, 0), false],
+  ["mizu-apple-touch-icon.png", appIcon(180, 0), false],
+  ["icon-192.png", appIcon(192, 42), true, MEMBER_ICONS],
+  ["icon-512.png", appIcon(512, 112), true, MEMBER_ICONS],
+  ["icon-512-maskable.png", maskableIcon(512), false, MEMBER_ICONS],
+  ["apple-touch-icon.png", appIcon(180, 0), false, MEMBER_ICONS],
   ["pattern.png", pattern(), true],
   ["wallpaper.webp", wallpaper(), false],
 ];
 
+/** ICO berisi PNG (didukung semua browser modern). */
+function writeIco(out, pngs) {
+  const header = Buffer.alloc(6 + 16 * pngs.length);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(pngs.length, 4);
+  let offset = header.length;
+  pngs.forEach(({ size, data }, i) => {
+    const e = 6 + 16 * i;
+    header.writeUInt8(size >= 256 ? 0 : size, e);
+    header.writeUInt8(size >= 256 ? 0 : size, e + 1);
+    header.writeUInt16LE(1, e + 4);
+    header.writeUInt16LE(32, e + 6);
+    header.writeUInt32LE(data.length, e + 8);
+    header.writeUInt32LE(offset, e + 12);
+    offset += data.length;
+  });
+  writeFileSync(out, Buffer.concat([header, ...pngs.map((p) => p.data)]));
+}
+
 const browser = await chromium.launch({ headless: true });
 const ctx = await browser.newContext({ deviceScaleFactor: 1 });
 const p = await ctx.newPage();
-for (const [file, html, transparent] of JOBS) {
+
+/** Perkecil PNG / ubah ke WebP lewat canvas Chromium (tanpa dependensi gambar). */
+async function convert(file, { size, type = "image/png", quality } = {}) {
+  const data = readFileSync(file).toString("base64");
+  const url = await p.evaluate(async ({ data, size, type, quality }) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${data}`;
+    await img.decode();
+    const w = size || img.naturalWidth;
+    const h = size || img.naturalHeight;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const g = c.getContext("2d");
+    g.imageSmoothingQuality = "high";
+    g.drawImage(img, 0, 0, w, h);
+    return c.toDataURL(type, quality);
+  }, { data, size, type, quality });
+  return Buffer.from(url.split(",")[1], "base64");
+}
+
+for (const [file, html, transparent, dir = BRAND, downscale] of JOBS) {
   await p.setContent(html, { waitUntil: "networkidle" });
   await p.evaluate(() => document.fonts.ready);
   const size = await p.evaluate(() => ({ width: document.body.clientWidth, height: document.body.clientHeight }));
   await p.setViewportSize(size);
-  const out = file.endsWith(".webp") ? path.join(BRAND, file.replace(".webp", ".png")) : path.join(BRAND, file);
+  const out = path.join(dir, file.endsWith(".webp") ? file.replace(".webp", ".png") : file);
   await p.screenshot({ path: out, omitBackground: transparent, clip: { x: 0, y: 0, ...size } });
-  console.log("ok", file, `${size.width}x${size.height}`);
+  if (downscale) writeFileSync(out, await convert(out, { size: downscale }));
+  if (file.endsWith(".webp")) {
+    await p.setContent("<html><body></body></html>");
+    writeFileSync(path.join(dir, file), await convert(out, { type: "image/webp", quality: 0.86 }));
+    unlinkSync(out);
+  }
+  console.log("ok", path.relative(ROOT, path.join(dir, file)), downscale ? `${downscale}px` : `${size.width}x${size.height}`);
 }
+
+await p.setContent("<html><body></body></html>");
+writeIco(path.join(ROOT, "public", "favicon.ico"), [16, 32, 48].map((s) => ({
+  size: s, data: readFileSync(path.join(BRAND, `mizu-favicon-${s}.png`)),
+})));
+console.log("ok public/favicon.ico (16, 32, 48)");
+// Konvensi Next (app/icon.png, app/apple-icon.png) ikut diperbarui.
+copyFileSync(path.join(BRAND, "mizu-favicon-64.png"), path.join(ROOT, "src", "app", "icon.png"));
+copyFileSync(path.join(BRAND, "apple-touch-icon.png"), path.join(ROOT, "src", "app", "apple-icon.png"));
+console.log("ok src/app/icon.png, src/app/apple-icon.png");
 await browser.close();

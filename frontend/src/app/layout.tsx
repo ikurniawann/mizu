@@ -12,9 +12,16 @@ import { ErrorBoundary } from "@/components/error-boundary";
 export const metadata: Metadata = {
   title: brandName(),
   description: `${brandOsName()} — ERP terintegrasi untuk operasional bisnis`,
+  // Nama file "mizu-*" (bukan favicon-64.png lama) agar browser yang pernah
+  // menyimpan favicon NüHabit di domain ini memuat ulang ikon Mizu.
   icons: {
-    icon: "/brand/favicon-64.png",
-    apple: "/brand/apple-touch-icon.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48 32x32 16x16" },
+      { url: "/brand/mizu-favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/mizu-favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/brand/mizu-apple-touch-icon.png",
   },
 };
 
