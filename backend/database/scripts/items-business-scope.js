@@ -1,6 +1,6 @@
 const HOLDING_CODE = process.env.SEED_HOLDING_CODE || "PROLOGE";
-const COMPANY_CODE = process.env.SEED_COMPANY_CODE || "SULU";
-const BRANCH_CODE = process.env.SEED_BRANCH_CODE || "SULU-DAGO";
+const COMPANY_CODE = process.env.SEED_COMPANY_CODE || "MIZU";
+const BRANCH_CODE = process.env.SEED_BRANCH_CODE || "MIZU-DAGO";
 const BRANCH_NAME = process.env.SEED_BRANCH_NAME || "Dago";
 
 async function resolveSeedBusinessScope(client) {
@@ -25,7 +25,7 @@ async function resolveSeedBusinessScope(client) {
 
   if (rows[0]) return rows[0];
 
-  // Default kode di atas berasal dari tenant lama (Sulu). Pada deploy yang hanya
+  // Default kode di atas berasal dari tenant lama (Mizu). Pada deploy yang hanya
   // berisi SATU bisnis aktif, memaksa pengguna menebak kode lewat env hanya jadi
   // penghalang — jadi dipakai otomatis. Bila ada lebih dari satu, tetap gagal
   // supaya tidak pernah salah menulis ke tenant yang keliru.

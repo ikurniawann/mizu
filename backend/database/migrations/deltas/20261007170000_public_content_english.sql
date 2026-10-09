@@ -43,23 +43,23 @@ WHERE key = 'home' AND value #>> '{pillars,2,text}' = 'Race bareng, recovery bar
 
 UPDATE configuration.branches
 SET directions = 'Enter from Jl. Sulanjana and park in the basement.'
-WHERE slug = 'sulu-bandung' AND directions = 'Masuk dari Jl. Sulanjana, parkir di basement.';
+WHERE slug = 'mizu-bandung' AND directions = 'Masuk dari Jl. Sulanjana, parkir di basement.';
 
 UPDATE configuration.branches
 SET benefits = '[{"title":"Certified coaches","text":"Every coach is HYROX certified."},{"title":"Small classes","text":"No more than 12 people per class."}]'::jsonb
-WHERE slug = 'sulu-bandung' AND benefits = '[{"title":"Coach bersertifikat","text":"Semua coach lulus sertifikasi HYROX."},{"title":"Kelas kecil","text":"Maksimal 12 orang per kelas."}]'::jsonb;
+WHERE slug = 'mizu-bandung' AND benefits = '[{"title":"Coach bersertifikat","text":"Semua coach lulus sertifikasi HYROX."},{"title":"Kelas kecil","text":"Maksimal 12 orang per kelas."}]'::jsonb;
 
 UPDATE configuration.branches
 SET accordions = '{"facilities":["12-lane rig","25 m turf","Showers and lockers"],"parking":["Basement parking for 40 cars","Motorcycle parking at the front"],"team":["Head coach: Rani"],"community":["Saturday run club"]}'::jsonb
-WHERE slug = 'sulu-bandung' AND accordions = '{"facilities":["Rig 12 lane","Turf 25 m","Shower & loker"],"parking":["Basement 40 mobil","Motor di depan"],"team":["Head coach: Rani"],"community":["Run club tiap Sabtu"]}'::jsonb;
+WHERE slug = 'mizu-bandung' AND accordions = '{"facilities":["Rig 12 lane","Turf 25 m","Shower & loker"],"parking":["Basement 40 mobil","Motor di depan"],"team":["Head coach: Rani"],"community":["Run club tiap Sabtu"]}'::jsonb;
 
 UPDATE configuration.branches
 SET extras = '[{"name":"Personal training","blurb":"One-to-one sessions with a coach."}]'::jsonb
-WHERE slug = 'sulu-bandung' AND extras = '[{"name":"Personal training","blurb":"Sesi 1:1 dengan coach."}]'::jsonb;
+WHERE slug = 'mizu-bandung' AND extras = '[{"name":"Personal training","blurb":"Sesi 1:1 dengan coach."}]'::jsonb;
 
 UPDATE configuration.branches
 SET testimonials = '[{"name":"Ayu","quote":"I finished my first race thanks to the 8-week program.","role":"Member since 2025"}]'::jsonb
-WHERE slug = 'sulu-bandung' AND testimonials = '[{"name":"Ayu","quote":"Race pertama saya selesai berkat program 8 minggunya.","role":"Member 2025"}]'::jsonb;
+WHERE slug = 'mizu-bandung' AND testimonials = '[{"name":"Ayu","quote":"Race pertama saya selesai berkat program 8 minggunya.","role":"Member 2025"}]'::jsonb;
 
 UPDATE site.articles SET title = 'A new training block starts October 13'
 WHERE slug = 'blok-baru-oktober' AND title = 'Blok baru dimulai 13 Oktober';

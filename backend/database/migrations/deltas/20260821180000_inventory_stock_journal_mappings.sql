@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Inventory stock events → Journal Mapping (opname / adjustment / transfer)
--- Module INVENTORY + seed templates + backfill COA SULU
+-- Module INVENTORY + seed templates + backfill COA MIZU
 -- =============================================================================
 
 ALTER TABLE accounting.journal_mappings

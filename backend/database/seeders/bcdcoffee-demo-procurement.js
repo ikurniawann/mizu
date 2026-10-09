@@ -2,7 +2,7 @@
 /**
  * Seeder demo Procurement BCD Coffee: supplier, purchase request, purchase order.
  *
- * Seeder supplier bawaan (purchasing-sulu-suppliers.js) membaca Excel milik
+ * Seeder supplier bawaan (purchasing-mizu-suppliers.js) membaca Excel milik
  * tenant lama yang tidak ada di repo ini, jadi daftar supplier di sini ditulis
  * langsung dan disesuaikan dengan bahan baku kedai kopi.
  *

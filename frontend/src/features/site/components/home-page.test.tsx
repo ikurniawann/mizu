@@ -5,7 +5,7 @@ import { CONTENT_DEFAULTS } from "../content-defaults";
 import type { BranchSummary } from "../types";
 import { HomePage } from "./home-page";
 
-const OUTLET: PublicOutlet = { branch_id: "b1", name: "Mizu 1.0", address: null, city: "Bandung", phone: null, open_time: "10:00", close_time: "22:00", slot_minutes: 30 };
+const OUTLET: PublicOutlet = { branch_id: "b1", slug: "mizu-westhoff", name: "Mizu 1.0", address: null, city: "Bandung", phone: null, open_time: "10:00", close_time: "22:00", slot_minutes: 30 };
 const MENU: PublicTreatment[] = [
   { id: "t1", name: "Balinese Massage", category: "Massage", description: null, variants: [{ id: "v1", name: "60", duration_min: 60, price_idr: 185000 }, { id: "v2", name: "90", duration_min: 90, price_idr: 255000 }] },
   { id: "t2", name: "Mizu Signature Ritual", category: "Signature", description: null, variants: [{ id: "v3", name: "150", duration_min: 150, price_idr: 595000 }] },

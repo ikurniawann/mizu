@@ -1,5 +1,5 @@
 -- =============================================================================
--- Super admin default business scope: Prologe → Sulu → Sulu Bandung
+-- Super admin default business scope: Prologe → Mizu → Mizu Bandung
 -- =============================================================================
 
 DO $$
@@ -14,14 +14,14 @@ BEGIN
 
     SELECT id INTO v_company_id
     FROM configuration.companies
-    WHERE holding_id = v_holding_id AND code = 'SULU';
+    WHERE holding_id = v_holding_id AND code = 'MIZU';
 
     SELECT id INTO v_branch_id
     FROM configuration.branches
-    WHERE company_id = v_company_id AND code = 'SULU-BANDUNG';
+    WHERE company_id = v_company_id AND code = 'MIZU-BANDUNG';
 
     IF v_holding_id IS NULL OR v_company_id IS NULL OR v_branch_id IS NULL THEN
-        RAISE NOTICE 'Prologe / Sulu / Sulu Bandung belum ada — skip super admin scope update';
+        RAISE NOTICE 'Prologe / Mizu / Mizu Bandung belum ada — skip super admin scope update';
         RETURN;
     END IF;
 

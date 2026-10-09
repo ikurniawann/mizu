@@ -297,7 +297,7 @@ independen dari engine (bisa maju duluan bila owner mau).
   ringkasan + pesan server (pengunjung bisa lanjut tanpa kode). Halaman
   status publik: baris Subtotal/Potongan (kode)/Total Bayar + tombol bayar
   pakai payable + **jam slot tampil** (utang known-limitation EPIC-031
-  lunas penuh di UI). tsc bersih, build OK → pm2 restart, /booking/sulu
+  lunas penuh di UI). tsc bersih, build OK → pm2 restart, /booking/mizu
   200. Fase B sisa: B3 kartu diskon di laporan ticketing (ledger sudah
   jalan sejak B1). Commit 13e51b33 (pushed).
 - 2026-07-26 — **B3 SELESAI (Fase B TUNTAS), live dev**: laporan ticketing

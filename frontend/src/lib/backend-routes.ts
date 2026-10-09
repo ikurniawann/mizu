@@ -78,11 +78,16 @@ export const GO_BACKEND_PREFIXES: readonly string[] = [
 /**
  * Routes under a switched prefix that must stay in Next even though a Go
  * pattern matches them (a Go wildcard such as /x/{id} would otherwise take
- * /x/export). Empty since every API route runs in Go; keep it for future
- * exceptions. Next-style segments: "[id]" is one segment, "[...path]" the
+ * /x/export). The spa member booking list reads the current member's Next
+ * session. Next-style segments: "[id]" is one segment, "[...path]" the
  * rest.
  */
-export const NEXT_ONLY_ROUTES: readonly string[] = [];
+export const NEXT_ONLY_ROUTES: readonly string[] = [
+  "GET /api/member-portal/spa/bookings",
+  "POST /api/public/spa/bookings/[token]/change-code",
+  "POST /api/public/spa/bookings/[token]/verify-code",
+  "POST /api/public/spa/funnel",
+];
 
 export type GoRoute = { module: string; method: string; path: string };
 

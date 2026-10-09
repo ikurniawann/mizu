@@ -160,7 +160,7 @@ BEGIN
 END;
 $$;
 
--- Isi venue default dari hierarchy yang ada (single-venue: Sulu Bandung)
+-- Isi venue default dari hierarchy yang ada (single-venue: Mizu Bandung)
 UPDATE crm.crm_settings s
 SET value = to_jsonb(c.id::text)
 FROM configuration.companies c

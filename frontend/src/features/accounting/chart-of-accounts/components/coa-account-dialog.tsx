@@ -100,7 +100,7 @@ function CoaAccountForm({
     [accountTypes],
   );
 
-  // Parent harus satu company_id dengan akun yang dibuat/diedit (Sulu).
+  // Parent harus satu company_id dengan akun yang dibuat/diedit (Mizu).
   const parentFormOptions = useMemo(() => {
     const companyId = resolveFormCompanyId(editing, form.parent_id, allRows);
     return parentCandidates(allRows, editing?.id ?? null, companyId).map(

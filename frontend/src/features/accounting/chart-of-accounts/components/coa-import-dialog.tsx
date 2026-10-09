@@ -63,7 +63,7 @@ function CoaImportPanel({ onClose }: { onClose: () => void }) {
       <DialogPanelHeader>
         <DialogPanelTitle>Import Chart of Accounts</DialogPanelTitle>
         <DialogPanelDescription>
-          Upload format standar (header code/name) atau file SULU sheet COA.
+          Upload format standar (header code/name) atau file MIZU sheet COA.
         </DialogPanelDescription>
       </DialogPanelHeader>
       <DialogPanelToolbar>

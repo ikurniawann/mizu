@@ -176,7 +176,7 @@ group — diangkat jadi epic tersendiri **EPIC-002: Psikotes Online**.
   `cd870d7`). Integrasi hilir: promote kandidat hired kini otomatis membuat
   draft kontrak (lihat EPIC-006 Fase D).
 - 2026-07-14 · Semua task group 1–6 selesai & terverifikasi di dev
-  (localhost:3459 / omnipos.suluinwounderland.com). Belum di-commit atas
+  (localhost:3459 / omnipos.mizuinwounderland.com). Belum di-commit atas
   permintaan user — commit menyusul setelah fase development selesai.
 - 2026-07-14 · Keputusan arsitektur: (a) perpindahan status wajib lewat
   `/api/candidates/[id]/stage`; (b) `item.brands` = mirror `configuration.

@@ -1,8 +1,8 @@
 -- =============================================================================
--- Backfill harga_beli bahan baku SULU + sync inventory.unit_cost kosong
+-- Backfill harga_beli bahan baku MIZU + sync inventory.unit_cost kosong
 --
 -- Estimated COGS (v_products_cogs) memakai v_raw_materials_stock.avg_cost, yang
--- fallback ke harga_beli bila inventory.unit_cost = 0. Data master SULU masuk
+-- fallback ke harga_beli bila inventory.unit_cost = 0. Data master MIZU masuk
 -- tanpa harga, sehingga HPP estimasi tampil 0 meski BOM sudah ada.
 --
 -- harga_beli = perkiraan harga beli per satuan besar (IDR).

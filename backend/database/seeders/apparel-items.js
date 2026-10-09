@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Seeder TENANT SULU-APPAREL — bagian 2: master item produksi kaos, kemeja,
+ * Seeder TENANT MIZU-APPAREL — bagian 2: master item produksi kaos, kemeja,
  * celana, sandal, dan sepatu (data lokal, owner 2026-09-09, EPIC-047 Fase 0).
  *
  * CATATAN HARGA: seluruh harga bahan baku & harga jual di file ini adalah

@@ -15,7 +15,7 @@ function baseRow(overrides: Partial<ProductOpnamePreviewLine> = {}): ProductOpna
     inventory_id: "inv-1",
     product_id: "product-1",
     product_kode: "KAOS-001",
-    product_nama: "Kaos Sulu Basic",
+    product_nama: "Kaos Mizu Basic",
     satuan: "PCS",
     qty_system: 40,
     unit_cost: 25000,

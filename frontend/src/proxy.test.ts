@@ -13,10 +13,10 @@ async function call(host: string, path: string) {
   return rewritten ? new URL(rewritten).pathname : null; // null = passed through
 }
 
-const MEMBER = "member.suluinwounderland.com";
-const MEMBER_DEV = "dev.sulu.member.wit.id";
-const DASH = "dashboard.suluinwounderland.com";
-const DASH_DEV = "dev.sulu.wit.id";
+const MEMBER = "member.mizuinwounderland.com";
+const MEMBER_DEV = "dev.mizu.member.wit.id";
+const DASH = "dashboard.mizuinwounderland.com";
+const DASH_DEV = "dev.mizu.wit.id";
 
 describe("proxy: member hostname", () => {
   test("rewrites the root to /member", async () => {
@@ -32,7 +32,7 @@ describe("proxy: member hostname", () => {
   });
 
   test("is case-insensitive", async () => {
-    expect(await call("DEV.SULU.MEMBER.WIT.ID", "/")).toBe("/member");
+    expect(await call("DEV.MIZU.MEMBER.WIT.ID", "/")).toBe("/member");
   });
 
   test("prefixes a nested path", async () => {

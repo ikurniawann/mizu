@@ -1,8 +1,8 @@
 # Audit: SIW Menu Matrix vs Database
 
 - **Workbook**: `docs/SIW - Menu Matrix_31-08-2026.xlsx`
-- **Database**: `server-sulu` / `arkiv`
-- **Scope**: company `SULU` · branch `SULU-DAGO`
+- **Database**: `server-mizu` / `arkiv`
+- **Scope**: company `MIZU` · branch `MIZU-DAGO`
 - **Dijalankan**: 2026-09-01T23:42:06.009Z
 
 ## 1. Cakupan data

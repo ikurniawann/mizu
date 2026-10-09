@@ -6,25 +6,18 @@ import { Button, type ButtonProps } from "@/components/ui/button";
 /** The public spa booking wizard; every primary call to action lands here. */
 export const BOOKING_HREF = "/booking/spa";
 
-/** Booking link with the outlet (and treatment) already chosen. */
-export function bookingHref(branchId?: string | null, treatmentId?: string | null): string {
+export function bookingHref(options: { outlet?: string; treatment?: string } = {}): string {
   const params = new URLSearchParams();
-  if (branchId) params.set("outlet", branchId);
-  if (branchId && treatmentId) params.set("treatment", treatmentId);
-  const query = params.toString();
-  return query ? `${BOOKING_HREF}?${query}` : BOOKING_HREF;
+  if (options.outlet) params.set("outlet", options.outlet);
+  if (options.treatment) params.set("treatment", options.treatment);
+  return params.size ? `${BOOKING_HREF}?${params}` : BOOKING_HREF;
 }
 
 /** A button link to the booking wizard. */
-export function BookingButton({
-  children = "Booking",
-  icon = true,
-  href = BOOKING_HREF,
-  ...props
-}: Omit<ButtonProps, "asChild"> & { children?: ReactNode; icon?: boolean; href?: string }) {
+export function BookingButton({ children = "Booking", icon = true, outlet, treatment, ...props }: Omit<ButtonProps, "asChild"> & { children?: ReactNode; icon?: boolean; outlet?: string; treatment?: string }) {
   return (
     <Button asChild {...props}>
-      <Link href={href}>
+      <Link href={bookingHref({ outlet, treatment })}>
         {icon ? <CalendarCheck /> : null}
         {children}
       </Link>

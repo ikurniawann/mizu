@@ -11,7 +11,7 @@
  *   - harga per kanal + kalender high season
  *   - gelang NFC, booking online lintas status, kunjungan (tab F&B), season pass
  *
- * CATATAN VENUE: seeder TIDAK mengubah default venue CRM (tetap Sulu). Data
+ * CATATAN VENUE: seeder TIDAK mengubah default venue CRM (tetap Mizu). Data
  * Dusun Bambu terlihat saat login sebagai user ber-scope cabang Dusun Bambu
  * (demo@dusunbambu.id dari bagian 1).
  *

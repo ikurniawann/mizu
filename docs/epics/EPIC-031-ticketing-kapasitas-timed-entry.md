@@ -198,14 +198,14 @@ C setelah B1; D setelah B stabil. Rilis bisa bertahap: A+B saja sudah menutup
 
 ## Halaman & Endpoint Baru (Fase A–D)
 
-Halaman (dev: `sulu.within.ventures` / `127.0.0.1:3459`; slug booking = `sulu`):
+Halaman (dev: `mizu.within.ventures` / `127.0.0.1:3459`; slug booking = `mizu`):
 
 | Link | Baru/berubah | Fase |
 |---|---|---|
 | `/dashboard/ticketing/settings` | Seksi BARU **Kapasitas Harian** + **Slot Waktu (Timed-Entry)** | A3, D |
 | `/dashboard/ticketing/booking` | Panel BARU **Okupansi Harian** (kalender bulanan, klik = filter) | C1 |
 | `/dashboard/ticketing/reports` | Kartu BARU **Okupansi Kuota Harian** (muncul bila ada kuota) | C2 |
-| `/booking/sulu` | Kalender mencoret tanggal penuh/tutup + langkah BARU **Jam kunjungan** (bila venue ber-slot) | B4, D |
+| `/booking/mizu` | Kalender mencoret tanggal penuh/tutup + langkah BARU **Jam kunjungan** (bila venue ber-slot) | B4, D |
 
 Endpoint API baru:
 
@@ -220,7 +220,7 @@ Endpoint API baru:
 
 ## QA Checklist (step-by-step)
 
-Prasyarat: login **super_admin** venue SULU di dev; mulai dari keadaan
+Prasyarat: login **super_admin** venue MIZU di dev; mulai dari keadaan
 kuota MATI (Kapasitas Default kosong, tanpa override, tanpa slot).
 
 **A. Pengaturan kapasitas** (`/dashboard/ticketing/settings`)
@@ -231,7 +231,7 @@ kuota MATI (Kapasitas Default kosong, tanpa override, tanpa slot).
 4. Validasi: tanggal akhir < mulai → pesan merah, tombol mati.
 5. Toggle nonaktif & hapus override → hilang dari perhitungan.
 
-**B. Sold-out booking online** (`/booking/sulu`)
+**B. Sold-out booking online** (`/booking/mizu`)
 6. Set kapasitas kecil (mis. 2). Booking 2 orang → bayar (Xendit MOCK).
 7. Buka ulang wizard → tanggal tsb **dicoret** di kalender + legend
    "Tanggal dicoret sudah penuh"; memilihnya → notice merah, **Lanjut mati**.
@@ -259,7 +259,7 @@ kuota MATI (Kapasitas Default kosong, tanpa override, tanpa slot).
 16. Pengaturan: ketik kapasitas default DI BAWAH okupansi tertinggi 90
     hari ke depan → warning amber menyebut tanggal & jumlah orang.
 
-**E. Timed-entry slot** (`/dashboard/ticketing/settings` + `/booking/sulu`)
+**E. Timed-entry slot** (`/dashboard/ticketing/settings` + `/booking/mizu`)
 17. Tambah 2 slot (mis. "Sesi Pagi" 08:00–12:00 kuota 2; "Sesi Sore"
     13:00–17:00 tanpa kuota); validasi jam selesai ≤ mulai ditolak.
 18. Wizard kini menampilkan langkah **Jam kunjungan**; tanpa memilih →
@@ -341,7 +341,7 @@ di ringkasan saat memesan. Kandidat polish bila owner minta.
   kuota, walk-in terhitung, redeem TIDAK dobel, kedaluwarsa/void melepas,
   override terkecil menang); RACE test riil 2 transaksi paralel kapasitas 1
   → tepat 1 LOLOS 1 PENUH (advisory lock terbukti serialisasi), cleanup 0
-  sisa. Build OK → pm2 restart, /booking/sulu 200. CATATAN penemuan: dev DB
+  sisa. Build OK → pm2 restart, /booking/mizu 200. CATATAN penemuan: dev DB
   ternyata TIDAK punya ticket_types & registry gelang kosong — visit_bands
   kini ber-`variant_id` (revisi R1), smoke pakai gelang temp in-txn.
 - 2026-07-25 — **B2 SELESAI, live dev**: guard kuota di `POST

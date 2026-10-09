@@ -7,7 +7,7 @@
  *   node database/seeders/pos-menu-revenue-composition.js --allow-remote --apply --confirm-remote
  *
  * Kenapa terpisah dari `iam-menus.sql`: seeder kanonik itu diakhiri statement
- * yang men-soft-delete SETIAP menu di luar whitelist-nya. Di server-sulu ada 15
+ * yang men-soft-delete SETIAP menu di luar whitelist-nya. Di server-mizu ada 15
  * menu hidup yang tidak ada di whitelist tersebut (shop, promo, pos.settings,
  * settings.billing, dst), sehingga menjalankannya di produksi akan menyapu
  * menu-menu itu. Skrip ini hanya menyisipkan satu menu dan hak aksesnya.

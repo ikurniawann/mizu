@@ -39,7 +39,7 @@ lebih buruk**:
 
 ## Langkah 1 — Prasyarat *(Anda; ini jalur kritis)*
 
-1. Pastikan **Google Business Profile** lokasi Sulu sudah **terverifikasi** dan
+1. Pastikan **Google Business Profile** lokasi Mizu sudah **terverifikasi** dan
    akun Anda punya akses **pengelola/pemilik** lokasi.
 2. Buat project di <https://console.cloud.google.com>.
 3. Aktifkan API Business Profile pada project tersebut.
@@ -137,7 +137,7 @@ luar dashboard) ikut terbaca.
 ## Ganti akun Google di kemudian hari
 
 **Boleh memakai akun Google yang ada dulu, lalu diganti nanti.** Yang penting
-akun itu punya akses **pengelola/pemilik** pada Business Profile lokasi Sulu —
+akun itu punya akses **pengelola/pemilik** pada Business Profile lokasi Mizu —
 akun pribadi tanpa akses tidak akan bisa menarik ulasan sama sekali. Bila
 perlu, tambahkan akun tersebut sebagai Manager pada lokasi lewat Business
 Profile.

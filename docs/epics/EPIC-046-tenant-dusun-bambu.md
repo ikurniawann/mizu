@@ -8,7 +8,7 @@ retries: 0
 ## Goal
 
 Menyiapkan **data demo tenant kedua** di database lokal: Dusun Bambu
-(Lembang) sebagai perusahaan terpisah dari Sulu in Wounderland, memakai
+(Lembang) sebagai perusahaan terpisah dari Mizu in Wounderland, memakai
 basis kode dan modul yang sama. Tujuannya membuktikan ERP ini bisa melayani
 bisnis wisata lain tanpa repo baru, sekaligus jadi bahan demo ke calon klien.
 
@@ -87,7 +87,7 @@ bundle, Dusun Pass tahunan) dengan harga per kanal dan high season; 30 gelang
 NFC; 6 booking lintas status termasuk rombongan sekolah; 2 kunjungan (satu
 selesai, satu berjalan dengan tab F&B + aktivitas); 2 season pass.
 
-Seeder **tidak** mengubah default venue CRM, sehingga data Sulu tidak
+Seeder **tidak** mengubah default venue CRM, sehingga data Mizu tidak
 terganggu.
 
 ## Cara mencoba
@@ -108,8 +108,8 @@ Lalu login sebagai `demo@dusunbambu.id` / `dusunbambu`:
 - **Items → Produk → Produksi Internal**: prep dapur `PROD-DB-*`.
 - **Point of Sales**: menu Sunda/Nusantara per outlet.
 
-Super admin Sulu tetap melihat data Sulu karena venue diambil dari scope user
-(fallback default venue CRM = Sulu).
+Super admin Mizu tetap melihat data Mizu karena venue diambil dari scope user
+(fallback default venue CRM = Mizu).
 
 ## Batasan yang diketahui
 

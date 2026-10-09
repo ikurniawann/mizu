@@ -1,4 +1,4 @@
-# Scripts — Sulu In Wounderland OS
+# Scripts — Mizu In Wounderland OS
 
 Operational scripts for migrations, IAM, and dev utilities.
 

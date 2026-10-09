@@ -2,7 +2,7 @@
 /**
  * Seeder demo Accounting BCD Coffee: tahun buku, periode, dan jurnal contoh.
  *
- * Melengkapi accounting-sulu-coa.js yang hanya mengisi Chart of Accounts.
+ * Melengkapi accounting-mizu-coa.js yang hanya mengisi Chart of Accounts.
  * Tanpa fiscal_periods, jurnal tidak bisa dibuat sama sekali karena
  * journal_entries.fiscal_period_id bersifat wajib.
  *

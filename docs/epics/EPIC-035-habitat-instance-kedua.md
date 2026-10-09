@@ -8,7 +8,7 @@ retries: 0
 
 Menjalankan **projek kedua** dengan sistem yang identik dengan Arkiv OS, tapi
 **repo, database, dan deployment sepenuhnya terpisah**: nama `habitat-new`,
-domain `habitat.within.ventures`. Tidak ada data Sulu yang ikut — hanya kode,
+domain `habitat.within.ventures`. Tidak ada data Mizu yang ikut — hanya kode,
 skema database, dan seed IAM minimum.
 
 Epic ini bersifat **infrastruktur/operasional**, bukan fitur aplikasi. Tidak ada
@@ -41,7 +41,7 @@ Keputusan turunan:
    kredensial di repo. Coolify sempat dipilih lalu **dibatalkan** (lihat Automation
    Log 27 Jul): server tidak menjalankan proxy Coolify, sehingga nilai utamanya
    (domain + SSL bawaan) tidak tersedia dan domain tetap lewat cloudflared.
-   Pipeline arkiv yang melayani produksi Sulu tidak tersentuh sama sekali.
+   Pipeline arkiv yang melayani produksi Mizu tidak tersentuh sama sekali.
 4. **DB: host Postgres yang sama (`127.0.0.1:5435`), tapi role & database baru** —
    role `habitat`, database `db-habitat-new`. Kredensial sengaja dipisah dari role
    `arkiv` supaya kebocoran di satu sisi tidak membuka sisi lain. Bukan Postgres
@@ -82,22 +82,22 @@ Migrasi **tidak** dijalankan container — [`Dockerfile`](../../Dockerfile) hany
 2. **Nomor WA gateway bentrok.** Satu nomor Baileys tidak bisa dipakai dua instance —
    sesi akan saling menendang. Wajib nomor sender berbeda (lihat EPIC-020 & runbook
    wa-gateway).
-3. **Seeder Sulu ikut terjalan.** `demo-sulu`, `accounting-sulu-coa`,
-   `purchasing-sulu-suppliers`, `business-stalls`, `items-*`, `pos-tables` berisi data
-   Sulu. Hanya `db:seed:iam` + `db:seed:super-admin` yang boleh dijalankan.
+3. **Seeder Mizu ikut terjalan.** `demo-mizu`, `accounting-mizu-coa`,
+   `purchasing-mizu-suppliers`, `business-stalls`, `items-*`, `pos-tables` berisi data
+   Mizu. Hanya `db:seed:iam` + `db:seed:super-admin` yang boleh dijalankan.
 4. **`NEXT_PUBLIC_*` di-inline saat build.** Kalau di Coolify tidak ditandai sebagai
    Build Variable, URL akan salah di client bundle meski env runtime sudah benar.
 5. **Container tidak menjangkau Postgres host.** Perlu `host.docker.internal` +
    `--add-host host.docker.internal:host-gateway`, atau IP `docker0` (`172.17.0.1`).
 6. **Edit cloudflared bisa menjatuhkan layanan lain.** Tunnel `within-ventures` juga melayani
-   `sulu`, `member`, `gitlab`, `n8n`. Wajib backup config sebelum menambah ingress.
+   `mizu`, `member`, `gitlab`, `n8n`. Wajib backup config sebelum menambah ingress.
 
 ## Non-Goals
 
-- Tidak mengubah apa pun di repo `pos-saas/arkiv` atau deployment Sulu.
+- Tidak mengubah apa pun di repo `pos-saas/arkiv` atau deployment Mizu.
 - Tidak memigrasi arkiv ke Coolify (tetap GitLab CI).
 - Tidak membangun multi-tenancy/RLS — isolasi dilakukan per-database.
-- Tidak menyalin data operasional Sulu ke Habitat.
+- Tidak menyalin data operasional Mizu ke Habitat.
 
 ## Temuan yang Perlu Ditindaklanjuti Terpisah
 
@@ -113,7 +113,7 @@ beres, instance baru harus dibuat lewat `pg_dump --schema-only`, bukan replay mi
 
 **Seeder `super-admin.js` tidak menyetel `search_path`.** Insert `hris.employees` memicu
 trigger yang menyebut `onboarding_checklists` tanpa schema, lalu seluruh seed ter-ROLLBACK.
-Seeder lain (`accounting-sulu-coa.js:197`) menyetelnya; `super-admin.js` tidak. Di Habitat
+Seeder lain (`accounting-mizu-coa.js:197`) menyetelnya; `super-admin.js` tidak. Di Habitat
 di-workaround dengan `ALTER DATABASE ... SET search_path` (menyamai konfigurasi database
 `arkiv`), tapi perbaikan sebenarnya ada di seeder.
 
@@ -132,7 +132,7 @@ sebaiknya jadi epic/task keamanan tersendiri.
 - [ ] Database arkiv (`arkiv`, `db-dev-arkiv`, `db-production-arkiv`) tidak berubah
 - [ ] `https://habitat.within.ventures/login` mengembalikan 200 dengan SSL valid
 - [ ] Bisa login sebagai super admin hasil seed, sidebar menu IAM tampil lengkap
-- [ ] Tidak ada data Sulu di instance Habitat
+- [ ] Tidak ada data Mizu di instance Habitat
 - [ ] Tidak ada kredensial di repo — semua env var hidup di UI Coolify
 
 ## Automation Log
@@ -170,8 +170,8 @@ sebaiknya jadi epic/task keamanan tersendiri.
   container Traefik/Caddy, port 80 dipegang nginx host, 443 tidak listen sama
   sekali. Semua domain `*.within.ventures` masuk lewat tunnel cloudflared
   `within-ventures` (`~/.cloudflared/within.ventures/config.yml`) dengan SSL
-  diterminasi di Cloudflare — pola yang sama dipakai `sulu` → :3004,
-  `dev-sulu` → :3460, dan Coolify sendiri (`app`) → :8000. Konsekuensi: fitur
+  diterminasi di Cloudflare — pola yang sama dipakai `mizu` → :3004,
+  `dev-mizu` → :3460, dan Coolify sendiri (`app`) → :8000. Konsekuensi: fitur
   domain/SSL Coolify **tidak dipakai**; Coolify hanya publish ke host port tetap
   **`127.0.0.1:3461`** (diverifikasi bebas), lalu ingress cloudflared merutekan
   `habitat.within.ventures` ke port itu. Runbook `docs/DEPLOY-COOLIFY.md`
@@ -227,7 +227,7 @@ sebaiknya jadi epic/task keamanan tersendiri.
   ini (port 3459 tidak listen, PM2 `arkiv-pos-saas` berstatus stopped, 396
   restart) — tidak berkaitan dengan Habitat, tapi perlu ditindaklanjuti.
 - 2026-07-27 — **INSIDEN (tertangkap, tanpa dampak): pipeline branch `production`
-  nyaris men-deploy ulang produksi Sulu.** Begitu runner project didaftarkan,
+  nyaris men-deploy ulang produksi Mizu.** Begitu runner project didaftarkan,
   GitLab menjalankan pipeline lama yang antre — termasuk pipeline di branch
   `production` hasil mirror, yang masih memuat `.gitlab-ci.yml` arkiv dengan
   `CONTAINER_NAME: arkiv`, `HOST_PORT: 3004`, `DATABASE_NAME: db-production-arkiv`.

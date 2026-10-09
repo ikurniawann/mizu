@@ -39,7 +39,7 @@ describe("buildFlashReportMessage", () => {
     expect(msg).toContain("Revenue : Rp 8.892.000");
     expect(msg).toContain("Nett Sales : Rp 3.806.000");
     expect(msg).toContain("Discount : Rp 5.086.000");
-    expect(msg).toContain("SULU Citizen : 0 Card");
+    expect(msg).toContain("MIZU Citizen : 0 Card");
     expect(msg).toContain("Disc 100% : 13 Transaksi");
     // EPIC-043: komplimen dipecah per jenis; baris muncul hanya bila ada
     expect(msg).toContain("KOL Comp : Rp 350.000 (3 Trx)");

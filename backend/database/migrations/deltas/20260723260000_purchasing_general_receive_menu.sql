@@ -25,7 +25,7 @@ SELECT r.id, m.id, COALESCE(m.permission_context->'actions', '["read"]'::jsonb)
 FROM iam.roles r CROSS JOIN iam.menus m
 WHERE r.code IN ('super_admin', 'admin', 'purchasing_admin', 'purchasing_manager',
                  'purchasing_staff', 'qc_staff', 'warehouse_admin', 'warehouse_staff',
-                 'sulu_bandung_demo')
+                 'mizu_bandung_demo')
   AND m.code = 'items.general.purchasing.receive'
 ON CONFLICT (role_id, menu_id) DO UPDATE SET
   is_active = true, granted_actions = EXCLUDED.granted_actions, updated_at = now();

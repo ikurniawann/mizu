@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CalendarDays,
   Check,
   Clock,
-  Copy,
   Loader2,
   MapPin,
-  MessageCircle,
   Moon,
   Phone,
   Sparkles,
@@ -33,14 +31,14 @@ import {
   orderedTreatments,
   OTHER_CATEGORY,
   treatmentCategories,
-  whatsappHref,
   type BookingPrefill,
   type SlotGroup,
 } from "../public-booking";
-import { usePublicSpaOutlets, usePublicSpaTreatments } from "../queries";
+import { resetBookingFunnel, trackBookingStep } from "../booking-funnel";
+import { usePublicSpaOutlets, usePublicSpaSlots, usePublicSpaTreatments } from "../queries";
 import { isValidPhone } from "../rules";
-import { addDaysToDate, generateSlots, shortClock, wibClockOf, wibDateOf } from "../time";
-import type { GenderPref, PublicBookingResult, PublicOutlet, PublicVariant } from "../types";
+import { addDaysToDate, shortClock, wibClockOf, wibDateOf } from "../time";
+import type { GenderPref, PublicOutlet, PublicVariant } from "../types";
 
 const MAX_DAYS_AHEAD = 30;
 const STRIP_DAYS = 14;
@@ -74,8 +72,9 @@ interface Picked {
 
 /**
  * Halaman booking publik Mizu (tanpa login): outlet → treatment → jadwal →
- * data diri → kode booking. Bisa dibuka dengan isian awal dari menu
- * (?outlet=<branch_id>&treatment=<id>&date=YYYY-MM-DD).
+ * data diri → halaman status booking. Bisa dibuka dengan isian awal dari menu
+ * (?outlet=<slug atau branch_id>&treatment=<id>&date=YYYY-MM-DD). Jam yang
+ * ditawarkan berasal dari server (cek terapis & preferensi gender).
  */
 export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: BookingPrefill }) {
   const [now, setNow] = useState(() => new Date());
@@ -92,15 +91,18 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const [pref, setPref] = useState<GenderPref>("any");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const [result, setResult] = useState<PublicBookingResult | null>(null);
+  const [fieldError, setFieldError] = useState<"name" | "phone" | null>(null);
   const top = useRef<HTMLDivElement>(null);
+  const nameInput = useRef<HTMLInputElement>(null);
+  const phoneInput = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const outlets = usePublicSpaOutlets();
-  const outlet = outlets.data?.find((o) => o.branch_id === outletId) ?? null;
+  const outlet = outlets.data?.find((o) => o.branch_id === outletId || o.slug === outletId) ?? null;
   const treatments = usePublicSpaTreatments(outlet?.branch_id ?? "");
   const create = useCreatePublicBooking();
 
-  // Slot "masa depan" dihitung terhadap jam sekarang; segarkan tiap menit.
+  // "Hari ini" mengikuti jam dinding; segarkan tiap menit.
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
@@ -118,19 +120,10 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
 
   const totalDuration = picked.reduce((sum, p) => sum + p.variant.duration_min, 0);
   const totalPrice = picked.reduce((sum, p) => sum + p.variant.price_idr, 0);
+  const availableSlots = usePublicSpaSlots(outlet?.branch_id ?? "", date, ids, pref);
   const slots = useMemo(
-    () =>
-      outlet
-        ? generateSlots({
-            date,
-            open_time: outlet.open_time,
-            close_time: outlet.close_time,
-            slot_minutes: outlet.slot_minutes,
-            duration_min: totalDuration,
-            now,
-          })
-        : [],
-    [outlet, date, totalDuration, now]
+    () => (availableSlots.data ?? []).map((slot) => ({ iso: slot.starts_at, time: wibClockOf(slot.starts_at) })),
+    [availableSlots.data]
   );
   const slotValid = !!slotIso && slots.some((s) => s.iso === slotIso);
 
@@ -147,6 +140,16 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const loadingPrefill = !!prefill.outlet && outlets.isLoading && wanted !== "outlet";
   if (loadingPrefill) step = "treatment";
 
+  // Funnel anonim (tanpa data pelanggan) untuk laporan konversi booking.
+  const funnelBranch = outlet?.branch_id;
+  useEffect(() => {
+    trackBookingStep("open", funnelBranch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sekali saat halaman dibuka
+  }, []);
+  useEffect(() => {
+    trackBookingStep(step === "waktu" ? "time" : step === "kontak" ? "contact" : step, funnelBranch);
+  }, [step, funnelBranch]);
+
   const go = (next: Step) => {
     setWanted(next);
     setFormError(null);
@@ -154,7 +157,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   };
 
   const chooseOutlet = (o: PublicOutlet) => {
-    if (o.branch_id !== outletId) {
+    if (o.branch_id !== outlet?.branch_id) {
       setOutletId(o.branch_id);
       setPickedIds([]);
       setCategory(null);
@@ -174,9 +177,19 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
       setFormError("Jam yang dipilih sudah lewat. Silakan pilih jam lain.");
       return go("waktu");
     }
-    if (name.trim().length < 2) return setFormError("Isi nama kamu dulu.");
-    if (!isValidPhone(phone)) return setFormError("Nomor WhatsApp belum valid, contoh 0812-3456-7890.");
+    if (name.trim().length < 2) {
+      setFieldError("name");
+      nameInput.current?.focus();
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setFieldError("phone");
+      phoneInput.current?.focus();
+      return;
+    }
+    setFieldError(null);
     setFormError(null);
+    trackBookingStep("submit", outlet.branch_id);
     create.mutate(
       {
         branch_id: outlet.branch_id,
@@ -189,23 +202,23 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
       },
       {
         onSuccess: (res) => {
-          setResult(res);
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          trackBookingStep("success", outlet.branch_id);
+          resetBookingFunnel();
+          router.replace(`/booking/spa/status/${encodeURIComponent(res.access_token)}`);
         },
-        onError: (err) => setFormError(err.message),
+        onError: (err) => {
+          trackBookingStep("error", outlet.branch_id);
+          setFormError(err.message);
+          // Jam keburu terisi orang lain: kembali ke pilihan jam yang segar.
+          if (err.message.includes("penuh")) {
+            setSlotIso(null);
+            go("waktu");
+            void availableSlots.refetch();
+          }
+        },
       }
     );
   };
-
-  const restart = () => {
-    setResult(null);
-    setPickedIds([]);
-    setSlotIso(null);
-    setNotes("");
-    go("treatment");
-  };
-
-  if (result) return <SuccessScreen result={result} outlet={outlet} onAgain={restart} />;
 
   // Label & status tombol utama dihitung terpisah dari aksinya (aksi menyentuh ref).
   const cta: { label: string; disabled: boolean } =
@@ -269,8 +282,19 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                 setSlotIso(null);
               }}
               slots={slots}
+              loading={availableSlots.isLoading}
+              failed={!!availableSlots.error}
               slotIso={slotValid ? slotIso : null}
-              onSlot={setSlotIso}
+              onSlot={(iso) => {
+                setSlotIso(iso);
+                setFormError(null);
+              }}
+              pref={pref}
+              onPref={(g) => {
+                setPref(g);
+                setSlotIso(null);
+              }}
+              error={formError}
               totalDuration={totalDuration}
             />
           )}
@@ -281,38 +305,44 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                 <Summary outlet={outlet} slotIso={slotIso} picked={picked} totalDuration={totalDuration} total={totalPrice} />
               </div>
               <div className="space-y-5 rounded-card bg-card p-5 shadow-card md:p-6">
-                <Field label="Nama lengkap">
-                  <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Nama kamu" />
-                </Field>
-                <Field label="Nomor WhatsApp" hint="Untuk konfirmasi jadwal. Tidak kami pakai untuk spam.">
+                <Field label="Nama lengkap" error={fieldError === "name" ? "Isi nama kamu (minimal 2 huruf)." : undefined} id="spa-name">
                   <input
-                    className={INPUT}
+                    ref={nameInput}
+                    id="spa-name"
+                    className={cn(INPUT, fieldError === "name" && "border-danger")}
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (fieldError === "name") setFieldError(null);
+                    }}
+                    autoComplete="name"
+                    placeholder="Nama kamu"
+                    aria-invalid={fieldError === "name"}
+                    aria-describedby={fieldError === "name" ? "spa-name-error" : undefined}
+                  />
+                </Field>
+                <Field
+                  label="Nomor WhatsApp"
+                  hint="Untuk konfirmasi jadwal. Tidak kami pakai untuk spam."
+                  error={fieldError === "phone" ? "Nomor WhatsApp belum valid, contoh 0812-3456-7890." : undefined}
+                  id="spa-phone"
+                >
+                  <input
+                    ref={phoneInput}
+                    id="spa-phone"
+                    className={cn(INPUT, fieldError === "phone" && "border-danger")}
                     value={phone}
                     inputMode="tel"
                     autoComplete="tel"
                     placeholder="0812-3456-7890"
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (fieldError === "phone") setFieldError(null);
+                    }}
+                    aria-invalid={fieldError === "phone"}
+                    aria-describedby={fieldError === "phone" ? "spa-phone-error" : undefined}
                   />
                 </Field>
-                <fieldset className="space-y-2">
-                  <legend className="text-sm font-semibold">Preferensi terapis</legend>
-                  <div className="grid grid-cols-3 gap-2 rounded-2xl bg-surface p-1">
-                    {PREF_OPTIONS.map((o) => (
-                      <button
-                        key={o.value}
-                        type="button"
-                        aria-pressed={pref === o.value}
-                        onClick={() => setPref(o.value)}
-                        className={cn(
-                          "h-11 rounded-xl text-sm font-semibold transition",
-                          pref === o.value ? "bg-card text-foreground shadow-card" : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
                 <Field label="Catatan untuk terapis" optional>
                   <textarea
                     className={cn(INPUT, "h-auto min-h-24 py-3")}
@@ -655,8 +685,13 @@ function TimeStep({
   date,
   onDate,
   slots,
+  loading,
+  failed,
   slotIso,
   onSlot,
+  pref,
+  onPref,
+  error,
   totalDuration,
 }: {
   outlet: PublicOutlet;
@@ -664,8 +699,13 @@ function TimeStep({
   date: string;
   onDate: (d: string) => void;
   slots: { time: string; iso: string }[];
+  loading: boolean;
+  failed: boolean;
   slotIso: string | null;
   onSlot: (iso: string) => void;
+  pref: GenderPref;
+  onPref: (g: GenderPref) => void;
+  error: string | null;
   totalDuration: number;
 }) {
   const strip = dateStrip(today, STRIP_DAYS);
@@ -676,6 +716,27 @@ function TimeStep({
 
   return (
     <div className="space-y-6">
+      {error && <ErrorNote>{error}</ErrorNote>}
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold">Preferensi terapis</legend>
+        <div className="grid max-w-md grid-cols-3 gap-2 rounded-2xl bg-surface p-1">
+          {PREF_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={pref === o.value}
+              onClick={() => onPref(o.value)}
+              className={cn(
+                "h-10 rounded-xl text-sm font-semibold transition",
+                pref === o.value ? "bg-card text-foreground shadow-card" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
       <div className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="text-sm font-semibold">Tanggal</h3>
@@ -741,8 +802,15 @@ function TimeStep({
             Outlet buka {shortClock(outlet.open_time)}–{shortClock(outlet.close_time)} · durasi {totalDuration} menit
           </p>
         </div>
-        {groups.length === 0 ? (
-          <ErrorNote tone="muted">Tidak ada jam tersisa pada tanggal ini. Coba tanggal lain.</ErrorNote>
+        {loading ? (
+          <Spinner />
+        ) : failed ? (
+          <ErrorNote>Jam belum bisa dimuat. Coba lagi sebentar.</ErrorNote>
+        ) : groups.length === 0 ? (
+          <ErrorNote tone="muted">
+            Tidak ada jam kosong pada tanggal ini{pref === "any" ? "" : " untuk terapis pilihanmu"}. Coba tanggal lain
+            {pref === "any" ? "" : " atau pilih Bebas"}.
+          </ErrorNote>
         ) : (
           groups.map((g) => {
             const Icon = PERIOD_ICON[g.key];
@@ -780,7 +848,7 @@ function TimeStep({
             <strong className="font-semibold">
               {selected.time}–{endClock(selected.time, totalDuration)} WIB
             </strong>{" "}
-            · {formatDateLong(date)}. Terapis ditentukan outlet sesuai preferensimu.
+            · {formatDateLong(date)}. Jam ini masih ada terapis yang kosong; terapis ditentukan outlet.
           </p>
         </div>
       ) : (
@@ -869,7 +937,7 @@ function Summary({
   );
 }
 
-function SummaryRow({ icon: Icon, label, children }: { icon: typeof Sun; label: string; children: ReactNode }) {
+export function SummaryRow({ icon: Icon, label, children }: { icon: typeof Sun; label: string; children: ReactNode }) {
   return (
     <div className="flex gap-3">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface">
@@ -883,119 +951,37 @@ function SummaryRow({ icon: Icon, label, children }: { icon: typeof Sun; label: 
   );
 }
 
-// ── Berhasil ─────────────────────────────────────────────────────────────────
-
-function SuccessScreen({
-  result,
-  outlet,
-  onAgain,
-}: {
-  result: PublicBookingResult;
-  outlet: PublicOutlet | null;
-  onAgain: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-  const when = `${formatDateLong(wibDateOf(result.scheduled_at))} pukul ${wibClockOf(result.scheduled_at)} WIB`;
-  const wa = whatsappHref(outlet?.phone, `Halo Mizu, saya sudah booking dengan kode ${result.booking_code} untuk ${when}.`);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(result.booking_code);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
-
-  return (
-    <div className="bg-background pb-20">
-      <section className="relative isolate overflow-hidden bg-ink text-on-ink">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/mizu-wallpaper.webp" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-ink/70" />
-        <Container className="flex flex-col items-center gap-4 py-14 text-center md:py-20">
-          <span className="flex size-16 items-center justify-center rounded-full bg-accent text-ink">
-            <Check className="size-8" />
-          </span>
-          <Kicker onInk>Booking diterima</Kicker>
-          <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-5xl">Sampai jumpa di {result.branch_name}!</h1>
-          <p className="max-w-lg text-on-ink-muted">Tunjukkan kode booking ini ke resepsionis saat tiba. Datang 10 menit lebih awal ya.</p>
-          <button
-            type="button"
-            onClick={() => void copy()}
-            className="mt-2 flex items-center gap-3 rounded-2xl border-2 border-dashed border-accent/60 bg-white/5 px-6 py-4 font-mono text-3xl font-bold tracking-widest backdrop-blur transition select-all hover:bg-white/10"
-          >
-            {result.booking_code}
-            <span className="flex items-center gap-1 font-sans text-xs font-semibold tracking-normal text-accent">
-              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-              {copied ? "Tersalin" : "Salin"}
-            </span>
-          </button>
-        </Container>
-      </section>
-
-      <Container className="mt-8 max-w-2xl space-y-4">
-        <div className="space-y-4 rounded-card bg-card p-6 shadow-card">
-          <SummaryRow icon={MapPin} label="Outlet">
-            {result.branch_name}
-            {outlet && (outlet.address || outlet.city) ? (
-              <span className="block font-normal text-body">{[outlet.address, outlet.city].filter(Boolean).join(", ")}</span>
-            ) : null}
-          </SummaryRow>
-          <SummaryRow icon={CalendarDays} label="Jadwal">
-            {when}
-          </SummaryRow>
-          <SummaryRow icon={Sparkles} label="Treatment">
-            <ul className="space-y-1.5">
-              {result.items.map((item, i) => (
-                <li key={i} className="flex justify-between gap-3">
-                  <span>
-                    {item.treatment_name}
-                    <span className="block text-xs font-normal text-muted-foreground">{item.duration_min} menit</span>
-                  </span>
-                  <span className="tabular-nums">{formatRupiah(item.price_idr)}</span>
-                </li>
-              ))}
-            </ul>
-          </SummaryRow>
-          <div className="flex items-end justify-between border-t border-dashed border-border pt-4">
-            <span className="text-body">Total · bayar di outlet</span>
-            <span className="font-display text-2xl font-bold tabular-nums">{formatRupiah(result.total_idr)}</span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          {wa && (
-            <Button asChild size="lg" className="flex-1">
-              <a href={wa} target="_blank" rel="noopener noreferrer">
-                <MessageCircle /> Chat outlet di WhatsApp
-              </a>
-            </Button>
-          )}
-          <Button size="lg" variant="outline" className="flex-1" onClick={onAgain}>
-            Booking lagi
-          </Button>
-          <Button asChild size="lg" variant="ghost" className="flex-1">
-            <Link href="/">Kembali ke beranda</Link>
-          </Button>
-        </div>
-        <p className="text-center text-xs text-muted-foreground">
-          Perlu ubah jadwal atau batal? Hubungi outlet{outlet?.phone ? ` di ${outlet.phone}` : ""} dengan menyebut kode booking.
-        </p>
-      </Container>
-    </div>
-  );
-}
-
 // ── Kecil-kecil ──────────────────────────────────────────────────────────────
 
-function Field({ label, hint, optional, children }: { label: string; hint?: string; optional?: boolean; children: ReactNode }) {
+function Field({
+  label,
+  hint,
+  optional,
+  error,
+  id,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  optional?: boolean;
+  error?: string;
+  id?: string;
+  children: ReactNode;
+}) {
   return (
-    <label className="block space-y-1.5">
+    <label className="block space-y-1.5" htmlFor={id}>
       <span className="flex items-baseline justify-between gap-2 text-sm font-semibold">
         {label}
         {optional ? <span className="text-xs font-normal text-muted-foreground">opsional</span> : null}
       </span>
       {children}
-      {hint ? <span className="block text-xs text-muted-foreground">{hint}</span> : null}
+      {error ? (
+        <span id={id ? `${id}-error` : undefined} role="alert" className="block text-sm text-danger">
+          {error}
+        </span>
+      ) : hint ? (
+        <span className="block text-xs text-muted-foreground">{hint}</span>
+      ) : null}
     </label>
   );
 }

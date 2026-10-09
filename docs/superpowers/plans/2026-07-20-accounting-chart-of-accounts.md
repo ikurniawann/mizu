@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship Accounting master data — Account Types + hierarchical Chart of Accounts with SULU seed and Excel import.
+**Goal:** Ship Accounting master data — Account Types + hierarchical Chart of Accounts with MIZU seed and Excel import.
 
 **Architecture:** New Postgres schema `accounting`; company-scoped CoA tree with derived `is_postable`; feature modules under `src/features/accounting/` mirroring departments (flat) and menus (tree).
 
@@ -34,7 +34,7 @@
 
 - [ ] Normalize / infer level / ideal parent / resolve parent
 - [ ] Tree build/flatten helpers
-- [ ] Parse standard + SULU Excel layouts; cash-flow / type heuristics
+- [ ] Parse standard + MIZU Excel layouts; cash-flow / type heuristics
 
 ### Task 3: Account Types API + UI
 
@@ -57,10 +57,10 @@
 - [ ] Tree table UI + filters + form
 - [ ] Import preview/commit
 
-### Task 5: SULU seeder
+### Task 5: MIZU seeder
 
 **Files:**
-- Create: `database/seeders/accounting-sulu-coa.js`
+- Create: `database/seeders/accounting-mizu-coa.js`
 - Modify: `package.json` (script)
 
 - [ ] Parse Excel, upsert types already seeded, insert CoA as global template (or `--company=CODE`)

@@ -1,8 +1,8 @@
 # Tutorial: Upload Produk Ecommerce — dari Awal sampai Tampil di Storefront
 
 > EPIC-039 · terakhir diverifikasi terhadap kode 2026-08-02.
-> Environment contoh: DEV `https://dev-sulu.within.ventures` (login super_admin/admin).
-> Storefront publik default: `https://dev-sulu.within.ventures/shop/toko`.
+> Environment contoh: DEV `https://dev-mizu.within.ventures` (login super_admin/admin).
+> Storefront publik default: `https://dev-mizu.within.ventures/shop/toko`.
 
 Alur besar:
 
@@ -33,7 +33,7 @@ Ada dua jalur stok — pilih salah satu:
 
 Menu **Items → Products** (`/dashboard/items/products`) → **Tambah Produk**.
 
-1. Isi kode, nama (mis. "Kaos Sulu Logo"), kategori, satuan.
+1. Isi kode, nama (mis. "Kaos Mizu Logo"), kategori, satuan.
 2. **Production Output Type = FINISHED_GOOD** (barang jadi beli-jadi-jual, tanpa BOM).
 3. Isi **Harga Jual** — ini yang menjadi harga dasar di POS & storefront.
 4. Simpan.
@@ -83,7 +83,7 @@ Untuk produk ber-varian, isi stok per varian langsung di dialog Langkah 3.
 
 ## Langkah 5 — Verifikasi di storefront
 
-Buka `https://dev-sulu.within.ventures/shop/toko`.
+Buka `https://dev-mizu.within.ventures/shop/toko`.
 
 Produk tampil **hanya jika semua ini terpenuhi** (sesuai query katalog):
 

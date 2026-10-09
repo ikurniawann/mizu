@@ -8,7 +8,7 @@ describe("branding", () => {
   });
 
   it("pickBrandName memilih kandidat pertama yang terisi", () => {
-    expect(pickBrandName("Dusun Bambu", "Sulu")).toBe("Dusun Bambu");
+    expect(pickBrandName("Dusun Bambu", "Mizu")).toBe("Dusun Bambu");
     expect(pickBrandName(null, "  ", "Dusun Bambu")).toBe("Dusun Bambu");
     expect(pickBrandName(null, undefined, "")).toBe(DEFAULT_BRAND_NAME);
   });

@@ -56,7 +56,7 @@ yang bisa memanggilnya bisa mengirim WhatsApp atas nama bisnis Anda.
 
 **Cara termudah — lewat dashboard (khusus Super Admin):**
 
-1. Login ke <https://sulu.within.ventures> sebagai Super Admin.
+1. Login ke <https://mizu.within.ventures> sebagai Super Admin.
 2. Buka **Settings → WhatsApp Gateway** (`/dashboard/settings/wa-gateway`).
 3. Halaman menampilkan QR yang menyegarkan diri otomatis (QR WhatsApp berganti
    tiap ±20 detik).

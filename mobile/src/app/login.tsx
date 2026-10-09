@@ -16,6 +16,7 @@ import { ThemedView } from '@/components/themed-view';
 import { normalizePhoneInput, requestOtp, verifyOtp } from '@/lib/api';
 import { useAuth } from '@/hooks/use-auth';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 /**
  * Login portal member 2 langkah (EPIC-044 Fase A): nomor WhatsApp → kode OTP.
@@ -24,6 +25,7 @@ import { Spacing } from '@/constants/theme';
  */
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const theme = useTheme();
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -70,7 +72,7 @@ export default function LoginScreen() {
           style={styles.avoid}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ThemedText type="subtitle">Portal Member</ThemedText>
+          <ThemedText type="subtitle">Mizu Member</ThemedText>
           <ThemedText themeColor="textSecondary">
             {step === 'phone'
               ? 'Masukkan nomor WhatsApp terdaftar untuk masuk.'
@@ -79,7 +81,7 @@ export default function LoginScreen() {
 
           {step === 'phone' ? (
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text, borderColor: theme.textSecondary }]}
               value={phone}
               onChangeText={setPhone}
               placeholder="08xxxxxxxxxx"
@@ -91,7 +93,7 @@ export default function LoginScreen() {
             />
           ) : (
             <TextInput
-              style={[styles.input, styles.codeInput]}
+              style={[styles.input, styles.codeInput, { color: theme.text, borderColor: theme.textSecondary }]}
               value={code}
               onChangeText={setCode}
               placeholder="6 digit kode"
@@ -152,7 +154,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
-    color: '#fff',
     backgroundColor: 'rgba(128,128,128,0.12)',
   },
   codeInput: {
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
   },
   error: { color: '#ff6b6b' },
   button: {
-    backgroundColor: '#7c5cff',
+    backgroundColor: '#3d2b20',
     borderRadius: 12,
     paddingVertical: Spacing.two + 2,
     alignItems: 'center',

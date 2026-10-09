@@ -16,7 +16,7 @@ import { classImage, classTypeKey } from "./images";
 
 const catalog: RawCatalog = {
   branches: [
-    { id: "b1", name: "Sulu Bandung" },
+    { id: "b1", name: "Mizu Bandung" },
     { id: "b2", name: "Senopati" },
   ],
   class_types: [
@@ -61,7 +61,7 @@ describe("toSessionView", () => {
       catalog
     );
     expect(v.session.status).toBe("PUBLISHED");
-    expect(v.branchName).toBe("Sulu Bandung");
+    expect(v.branchName).toBe("Mizu Bandung");
     expect(v.spotsLeft).toBe(9);
     expect(v.myBooking).toEqual({ id: "bk", status: "WAITLIST", waitlistPosition: 2, promotionOfferedAt: null });
   });
@@ -69,7 +69,7 @@ describe("toSessionView", () => {
 
 describe("branchNameOf", () => {
   it("falls back to the only branch for unassigned rows", () => {
-    expect(branchNameOf({ ...catalog, branches: [catalog.branches[0]!] }, null)).toBe("Sulu Bandung");
+    expect(branchNameOf({ ...catalog, branches: [catalog.branches[0]!] }, null)).toBe("Mizu Bandung");
     expect(branchNameOf(catalog, null)).toBe("");
     expect(branchNameOf(catalog, "missing")).toBe("");
   });
@@ -91,7 +91,7 @@ describe("toTrainerViews", () => {
     expect(rizky).toMatchObject({
       upcomingCount: 3,
       classTypeNames: ["Race Simulation", "Mobility & Recovery"],
-      branchName: "Sulu Bandung",
+      branchName: "Mizu Bandung",
     });
     expect(tara).toMatchObject({ upcomingCount: 0, classTypeNames: [], coach: { specialization: "", bio: "Mobility" } });
   });

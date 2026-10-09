@@ -49,7 +49,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "[warn] --allow-remote: apply ke %s\n", migrate.MaskURL(url))
 	} else if !migrate.IsLocalURL(url) {
 		fail("REFUSED: MIGRATE_DATABASE_URL harus mengarah ke Postgres lokal (localhost/127.0.0.1), bukan database remote/production.\n" +
-			"Untuk target remote (mis. server-sulu), tambahkan -allow-remote atau ALLOW_REMOTE_DB=1.")
+			"Untuk target remote (mis. server-mizu), tambahkan -allow-remote atau ALLOW_REMOTE_DB=1.")
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

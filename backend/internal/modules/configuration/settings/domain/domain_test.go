@@ -112,7 +112,7 @@ func TestSortWarehouses(t *testing.T) {
 
 func TestBusinessHelpers(t *testing.T) {
 	for in, want := range map[string]string{
-		"  PT Sulu Indah ":       "PT-SULU-INDAH",
+		"  PT Mizu Indah ":       "PT-MIZU-INDAH",
 		"-a-":                    "A",
 		"Ünïcode café":           "N-CODE-CAF",
 		strings.Repeat("ab", 20): strings.Repeat("AB", 15),
@@ -145,7 +145,7 @@ func TestReceipt(t *testing.T) {
 	if l := ReceiptLines([]any{strings.Repeat("é", 100)}); len([]rune(l[0])) != ReceiptLineMaxChars {
 		t.Fatal("length cap")
 	}
-	if ReceiptLines(nil) == nil || len(ReceiptLines("SULU")) != 0 {
+	if ReceiptLines(nil) == nil || len(ReceiptLines("MIZU")) != 0 {
 		t.Fatal("non-arrays are []")
 	}
 

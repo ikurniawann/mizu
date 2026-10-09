@@ -26,8 +26,8 @@ const {
 const ROOT = path.join(__dirname, "..", "..");
 const DEFAULT_XLSX = path.join(ROOT, "..", "docs", "SIW - Menu Matrix.xlsx");
 const HOLDING_CODE = "PROLOGE";
-const COMPANY_CODE = "SULU";
-const BRANCH_CODE = "SULU-DAGO";
+const COMPANY_CODE = "MIZU";
+const BRANCH_CODE = "MIZU-DAGO";
 
 const SKIP_SHEETS = new Set([
   "summary menu",

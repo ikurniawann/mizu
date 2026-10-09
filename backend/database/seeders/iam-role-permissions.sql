@@ -17,7 +17,7 @@ INSERT INTO iam.roles (code, name, description, is_system, is_active) VALUES
   ('pos',                'POS Cashier',        'Kasir POS',                     false, true),
   ('pos_supervisor',     'POS Supervisor',     'Supervisor POS',                false, true),
   ('qc_staff',           'QC Staff',           'Quality control',               false, true),
-  ('sulu_bandung_demo',  'Sulu Bandung Demo',  'Demo cabang Sulu Bandung: Items, Inventory, POS', false, true)
+  ('mizu_bandung_demo',  'Mizu Bandung Demo',  'Demo cabang Mizu Bandung: Items, Inventory, POS', false, true)
 ON CONFLICT (code) DO UPDATE SET
   name        = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -80,11 +80,11 @@ WHERE r.code = 'direksi' AND m.deleted_at IS NULL AND m.is_active = true
   )
 ON CONFLICT (role_id, menu_id) DO UPDATE SET is_active = true, granted_actions = EXCLUDED.granted_actions, updated_at = now();
 
--- sulu_bandung_demo -> Items + POS (tanpa purchasing reports)
+-- mizu_bandung_demo -> Items + POS (tanpa purchasing reports)
 INSERT INTO iam.role_menu_permissions (role_id, menu_id, granted_actions)
 SELECT r.id, m.id, COALESCE(m.permission_context->'actions', '["read"]'::jsonb)
 FROM iam.roles r CROSS JOIN iam.menus m
-WHERE r.code = 'sulu_bandung_demo' AND m.deleted_at IS NULL AND m.is_active = true
+WHERE r.code = 'mizu_bandung_demo' AND m.deleted_at IS NULL AND m.is_active = true
   AND (
     m.code = 'dashboard'
     OR m.module = 'pos'
@@ -92,14 +92,14 @@ WHERE r.code = 'sulu_bandung_demo' AND m.deleted_at IS NULL AND m.is_active = tr
   )
 ON CONFLICT (role_id, menu_id) DO UPDATE SET is_active = true, granted_actions = EXCLUDED.granted_actions, updated_at = now();
 
--- Migrate legacy sulu_dago_demo assignments
+-- Migrate legacy mizu_dago_demo assignments
 DO $$
 DECLARE
     v_old_id uuid;
     v_new_id uuid;
 BEGIN
-    SELECT id INTO v_old_id FROM iam.roles WHERE code = 'sulu_dago_demo' LIMIT 1;
-    SELECT id INTO v_new_id FROM iam.roles WHERE code = 'sulu_bandung_demo' LIMIT 1;
+    SELECT id INTO v_old_id FROM iam.roles WHERE code = 'mizu_dago_demo' LIMIT 1;
+    SELECT id INTO v_new_id FROM iam.roles WHERE code = 'mizu_bandung_demo' LIMIT 1;
 
     IF v_old_id IS NULL OR v_new_id IS NULL OR v_old_id = v_new_id THEN
         RETURN;

@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Sulu In Wounderland OS - Purchasing Module",
-    "description": "Postman collection for Sulu In Wounderland OS Purchasing Module API.\n\n## Authentication\nAll endpoints require Bearer JWT token. Set `{{access_token}}` in environment.\n\n## Base URL\n- Local: `http://localhost:3000/api/purchasing`\n- Production: `{{baseUrl}}/api/purchasing`",
+    "name": "Mizu In Wounderland OS - Purchasing Module",
+    "description": "Postman collection for Mizu In Wounderland OS Purchasing Module API.\n\n## Authentication\nAll endpoints require Bearer JWT token. Set `{{access_token}}` in environment.\n\n## Base URL\n- Local: `http://localhost:3000/api/purchasing`\n- Production: `{{baseUrl}}/api/purchasing`",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

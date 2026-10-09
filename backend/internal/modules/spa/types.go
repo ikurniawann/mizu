@@ -291,6 +291,7 @@ type CheckoutResult struct {
 // PublicOutlet is an outlet open for online booking.
 type PublicOutlet struct {
 	BranchID    string  `json:"branch_id"`
+	Slug        string  `json:"slug"`
 	Name        string  `json:"name"`
 	Address     *string `json:"address"`
 	City        *string `json:"city"`
@@ -319,19 +320,38 @@ type PublicTreatment struct {
 
 // PublicItem is a booked treatment in the public confirmation.
 type PublicItem struct {
+	VariantID     string  `json:"variant_id"`
 	TreatmentName string  `json:"treatment_name"`
 	VariantName   string  `json:"variant_name"`
 	DurationMin   int     `json:"duration_min"`
 	PriceIDR      float64 `json:"price_idr"`
 }
 
+// PublicSlot is a start time with enough therapist capacity for the request.
+type PublicSlot struct {
+	StartsAt httpx.JSTime `json:"starts_at"`
+}
+
+type BookingFunnelStage struct {
+	Step      string `json:"step"`
+	Reached   int    `json:"reached"`
+	Abandoned int    `json:"abandoned"`
+}
+
 // PublicBookingResult is POST /api/public/spa/bookings.
 type PublicBookingResult struct {
-	BookingCode string       `json:"booking_code"`
-	ScheduledAt httpx.JSTime `json:"scheduled_at"`
-	BranchName  string       `json:"branch_name"`
-	Items       []PublicItem `json:"items"`
-	TotalIDR    float64      `json:"total_idr"`
+	AccessToken   string       `json:"access_token"`
+	BranchID      string       `json:"branch_id"`
+	BookingCode   string       `json:"booking_code"`
+	ScheduledAt   httpx.JSTime `json:"scheduled_at"`
+	BranchName    string       `json:"branch_name"`
+	BranchPhone   *string      `json:"branch_phone"`
+	GenderPref    string       `json:"therapist_gender_pref"`
+	Status        string       `json:"status"`
+	PaymentStatus string       `json:"payment_status"`
+	CanManage     bool         `json:"can_manage"`
+	Items         []PublicItem `json:"items"`
+	TotalIDR      float64      `json:"total_idr"`
 }
 
 // MeResult is GET /api/spa/me.

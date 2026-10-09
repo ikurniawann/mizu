@@ -797,14 +797,14 @@ var warehouseScopeErrors = map[string]string{
 }
 
 // receivingScope is resolveReceivingScope: the warehouse's company and
-// branch (or the SULU fallback), checked against the user's scope.
+// branch (or the MIZU fallback), checked against the user's scope.
 func (s *Service) receivingScope(ctx context.Context, q database.Querier, warehouseID string, scope *pscope.Scope) (*BusinessIDs, error) {
 	business, err := s.ports.Locations.WarehouseScope(ctx, q, warehouseID)
 	if err != nil {
 		return nil, err
 	}
 	if business == nil {
-		if business, err = s.ports.Locations.ScopeByCodes(ctx, q, "SULU", "SULU-BANDUNG"); err != nil {
+		if business, err = s.ports.Locations.ScopeByCodes(ctx, q, "MIZU", "MIZU-BANDUNG"); err != nil {
 			return nil, err
 		}
 	}

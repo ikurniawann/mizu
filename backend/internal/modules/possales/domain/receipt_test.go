@@ -36,7 +36,7 @@ func mustTime(t *testing.T, s string) time.Time {
 
 func receiptBase(t *testing.T) OrderReceipt {
 	return OrderReceipt{
-		OutletName:    "Sulu",
+		OutletName:    "Mizu",
 		OrderNumber:   "ORD-001",
 		OrderedAt:     mustTime(t, "2026-08-14T12:30:00+07:00"),
 		Items:         []ReceiptItem{{Name: "Kopi Susu", Quantity: 2, Total: 36000}, {Name: "Croissant", Quantity: 1, Total: 28000}},
@@ -51,7 +51,7 @@ func TestBuildOrderReceiptMessage(t *testing.T) {
 
 	// Exact strings produced by node running receipt-wa.ts.
 	t.Run("exact single-stall receipt", func(t *testing.T) {
-		want := "*Sulu* — Struk Digital\nNo: ORD-001\nWaktu: 14 Agu 2026, 12.30 WIB\n\n2x Kopi Susu — Rp 36.000\n1x Croissant — Rp 28.000\n\n*Total: Rp 64.000*\nPembayaran: Tunai\nKembalian: Rp 6.000\n\nTerima kasih atas kunjungan Anda 🙏"
+		want := "*Mizu* — Struk Digital\nNo: ORD-001\nWaktu: 14 Agu 2026, 12.30 WIB\n\n2x Kopi Susu — Rp 36.000\n1x Croissant — Rp 28.000\n\n*Total: Rp 64.000*\nPembayaran: Tunai\nKembalian: Rp 6.000\n\nTerima kasih atas kunjungan Anda 🙏"
 		if got := BuildOrderReceiptMessage(base); got != want {
 			t.Errorf("got\n%q\nwant\n%q", got, want)
 		}
@@ -59,7 +59,7 @@ func TestBuildOrderReceiptMessage(t *testing.T) {
 
 	t.Run("exact mixed receipt", func(t *testing.T) {
 		in := OrderReceipt{
-			OutletName: "Sulu", OrderNumber: "CHK-1", OrderedAt: mustTime(t, "2026-10-03T17:05:00Z"),
+			OutletName: "Mizu", OrderNumber: "CHK-1", OrderedAt: mustTime(t, "2026-10-03T17:05:00Z"),
 			CustomerName: "Budi", Discount: 5000,
 			Items: []ReceiptItem{
 				{Name: "Cofe Peach", Quantity: 1, Total: 36000, StallName: "Yakitori Stall"},
@@ -69,7 +69,7 @@ func TestBuildOrderReceiptMessage(t *testing.T) {
 			},
 			Total: 1234567, PaymentMethod: "credit_card", FooterLines: []string{"A", "B"},
 		}
-		want := "*Sulu* — Struk Digital\nNo: CHK-1\nWaktu: 4 Okt 2026, 00.05 WIB\nPelanggan: Budi\n\n_Yakitori Stall_\n1x Cofe Peach — Rp 36.000\n1x Sate — Rp 1.000\n_Dumpling Stall_\n2.5x Gyoza — Rp 40.001\n1x Item Lama — -Rp 10.000\n\nDiskon: Rp 5.000\n*Total: Rp 1.234.567*\nPembayaran: credit_card\n\nA\nB"
+		want := "*Mizu* — Struk Digital\nNo: CHK-1\nWaktu: 4 Okt 2026, 00.05 WIB\nPelanggan: Budi\n\n_Yakitori Stall_\n1x Cofe Peach — Rp 36.000\n1x Sate — Rp 1.000\n_Dumpling Stall_\n2.5x Gyoza — Rp 40.001\n1x Item Lama — -Rp 10.000\n\nDiskon: Rp 5.000\n*Total: Rp 1.234.567*\nPembayaran: credit_card\n\nA\nB"
 		if got := BuildOrderReceiptMessage(in); got != want {
 			t.Errorf("got\n%q\nwant\n%q", got, want)
 		}
@@ -151,9 +151,9 @@ func TestBuildOrderReceiptMessage(t *testing.T) {
 			t.Errorf("missing default footer")
 		}
 		in := base
-		in.FooterLines = []string{"Sampai jumpa lagi!", "WiFi: SULU-GUEST"}
+		in.FooterLines = []string{"Sampai jumpa lagi!", "WiFi: MIZU-GUEST"}
 		msg := BuildOrderReceiptMessage(in)
-		if !strings.Contains(msg, "Sampai jumpa lagi!") || !strings.Contains(msg, "WiFi: SULU-GUEST") || strings.Contains(msg, "Terima kasih atas kunjungan Anda") {
+		if !strings.Contains(msg, "Sampai jumpa lagi!") || !strings.Contains(msg, "WiFi: MIZU-GUEST") || strings.Contains(msg, "Terima kasih atas kunjungan Anda") {
 			t.Errorf("msg = %q", msg)
 		}
 	})
@@ -216,7 +216,7 @@ func TestNormalizeReceiptLines(t *testing.T) {
 	if got := NormalizeReceiptLines([]any{strings.Repeat("x", 100)}); len(got[0]) != 42 {
 		t.Errorf("length cap: %d", len(got[0]))
 	}
-	for _, in := range []any{nil, "SULU"} {
+	for _, in := range []any{nil, "MIZU"} {
 		if got := NormalizeReceiptLines(in); got == nil || len(got) != 0 {
 			t.Errorf("non-array %v = %#v, want []", in, got)
 		}

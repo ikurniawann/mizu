@@ -16,7 +16,7 @@
  *   - ticket_staff_passes              : 2 gelang karyawan
  *
  * Venue = crm_settings default_company_id/default_branch_id (yang dipakai
- * super admin), fallback scope Sulu/Dago. Data demo bertanda DEMO- agar bisa
+ * super admin), fallback scope Mizu/Dago. Data demo bertanda DEMO- agar bisa
  * dihapus & diisi ulang saat seeder dijalankan lagi.
  *
  * Usage:  npm run db:seed:ticketing-demo
@@ -180,7 +180,7 @@ async function main() {
       `INSERT INTO ticketing.ticket_settings
          (company_id, branch_id, re_entry_policy, default_credit_limit, default_payment_mode,
           booking_slug, booking_forfeit_days, daily_capacity, slot_grace_minutes, updated_by)
-       VALUES ($1, $2, 'bebas-keluar-masuk', 500000, 'postpaid', 'sulu', 7, 800, 30, $3)
+       VALUES ($1, $2, 'bebas-keluar-masuk', 500000, 'postpaid', 'mizu', 7, 800, 30, $3)
        ON CONFLICT (branch_id) DO UPDATE SET
          re_entry_policy = EXCLUDED.re_entry_policy, default_credit_limit = EXCLUDED.default_credit_limit,
          default_payment_mode = EXCLUDED.default_payment_mode,
@@ -189,7 +189,7 @@ async function main() {
          slot_grace_minutes = EXCLUDED.slot_grace_minutes, updated_at = now()`,
       [...base, uid]
     );
-    console.log("✓ Pengaturan venue (re-entry bebas, kredit Rp 500.000, postpaid, slug booking 'sulu', kuota 800/hari)");
+    console.log("✓ Pengaturan venue (re-entry bebas, kredit Rp 500.000, postpaid, slug booking 'mizu', kuota 800/hari)");
 
     await clearDemo(c, v);
 
@@ -321,7 +321,7 @@ async function main() {
       { code: "BK-DEMO05", name: "Maya Lestari", phone: "628121110005", date: daysFromNow(2), status: "dibatalkan", slot: slotPagi, items: [["DEMO-MASUK:DEWASA", 2]], paid: -1, refund: "Dibatalkan pelanggan, refund via transfer" },
       { code: "BK-DEMO06", name: "Keluarga Wijaya", phone: "628121110006", date: daysFromNow(7), status: "terbayar", slot: slotSiang, items: [["DEMO-PAKET-KELUARGA:PAKET", 1]], paid: -0.2, guests: ["Hendra Wijaya", "Lina Wijaya", "Kevin Wijaya", "Nadia Wijaya"] },
       { code: "BK-DEMO07", name: "Dedi Kurniawan", phone: "628121110007", date: daysFromNow(-3), status: "hangus", slot: slotPagi, items: [["DEMO-MASUK:DEWASA", 2], ["DEMO-MASUK:ANAK", 2]], paid: -5, forfeited: -2 },
-      { code: "BK-DEMO08", name: "Putri Ayu", phone: "628121110008", date: daysFromNow(5), status: "terbayar", slot: slotPagi, items: [["DEMO-MASUK:DEWASA", 2]], paid: -0.1, promo: ["SULU10", 10000], gift: ["Ibu Ayu", "628121110009"] },
+      { code: "BK-DEMO08", name: "Putri Ayu", phone: "628121110008", date: daysFromNow(5), status: "terbayar", slot: slotPagi, items: [["DEMO-MASUK:DEWASA", 2]], paid: -0.1, promo: ["MIZU10", 10000], gift: ["Ibu Ayu", "628121110009"] },
     ];
     const bookingId = {};
     for (const b of BOOKINGS) {

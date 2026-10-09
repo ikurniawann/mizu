@@ -26,14 +26,14 @@ describe("Select", () => {
           <SelectValue placeholder="Pilih Outlet" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={uuid}>Sulu Bandung</SelectItem>
+          <SelectItem value={uuid}>Mizu Bandung</SelectItem>
           <SelectItem value="lain">Outlet Lain</SelectItem>
         </SelectContent>
       </Select>
     );
 
     // Assert
-    expect(screen.getByText("Sulu Bandung")).toBeInTheDocument();
+    expect(screen.getByText("Mizu Bandung")).toBeInTheDocument();
     expect(screen.queryByText(uuid)).not.toBeInTheDocument();
   });
 

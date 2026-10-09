@@ -15,10 +15,10 @@ Lingkungan: **DEV** (commit `5d28612`). Jangan dipakai di produksi.
 | Peran | Akun | Dipakai untuk |
 |---|---|---|
 | Super Admin | `super@arkivworld.com` | Skenario A, B, C, D, F (semua skenario dashboard) |
-| HRD | `orang@sulu.com` | Skenario G (uji tolak akses) |
+| HRD | `orang@mizu.com` | Skenario G (uji tolak akses) |
 | Purchasing Manager | `indra@arkiv.co` | Skenario G (uji tolak akses) |
 
-Alamat: <https://sulu.within.ventures/dashboard/crm/rewards>
+Alamat: <https://mizu.within.ventures/dashboard/crm/rewards>
 (password Super Admin sudah ter-prefill otomatis di halaman login dev).
 
 > **Catatan penting:** di DEV belum ada akun ber-peran **kasir (`pos`)**,
@@ -173,10 +173,10 @@ tersedia 1x dan reward bisa ditukar lagi.
 ---
 
 ## Skenario G — Peran lain tidak boleh melihat data redeem
-**Akun: `orang@sulu.com` (HRD)** — ulangi juga dengan `indra@arkiv.co`
+**Akun: `orang@mizu.com` (HRD)** — ulangi juga dengan `indra@arkiv.co`
 
 1. Login sebagai HRD.
-2. Buka <https://sulu.within.ventures/dashboard/crm/rewards>.
+2. Buka <https://mizu.within.ventures/dashboard/crm/rewards>.
 3. Klik tab **Permintaan Redeem**.
 
 **Diharapkan:** tab **Katalog Reward** tetap bisa dilihat, tetapi saat tab

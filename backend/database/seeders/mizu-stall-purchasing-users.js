@@ -3,15 +3,15 @@
  * Seeder: Karyawan + akses aplikasi per stall (cabang Dago).
  *
  * Setiap stall mendapat 1 akun:
- *   Email   : <slug>@sulu.id
- *   Password: SULU_STALL_PASSWORD, atau acak (dicetak sekali) bila kosong
+ *   Email   : <slug>@mizu.id
+ *   Password: MIZU_STALL_PASSWORD, atau acak (dicetak sekali) bila kosong
  *   Role    : purchasing_admin
  *   Approval: purchasing PR + PO sebagai approver
  *   Stall   : ditempatkan di warehouse masing-masing
  *
  * Usage:
- *   node database/seeders/sulu-stall-purchasing-users.js
- *   npm run db:seed:sulu-stall-purchasing
+ *   node database/seeders/mizu-stall-purchasing-users.js
+ *   npm run db:seed:mizu-stall-purchasing
  */
 
 const fs = require("fs");
@@ -23,10 +23,10 @@ const { seedPassword, passwordSource } = require("./lib/seed-password");
 
 const ROOT = path.join(__dirname, "..", "..");
 
-const EMAIL_DOMAIN = process.env.SULU_STALL_EMAIL_DOMAIN || "sulu.id";
+const EMAIL_DOMAIN = process.env.MIZU_STALL_EMAIL_DOMAIN || "mizu.id";
 const PROFILE_ROLE = "purchasing_admin";
 const IAM_ROLE = "purchasing_admin";
-const BRANCH_CODE = process.env.SULU_STALL_BRANCH_CODE || "SULU-DAGO";
+const BRANCH_CODE = process.env.MIZU_STALL_BRANCH_CODE || "MIZU-DAGO";
 
 /** Stall yang di-seed (nama harus cocok / akan di-upsert bila belum ada). */
 const STALL_SEEDS = [
@@ -308,7 +308,7 @@ async function main() {
     process.exit(1);
   }
 
-  const password = seedPassword("SULU_STALL_PASSWORD");
+  const password = seedPassword("MIZU_STALL_PASSWORD");
 
   const client = new Client({ connectionString: url, ssl: sslForUrl(url) });
   await client.connect();
@@ -343,7 +343,7 @@ async function main() {
       const warehouse = await ensureWarehouse(client, scope.branch_id, stall);
       const email = `${stall.emailLocal}@${EMAIL_DOMAIN}`;
       const fullName = `Purchasing ${stall.name}`;
-      const nip = `SULU-PA-${String(index + 1).padStart(2, "0")}`;
+      const nip = `MIZU-PA-${String(index + 1).padStart(2, "0")}`;
 
       const { userId, created: userCreated } = await upsertAuthUser(client, {
         email,
@@ -378,7 +378,7 @@ async function main() {
     await client.query("COMMIT");
 
     console.log("\nSeeder selesai.");
-    console.log(`  Password : ${passwordSource("SULU_STALL_PASSWORD")}`);
+    console.log(`  Password : ${passwordSource("MIZU_STALL_PASSWORD")}`);
     console.log(`  Role     : ${PROFILE_ROLE}`);
     console.log("  Approval : purchasing PR + PO (approver)");
     console.log(`  Accounts : ${summary.length}`);

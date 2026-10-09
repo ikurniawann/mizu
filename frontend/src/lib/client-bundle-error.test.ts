@@ -9,7 +9,7 @@ describe("isStaleClientBundleError", () => {
     expect(
       isStaleClientBundleError({
         name: "TypeError",
-        message: "Failed to fetch dynamically imported module: https://dev-sulu.within.ventures/_next/static/chunks/app.js",
+        message: "Failed to fetch dynamically imported module: https://dev-mizu.within.ventures/_next/static/chunks/app.js",
       })
     ).toBe(true);
   });

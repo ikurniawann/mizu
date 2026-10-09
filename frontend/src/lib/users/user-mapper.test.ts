@@ -74,7 +74,7 @@ describe("mapEmployeeUserRow", () => {
           company_id: "company-1",
           branch_id: null,
           holding: { id: "holding-1", name: "Prologe" },
-          company: { id: "company-1", name: "Sulu" },
+          company: { id: "company-1", name: "Mizu" },
           branch: null,
           brands: null,
           last_sign_in_at: "2024-06-01T10:00:00Z",
@@ -102,7 +102,7 @@ describe("mapEmployeeUserRow", () => {
       holdingId: "holding-1",
       companyId: "company-1",
       holdingName: "Prologe",
-      companyName: "Sulu",
+      companyName: "Mizu",
       lastSignInAt: "2024-06-01T10:00:00Z",
     });
     expect(mapped.appAccount?.approvalPermissions).toHaveLength(1);

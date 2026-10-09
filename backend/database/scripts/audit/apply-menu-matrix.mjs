@@ -1033,8 +1033,8 @@ async function main() {
     console.log(`Mode     : ${apply ? "APPLY (akan di-COMMIT)" : "DRY-RUN (akan di-ROLLBACK)"}`);
     console.log(`Fase     : ${[...phases].join(", ")}`);
 
-    const companyCode = opts.company || process.env.SEED_COMPANY_CODE || "SULU";
-    const branchCode = opts.branch || process.env.SEED_BRANCH_CODE || "SULU-DAGO";
+    const companyCode = opts.company || process.env.SEED_COMPANY_CODE || "MIZU";
+    const branchCode = opts.branch || process.env.SEED_BRANCH_CODE || "MIZU-DAGO";
     const { rows: scopeRows } = await client.query(
       `SELECT c.id AS company_id, b.id AS branch_id
          FROM configuration.companies c

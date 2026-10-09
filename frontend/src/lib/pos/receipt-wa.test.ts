@@ -36,7 +36,7 @@ describe("normalizeWaPhone", () => {
 
 describe("buildOrderReceiptMessage", () => {
   const dasar = {
-    outletName: "Sulu",
+    outletName: "Mizu",
     orderNumber: "ORD-001",
     orderedAt: "2026-08-14T12:30:00+07:00",
     items: [
@@ -121,10 +121,10 @@ describe("buildOrderReceiptMessage", () => {
     expect(buildOrderReceiptMessage(dasar)).toContain("Terima kasih atas kunjungan Anda");
     const pesan = buildOrderReceiptMessage({
       ...dasar,
-      footerLines: ["Sampai jumpa lagi!", "WiFi: SULU-GUEST"],
+      footerLines: ["Sampai jumpa lagi!", "WiFi: MIZU-GUEST"],
     });
     expect(pesan).toContain("Sampai jumpa lagi!");
-    expect(pesan).toContain("WiFi: SULU-GUEST");
+    expect(pesan).toContain("WiFi: MIZU-GUEST");
     expect(pesan).not.toContain("Terima kasih atas kunjungan Anda");
   });
 });
@@ -132,7 +132,7 @@ describe("buildOrderReceiptMessage", () => {
 describe("buildTopupReceiptMessage", () => {
   it("memuat nama, nominal, dan saldo akhir", () => {
     const pesan = buildTopupReceiptMessage({
-      outletName: "Sulu",
+      outletName: "Mizu",
       customerName: "Budi",
       amount: 100_000,
       method: "cash",
@@ -146,7 +146,7 @@ describe("buildTopupReceiptMessage", () => {
 
   it("saldo akhir tidak diketahui → barisnya hilang, bukan 'Rp 0' yang menakutkan", () => {
     const pesan = buildTopupReceiptMessage({
-      outletName: "Sulu",
+      outletName: "Mizu",
       customerName: "Budi",
       amount: 100_000,
       method: "cash",
@@ -160,7 +160,7 @@ describe("buildTopupReceiptMessage", () => {
 describe("buildShiftReportMessage", () => {
   it("memuat angka-angka inti tutup kasir", () => {
     const pesan = buildShiftReportMessage({
-      outletName: "Sulu",
+      outletName: "Mizu",
       shiftNumber: "SH-014",
       cashierName: "Ani",
       openedAt: "2026-08-14T08:00:00+07:00",
@@ -181,7 +181,7 @@ describe("buildShiftReportMessage", () => {
 
   it("selisih nol ditulis pas, bukan minus", () => {
     const pesan = buildShiftReportMessage({
-      outletName: "Sulu",
+      outletName: "Mizu",
       shiftNumber: "SH-015",
       cashierName: "Ani",
       openedAt: "2026-08-14T08:00:00+07:00",

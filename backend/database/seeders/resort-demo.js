@@ -10,7 +10,7 @@
  * berbeda dengan `dusun-bambu-resort.js` yang mengisi cabang tenant demo.
  *
  * Target bisa ditimpa lewat env:
- *   RESORT_COMPANY_CODE=SULU RESORT_BRANCH_CODE=SULU-DAGO npm run db:seed:resort-demo
+ *   RESORT_COMPANY_CODE=MIZU RESORT_BRANCH_CODE=MIZU-DAGO npm run db:seed:resort-demo
  *
  * Isi: 5 tipe kamar (glamping & kabin) 24 unit, 4 musim tarif, ±45 reservasi
  * lintas status, folio lengkap, dan status housekeeping campuran.
