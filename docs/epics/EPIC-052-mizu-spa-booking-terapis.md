@@ -279,3 +279,9 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   booking baru berisi jam & terapis), **Kartu** (papan lama), **Daftar** (tabel). Server hanya menolak bentrok, jadi
   seret ke terapis di luar shift/cuti/libur meminta konfirmasi dulu. Tata letak di `features/spa/calendar.ts` (12 tes).
   Seret HTML5 tidak berlaku di layar sentuh — di ponsel pakai klik blok → "Tugaskan terapis". Deploy `mizu:demo-3`.
+- 2026-10-09 — Halaman booking publik `/booking/spa` dirombak total ke desain Mizu: dibungkus header/footer situs, hero
+  wallpaper Mizu, 4 langkah bernomor, ringkasan menempel (desktop) / bilah aksi bawah (ponsel), filter kategori, deret
+  tanggal 14 hari + "Tanggal lain", jam dikelompokkan Pagi/Siang/Sore/Malam, layar sukses dengan kode bisa disalin.
+  Tombol Booking di menu treatment membawa `?outlet=&treatment=` (treatment langsung terpilih). Logika murni di
+  `features/spa/public-booking.ts` (12 tes). Judul halaman di top bar dashboard dihapus (sudah ada di breadcrumb &
+  header halaman); top bar kini tanggal + lokasi. Deploy `mizu:demo-5`.

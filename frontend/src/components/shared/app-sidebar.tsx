@@ -56,9 +56,7 @@ import { cn } from "@/lib/utils";
 import { brandOsName } from "@/lib/branding";
 import type { NavItem } from "@/lib/iam/types";
 import { isEssOnlyRole } from "@/lib/iam/access";
-import { buildNavBreadcrumbs } from "@/lib/iam/nav-breadcrumbs";
 import { flattenNavLeaves } from "@/lib/iam/nav-leaves";
-import { useNavFrom } from "@/lib/iam/use-nav-from";
 import AppSidebarNav from "./app-sidebar-nav";
 import { DashboardBreadcrumbs } from "./dashboard-breadcrumbs";
 import { GlobalSearch } from "./global-search";
@@ -235,7 +233,7 @@ function AppSidebarContent({
           >
             <Image src="/brand/mark-lime.png" width={210} height={210} alt="" className="h-auto w-7 select-none" draggable={false} />
           </Link>
-          <HeaderTitle navItems={navItems} branchName={user.branch_name ?? user.company_name} />
+          <HeaderTitle branchName={user.branch_name ?? user.company_name} />
           <GlobalSearch
             leaves={leaves}
             className="hidden min-w-0 flex-1 md:ml-4 md:block md:max-w-md"
@@ -364,33 +362,23 @@ function RailHeader({ expanded }: { expanded: boolean }) {
   );
 }
 
-/** Page title and "branch · date" beside the search, from the menu trail. */
-function HeaderTitle({
-  navItems,
-  branchName,
-}: {
-  navItems: NavItem[];
-  branchName?: string | null;
-}) {
-  const pathname = usePathname();
-  const navFrom = useNavFrom();
-  const crumbs = useMemo(
-    () => buildNavBreadcrumbs(navItems, pathname, navFrom),
-    [navItems, pathname, navFrom]
-  );
-  const title = crumbs.at(-1)?.label ?? "Beranda";
+/**
+ * Today's date and the active branch beside the search. The page title is
+ * left to the breadcrumb and the page header so it is not shown twice.
+ */
+function HeaderTitle({ branchName }: { branchName?: string | null }) {
   const today = new Intl.DateTimeFormat("id-ID", {
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
     month: "short",
   }).format(new Date());
 
   return (
     <div className="hidden min-w-0 shrink-0 md:block md:max-w-[14rem] lg:max-w-[18rem]">
-      <p className="truncate text-lg leading-tight font-bold text-foreground">{title}</p>
-      <p className="truncate text-xs text-muted-foreground" suppressHydrationWarning>
-        {[branchName?.trim(), today].filter(Boolean).join(" · ")}
+      <p className="truncate text-sm leading-tight font-semibold text-foreground" suppressHydrationWarning>
+        {today}
       </p>
+      {branchName?.trim() ? <p className="truncate text-xs text-muted-foreground">{branchName.trim()}</p> : null}
     </div>
   );
 }
