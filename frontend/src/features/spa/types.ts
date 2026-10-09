@@ -336,6 +336,10 @@ export interface BoardTherapist {
   therapist: Therapist;
   shift: Shift | null;
   on_leave: boolean;
+  /** Hari libur menurut pola shift mingguan. */
+  day_off?: boolean;
+  /** Terapis outlet lain yang diperbantukan hari ini. */
+  assisting?: boolean;
   items: BoardItem[];
 }
 

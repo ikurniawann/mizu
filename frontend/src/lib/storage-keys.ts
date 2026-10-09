@@ -24,6 +24,7 @@ export const STORAGE_KEYS = {
   activityLogs: { key: "nuhabit.activity-logs", legacy: "arkivos_activity_logs" },
   tableOrderGuest: { key: "nuhabit.table-order.guest", legacy: "bcd-table-order-guest" },
   memberLang: { key: "nuhabit.member.lang", legacy: "bcd-member-lang" },
+  spaBookOrderView: { key: "nuhabit.spa.book-order.view", legacy: "mizu.spa.book-order.view" },
 } as const satisfies Record<string, StorageKey>;
 
 function browserStorage(): Storage | null {

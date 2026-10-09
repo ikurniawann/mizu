@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { RefreshCw, UserRoundX } from "lucide-react";
+import { CalendarDays, LayoutGrid, List, Plus, RefreshCw, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,21 +10,61 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { todayWib } from "@/lib/dates";
+import { readStorage, STORAGE_KEYS, writeStorage } from "@/lib/storage-keys";
 import { formatDateLong, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useItemAction } from "../mutations";
 import { useSpaBoard, useSpaOutlets } from "../queries";
 import { genderLabel, isBookingClosed, sortByStart } from "../rules";
 import type { BoardItem, BoardTherapist } from "../types";
-import { AssignTherapistDialog } from "./item-dialogs";
+import { BoardItemDialog, type BoardItemFollowUp } from "./board-item-dialog";
+import { BookOrderCalendar, type CalendarSlot } from "./book-order-calendar";
+import { BookOrderList } from "./book-order-list";
+import { BookingCreateDialog } from "./booking-create-dialog";
+import { AssignTherapistDialog, RescheduleDialog } from "./item-dialogs";
 import { ItemStatusBadge, OutletSelect, SELECT, SPA_KICKER, TableNote, TimeRange } from "./shared";
 
 function visible(items: BoardItem[]): BoardItem[] {
   return sortByStart(items.filter((i) => i.status !== "cancelled"));
 }
 
-/** Spa → Book Order: papan harian satu outlet — antrean belum ditugaskan + jadwal per terapis. */
+type BoardView = "calendar" | "cards" | "list";
+const VIEWS: { value: BoardView; label: string; icon: typeof List }[] = [
+  { value: "calendar", label: "Kalender", icon: CalendarDays },
+  { value: "cards", label: "Kartu", icon: LayoutGrid },
+  { value: "list", label: "Daftar", icon: List },
+];
+
+function isView(v: unknown): v is BoardView {
+  return v === "calendar" || v === "cards" || v === "list";
+}
+
+// Tampilan terakhir yang dipilih, disimpan per peramban; bawaan kalender.
+const viewListeners = new Set<() => void>();
+let memoryView: BoardView = "calendar";
+
+function readView(): BoardView {
+  const saved = readStorage(STORAGE_KEYS.spaBookOrderView);
+  return isView(saved) ? saved : memoryView;
+}
+
+function subscribeView(listener: () => void) {
+  viewListeners.add(listener);
+  return () => viewListeners.delete(listener);
+}
+
+function setBoardView(view: BoardView) {
+  memoryView = view;
+  writeStorage(STORAGE_KEYS.spaBookOrderView, view);
+  viewListeners.forEach((l) => l());
+}
+
+/**
+ * Spa → Book Order: papan harian satu outlet dalam tiga tampilan — kalender
+ * per terapis (bawaan), kartu per terapis, dan daftar treatment.
+ */
 export function SpaBookOrderPage() {
   const outlets = useSpaOutlets();
   const configured = (outlets.data ?? []).filter((o) => o.configured);
@@ -32,11 +72,26 @@ export function SpaBookOrderPage() {
   const branchId = picked || configured[0]?.branch_id || "";
   const [date, setDate] = useState(() => todayWib());
   const board = useSpaBoard(branchId, date);
+  const view = useSyncExternalStore(subscribeView, readView, () => "calendar" as BoardView);
   const [assigning, setAssigning] = useState<BoardItem | null>(null);
+  const [rescheduling, setRescheduling] = useState<BoardItem | null>(null);
+  const [opened, setOpened] = useState<BoardItem | null>(null);
+  const [creating, setCreating] = useState<CalendarSlot | "blank" | null>(null);
 
   const unassigned = visible(board.data?.unassigned ?? []);
   const therapists = board.data?.therapists ?? [];
-  const outletName = configured.find((o) => o.branch_id === branchId)?.branch_name ?? "";
+  const outlet = configured.find((o) => o.branch_id === branchId);
+  const outletName = outlet?.branch_name ?? "";
+  const allItems = [
+    ...(board.data?.unassigned ?? []),
+    ...therapists.flatMap((t) => t.items.map((i) => ({ ...i, therapist_name: i.therapist_name ?? t.therapist.full_name }))),
+  ];
+
+  const followUp = (item: BoardItem, kind: BoardItemFollowUp) => {
+    setOpened(null);
+    if (kind === "assign") setAssigning(item);
+    else setRescheduling(item);
+  };
 
   return (
     <div className="space-y-4">
@@ -45,13 +100,18 @@ export function SpaBookOrderPage() {
         title="Book Order"
         description="Papan harian per outlet: treatment yang belum punya terapis dan jadwal tiap terapis. Diperbarui otomatis setiap 30 detik."
         actions={
-          <Button variant="outline" onClick={() => void board.refetch()} disabled={!branchId || board.isFetching}>
-            <RefreshCw className={cn(board.isFetching && "animate-spin")} /> Muat ulang
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => void board.refetch()} disabled={!branchId || board.isFetching}>
+              <RefreshCw className={cn(board.isFetching && "animate-spin")} /> Muat ulang
+            </Button>
+            <Button onClick={() => setCreating("blank")} disabled={configured.length === 0}>
+              <Plus /> Booking baru
+            </Button>
+          </>
         }
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,16rem)_11rem_1fr] sm:items-center">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,16rem)_11rem_1fr_auto] sm:items-center">
         <OutletSelect outlets={outlets.data ?? []} value={branchId} onChange={setPicked} className={SELECT} />
         <Input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Tanggal" />
         <p className="text-sm text-muted-foreground">
@@ -59,6 +119,15 @@ export function SpaBookOrderPage() {
           {outletName ? " · " : ""}
           {formatDateLong(date)}
         </p>
+        <Tabs value={view} onValueChange={(v) => isView(v) && setBoardView(v)}>
+          <TabsList aria-label="Tampilan">
+            {VIEWS.map(({ value, label, icon: Icon }) => (
+              <TabsTrigger key={value} value={value}>
+                <Icon /> {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       {outlets.isLoading ? (
@@ -73,6 +142,18 @@ export function SpaBookOrderPage() {
         <Card className="py-0">
           <TableNote tone="danger">{board.error.message}</TableNote>
         </Card>
+      ) : view === "calendar" ? (
+        <BookOrderCalendar
+          date={date}
+          openTime={outlet?.open_time}
+          closeTime={outlet?.close_time}
+          therapists={therapists}
+          unassigned={unassigned}
+          onOpenItem={setOpened}
+          onSlot={setCreating}
+        />
+      ) : view === "list" ? (
+        <BookOrderList items={allItems} onOpenItem={setOpened} />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
           <Card className="gap-3 self-start px-4">
@@ -121,6 +202,19 @@ export function SpaBookOrderPage() {
           branchId={branchId}
           item={assigning}
           onClose={() => setAssigning(null)}
+        />
+      )}
+      {rescheduling && (
+        <RescheduleDialog bookingId={rescheduling.booking_id} item={rescheduling} onClose={() => setRescheduling(null)} />
+      )}
+      {opened && <BoardItemDialog item={opened} onClose={() => setOpened(null)} onFollowUp={(kind) => followUp(opened, kind)} />}
+      {creating && (
+        <BookingCreateDialog
+          outlets={outlets.data ?? []}
+          defaultBranchId={branchId}
+          defaultScheduled={creating === "blank" ? undefined : `${date}T${creating.time}`}
+          defaultTherapistId={creating === "blank" ? undefined : (creating.therapistId ?? undefined)}
+          onClose={() => setCreating(null)}
         />
       )}
     </div>

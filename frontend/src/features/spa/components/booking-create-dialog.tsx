@@ -80,10 +80,16 @@ export function CustomerSearch({ onPick }: { onPick: (customer: SpaCustomer) => 
 export function BookingCreateDialog({
   outlets,
   defaultBranchId,
+  defaultScheduled,
+  defaultTherapistId,
   onClose,
 }: {
   outlets: Outlet[];
   defaultBranchId?: string;
+  /** Nilai input datetime-local WIB ("2026-10-09T14:30"), mis. dari klik slot kalender. */
+  defaultScheduled?: string;
+  /** Terapis treatment pertama, mis. dari kolom kalender yang diklik. */
+  defaultTherapistId?: string;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -91,14 +97,14 @@ export function BookingCreateDialog({
   const [branchId, setBranchId] = useState(
     defaultBranchId && usable.some((o) => o.branch_id === defaultBranchId) ? defaultBranchId : (usable[0]?.branch_id ?? "")
   );
-  const [bookingType, setBookingType] = useState<BookingType>("walk_in");
-  const [scheduled, setScheduled] = useState(defaultStart);
+  const [bookingType, setBookingType] = useState<BookingType>(defaultScheduled ? "reservation" : "walk_in");
+  const [scheduled, setScheduled] = useState(() => defaultScheduled || defaultStart());
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [genderPref, setGenderPref] = useState<GenderPref>("any");
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<ItemRow[]>([{ key: 1, variant_id: "", therapist_id: "" }]);
+  const [items, setItems] = useState<ItemRow[]>([{ key: 1, variant_id: "", therapist_id: defaultTherapistId ?? "" }]);
   const [error, setError] = useState<string | null>(null);
 
   const treatments = useSpaTreatments(true);

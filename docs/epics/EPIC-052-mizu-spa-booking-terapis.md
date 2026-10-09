@@ -274,3 +274,8 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   timetable, panel trial) masih ada tetapi tidak terhubung — kandidat pembersihan terpisah.
   Deploy `mizu:site-1`, `mizu-api:site-1`; commit `fab1145b`.
 
+- 2026-10-09 — Book Order punya tiga tampilan: **Kalender per terapis** (bawaan; kolom per terapis + "Belum ditugaskan",
+  ekor jeda, arsiran di luar shift/cuti/libur, garis "sekarang", seret blok untuk menugaskan, klik slot kosong untuk
+  booking baru berisi jam & terapis), **Kartu** (papan lama), **Daftar** (tabel). Server hanya menolak bentrok, jadi
+  seret ke terapis di luar shift/cuti/libur meminta konfirmasi dulu. Tata letak di `features/spa/calendar.ts` (12 tes).
+  Seret HTML5 tidak berlaku di layar sentuh — di ponsel pakai klik blok → "Tugaskan terapis". Deploy `mizu:demo-3`.
