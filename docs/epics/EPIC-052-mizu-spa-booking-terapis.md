@@ -285,3 +285,7 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   Tombol Booking di menu treatment membawa `?outlet=&treatment=` (treatment langsung terpilih). Logika murni di
   `features/spa/public-booking.ts` (12 tes). Judul halaman di top bar dashboard dihapus (sudah ada di breadcrumb &
   header halaman); top bar kini tanggal + lokasi. Deploy `mizu:demo-5`.
+- 2026-10-09 — `/` kini selalu website publik Mizu, juga untuk staf yang sedang login (dulu staf mendapat desktop OS,
+  sehingga logo/"Beranda" di halaman booking membuka desktop). Desktop staf tetap di `/os`, tujuan login yang sudah ada.
+  Dicek sebagai admin: dari `/booking/spa` dan `/` tidak ada tautan ke `/os`, `/dashboard`, `/login` atau `/pos`.
+  Deploy `mizu:demo-6`.
