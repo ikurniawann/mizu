@@ -14,26 +14,31 @@ const BRANCH: BranchSummary = { slug: "mizu-westhoff", name: "Mizu 1.0", address
 
 function render(props: Partial<Parameters<typeof HomePage>[0]> = {}) {
   return renderToStaticMarkup(
-    <HomePage home={CONTENT_DEFAULTS.home} guide={CONTENT_DEFAULTS.training} social={CONTENT_DEFAULTS.social} branches={[BRANCH]} outlet={OUTLET} treatments={MENU} articles={[]} events={[]} {...props} />,
+    <HomePage home={CONTENT_DEFAULTS.home} social={CONTENT_DEFAULTS.social} branches={[BRANCH]} outlet={OUTLET} treatments={MENU} {...props} />,
   );
 }
 
 describe("HomePage", () => {
-  it("shows the spa hero, the treatment teaser, the promo and outlets with booking links", () => {
+  it("keeps the home calm: hero, about, menu card, offers and a closing call to action", () => {
     const html = render();
     expect(html).toContain("Rest. Relax. Rejuvenate.");
+    expect(html).toContain("Mizu Family Massage &amp; Reflexology");
     expect(html).toContain('href="/booking/spa"');
-    expect(html.indexOf("Mizu Signature Ritual")).toBeLessThan(html.indexOf("Balinese Massage"));
-    expect(html).toMatch(/mulai Rp185\.000/);
+    expect(html).toMatch(/Mulai Rp185\.000 di Mizu 1\.0/);
     expect(html).toContain("Buy 1 Get 1 untuk usia 60+");
-    expect(html).toContain('href="/locations/mizu-westhoff"');
+    expect(html).toContain('href="/booking/spa?outlet=mizu-westhoff"');
+    // The signature ritual is the featured offer and links straight to it.
+    expect(html).toContain('href="/booking/spa?outlet=mizu-westhoff&amp;treatment=t2"');
     expect(html).toContain("https://instagram.com/mizufamily.id");
+    expect(html).toContain("Siap untuk istirahat sejenak?");
     expect(html).not.toMatch(/trial|membership|timetable|hyrox/i);
+    expect(html).not.toContain("Treatment pilihan");
   });
 
-  it("drops the treatment teaser when the menu is unavailable", () => {
+  it("still renders without a menu", () => {
     const html = render({ outlet: null, treatments: [] });
-    expect(html).not.toContain("Treatment pilihan");
+    expect(html).not.toContain("Mizu Signature Ritual");
+    expect(html).toContain("Better together.");
     expect(html).toContain("Siap untuk istirahat sejenak?");
   });
 });

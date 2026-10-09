@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarCheck, Menu, ShoppingBag, X } from "lucide-react";
@@ -25,22 +25,35 @@ export const SITE_NAV = [
 /** Secondary links in the top bar and the footer. */
 export const SECONDARY_NAV = [{ href: "/career", label: "Karier" }] as const;
 
-function Wordmark() {
+function Wordmark({ onDark = false }: { onDark?: boolean }) {
   return (
     <Link href="/" className="flex shrink-0 items-center" aria-label="Mizu, ke beranda">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/wordmark-black.png" alt="" className="h-6 w-auto dark:hidden" />
+      <img src="/brand/wordmark-black.png" alt="" className={cn("h-6 w-auto", onDark ? "hidden" : "dark:hidden")} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/wordmark-white.png" alt="" className="hidden h-6 w-auto dark:block" />
+      <img src="/brand/wordmark-white.png" alt="" className={cn("h-6 w-auto", onDark ? "block" : "hidden dark:block")} />
     </Link>
   );
 }
 
-function NavLinks({ items, current, onNavigate, className }: {
+/** True once the page has scrolled past `offset` px. */
+function useScrolled(offset = 24): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > offset);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [offset]);
+  return scrolled;
+}
+
+function NavLinks({ items, current, onNavigate, className, onDark = false }: {
   items: readonly { href: string; label: string }[];
   current: string;
   onNavigate?: () => void;
   className?: string;
+  onDark?: boolean;
 }) {
   return (
     <>
@@ -53,8 +66,9 @@ function NavLinks({ items, current, onNavigate, className }: {
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-full px-3 py-1.5 transition-colors hover:bg-surface-2",
-              active ? "font-semibold text-foreground" : "text-body",
+              "rounded-full px-3 py-1.5 transition-colors",
+              onDark ? "hover:bg-white/10" : "hover:bg-surface-2",
+              onDark ? (active ? "font-semibold text-white" : "text-white/80") : active ? "font-semibold text-foreground" : "text-body",
               className,
             )}
           >
@@ -71,6 +85,10 @@ export function SiteHeader({ memberLinked }: { memberLinked: boolean }) {
   const panels = useSitePanels();
   const cartCount = useCartCount();
   const [menuOpen, setMenuOpen] = useState(false);
+  const scrolled = useScrolled();
+  // Home: the header floats transparently over the full-bleed hero until the
+  // visitor scrolls, then turns solid like on every other page.
+  const overlay = pathname === "/" && !scrolled && !menuOpen;
 
   // The shop is not part of the spa site; the cart stays reachable only
   // for a visitor who still has items in it.
@@ -90,11 +108,19 @@ export function SiteHeader({ memberLinked }: { memberLinked: boolean }) {
   ) : null;
 
   return (
-    <header className="sticky top-0 z-30 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-      <div className="hidden border-b border-border/60 md:block">
+    <header
+      className={cn(
+        "top-0 z-30 transition-colors duration-300",
+        pathname === "/" ? "fixed inset-x-0" : "sticky",
+        overlay
+          ? "bg-transparent text-white"
+          : "bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75"
+      )}
+    >
+      <div className={cn("hidden md:block", overlay ? "border-b border-white/10" : "border-b border-border/60")}>
         <div className="mx-auto flex h-9 max-w-6xl items-center justify-end gap-1 px-4 text-xs lg:px-6">
-          <p className="mr-auto text-muted-foreground">Rest. Relax. Rejuvenate. · Bandung</p>
-          <NavLinks items={SECONDARY_NAV} current={pathname} className="px-2.5 py-1" />
+          <p className={cn("mr-auto", overlay ? "text-white/70" : "text-muted-foreground")}>Rest. Relax. Rejuvenate. · Bandung</p>
+          <NavLinks items={SECONDARY_NAV} current={pathname} className="px-2.5 py-1" onDark={overlay} />
           {memberLinked ? (
             <Link href="/member" className="ml-2 rounded-full bg-ink px-3 py-1 font-semibold text-on-ink">
               Area Member
@@ -103,9 +129,9 @@ export function SiteHeader({ memberLinked }: { memberLinked: boolean }) {
         </div>
       </div>
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 lg:px-6">
-        <Wordmark />
+        <Wordmark onDark={overlay} />
         <nav aria-label="Navigasi utama" className="ml-4 hidden items-center gap-1 text-sm lg:flex">
-          <NavLinks items={SITE_NAV} current={pathname} />
+          <NavLinks items={SITE_NAV} current={pathname} onDark={overlay} />
         </nav>
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
           {cartButton}
@@ -115,7 +141,13 @@ export function SiteHeader({ memberLinked }: { memberLinked: boolean }) {
               Booking
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Buka menu" onClick={() => setMenuOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("lg:hidden", overlay && "text-white hover:bg-white/10")}
+            aria-label="Buka menu"
+            onClick={() => setMenuOpen(true)}
+          >
             <Menu />
           </Button>
         </div>

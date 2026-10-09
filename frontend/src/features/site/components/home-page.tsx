@@ -1,32 +1,49 @@
 import Link from "next/link";
-import { ArrowRight, Camera, MapPin, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PublicOutlet, PublicTreatment } from "@/features/spa/types";
 import { formatRupiah } from "@/lib/format";
-import { durationsLabel, featured, startingPrice } from "../lib/treatments";
-import type { Article, BranchSummary, HomeContent, SiteEvent, SocialContent, TrainingContent } from "../types";
-import { BookingButton } from "./booking-link";
-import { HomeLatest, MemberStories } from "./home-discovery";
-import { Container, Kicker, Picture, Section, SectionHeading, Tile } from "./site-section";
-import { TreatmentNeeds } from "./treatment-guide";
-
-/** Taglines from Mizu's own Instagram posts; quotes without names, not reviews. */
-const MOMENTS = [
-  { title: "Walked all day?", text: "Your feet need this. Refleksi kaki untuk melepas penat setelah seharian berjalan." },
-  { title: "You need some me-time.", text: "Satu sesi untuk diri sendiri: ponsel diheningkan, napas melambat." },
-  { title: "A traditional Indonesian wellness experience.", text: "Pijat tradisional Jawa, lulur dan totok wajah, warisan perawatan nusantara." },
-  { title: "Better together.", text: "Me-time berdua atau bersama keluarga, di ruangan yang sama." },
-] as const;
+import { cn } from "@/lib/utils";
+import { bookable, durationsLabel, featured, openingHours, startingPrice } from "../lib/treatments";
+import type { BranchSummary, HomeContent, SocialContent } from "../types";
+import { BookingButton, bookingHref } from "./booking-link";
+import { Container, Picture } from "./site-section";
 
 /** The seniors promo runs at the Westhoff outlet (branch slug from the seed). */
 const PROMO_BRANCH_SLUG = "mizu-westhoff";
+/** Brand art used wherever the CMS has no photo yet. */
+const WALLPAPER = "/brand/mizu-wallpaper.webp";
+
+/**
+ * Mizu home: a calm, image-led page in five parts — full-bleed hero, a short
+ * about, one booking card, a few offers and a closing call to action. The
+ * header floats over the hero (see SiteHeader).
+ */
+export function HomePage({ home, social, branches, outlet, treatments }: {
+  home: HomeContent;
+  social?: SocialContent;
+  branches: BranchSummary[];
+  /** The outlet whose prices the treatment card shows. */
+  outlet: PublicOutlet | null;
+  treatments: PublicTreatment[];
+}) {
+  return (
+    <>
+      <Hero hero={home.hero} />
+      <About subtitle={home.hero.subtitle} branches={branches} outlet={outlet} instagram={social?.instagram ?? ""} />
+      <MenuCard outlet={outlet} treatments={treatments} photo={branches.find((b) => b.hero_image_url)?.hero_image_url ?? null} />
+      <Offers outlet={outlet} treatments={treatments} branches={branches} />
+      <Closing />
+    </>
+  );
+}
 
 function Hero({ hero }: { hero: HomeContent["hero"] }) {
   return (
-    <section className="relative isolate overflow-hidden bg-ink text-on-ink">
+    <section className="relative isolate overflow-hidden rounded-b-[2.5rem] bg-ink text-white md:rounded-b-[4rem]">
       {hero.video_url ? (
         <video
-          className="absolute inset-0 -z-10 h-full w-full object-cover opacity-40"
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
           src={hero.video_url}
           poster={hero.image_url || undefined}
           autoPlay
@@ -34,28 +51,19 @@ function Hero({ hero }: { hero: HomeContent["hero"] }) {
           loop
           playsInline
         />
-      ) : hero.image_url ? (
-        <Picture src={hero.image_url} alt="" className="absolute inset-0 -z-10 h-full w-full opacity-40" />
       ) : (
-        <div aria-hidden className="pointer-events-none absolute -top-32 -right-32 -z-10 size-96 rounded-full bg-accent/25 blur-3xl" />
+        <Picture src={hero.image_url || WALLPAPER} alt="" className="absolute inset-0 -z-20 h-full w-full" />
       )}
-      <Container className="flex min-h-[70dvh] flex-col justify-end gap-6 py-16 md:min-h-[78dvh] md:py-24">
-        <div className="max-w-3xl space-y-4">
-          {hero.kicker ? <Kicker onInk>{hero.kicker}</Kicker> : null}
-          <h1 className="font-display text-4xl font-bold tracking-tight text-balance sm:text-5xl md:text-6xl">{hero.title}</h1>
-          {hero.subtitle ? <p className="max-w-xl text-base text-on-ink-muted md:text-lg">{hero.subtitle}</p> : null}
+      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/80 via-ink/20 to-ink/40" />
+      <Container className="flex min-h-[88dvh] flex-col justify-end gap-8 pt-40 pb-16 md:min-h-[92dvh] md:pb-24">
+        <div className="max-w-3xl space-y-5">
+          {hero.kicker ? <p className="text-xs font-medium tracking-[0.3em] text-white/75 uppercase">{hero.kicker}</p> : null}
+          <h1 className="font-display text-5xl font-medium tracking-tight text-balance sm:text-6xl md:text-7xl">{hero.title}</h1>
         </div>
         <div className="flex flex-wrap gap-3">
-          <BookingButton size="lg">{hero.cta_label || "Booking Sekarang"}</BookingButton>
+          <BookingButton size="lg">{hero.cta_label || "Booking sekarang"}</BookingButton>
           <Button asChild variant="onInk" size="lg">
-            <Link href="/treatments">
-              <Sparkles /> Lihat treatment
-            </Link>
-          </Button>
-          <Button asChild variant="onInk" size="lg">
-            <Link href="/locations">
-              <MapPin /> Lokasi
-            </Link>
+            <Link href="/treatments">Lihat treatment</Link>
           </Button>
         </div>
       </Container>
@@ -63,237 +71,182 @@ function Hero({ hero }: { hero: HomeContent["hero"] }) {
   );
 }
 
-function Partners({ partners }: { partners: HomeContent["partners"] }) {
-  if (partners.length === 0) return null;
+function About({ subtitle, branches, outlet, instagram }: {
+  subtitle: string;
+  branches: BranchSummary[];
+  outlet: PublicOutlet | null;
+  instagram: string;
+}) {
+  const names = branches.map((b) => b.name);
+  const hours = outlet ? openingHours(outlet.open_time, outlet.close_time) : "";
   return (
-    <div className="border-b border-border/60 bg-surface">
-      <Container className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 py-6">
-        {partners.map((p) => (
-          <span key={p.name} className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-            {p.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.logo_url} alt={p.name} className="h-7 w-auto" loading="lazy" />
-            ) : (
-              p.name
-            )}
-          </span>
-        ))}
-      </Container>
-    </div>
-  );
-}
-
-function Pillars({ pillars }: { pillars: HomeContent["pillars"] }) {
-  if (pillars.length === 0) return null;
-  return (
-    <Section>
-      <Container className="space-y-8">
-        <SectionHeading kicker="Kenapa Mizu" title="Jeda yang kamu butuhkan" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {pillars.map((p, i) => (
-            <Tile key={`${p.code}-${i}`} className="space-y-3">
-              <p className="font-display text-sm font-bold tracking-wider text-forest uppercase dark:text-accent">{p.code}</p>
-              <h3 className="font-display text-xl font-semibold">{p.title}</h3>
-              <p className="text-sm text-body">{p.text}</p>
-            </Tile>
-          ))}
-        </div>
-      </Container>
-    </Section>
-  );
-}
-
-function SignatureTreatments({ outlet, treatments }: { outlet: PublicOutlet | null; treatments: PublicTreatment[] }) {
-  const pick = featured(treatments);
-  if (!outlet || pick.length === 0) return null;
-  const menuHref = `/treatments?outlet=${encodeURIComponent(outlet.branch_id)}`;
-  return (
-    <Section className="bg-surface">
-      <Container className="space-y-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeading kicker="Treatment" title="Treatment pilihan" text={`Harga di ${outlet.name}. Lihat menu lengkap untuk outlet lain.`} />
-          <Button asChild variant="outline">
-            <Link href={menuHref}>
-              Semua treatment <ArrowRight className="size-4" />
-            </Link>
+    <section className="py-20 md:py-28">
+      <Container className="max-w-3xl space-y-6 text-center">
+        <p className="text-sm tracking-wide text-body">Tentang kami</p>
+        <h2 className="font-display text-4xl font-medium tracking-tight text-balance md:text-5xl">Mizu Family Massage &amp; Reflexology</h2>
+        {subtitle ? <p className="text-base leading-relaxed text-body md:text-lg">{subtitle}</p> : null}
+        {names.length > 0 ? (
+          <p className="text-base leading-relaxed text-body md:text-lg">
+            {names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} dan ${names.at(-1)}`} di Bandung
+            {hours ? `, buka setiap hari ${hours}` : ""}.
+          </p>
+        ) : null}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <Button asChild variant="ink" size="lg" className="px-8">
+            <Link href="/brand">Cerita kami</Link>
           </Button>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {pick.map((t) => {
-            const from = startingPrice(t.variants);
-            return (
-              <Link key={t.id} href={menuHref} className="group block">
-                <Tile className="flex h-full flex-col gap-2 transition-shadow group-hover:shadow-float">
-                  {t.category ? <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-accent">{t.category}</p> : null}
-                  <h3 className="font-display text-xl font-semibold">{t.name}</h3>
-                  {t.description ? <p className="line-clamp-2 text-sm text-body">{t.description}</p> : null}
-                  <p className="mt-auto flex flex-wrap items-baseline justify-between gap-2 pt-3 text-sm">
-                    <span className="text-muted-foreground">{durationsLabel(t.variants)}</span>
-                    {from !== null ? <span className="font-semibold text-foreground">mulai {formatRupiah(from)}</span> : null}
-                  </p>
-                </Tile>
-              </Link>
-            );
-          })}
-        </div>
-        <BookingButton outlet={outlet.slug}>Booking treatment</BookingButton>
-      </Container>
-    </Section>
-  );
-}
-
-function Mission({ mission }: { mission: HomeContent["mission"] }) {
-  if (!mission.quote) return null;
-  return (
-    <Section className="py-0">
-      <Container>
-        <figure className="rounded-hero bg-accent px-6 py-12 text-accent-foreground shadow-glow md:px-16 md:py-20">
-          <blockquote className="font-display max-w-3xl text-2xl font-semibold text-balance md:text-4xl">“{mission.quote}”</blockquote>
-          {mission.author ? <figcaption className="mt-6 text-sm font-semibold">{mission.author}</figcaption> : null}
-        </figure>
-      </Container>
-    </Section>
-  );
-}
-
-function Moments({ instagram, promoHref }: { instagram: string; promoHref: string }) {
-  return (
-    <Section>
-      <Container className="space-y-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeading kicker="@mizufamily.id" title="Warm up. Slow down." text="Sedikit cerita dari Instagram kami." />
           {instagram ? (
-            <Button asChild variant="outline">
+            <Button asChild variant="ghost" size="lg">
               <a href={instagram} target="_blank" rel="noopener noreferrer">
-                <Camera className="size-4" /> Ikuti di Instagram
+                @mizufamily.id
               </a>
             </Button>
           ) : null}
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <article className="flex flex-col justify-between gap-6 rounded-card bg-ink p-6 text-on-ink md:row-span-2">
-            <div className="space-y-3">
-              <p className="text-xs font-semibold tracking-wider text-accent uppercase">Promo</p>
-              <h3 className="font-display text-3xl font-bold text-balance">Buy 1 Get 1 untuk usia 60+</h3>
-              <p className="text-sm text-on-ink-muted">Setiap hari kerja di Mizu 1.0, Jl. Westhoff No. 1. Tanyakan detail promo ke tim outlet.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <BookingButton size="sm" outlet={PROMO_BRANCH_SLUG}>Booking</BookingButton>
-              <Button asChild size="sm" variant="onInk">
-                <Link href={promoHref}>Lihat outlet</Link>
+      </Container>
+    </section>
+  );
+}
+
+function MenuCard({ outlet, treatments, photo }: { outlet: PublicOutlet | null; treatments: PublicTreatment[]; photo: string | null }) {
+  const list = bookable(treatments);
+  const categories = [...new Set(list.map((t) => t.category?.trim()).filter(Boolean))] as string[];
+  const from = startingPrice(list.flatMap((t) => t.variants));
+  return (
+    <section className="pb-20 md:pb-28">
+      <Container>
+        <div className="grid overflow-hidden rounded-hero bg-card shadow-float md:grid-cols-[1.35fr_1fr]">
+          <div className="flex flex-col justify-center gap-6 p-8 md:p-14 lg:p-16">
+            <h2 className="font-display text-3xl font-medium tracking-tight text-balance md:text-4xl">Treatment untuk setiap lelah.</h2>
+            <p className="max-w-lg leading-relaxed text-body">
+              {categories.length > 0 ? `${categories.join(", ")}.` : "Pijat, refleksi dan perawatan tubuh."}{" "}
+              {from !== null && outlet ? `Mulai ${formatRupiah(from)} di ${outlet.name}. ` : ""}
+              Pilih treatment dan jam yang pas, lalu bayar di outlet setelah treatment.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <BookingButton size="lg" variant="ink" className="px-7" outlet={outlet?.slug}>
+                Booking sekarang
+              </BookingButton>
+              <Button asChild size="lg" variant="outline" className="px-7">
+                <Link href="/treatments">
+                  Lihat menu <ArrowRight />
+                </Link>
               </Button>
             </div>
-          </article>
-          {MOMENTS.map((m) => (
-            <figure key={m.title} className="rounded-card bg-card p-6 shadow-card">
-              <blockquote className="font-display text-xl font-semibold text-balance">“{m.title}”</blockquote>
-              <figcaption className="mt-3 text-sm text-body">{m.text}</figcaption>
-            </figure>
+          </div>
+          <div className="relative min-h-72 bg-ink md:min-h-[26rem]">
+            <Picture src={photo || WALLPAPER} alt="" className={cn("absolute inset-0 h-full w-full", !photo && "object-[60%_center]")} />
+          </div>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+interface Offer {
+  key: string;
+  eyebrow: string;
+  title: string;
+  href: string;
+  /** Background treatment for cards without a photo. */
+  tone: string;
+  imagePosition: string;
+}
+
+function offersFor(outlet: PublicOutlet | null, treatments: PublicTreatment[], branches: BranchSummary[]): Offer[] {
+  const offers: Offer[] = [];
+  const promoBranch = branches.find((b) => b.slug === PROMO_BRANCH_SLUG);
+  if (promoBranch) {
+    offers.push({
+      key: "promo",
+      eyebrow: `Setiap hari kerja di ${promoBranch.name}`,
+      title: "Buy 1 Get 1 untuk usia 60+",
+      href: bookingHref({ outlet: promoBranch.slug }),
+      tone: "from-ink/90 via-ink/40 to-transparent",
+      imagePosition: "object-[50%_35%]",
+    });
+  }
+  const signature = featured(treatments, 1)[0];
+  if (signature && outlet) {
+    const from = startingPrice(signature.variants);
+    offers.push({
+      key: "signature",
+      eyebrow: [durationsLabel(signature.variants), from !== null ? `mulai ${formatRupiah(from)}` : ""].filter(Boolean).join(" · "),
+      title: signature.name,
+      href: bookingHref({ outlet: outlet.slug, treatment: signature.id }),
+      tone: "from-accent-dark/90 via-ink/50 to-ink/10",
+      imagePosition: "object-[20%_60%] scale-x-[-1]",
+    });
+  }
+  offers.push({
+    key: "together",
+    eyebrow: "Me-time berdua atau bersama keluarga, di ruangan yang sama.",
+    title: "Better together.",
+    href: bookingHref(),
+    tone: "from-ink/95 via-ink/50 to-ink/20",
+    imagePosition: "object-[80%_80%]",
+  });
+  return offers;
+}
+
+function Offers({ outlet, treatments, branches }: { outlet: PublicOutlet | null; treatments: PublicTreatment[]; branches: BranchSummary[] }) {
+  const offers = offersFor(outlet, treatments, branches);
+  return (
+    <section className="bg-surface py-20 md:py-28">
+      <Container className="space-y-12">
+        <div className="grid gap-6 md:grid-cols-2 md:items-end">
+          <div className="space-y-3">
+            <p className="text-sm tracking-wide text-body">Spesial</p>
+            <h2 className="font-display text-4xl font-medium tracking-tight md:text-5xl">Penawaran &amp; momen</h2>
+          </div>
+          <p className="leading-relaxed text-body md:text-right">
+            Promo dan ritual pilihan untuk melengkapi waktu istirahatmu. Tanyakan detail promo ke tim outlet saat booking.
+          </p>
+        </div>
+        <div className="space-y-4">
+          {offers.map((o) => (
+            <Link
+              key={o.key}
+              href={o.href}
+              className="group relative isolate flex h-72 items-end overflow-hidden rounded-card bg-ink p-6 text-white md:h-96 md:p-8"
+            >
+              <Picture
+                src={WALLPAPER}
+                alt=""
+                className={cn("absolute inset-0 -z-20 h-full w-full transition duration-700 group-hover:scale-105", o.imagePosition)}
+              />
+              <div aria-hidden className={cn("absolute inset-0 -z-10 bg-gradient-to-t", o.tone)} />
+              <div className="flex w-full items-end justify-between gap-6">
+                <div className="space-y-2">
+                  <p className="text-xs tracking-wide text-white/75 md:text-sm">{o.eyebrow}</p>
+                  <h3 className="font-display text-2xl font-medium md:text-3xl">{o.title}</h3>
+                </div>
+                <span className="hidden shrink-0 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur transition group-hover:bg-white/20 sm:flex">
+                  Booking <ArrowRight className="size-4" />
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
       </Container>
-    </Section>
+    </section>
   );
 }
 
-function Reel({ reel }: { reel: HomeContent["reel"] }) {
-  if (reel.length === 0) return null;
-  const hasSamples = reel.some((item) => item.caption.startsWith("Sample photo:"));
+function Closing() {
   return (
-    <Section>
-      <Container className="space-y-6">
-        <SectionHeading kicker={hasSamples ? "Contoh konten" : "Suasana"} title={hasSamples ? "Pratinjau galeri" : "Momen di Mizu"} text={hasSamples ? "Gambar contoh. Ganti dengan foto asli yang sudah disetujui." : undefined} />
-        <ul className="no-scrollbar -mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 lg:-mx-6 lg:px-6">
-          {reel.map((item, i) => (
-            <li key={`${item.image_url}-${i}`} className="w-[78vw] shrink-0 snap-start sm:w-80">
-              <figure className="overflow-hidden rounded-card bg-card shadow-card">
-                <Picture src={item.image_url} alt={item.caption} className="aspect-[4/5] w-full" />
-                {item.caption ? <figcaption className="px-4 py-3 text-sm text-body">{item.caption}</figcaption> : null}
-              </figure>
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </Section>
-  );
-}
-
-function Outlets({ branches }: { branches: BranchSummary[] }) {
-  if (branches.length === 0) return null;
-  return (
-    <Section>
-      <Container className="space-y-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeading kicker="Lokasi" title={branches.length === 2 ? "Dua outlet di Bandung" : "Outlet Mizu"} />
-          <Button asChild variant="outline">
-            <Link href="/locations">Semua lokasi</Link>
+    <section className="py-20 md:py-28">
+      <Container className="max-w-2xl space-y-6 text-center">
+        <Sparkles className="mx-auto size-6 text-forest dark:text-accent" />
+        <h2 className="font-display text-4xl font-medium tracking-tight text-balance md:text-5xl">Siap untuk istirahat sejenak?</h2>
+        <p className="leading-relaxed text-body md:text-lg">Booking online dalam satu menit. Pembayaran langsung di outlet.</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <BookingButton size="lg" className="px-8">Booking sekarang</BookingButton>
+          <Button asChild variant="outline" size="lg" className="px-8">
+            <Link href="/locations">Lihat lokasi</Link>
           </Button>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {branches.slice(0, 3).map((b) => (
-            <Tile key={b.slug} className="flex h-full flex-col gap-2">
-              <Picture src={b.hero_image_url} alt="" className="-mx-6 -mt-6 mb-4 aspect-[3/2] w-[calc(100%+3rem)] max-w-none rounded-t-card" />
-              <h3 className="font-display text-lg font-semibold">{b.name}</h3>
-              <p className="flex items-start gap-1.5 text-sm text-body">
-                <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                {[b.address, b.city].filter(Boolean).join(", ") || "Alamat segera hadir"}
-              </p>
-              <div className="mt-auto flex flex-wrap gap-2 pt-3">
-                <BookingButton size="sm" outlet={b.slug}>Booking</BookingButton>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/locations/${b.slug}`}>Lihat outlet</Link>
-                </Button>
-              </div>
-            </Tile>
-          ))}
-        </div>
       </Container>
-    </Section>
-  );
-}
-
-function BookingBand() {
-  return (
-    <Section className="pb-0">
-      <Container>
-        <div className="flex flex-wrap items-center justify-between gap-6 rounded-hero bg-ink px-6 py-10 text-on-ink md:px-12">
-          <div className="max-w-xl space-y-2">
-            <h2 className="font-display text-2xl font-bold md:text-3xl">Siap untuk istirahat sejenak?</h2>
-            <p className="text-sm text-on-ink-muted md:text-base">Pilih outlet, treatment dan jam yang pas. Pembayaran dilakukan langsung di outlet.</p>
-          </div>
-          <BookingButton size="lg">Booking sekarang</BookingButton>
-        </div>
-      </Container>
-    </Section>
-  );
-}
-
-export function HomePage({ home, guide, social, branches, outlet, treatments, articles, events }: {
-  home: HomeContent;
-  guide: TrainingContent;
-  social: SocialContent;
-  branches: BranchSummary[];
-  /** The outlet whose prices the treatment teaser shows. */
-  outlet: PublicOutlet | null;
-  treatments: PublicTreatment[];
-  articles: Article[];
-  events: SiteEvent[];
-}) {
-  const promoHref = branches.some((b) => b.slug === PROMO_BRANCH_SLUG) ? `/locations/${PROMO_BRANCH_SLUG}` : "/locations";
-  return (
-    <>
-      <Hero hero={home.hero} />
-      <Partners partners={home.partners} />
-      <Pillars pillars={home.pillars} />
-      <SignatureTreatments outlet={outlet} treatments={treatments} />
-      <TreatmentNeeds needs={guide.class_types} />
-      <Mission mission={home.mission} />
-      <Moments instagram={social.instagram} promoHref={promoHref} />
-      <Reel reel={home.reel} />
-      <MemberStories stories={home.stories ?? []} />
-      <Outlets branches={branches} />
-      <HomeLatest articles={articles} events={events} />
-      <BookingBand />
-    </>
+    </section>
   );
 }

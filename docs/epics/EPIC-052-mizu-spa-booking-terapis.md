@@ -289,3 +289,12 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   sehingga logo/"Beranda" di halaman booking membuka desktop). Desktop staf tetap di `/os`, tujuan login yang sudah ada.
   Dicek sebagai admin: dari `/booking/spa` dan `/` tidak ada tautan ke `/os`, `/dashboard`, `/login` atau `/pos`.
   Deploy `mizu:demo-6`.
+- 2026-10-09 — Merge PR #1 (mizu/main) dideploy: 2 migrasi `spa_public_booking_token` & `spa_public_booking_management`
+  diterapkan ke DB live (backup `~/backups/mizu/mizu-before-merge-pr1-20261009-134911.dump`, `-verify` bersih);
+  `mizu-api:demo-7`. Alur booking dicek ujung ke ujung: jam dari server, link outlet via slug, halaman status.
+- 2026-10-09 — Beranda disederhanakan mengikuti referensi odiliainfinity.id: hero penuh bersudut bawah membulat dengan
+  header transparan di atasnya, "Tentang kami" di tengah, satu kartu menu (teks + gambar), "Penawaran & momen"
+  (kartu lebar bertumpuk: promo 60+, ritual signature, Better together), dan ajakan penutup. Bagian pilar, panduan
+  kebutuhan, kutipan, Instagram, galeri, cerita member, grid outlet dan berita dihapus dari beranda
+  (`home-discovery.tsx` tak terpakai lagi, dihapus). Foto memakai CMS bila ada, selain itu art wallpaper Mizu.
+  Deploy `mizu:demo-8`.
