@@ -11,6 +11,9 @@ export const useSpaOutlets = () =>
 export const useSpaTreatments = (active?: boolean) =>
   useQuery({ queryKey: spaKeys.treatments(active), queryFn: () => spaApi.treatments(active) });
 
+export const useSpaTreatmentCategories = () =>
+  useQuery({ queryKey: spaKeys.treatmentCategories(), queryFn: spaApi.treatmentCategories });
+
 export const useSpaTherapists = (params: { branch_id?: string; active?: boolean } = {}) =>
   useQuery({ queryKey: spaKeys.therapists(params), queryFn: () => spaApi.therapists(params) });
 

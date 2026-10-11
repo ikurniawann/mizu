@@ -34,11 +34,13 @@ import type {
   PublicSlot,
   PublicTreatment,
   SpaCustomer,
+  SpaCustomerDetail,
   Therapist,
   TherapistAvailability,
   TherapistCreateInput,
   TherapistUpdateInput,
   Treatment,
+  TreatmentCategory,
   TreatmentInput,
 } from "./types";
 import { normalizeMyCommissions } from "./rules";
@@ -110,11 +112,16 @@ export const spaApi = {
   outlets: () => call<Outlet[]>(`${BASE}/outlets`),
   treatments: (active?: boolean) =>
     call<Treatment[]>(withQuery(`${BASE}/treatments`, { active: active ? "true" : undefined })),
+  treatmentCategories: () => call<TreatmentCategory[]>(`${BASE}/treatment-categories`),
   therapists: (params: { branch_id?: string; active?: boolean } = {}) =>
     call<Therapist[]>(
       withQuery(`${BASE}/therapists`, { branch_id: params.branch_id, active: params.active ? "true" : undefined })
     ),
   customers: (q: string) => call<SpaCustomer[]>(withQuery(`${BASE}/customers`, { q })),
+  customerDirectory: (params: { q?: string; page?: number; limit?: number }) =>
+    callPage<SpaCustomer>(withQuery(`${BASE}/customer-directory`, params)),
+  customerDetail: (id: string, page = 1) =>
+    call<SpaCustomerDetail>(withQuery(`${BASE}/customer-directory/${enc(id)}`, { page })),
 
   // Outlet
   saveOutlet: (branchId: string, input: OutletInput) => send<Outlet>(`${BASE}/outlets/${enc(branchId)}`, input, "PUT"),
@@ -126,6 +133,10 @@ export const spaApi = {
     send<Treatment>(`${BASE}/treatments/${enc(id)}`, input, "PATCH"),
   savePrices: (id: string, prices: PriceInput[]) =>
     send<Treatment>(`${BASE}/treatments/${enc(id)}/prices`, { prices }, "PUT"),
+  createTreatmentCategory: (name: string) => send<TreatmentCategory>(`${BASE}/treatment-categories`, { name }),
+  updateTreatmentCategory: (id: string, name: string) =>
+    send<TreatmentCategory>(`${BASE}/treatment-categories/${enc(id)}`, { name }, "PATCH"),
+  deleteTreatmentCategory: (id: string) => remove<{ id: string }>(`${BASE}/treatment-categories/${enc(id)}`),
 
   // Terapis
   employees: (q: string) => call<EmployeeCandidate[]>(withQuery(`${BASE}/employees`, { q })),
@@ -145,6 +156,10 @@ export const spaApi = {
   bookings: (params: BookingListParams) =>
     callPage<BookingSummary>(withQuery(`${BASE}/bookings`, params as Record<string, QueryValue>)),
   booking: (id: string) => call<Booking>(`${BASE}/bookings/${enc(id)}`),
+  assignBooking: (id: string, therapistId: string | null) =>
+    send<Booking>(`${BASE}/bookings/${enc(id)}/therapist`, { therapist_id: therapistId }, "PUT"),
+  bookingAction: (id: string, action: "start" | "complete") =>
+    send<Booking>(`${BASE}/bookings/${enc(id)}/status`, { action }),
   createBooking: (input: BookingCreateInput) => send<Booking>(`${BASE}/bookings`, input),
   updateBooking: (id: string, input: BookingUpdateInput) =>
     send<Booking>(`${BASE}/bookings/${enc(id)}`, input, "PATCH"),
@@ -152,7 +167,8 @@ export const spaApi = {
   itemAction: (id: string, itemId: string, input: ItemActionInput) =>
     send<Booking>(`${BASE}/bookings/${enc(id)}/items/${enc(itemId)}`, input, "PATCH"),
   cancelBooking: (id: string, reason: string) => send<Booking>(`${BASE}/bookings/${enc(id)}/cancel`, { reason }),
-  checkout: (id: string) => send<CheckoutResult>(`${BASE}/bookings/${enc(id)}/checkout`, {}),
+  checkout: (id: string, therapistRating?: number) => send<CheckoutResult>(`${BASE}/bookings/${enc(id)}/checkout`,
+    therapistRating === undefined ? {} : { therapist_rating: therapistRating }),
   availability: (params: AvailabilityParams) =>
     call<TherapistAvailability[]>(
       withQuery(`${BASE}/availability`, params as unknown as Record<string, QueryValue>)

@@ -104,6 +104,11 @@ export function isPathAllowedByMenus(
   pathname: string,
   menuHrefs: readonly string[]
 ): boolean {
-  if (menuHrefs.some((href) => hrefCoversPath(href, pathname))) return true;
+  if (pathname === "/dashboard/spa/report") {
+    return menuHrefs.some((href) => href === "/dashboard/spa/report/rush-hour" || href === "/dashboard/spa/report/trend" || href === "/dashboard/spa/report/rating");
+  }
+  const legacyReport = /^\/dashboard\/spa\/(rush-hour|trend)$/.exec(pathname);
+  const resolvedPath = legacyReport ? `/dashboard/spa/report/${legacyReport[1]}` : pathname;
+  if (menuHrefs.some((href) => hrefCoversPath(href, resolvedPath))) return true;
   return menuOwnsPrintPath(pathname, menuHrefs);
 }

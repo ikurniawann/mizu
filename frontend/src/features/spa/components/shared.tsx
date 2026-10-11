@@ -114,21 +114,23 @@ export function Pager({
   pagination,
   onPage,
   disabled,
+  itemLabel = "booking",
 }: {
   pagination: Pagination | undefined;
   onPage: (page: number) => void;
   disabled?: boolean;
+  itemLabel?: string;
 }) {
   if (!pagination || pagination.totalPages <= 1) {
     return pagination ? (
-      <p className="px-5 py-3 text-xs text-muted-foreground">{formatNumber(pagination.total)} booking</p>
+      <p className="px-5 py-3 text-xs text-muted-foreground">{formatNumber(pagination.total)} {itemLabel}</p>
     ) : null;
   }
   const { page, totalPages, total } = pagination;
   return (
     <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 text-xs text-muted-foreground">
       <span>
-        Halaman {page} dari {totalPages} · {formatNumber(total)} booking
+        Halaman {page} dari {totalPages} · {formatNumber(total)} {itemLabel}
       </span>
       <div className="flex gap-1">
         <Button size="icon-sm" variant="outline" aria-label="Sebelumnya" disabled={disabled || page <= 1} onClick={() => onPage(page - 1)}>

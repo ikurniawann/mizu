@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import Link from "next/link";
-import { CalendarDays, LayoutGrid, List, Plus, RefreshCw, UserRoundX } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useSyncExternalStore, type DragEvent } from "react";
+import { CalendarDays, GripVertical, LayoutGrid, List, Plus, RefreshCw, UserRoundX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,18 +11,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { todayWib } from "@/lib/dates";
 import { readStorage, STORAGE_KEYS, writeStorage } from "@/lib/storage-keys";
-import { formatDateLong, formatTime } from "@/lib/format";
+import { formatDateLong } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useItemAction } from "../mutations";
+import { isDraggable } from "../calendar";
 import { useSpaBoard, useSpaOutlets } from "../queries";
 import { genderLabel, isBookingClosed, sortByStart } from "../rules";
 import type { BoardItem, BoardTherapist } from "../types";
-import { BoardItemDialog, type BoardItemFollowUp } from "./board-item-dialog";
 import { BookOrderCalendar, type CalendarSlot } from "./book-order-calendar";
 import { BookOrderList } from "./book-order-list";
 import { BookingCreateDialog } from "./booking-create-dialog";
-import { AssignTherapistDialog, RescheduleDialog } from "./item-dialogs";
+import { BookingDetailDialog } from "./booking-detail-page";
+import { AssignTherapistDialog } from "./item-dialogs";
 import { ItemStatusBadge, OutletSelect, SELECT, SPA_KICKER, TableNote, TimeRange } from "./shared";
+import { BOOKING_DRAG_TYPE, useBookingDnd } from "./use-booking-dnd";
 
 function visible(items: BoardItem[]): BoardItem[] {
   return sortByStart(items.filter((i) => i.status !== "cancelled"));
@@ -66,6 +65,7 @@ function setBoardView(view: BoardView) {
  * per terapis (bawaan), kartu per terapis, dan daftar treatment.
  */
 export function SpaBookOrderPage() {
+  const [openedBookingId, setOpenedBookingId] = useState<string | null>(null);
   const outlets = useSpaOutlets();
   const configured = (outlets.data ?? []).filter((o) => o.configured);
   const [picked, setPicked] = useState("");
@@ -74,31 +74,33 @@ export function SpaBookOrderPage() {
   const board = useSpaBoard(branchId, date);
   const view = useSyncExternalStore(subscribeView, readView, () => "calendar" as BoardView);
   const [assigning, setAssigning] = useState<BoardItem | null>(null);
-  const [rescheduling, setRescheduling] = useState<BoardItem | null>(null);
-  const [opened, setOpened] = useState<BoardItem | null>(null);
   const [creating, setCreating] = useState<CalendarSlot | "blank" | null>(null);
+  const [therapistSearch, setTherapistSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const therapistQuery = therapistSearch.trim().toLocaleLowerCase("id");
+  const customerQuery = customerSearch.trim().toLocaleLowerCase("id");
+  const matchesCustomer = (item: BoardItem) => item.customer_name.toLocaleLowerCase("id").includes(customerQuery);
+  const searching = !!(therapistQuery || customerQuery);
 
-  const unassigned = visible(board.data?.unassigned ?? []);
-  const therapists = board.data?.therapists ?? [];
+  const unassigned = visible(board.data?.unassigned ?? []).filter(matchesCustomer);
+  const therapists = (board.data?.therapists ?? [])
+    .filter((row) => row.therapist.full_name.toLocaleLowerCase("id").includes(therapistQuery))
+    .map((row) => ({ ...row, items: row.items.filter(matchesCustomer) }));
   const outlet = configured.find((o) => o.branch_id === branchId);
   const outletName = outlet?.branch_name ?? "";
   const allItems = [
-    ...(board.data?.unassigned ?? []),
+    ...unassigned,
     ...therapists.flatMap((t) => t.items.map((i) => ({ ...i, therapist_name: i.therapist_name ?? t.therapist.full_name }))),
   ];
 
-  const followUp = (item: BoardItem, kind: BoardItemFollowUp) => {
-    setOpened(null);
-    if (kind === "assign") setAssigning(item);
-    else setRescheduling(item);
-  };
+  const openBooking = (item: BoardItem) => setOpenedBookingId(item.booking_id);
 
   return (
     <div className="space-y-4">
       <PageHeader
         kicker={SPA_KICKER}
         title="Book Order"
-        description="Papan harian per outlet: treatment yang belum punya terapis dan jadwal tiap terapis. Diperbarui otomatis setiap 30 detik."
+        description="Papan harian per outlet: satu booking ditangani satu terapis untuk seluruh treatment. Diperbarui otomatis setiap 30 detik."
         actions={
           <>
             <Button variant="outline" onClick={() => void board.refetch()} disabled={!branchId || board.isFetching}>
@@ -130,16 +132,34 @@ export function SpaBookOrderPage() {
         </Tabs>
       </div>
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <label className="space-y-1.5 text-sm font-medium">
+          <span>Cari terapis</span>
+          <Input type="search" value={therapistSearch} onChange={(e) => setTherapistSearch(e.target.value)} placeholder="Nama terapis…" aria-label="Cari terapis" />
+        </label>
+        <label className="space-y-1.5 text-sm font-medium">
+          <span>Cari pelanggan</span>
+          <Input type="search" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder="Nama pelanggan…" aria-label="Cari pelanggan Book Order" />
+        </label>
+        {(therapistSearch || customerSearch) && <Button variant="outline" onClick={() => { setTherapistSearch(""); setCustomerSearch(""); }}>Reset pencarian</Button>}
+      </div>
+      {searching && board.data && !board.isLoading && !board.error && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {allItems.length ? `${allItems.length} booking ditampilkan.` : "Tidak ada booking yang cocok dengan pencarian."}
+          {therapistQuery && " Pencarian terapis menyaring kolom terapis; booking belum ditugaskan tetap ditampilkan."}
+        </p>
+      )}
+
       {outlets.isLoading ? (
         <Skeleton className="h-64 w-full rounded-card" />
       ) : configured.length === 0 ? (
-        <Card className="py-0">
+        <Card className="py-0 shadow-none!">
           <TableNote>Belum ada outlet spa. Atur di menu Outlet Spa.</TableNote>
         </Card>
       ) : board.isLoading ? (
         <Skeleton className="h-64 w-full rounded-card" />
       ) : board.error ? (
-        <Card className="py-0">
+        <Card className="py-0 shadow-none!">
           <TableNote tone="danger">{board.error.message}</TableNote>
         </Card>
       ) : view === "calendar" ? (
@@ -149,53 +169,24 @@ export function SpaBookOrderPage() {
           closeTime={outlet?.close_time}
           therapists={therapists}
           unassigned={unassigned}
-          onOpenItem={setOpened}
+          onOpenItem={openBooking}
           onSlot={setCreating}
+          unassignedEmptyMessage={customerQuery ? "Tidak ada pelanggan yang cocok di Belum ditugaskan." : undefined}
         />
       ) : view === "list" ? (
-        <BookOrderList items={allItems} onOpenItem={setOpened} />
+        <BookOrderList items={allItems} onOpenItem={openBooking} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
-          <Card className="gap-3 self-start px-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">Belum ditugaskan</h2>
-              <Badge variant={unassigned.length ? "warning" : "muted"}>{unassigned.length}</Badge>
-            </div>
-            {unassigned.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">Semua treatment sudah punya terapis.</p>
-            ) : (
-              <ul className="space-y-2">
-                {unassigned.map((item) => (
-                  <li key={item.id} className="rounded-2xl bg-surface-2 p-3">
-                    <BoardItemBody item={item} />
-                    <Button
-                      size="sm"
-                      className="mt-2 w-full"
-                      disabled={isBookingClosed({ status: item.booking_status })}
-                      onClick={() => setAssigning(item)}
-                    >
-                      Tugaskan terapis
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {therapists.length === 0 ? (
-            <Card className="py-0">
-              <TableNote>Tidak ada terapis yang bertugas di outlet ini pada tanggal tersebut.</TableNote>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {therapists.map((t) => (
-                <TherapistColumn key={t.therapist.id} row={t} />
-              ))}
-            </div>
-          )}
-        </div>
+        <BookOrderCards
+          therapists={therapists}
+          unassigned={unassigned}
+          therapistQuery={therapistQuery}
+          customerQuery={customerQuery}
+          onOpenItem={openBooking}
+          onAssign={setAssigning}
+        />
       )}
 
+      {openedBookingId && <BookingDetailDialog id={openedBookingId} onClose={() => setOpenedBookingId(null)} />}
       {assigning && (
         <AssignTherapistDialog
           bookingId={assigning.booking_id}
@@ -204,10 +195,6 @@ export function SpaBookOrderPage() {
           onClose={() => setAssigning(null)}
         />
       )}
-      {rescheduling && (
-        <RescheduleDialog bookingId={rescheduling.booking_id} item={rescheduling} onClose={() => setRescheduling(null)} />
-      )}
-      {opened && <BoardItemDialog item={opened} onClose={() => setOpened(null)} onFollowUp={(kind) => followUp(opened, kind)} />}
       {creating && (
         <BookingCreateDialog
           outlets={outlets.data ?? []}
@@ -215,45 +202,129 @@ export function SpaBookOrderPage() {
           defaultScheduled={creating === "blank" ? undefined : `${date}T${creating.time}`}
           defaultTherapistId={creating === "blank" ? undefined : (creating.therapistId ?? undefined)}
           onClose={() => setCreating(null)}
+          onCreated={setOpenedBookingId}
         />
       )}
     </div>
   );
 }
 
-function BoardItemBody({ item }: { item: BoardItem }) {
+function startBookingDrag(event: DragEvent, item: BoardItem) {
+  if (!isDraggable(item)) {
+    event.preventDefault();
+    return;
+  }
+  event.dataTransfer.setData(BOOKING_DRAG_TYPE, item.id);
+  event.dataTransfer.effectAllowed = "move";
+}
+
+function BookOrderCards({
+  therapists, unassigned, therapistQuery, customerQuery, onOpenItem, onAssign,
+}: {
+  therapists: BoardTherapist[];
+  unassigned: BoardItem[];
+  therapistQuery: string;
+  customerQuery: string;
+  onOpenItem: (item: BoardItem) => void;
+  onAssign: (item: BoardItem) => void;
+}) {
+  const dnd = useBookingDnd(unassigned, therapists);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+      <Card
+        role="complementary"
+        aria-label="Belum ditugaskan"
+        className={cn("gap-3 self-start px-4 shadow-none!", dnd.dropTarget === "unassigned" && "bg-accent/10 ring-2 ring-accent ring-inset")}
+        onDragOver={(event) => dnd.onDragOver(event, "unassigned")}
+        onDragLeave={(event) => dnd.onDragLeave(event, "unassigned")}
+        onDrop={(event) => dnd.onDrop(event, null)}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Belum ditugaskan</h2>
+          <Badge variant={unassigned.length ? "warning" : "muted"}>{unassigned.length}</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground">Seret kartu ke terapis untuk menugaskan; seret kembali ke sini untuk melepas terapis.</p>
+        {unassigned.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">{customerQuery ? "Tidak ada pelanggan yang cocok di Belum ditugaskan." : "Semua booking sudah punya terapis."}</p>
+        ) : (
+          <ul className="space-y-2">
+            {unassigned.map((item) => (
+              <li
+                key={item.id}
+                draggable={isDraggable(item)}
+                onDragStart={(event) => startBookingDrag(event, item)}
+                className={cn("rounded-2xl bg-surface-2 p-3", isDraggable(item) && "cursor-grab active:cursor-grabbing")}
+              >
+                <BoardItemBody item={item} onOpenItem={onOpenItem} />
+                <Button
+                  size="sm"
+                  className="mt-2 w-full"
+                  disabled={item.assignment_locked || isBookingClosed({ status: item.booking_status })}
+                  onClick={() => onAssign(item)}
+                >
+                  Tugaskan terapis
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      {therapists.length === 0 ? (
+        <Card className="py-0 shadow-none!">
+          <TableNote>{therapistQuery ? "Tidak ada terapis yang cocok dengan pencarian." : "Tidak ada terapis yang bertugas di outlet ini pada tanggal tersebut."}</TableNote>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+          {therapists.map((row) => (
+            <TherapistColumn key={row.therapist.id} row={row} onOpenItem={onOpenItem} dnd={dnd} />
+          ))}
+        </div>
+      )}
+      {dnd.confirmation}
+    </div>
+  );
+}
+
+function BoardItemBody({ item, onOpenItem }: { item: BoardItem; onOpenItem: (item: BoardItem) => void }) {
   return (
     <div className="space-y-1">
       <div className="flex items-start justify-between gap-2">
         <TimeRange start={item.starts_at} end={item.ends_at} className="text-sm font-semibold" />
-        <ItemStatusBadge status={item.status} />
+        <span className="flex items-center gap-1">
+          {isDraggable(item) && <GripVertical aria-hidden className="size-4 text-muted-foreground" />}
+          <ItemStatusBadge status={item.status} />
+        </span>
       </div>
       <p className="text-sm font-medium">{item.customer_name}</p>
       <p className="text-xs text-muted-foreground">
         {item.treatment_name} — {item.variant_name} ·{" "}
-        <Link href={`/dashboard/spa/bookings/${item.booking_id}`} className="font-mono text-brand-text hover:underline">
+        <button type="button" onClick={() => onOpenItem(item)} className="font-mono text-brand-text hover:underline">
           {item.booking_code}
-        </Link>
+        </button>
       </p>
     </div>
   );
 }
 
-function TherapistColumn({ row }: { row: BoardTherapist }) {
-  const action = useItemAction();
+function TherapistColumn({ row, onOpenItem, dnd }: {
+  row: BoardTherapist;
+  onOpenItem: (item: BoardItem) => void;
+  dnd: ReturnType<typeof useBookingDnd>;
+}) {
   const items = visible(row.items);
   const t = row.therapist;
-  const run = (item: BoardItem, kind: "start" | "complete") =>
-    action.mutate(
-      { bookingId: item.booking_id, itemId: item.id, input: { action: kind } },
-      {
-        onSuccess: () => toast.success(kind === "start" ? "Treatment dimulai" : "Treatment selesai", { description: `${t.full_name} · ${item.customer_name}` }),
-        onError: (err) => toast.error(kind === "start" ? "Gagal memulai" : "Gagal menyelesaikan", { description: err.message }),
-      }
-    );
 
   return (
-    <Card className={cn("gap-3 px-4", row.on_leave && "opacity-70")}>
+    <Card
+      role="region"
+      aria-label={`Terapis ${t.full_name}`}
+      className={cn("gap-3 px-4 shadow-none!", row.on_leave && "opacity-70", dnd.dropTarget === t.id && "bg-accent/10 ring-2 ring-accent ring-inset")}
+      onDragOver={(event) => dnd.onDragOver(event, t.id)}
+      onDragLeave={(event) => dnd.onDragLeave(event, t.id)}
+      onDrop={(event) => dnd.onDrop(event, row)}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate font-semibold">{t.full_name}</p>
@@ -270,7 +341,7 @@ function TherapistColumn({ row }: { row: BoardTherapist }) {
               <UserRoundX /> Cuti
             </Badge>
           )}
-          <Badge variant="muted">{items.length} tugas</Badge>
+          <Badge variant="muted">{items.length} booking</Badge>
         </div>
       </div>
       {items.length === 0 ? (
@@ -280,33 +351,17 @@ function TherapistColumn({ row }: { row: BoardTherapist }) {
           {items.map((item) => (
             <li
               key={item.id}
+              draggable={isDraggable(item)}
+              onDragStart={(event) => startBookingDrag(event, item)}
               className={cn(
                 "rounded-2xl border border-border p-3",
-                item.status === "in_treatment" && "border-accent-strong bg-accent/10",
-                item.status === "completed" && "opacity-70"
+                item.status === "in_treatment" && "border-blue-500 bg-blue-50",
+                item.status === "completed" && "opacity-70",
+                isDraggable(item) && "cursor-grab active:cursor-grabbing"
               )}
             >
-              <BoardItemBody item={item} />
-              {!isBookingClosed({ status: item.booking_status }) && (item.status === "assigned" || item.status === "in_treatment") && (
-                <div className="mt-2 flex gap-1">
-                  {item.status === "assigned" && (
-                    <Button size="xs" variant="soft" disabled={action.isPending} onClick={() => run(item, "start")}>
-                      Mulai
-                    </Button>
-                  )}
-                  <Button
-                    size="xs"
-                    variant={item.status === "in_treatment" ? "default" : "ghost"}
-                    disabled={action.isPending}
-                    onClick={() => run(item, "complete")}
-                  >
-                    Selesai
-                  </Button>
-                  <span className="ml-auto self-center text-[11px] text-muted-foreground">
-                    {item.started_at ? `mulai ${formatTime(item.started_at)}` : ""}
-                  </span>
-                </div>
-              )}
+              <BoardItemBody item={item} onOpenItem={onOpenItem} />
+              <Button size="xs" variant="soft" className="mt-2" onClick={() => onOpenItem(item)}>Detail booking</Button>
             </li>
           ))}
         </ul>

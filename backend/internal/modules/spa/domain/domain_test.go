@@ -29,8 +29,6 @@ func TestNextItemStatus(t *testing.T) {
 		{"cancel assigned", ActionCancel, ItemAssigned, BookingAssigned, false, ActorStaff, ItemCancelled, false},
 		{"cancel running", ActionCancel, ItemInTreatment, BookingInTreatment, false, ActorStaff, "", true},
 		{"cancel paid", ActionCancel, ItemAssigned, BookingAssigned, true, ActorStaff, "", true},
-		{"reschedule keeps status", ActionReschedule, ItemAssigned, BookingAssigned, false, ActorStaff, ItemAssigned, false},
-		{"reschedule running", ActionReschedule, ItemInTreatment, BookingInTreatment, false, ActorStaff, "", true},
 		{"closed booking", ActionAssign, ItemUnassigned, BookingCancelled, false, ActorStaff, "", true},
 		{"expired booking", ActionStart, ItemAssigned, BookingExpired, false, ActorStaff, "", true},
 		{"unknown", "dance", ItemAssigned, BookingAssigned, false, ActorStaff, "", true},
@@ -79,8 +77,17 @@ func TestDeriveBookingStatus(t *testing.T) {
 }
 
 func TestCanCheckoutAndCancel(t *testing.T) {
-	if err := CanCheckout(BookingAssigned, PaymentUnpaid, []string{ItemAssigned, ItemCancelled}); err != nil {
-		t.Fatalf("checkout assigned: %v", err)
+	if err := CanCheckout(BookingAssigned, PaymentUnpaid, []string{ItemAssigned, ItemCancelled}); err == nil {
+		t.Fatal("checkout assigned must fail before treatment is complete")
+	}
+	if err := CanCheckout(BookingInTreatment, PaymentUnpaid, []string{ItemInTreatment}); err == nil {
+		t.Fatal("checkout during treatment must fail")
+	}
+	if err := CanCheckout(BookingCompleted, PaymentUnpaid, []string{ItemCompleted, ItemCancelled}); err != nil {
+		t.Fatalf("checkout completed: %v", err)
+	}
+	if err := CanCheckout(BookingCompleted, PaymentUnpaid, []string{ItemAssigned}); err == nil {
+		t.Fatal("checkout with unfinished treatment must fail")
 	}
 	if err := CanCheckout(BookingUnassigned, PaymentUnpaid, []string{ItemAssigned, ItemUnassigned}); err == nil {
 		t.Fatal("checkout with unassigned item must fail")
@@ -100,6 +107,9 @@ func TestCanCheckoutAndCancel(t *testing.T) {
 	if err := CanCancelBooking(BookingInTreatment, false, []string{ItemInTreatment}); err == nil {
 		t.Fatal("cancel running must fail")
 	}
+	if err := CanCancelBooking(BookingInTreatment, false, []string{ItemAssigned}); err == nil {
+		t.Fatal("cancel must honor booking status even if item status is stale")
+	}
 	if err := CanCancelBooking(BookingCompleted, true, []string{ItemCompleted}); err == nil {
 		t.Fatal("cancel paid must fail")
 	}
@@ -113,20 +123,20 @@ func TestCanCheckoutAndCancel(t *testing.T) {
 
 func TestIntervalOverlap(t *testing.T) {
 	base := time.Date(2026, 10, 8, 3, 0, 0, 0, time.UTC) // 10:00 WIB
-	a := ItemInterval(base, 60, 15)                      // 10:00–11:15
+	a := ItemInterval(base, 60)                          // 10:00–11:00
 	cases := []struct {
 		start time.Time
 		dur   int
 		want  bool
 	}{
-		{base.Add(75 * time.Minute), 60, false}, // starts exactly at buffer end
-		{base.Add(74 * time.Minute), 60, true},
+		{base.Add(60 * time.Minute), 60, false}, // starts exactly at booking end
+		{base.Add(59 * time.Minute), 60, true},
 		{base.Add(-60 * time.Minute), 60, false}, // ends exactly at a.Start
 		{base.Add(-59 * time.Minute), 60, true},
 		{base.Add(30 * time.Minute), 10, true}, // inside
 	}
 	for _, c := range cases {
-		b := ItemInterval(c.start, c.dur, 0)
+		b := ItemInterval(c.start, c.dur)
 		if got := a.Overlaps(b); got != c.want {
 			t.Errorf("overlap(%v,%v) = %v, want %v", a, b, got, c.want)
 		}

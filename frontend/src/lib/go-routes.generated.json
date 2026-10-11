@@ -5065,6 +5065,46 @@
     "path": "/api/recruitment/live-monitoring/{type}/{id}/webrtc"
   },
   {
+    "module": "insights",
+    "method": "GET",
+    "path": "/api/reports/sales-target-years"
+  },
+  {
+    "module": "insights",
+    "method": "DELETE",
+    "path": "/api/reports/sales-target-years/{year}"
+  },
+  {
+    "module": "insights",
+    "method": "PUT",
+    "path": "/api/reports/sales-target-years/{year}"
+  },
+  {
+    "module": "insights",
+    "method": "GET",
+    "path": "/api/reports/sales-targets"
+  },
+  {
+    "module": "insights",
+    "method": "POST",
+    "path": "/api/reports/sales-targets"
+  },
+  {
+    "module": "insights",
+    "method": "DELETE",
+    "path": "/api/reports/sales-targets/{id}"
+  },
+  {
+    "module": "insights",
+    "method": "PATCH",
+    "path": "/api/reports/sales-targets/{id}"
+  },
+  {
+    "module": "insights",
+    "method": "GET",
+    "path": "/api/reports/sales-vs-target"
+  },
+  {
     "module": "resort",
     "method": "GET",
     "path": "/api/resort/availability"
@@ -6066,6 +6106,16 @@
   },
   {
     "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/bookings/{id}/status"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/bookings/{id}/therapist"
+  },
+  {
+    "module": "spa",
     "method": "GET",
     "path": "/api/spa/commission-rules"
   },
@@ -6088,6 +6138,16 @@
     "module": "spa",
     "method": "GET",
     "path": "/api/spa/commissions"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/customer-directory"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/customer-directory/{id}"
   },
   {
     "module": "spa",
@@ -6152,6 +6212,21 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/spa/reports/rating"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/reports/rush-hour"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/reports/trend"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/spa/therapists"
   },
   {
@@ -6163,6 +6238,26 @@
     "module": "spa",
     "method": "PATCH",
     "path": "/api/spa/therapists/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/treatment-categories"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/treatment-categories"
+  },
+  {
+    "module": "spa",
+    "method": "DELETE",
+    "path": "/api/spa/treatment-categories/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/treatment-categories/{id}"
   },
   {
     "module": "spa",

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import Image from "next/image";
 import { UserRoundX } from "lucide-react";
-import { toast } from "sonner";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { initials } from "@/lib/hris/ess-view";
 import { cn } from "@/lib/utils";
 import {
-  availabilityWarning,
   clockOf,
   dayRange,
   hourMarks,
@@ -19,15 +20,14 @@ import {
   type DayRange,
   type Placed,
 } from "../calendar";
-import { useItemAction } from "../mutations";
-import { genderLabel } from "../rules";
+import { genderLabel, sortByStart } from "../rules";
 import { shortClock, wibClockOf } from "../time";
 import type { BoardItem, BoardTherapist } from "../types";
+import { BOOKING_DRAG_TYPE, useBookingDnd } from "./use-booking-dnd";
 
 const HEADER_H = 64;
 const COL_W = 176;
 const AXIS_W = 56;
-const DRAG_TYPE = "application/x-mizu-item";
 
 export interface CalendarSlot {
   therapistId: string | null;
@@ -36,9 +36,10 @@ export interface CalendarSlot {
 }
 
 /**
- * Book Order — tampilan kalender per terapis: satu kolom per terapis (plus
- * kolom "Belum ditugaskan"), sumbu jam vertikal. Blok bisa diseret ke kolom
- * terapis untuk menugaskan; klik slot kosong untuk membuat booking.
+ * Book Order — card "Belum ditugaskan" di kiri, kalender per terapis dengan
+ * sumbu jam vertikal di kanan. Booking bisa diseret ke kolom
+ * terapis untuk menugaskan atau kembali ke card untuk melepas terapis;
+ * klik slot kosong untuk membuat booking.
  */
 export function BookOrderCalendar({
   date,
@@ -48,6 +49,7 @@ export function BookOrderCalendar({
   unassigned,
   onOpenItem,
   onSlot,
+  unassignedEmptyMessage = "Semua booking sudah punya terapis.",
 }: {
   date: string;
   openTime?: string;
@@ -56,12 +58,11 @@ export function BookOrderCalendar({
   unassigned: BoardItem[];
   onOpenItem: (item: BoardItem) => void;
   onSlot: (slot: CalendarSlot) => void;
+  unassignedEmptyMessage?: string;
 }) {
-  const action = useItemAction();
+  const dnd = useBookingDnd(unassigned, therapists);
   const scroller = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(() => new Date());
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
-  const [pending, setPending] = useState<{ item: BoardItem; row: BoardTherapist; warning: string } | null>(null);
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(new Date()), 60_000);
@@ -75,7 +76,6 @@ export function BookOrderCalendar({
   const range = useMemo(() => dayRange(openTime, closeTime, all), [openTime, closeTime, all]);
   const height = (range.end - range.start) * PX_PER_MIN;
   const nowY = nowOffset(date, now, range);
-  const byId = useMemo(() => new Map(all.map((i) => [i.id, i])), [all]);
 
   // Gulir ke jam sekarang (atau jam buka) saat tanggal berganti.
   useEffect(() => {
@@ -85,150 +85,141 @@ export function BookOrderCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hanya saat tanggal/rentang berubah
   }, [date, range.start]);
 
-  const assign = (item: BoardItem, therapist: BoardTherapist) =>
-    action.mutate(
-      { bookingId: item.booking_id, itemId: item.id, input: { action: "assign", therapist_id: therapist.therapist.id } },
-      {
-        onSuccess: () =>
-          toast.success("Terapis ditugaskan", {
-            description: `${item.customer_name} · ${wibClockOf(item.starts_at)} → ${therapist.therapist.full_name}`,
-          }),
-        onError: (err) => toast.error("Gagal menugaskan", { description: err.message }),
-      }
-    );
-
-  // Seret ke kolom terapis: di luar shift/cuti/libur minta konfirmasi dulu.
-  const drop = (itemId: string, row: BoardTherapist) => {
-    const item = byId.get(itemId);
-    if (!item || item.therapist_id === row.therapist.id) return;
-    if (!isDraggable(item)) {
-      toast.error("Treatment ini sudah berjalan atau selesai, tidak bisa dipindah.");
-      return;
-    }
-    const warning = availabilityWarning(item, row);
-    if (warning) setPending({ item, row, warning });
-    else assign(item, row);
-  };
-
-  const onDrop = (e: DragEvent, therapist: BoardTherapist) => {
-    e.preventDefault();
-    setDropTarget(null);
-    const id = e.dataTransfer.getData(DRAG_TYPE);
-    if (id) drop(id, therapist);
-  };
-
   const hours = hourMarks(range);
-  const unassignedPlaced = layoutColumn(unassigned.filter((i) => i.status !== "cancelled"), range);
-  const unassignedLanes = Math.max(1, ...unassignedPlaced.map((p) => p.lanes));
+  const unassignedItems = sortByStart(unassigned.filter((i) => i.status !== "cancelled"));
 
   return (
-    <div className="overflow-hidden rounded-card border border-border bg-card shadow-card">
-      <div ref={scroller} className="relative max-h-[calc(100dvh-15rem)] min-h-[28rem] overflow-auto">
-        <div className="relative flex" style={{ height: height + HEADER_H }}>
-          {/* Sumbu jam */}
-          <div className="sticky left-0 z-30 shrink-0 border-r border-border bg-card" style={{ width: AXIS_W }}>
-            <div className="sticky top-0 z-10 border-b border-border bg-card" style={{ height: HEADER_H }} />
-            <div className="relative" style={{ height }}>
-              {hours.map((m) => (
-                <span
-                  key={m}
-                  className={cn(
-                    "absolute right-2 text-[11px] font-medium tabular-nums text-muted-foreground",
-                    m === range.start ? "translate-y-0.5" : "-translate-y-1/2"
-                  )}
-                  style={{ top: (m - range.start) * PX_PER_MIN }}
-                >
-                  {m < range.end ? clockOf(m) : ""}
-                </span>
-              ))}
-            </div>
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+      <Card
+        role="complementary"
+        aria-label="Belum ditugaskan"
+        className={cn("gap-0 border border-border py-0 shadow-none!", dnd.dropTarget === "unassigned" && "bg-accent/10 ring-2 ring-accent ring-inset")}
+        onDragOver={(e) => dnd.onDragOver(e, "unassigned")}
+        onDragLeave={(e) => dnd.onDragLeave(e, "unassigned")}
+        onDrop={(e) => dnd.onDrop(e, null)}
+      >
+        <div className="space-y-1 border-b border-border p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-semibold">Belum ditugaskan</h2>
+            <Badge variant={unassignedItems.length ? "warning" : "muted"}>{unassignedItems.length}</Badge>
           </div>
-
-          {/* Belum ditugaskan */}
-          <Column
-            header={
-              <div>
-                <p className="font-semibold text-warning">Belum ditugaskan</p>
-                <p className="text-xs text-muted-foreground">{unassignedPlaced.length} treatment</p>
-              </div>
-            }
-            width={Math.max(COL_W, unassignedLanes * 132)}
-            range={range}
-            hours={hours}
-            nowY={nowY}
-            className="bg-warning-soft/40"
-          >
-            {unassignedPlaced.map((p) => (
-              <Block key={p.item.id} placed={p} onOpen={onOpenItem} />
-            ))}
-          </Column>
-
-          {therapists.map((row) => {
-            const t = row.therapist;
-            const unavailable = Boolean(row.on_leave || row.day_off);
-            const placed = layoutColumn(row.items.filter((i) => i.status !== "cancelled"), range);
-            const bands = offShiftBands(row.shift, unavailable, range);
-            return (
-              <Column
-                key={t.id}
-                header={
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{t.full_name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {row.on_leave ? (
-                        <span className="inline-flex items-center gap-1 text-warning">
-                          <UserRoundX className="size-3" /> Cuti
-                        </span>
-                      ) : row.day_off ? (
-                        "Libur"
-                      ) : row.shift ? (
-                        `${shortClock(row.shift.start_time)}–${shortClock(row.shift.end_time)}`
-                      ) : (
-                        "Tanpa shift"
-                      )}
-                      {" · "}
-                      {genderLabel(t.gender)}
-                      {row.assisting ? " · Perbantuan" : ""}
-                    </p>
-                  </div>
-                }
-                width={COL_W}
-                range={range}
-                hours={hours}
-                nowY={nowY}
-                bands={bands}
-                highlight={dropTarget === t.id}
-                onDragOver={(e) => {
-                  if (!e.dataTransfer.types.includes(DRAG_TYPE)) return;
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = "move";
-                  setDropTarget(t.id);
-                }}
-                onDragLeave={() => setDropTarget((cur) => (cur === t.id ? null : cur))}
-                onDrop={(e) => onDrop(e, row)}
-                onEmptyClick={(minute) => onSlot({ therapistId: t.id, time: clockOf(minute) })}
-              >
-                {placed.map((p) => (
-                  <Block key={p.item.id} placed={p} onOpen={onOpenItem} />
-                ))}
-              </Column>
-            );
-          })}
+          <p className="text-xs text-muted-foreground">Seret booking ke kolom terapis untuk menugaskan seluruh treatment. Seret kembali ke sini untuk melepas terapis.</p>
         </div>
+        <div className="max-h-[calc(100dvh-20rem)] overflow-y-auto p-4">
+          {unassignedItems.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">{unassignedEmptyMessage}</p>
+          ) : (
+            <ul className="space-y-2">
+              {unassignedItems.map((item) => (
+                <li key={item.id}>
+                  <ItemButton item={item} onOpen={onOpenItem} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Card>
+
+      <div role="region" aria-label="Jadwal terapis" className="min-w-0 overflow-hidden rounded-card border border-border bg-card shadow-none">
+        <div ref={scroller} className="relative max-h-[calc(100dvh-15rem)] min-h-[28rem] overflow-auto">
+          <div className="relative flex" style={{ height: height + HEADER_H }}>
+            {/* Sumbu jam */}
+            <div className="sticky left-0 z-30 shrink-0 border-r border-border bg-card" style={{ width: AXIS_W }}>
+              <div className="sticky top-0 z-10 border-b border-border bg-card" style={{ height: HEADER_H }} />
+              <div className="relative" style={{ height }}>
+                {hours.map((m) => (
+                  <span
+                    key={m}
+                    className={cn(
+                      "absolute right-2 text-[11px] font-medium tabular-nums text-muted-foreground",
+                      m === range.start ? "translate-y-0.5" : "-translate-y-1/2"
+                    )}
+                    style={{ top: (m - range.start) * PX_PER_MIN }}
+                  >
+                    {m < range.end ? clockOf(m) : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {therapists.map((row) => {
+              const t = row.therapist;
+              const unavailable = Boolean(row.on_leave || row.day_off);
+              const placed = layoutColumn(row.items.filter((i) => i.status !== "cancelled"), range);
+              const bands = offShiftBands(row.shift, unavailable, range);
+              return (
+                <Column
+                  key={t.id}
+                  header={
+                    <div className="flex min-w-0 w-full items-center gap-2">
+                      <TherapistAvatar therapist={t} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold" title={t.full_name}>{t.full_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {row.on_leave ? (
+                            <span className="inline-flex items-center gap-1 text-warning">
+                              <UserRoundX className="size-3" /> Cuti
+                            </span>
+                          ) : row.day_off ? (
+                            "Libur"
+                          ) : row.shift ? (
+                            `${shortClock(row.shift.start_time)}–${shortClock(row.shift.end_time)}`
+                          ) : (
+                            "Tanpa shift"
+                          )}
+                          {" · "}
+                          {genderLabel(t.gender)}
+                          {row.assisting ? " · Perbantuan" : ""}
+                        </p>
+                      </div>
+                    </div>
+                  }
+                  width={COL_W}
+                  range={range}
+                  hours={hours}
+                  nowY={nowY}
+                  bands={bands}
+                  highlight={dnd.dropTarget === t.id}
+                  onDragOver={(e) => dnd.onDragOver(e, t.id)}
+                  onDragLeave={(e) => dnd.onDragLeave(e, t.id)}
+                  onDrop={(e) => dnd.onDrop(e, row)}
+                  onEmptyClick={(minute) => onSlot({ therapistId: t.id, time: clockOf(minute) })}
+                >
+                  {placed.map((p) => (
+                    <Block key={p.item.id} placed={p} onOpen={onOpenItem} />
+                  ))}
+                </Column>
+              );
+            })}
+          </div>
+        </div>
+        <Legend />
       </div>
-      <Legend />
-      <ConfirmDialog
-        open={pending !== null}
-        onOpenChange={(open) => !open && setPending(null)}
-        title={`Tugaskan ke ${pending?.row.therapist.full_name ?? ""}?`}
-        description={`${pending?.warning ?? ""} Tetap tugaskan ${pending?.item.customer_name ?? ""}?`}
-        confirmLabel="Tetap tugaskan"
-        onConfirm={() => {
-          if (pending) assign(pending.item, pending.row);
-          setPending(null);
-        }}
-      />
+      {dnd.confirmation}
     </div>
+  );
+}
+
+function TherapistAvatar({ therapist }: { therapist: BoardTherapist["therapist"] }) {
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
+  const photoUrl = therapist.photo_url?.trim();
+  return (
+    <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-soft text-xs font-semibold text-brand-text">
+      {photoUrl && photoUrl !== failedPhoto ? (
+        <Image
+          src={photoUrl}
+          alt={`Foto ${therapist.full_name}`}
+          width={32}
+          height={32}
+          unoptimized
+          draggable={false}
+          className="size-full object-cover"
+          onError={() => setFailedPhoto(photoUrl)}
+        />
+      ) : (
+        <span aria-hidden>{initials(therapist.full_name) || "?"}</span>
+      )}
+    </span>
   );
 }
 
@@ -257,11 +248,12 @@ function Column({
   className?: string;
   children: React.ReactNode;
   onDragOver?: (e: DragEvent) => void;
-  onDragLeave?: () => void;
+  onDragLeave?: (e: DragEvent) => void;
   onDrop?: (e: DragEvent) => void;
   onEmptyClick?: (minute: number) => void;
 }) {
   const height = (range.end - range.start) * PX_PER_MIN;
+  const [hoverMinute, setHoverMinute] = useState<number | null>(null);
   return (
     <div className={cn("relative shrink-0 border-r border-border", className)} style={{ width }}>
       <div
@@ -276,6 +268,15 @@ function Column({
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
+        onMouseMove={(e) => {
+          if (!onEmptyClick || e.target !== e.currentTarget) {
+            setHoverMinute(null);
+            return;
+          }
+          const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
+          setHoverMinute(minuteAtOffset(y, range));
+        }}
+        onMouseLeave={() => setHoverMinute(null)}
         onClick={(e) => {
           if (!onEmptyClick || e.target !== e.currentTarget) return;
           const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
@@ -286,7 +287,7 @@ function Column({
           <div
             key={i}
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,color-mix(in_srgb,var(--muted-foreground)_10%,transparent)_6px,color-mix(in_srgb,var(--muted-foreground)_10%,transparent)_8px)]"
+            className="pointer-events-none absolute inset-x-0 bg-muted/50 bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,color-mix(in_srgb,var(--muted-foreground)_10%,transparent)_6px,color-mix(in_srgb,var(--muted-foreground)_10%,transparent)_8px)]"
             style={{ top: b.top, height: b.height }}
           />
         ))}
@@ -309,6 +310,14 @@ function Column({
         {nowY !== null && (
           <div aria-hidden className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-danger" style={{ top: nowY }} />
         )}
+        {hoverMinute !== null && (
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-accent-strong"
+            style={{ top: (hoverMinute - range.start) * PX_PER_MIN }}>
+            <span className="absolute top-1 right-1 rounded bg-accent-strong px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-accent-foreground shadow-sm">
+              {clockOf(hoverMinute)}
+            </span>
+          </div>
+        )}
         {children}
       </div>
     </div>
@@ -318,56 +327,56 @@ function Column({
 const BLOCK_TONE: Record<string, string> = {
   unassigned: "border-warning bg-warning-soft text-foreground border-dashed",
   assigned: "border-accent-strong/70 bg-accent-soft text-foreground",
-  in_treatment: "border-accent-dark bg-accent-strong text-accent-foreground",
+  in_treatment: "border-blue-700 bg-blue-600 text-white",
   completed: "border-success/40 bg-success-soft text-foreground",
 };
 
 function Block({ placed, onOpen }: { placed: Placed<BoardItem>; onOpen: (item: BoardItem) => void }) {
   const { item, top, height, bufferHeight, lane, lanes } = placed;
-  const draggable = isDraggable(item);
   const widthPct = 100 / lanes;
-  const compact = height < 44;
   return (
     <div
       className="absolute z-[5] px-1"
       style={{ top, left: `${lane * widthPct}%`, width: `${widthPct}%`, height: height + bufferHeight }}
     >
-      <button
-        type="button"
-        draggable={draggable}
-        onDragStart={(e) => {
-          e.dataTransfer.setData(DRAG_TYPE, item.id);
-          e.dataTransfer.effectAllowed = "move";
-        }}
-        onClick={() => onOpen(item)}
-        title={`${wibClockOf(item.starts_at)}–${wibClockOf(item.ends_at)} · ${item.customer_name} · ${item.treatment_name} (${item.variant_name})`}
-        className={cn(
-          "flex w-full flex-col overflow-hidden rounded-lg border px-2 py-1 text-left text-xs shadow-sm transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-          BLOCK_TONE[item.status] ?? "border-border bg-muted",
-          draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
-        )}
-        style={{ height }}
-      >
-        <span className="font-semibold tabular-nums">
-          {wibClockOf(item.starts_at)}–{wibClockOf(item.ends_at)}
-          {compact ? ` · ${item.customer_name}` : ""}
-        </span>
-        {!compact && <span className="truncate font-medium">{item.customer_name}</span>}
-        {!compact && height >= 62 && (
-          <span className="truncate opacity-80">
-            {item.treatment_name} · {item.variant_name}
-          </span>
-        )}
-      </button>
-      {bufferHeight > 0 && (
-        <div
-          aria-hidden
-          title={`Jeda ${item.buffer_min} menit`}
-          className="mx-1 rounded-b-md bg-[repeating-linear-gradient(135deg,transparent,transparent_3px,color-mix(in_srgb,var(--muted-foreground)_18%,transparent)_3px,color-mix(in_srgb,var(--muted-foreground)_18%,transparent)_5px)]"
-          style={{ height: bufferHeight }}
-        />
-      )}
+      <ItemButton item={item} height={height} onOpen={onOpen} />
     </div>
+  );
+}
+
+function ItemButton({ item, height, onOpen }: { item: BoardItem; height?: number; onOpen: (item: BoardItem) => void }) {
+  const draggable = isDraggable(item);
+  const compact = height !== undefined && height < 44;
+  return (
+    <button
+      type="button"
+      draggable={draggable}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(BOOKING_DRAG_TYPE, item.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onClick={() => onOpen(item)}
+      title={`${wibClockOf(item.starts_at)}–${wibClockOf(item.ends_at)} · ${item.customer_name} · ${item.treatment_name} (${item.variant_name})`}
+      className={cn(
+        "flex w-full flex-col overflow-hidden rounded-lg border px-2 py-1 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        height === undefined && "gap-1 px-3 py-3",
+        BLOCK_TONE[item.status] ?? "border-border bg-muted",
+        item.status === "in_treatment" ? "hover:bg-blue-700" : "hover:bg-surface",
+        draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+      )}
+      style={{ height }}
+    >
+      <span className="font-semibold tabular-nums">
+        {wibClockOf(item.starts_at)}–{wibClockOf(item.ends_at)}
+        {compact ? ` · ${item.customer_name}` : ""}
+      </span>
+      {!compact && <span className="truncate font-medium">{item.customer_name}</span>}
+      {!compact && (height === undefined || height >= 62) && (
+        <span className="truncate opacity-80">
+          {item.treatment_name} · {item.variant_name}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -386,8 +395,8 @@ function Legend() {
         </span>
       ))}
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-3 w-4 rounded bg-[repeating-linear-gradient(135deg,transparent,transparent_2px,color-mix(in_srgb,var(--muted-foreground)_30%,transparent)_2px,color-mix(in_srgb,var(--muted-foreground)_30%,transparent)_4px)]" />
-        Jeda / di luar shift
+        <span className="inline-block h-3 w-4 rounded bg-muted/50 bg-[repeating-linear-gradient(135deg,transparent,transparent_2px,color-mix(in_srgb,var(--muted-foreground)_30%,transparent)_2px,color-mix(in_srgb,var(--muted-foreground)_30%,transparent)_4px)]" />
+        Di luar shift
       </span>
       <span className="inline-flex items-center gap-1.5">
         <span className="inline-block h-0.5 w-4 bg-danger" /> Sekarang

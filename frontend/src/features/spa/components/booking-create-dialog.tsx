@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +28,6 @@ import { Field, FormError, OutletSelect, SELECT, TEXTAREA } from "./shared";
 interface ItemRow {
   key: number;
   variant_id: string;
-  therapist_id: string;
 }
 
 /** Waktu sekarang dibulatkan ke 15 menit berikutnya, untuk input datetime-local WIB. */
@@ -45,7 +44,8 @@ export function CustomerSearch({ onPick }: { onPick: (customer: SpaCustomer) => 
   const rows = customers.data ?? [];
   return (
     <div className="space-y-2">
-      <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari pelanggan lama (nama / HP)…" aria-label="Cari pelanggan" />
+      <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }} placeholder="Ketik nama atau nomor HP…" aria-label="Cari pelanggan" />
+      {debounced.length < 2 && <p className="text-xs text-muted-foreground">Ketik minimal 2 karakter untuk mencari pelanggan.</p>}
       {debounced.length >= 2 && (
         <div className="max-h-40 overflow-y-auto rounded-2xl border border-border">
           {customers.isLoading ? (
@@ -53,7 +53,7 @@ export function CustomerSearch({ onPick }: { onPick: (customer: SpaCustomer) => 
           ) : customers.error ? (
             <p className="px-3 py-2 text-xs text-danger">{customers.error.message}</p>
           ) : rows.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">Tidak ditemukan — isi nama & HP di bawah untuk pelanggan baru.</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">Pelanggan tidak ditemukan. Kembali ke form booking untuk mengisi nama dan HP pelanggan baru.</p>
           ) : (
             rows.map((c) => (
               <button
@@ -83,14 +83,16 @@ export function BookingCreateDialog({
   defaultScheduled,
   defaultTherapistId,
   onClose,
+  onCreated,
 }: {
   outlets: Outlet[];
   defaultBranchId?: string;
   /** Nilai input datetime-local WIB ("2026-10-09T14:30"), mis. dari klik slot kalender. */
   defaultScheduled?: string;
-  /** Terapis treatment pertama, mis. dari kolom kalender yang diklik. */
+  /** Terapis untuk seluruh booking, mis. dari kolom kalender yang diklik. */
   defaultTherapistId?: string;
   onClose: () => void;
+  onCreated?: (bookingId: string) => void;
 }) {
   const router = useRouter();
   const usable = outlets.filter((o) => o.configured && o.is_active);
@@ -100,11 +102,14 @@ export function BookingCreateDialog({
   const [bookingType, setBookingType] = useState<BookingType>(defaultScheduled ? "reservation" : "walk_in");
   const [scheduled, setScheduled] = useState(() => defaultScheduled || defaultStart());
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [choosingCustomer, setChoosingCustomer] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [customerGender, setCustomerGender] = useState<"" | "male" | "female">("");
   const [genderPref, setGenderPref] = useState<GenderPref>("any");
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<ItemRow[]>([{ key: 1, variant_id: "", therapist_id: defaultTherapistId ?? "" }]);
+  const [therapistId, setTherapistId] = useState(defaultTherapistId ?? "");
+  const [items, setItems] = useState<ItemRow[]>([{ key: 1, variant_id: "" }]);
   const [error, setError] = useState<string | null>(null);
 
   const treatments = useSpaTreatments(true);
@@ -128,6 +133,7 @@ export function BookingCreateDialog({
     if (!scheduledIso) return setError("Isi waktu booking.");
     if (!name.trim()) return setError("Nama pelanggan wajib diisi.");
     if (!isValidPhone(phone)) return setError("Nomor HP tidak valid (8–15 digit).");
+    if (!customerGender) return setError("Pilih gender pelanggan.");
     if (chosen.length === 0) return setError("Pilih minimal satu treatment.");
     create.mutate(
       {
@@ -136,16 +142,19 @@ export function BookingCreateDialog({
         customer_id: customerId ?? undefined,
         customer_name: name.trim(),
         customer_phone: phone.replace(/[\s-]/g, ""),
+        customer_gender: customerGender,
         therapist_gender_pref: genderPref,
         notes: notes.trim() || undefined,
         scheduled_at: scheduledIso,
-        items: chosen.map((r) => ({ variant_id: r.variant_id, therapist_id: r.therapist_id || undefined })),
+        therapist_id: therapistId || undefined,
+        items: chosen.map((r) => ({ variant_id: r.variant_id })),
       },
       {
         onSuccess: (booking) => {
           toast.success("Booking dibuat", { description: `${booking.booking_code} · ${booking.customer_name}` });
           onClose();
-          router.push(`/dashboard/spa/bookings/${booking.id}`);
+          if (onCreated) onCreated(booking.id);
+          else router.push(`/dashboard/spa/bookings/${booking.id}`);
         },
         onError: (err) => {
           setError(err.message);
@@ -167,8 +176,7 @@ export function BookingCreateDialog({
           <DialogPanelHeader>
             <DialogPanelTitle>Booking baru</DialogPanelTitle>
             <DialogPanelDescription>
-              Semua treatment dijadwalkan mulai pada waktu booking; jam per item dapat diubah di detail booking. Terapis boleh
-              dikosongkan dan ditugaskan nanti.
+              Treatment dijadwalkan berurutan dan ditangani satu terapis. Terapis boleh ditugaskan nanti.
             </DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -178,7 +186,7 @@ export function BookingCreateDialog({
                 value={branchId}
                 onChange={(v) => {
                   setBranchId(v);
-                  setItems((rows) => rows.map((r) => ({ ...r, therapist_id: "" })));
+                  setTherapistId("");
                 }}
                 className={SELECT}
                 required
@@ -203,15 +211,36 @@ export function BookingCreateDialog({
               </select>
             </Field>
 
-            <div className="sm:col-span-2">
-              <p className="mb-1.5 text-sm font-medium">Pelanggan</p>
-              <CustomerSearch
-                onPick={(c) => {
-                  setCustomerId(c.id);
-                  setName(c.name);
-                  setPhone(c.phone ?? "");
-                }}
-              />
+            <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2">
+              <div>
+                <p className="text-sm font-medium">Pelanggan</p>
+                <p className="text-xs text-muted-foreground">Isi nama dan HP, atau pilih pelanggan yang sudah tersimpan.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setChoosingCustomer(true)}>
+                <Search /> {customerId ? "Ganti pelanggan" : "Pilih pelanggan tersimpan"}
+              </Button>
+              {choosingCustomer && (
+                <Dialog open onOpenChange={(open) => !open && setChoosingCustomer(false)}>
+                  <DialogPanel size="sm">
+                    <DialogPanelHeader>
+                      <DialogPanelTitle>Pilih pelanggan</DialogPanelTitle>
+                      <DialogPanelDescription>Cari berdasarkan nama atau nomor HP. Data pelanggan akan mengisi form booking.</DialogPanelDescription>
+                    </DialogPanelHeader>
+                    <DialogPanelBody>
+                      <CustomerSearch onPick={(c) => {
+                        setCustomerId(c.id);
+                        setName(c.name);
+                        setPhone(c.phone ?? "");
+                        setCustomerGender(c.gender ?? "");
+                        setChoosingCustomer(false);
+                      }} />
+                    </DialogPanelBody>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setChoosingCustomer(false)}>Kembali ke booking</Button>
+                    </DialogFooter>
+                  </DialogPanel>
+                </Dialog>
+              )}
             </div>
             <Field label="Nama pelanggan">
               <Input
@@ -236,13 +265,27 @@ export function BookingCreateDialog({
               />
             </Field>
 
+            <Field label="Gender pelanggan">
+              <select className={SELECT} aria-label="Gender pelanggan" value={customerGender} onChange={(e) => setCustomerGender(e.target.value as "" | "male" | "female")} required>
+                <option value="">Pilih gender</option>
+                <option value="male">Laki-laki</option>
+                <option value="female">Perempuan</option>
+              </select>
+            </Field>
+
+            <Field label="Terapis booking" className="sm:col-span-2" hint="Satu terapis menangani seluruh treatment dalam booking ini.">
+              <select className={SELECT} aria-label="Terapis booking" value={therapistId} onChange={(e) => setTherapistId(e.target.value)}>
+                <option value="">Tugaskan nanti</option>
+                {(therapists.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+              </select>
+            </Field>
             <div className="space-y-2 sm:col-span-2">
               <p className="text-sm font-medium">Treatment</p>
               {treatments.error && <p className="text-xs text-danger">{treatments.error.message}</p>}
               {items.map((row) => (
                 <div
                   key={row.key}
-                  className="grid grid-cols-1 gap-2 rounded-2xl bg-surface-2 p-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)_auto]"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-2xl bg-surface-2 p-3"
                 >
                   <select
                     className={SELECT}
@@ -254,19 +297,6 @@ export function BookingCreateDialog({
                     {options.map((o) => (
                       <option key={o.variant.id} value={o.variant.id}>
                         {o.label} · {formatRupiah(variantPrice(o.variant, branchId))}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className={SELECT}
-                    value={row.therapist_id}
-                    aria-label="Terapis"
-                    onChange={(e) => updateItem(row.key, { therapist_id: e.target.value })}
-                  >
-                    <option value="">Terapis nanti</option>
-                    {(therapists.data ?? []).map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.full_name}
                       </option>
                     ))}
                   </select>
@@ -288,7 +318,7 @@ export function BookingCreateDialog({
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setItems((rows) => [...rows, { key: Math.max(0, ...rows.map((r) => r.key)) + 1, variant_id: "", therapist_id: "" }])
+                    setItems((rows) => [...rows, { key: Math.max(0, ...rows.map((r) => r.key)) + 1, variant_id: "" }])
                   }
                 >
                   <Plus /> Tambah treatment

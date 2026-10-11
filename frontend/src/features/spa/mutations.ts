@@ -17,17 +17,36 @@ import type {
   TherapistCreateInput,
   TherapistUpdateInput,
   TreatmentInput,
+  Treatment,
 } from "./types";
 
 /** Booking berubah → perbarui cache detail + segarkan daftar, papan, ketersediaan. */
 function bookingChanged(qc: QueryClient, booking?: Booking) {
   if (booking?.id) qc.setQueryData(spaKeys.booking(booking.id), booking);
   void qc.invalidateQueries({ queryKey: spaKeys.bookingsAll() });
+  void qc.invalidateQueries({ queryKey: ["spa", "reports"] });
   void qc.invalidateQueries({ queryKey: spaKeys.boardAll() });
   void qc.invalidateQueries({ queryKey: ["spa", "availability"] });
+  void qc.invalidateQueries({ queryKey: spaKeys.myAssignmentsAll() });
 }
 
 // ── Booking ──────────────────────────────────────────────────────────────────
+
+export const useAssignBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, therapistId }: { bookingId: string; therapistId: string | null }) => spaApi.assignBooking(bookingId, therapistId),
+    onSuccess: (booking) => bookingChanged(qc, booking),
+  });
+};
+
+export const useBookingAction = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (action: "start" | "complete") => spaApi.bookingAction(id, action),
+    onSuccess: (booking) => bookingChanged(qc, booking),
+  });
+};
 
 export const useCreateBooking = () => {
   const qc = useQueryClient();
@@ -74,7 +93,7 @@ export const useCancelBooking = (id: string) => {
 export const useCheckoutBooking = (id: string) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => spaApi.checkout(id),
+    mutationFn: (therapistRating?: number) => spaApi.checkout(id, therapistRating),
     onSuccess: (result) => bookingChanged(qc, result.booking),
   });
 };
@@ -99,7 +118,30 @@ export const useSaveTreatment = () => {
   return useMutation({
     mutationFn: ({ id, input }: { id?: string; input: TreatmentInput }) =>
       id ? spaApi.updateTreatment(id, input) : spaApi.createTreatment(input),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.treatmentsAll() }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: spaKeys.treatmentsAll() });
+      void qc.invalidateQueries({ queryKey: spaKeys.treatmentCategories() });
+    },
+  });
+};
+
+export const useSaveTreatmentCategory = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id?: string; name: string }) =>
+      id ? spaApi.updateTreatmentCategory(id, name) : spaApi.createTreatmentCategory(name),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: spaKeys.treatmentCategories() });
+      void qc.invalidateQueries({ queryKey: spaKeys.treatmentsAll() });
+    },
+  });
+};
+
+export const useDeleteTreatmentCategory = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: spaApi.deleteTreatmentCategory,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.treatmentCategories() }),
   });
 };
 
@@ -107,7 +149,13 @@ export const useSaveTreatmentPrices = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, prices }: { id: string; prices: PriceInput[] }) => spaApi.savePrices(id, prices),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.treatmentsAll() }),
+    onSuccess: async (saved) => {
+      // Hasil tiap batch langsung menjadi acuan; refetch tidak boleh menimpa
+      // respons tersebut dengan request daftar yang dimulai sebelum simpan.
+      await qc.cancelQueries({ queryKey: spaKeys.treatmentsAll() });
+      qc.setQueryData<Treatment[]>(spaKeys.treatments(), (list) => list?.map((t) => t.id === saved.id ? saved : t));
+      void qc.invalidateQueries({ queryKey: spaKeys.treatmentsAll(), refetchType: "none" });
+    },
   });
 };
 

@@ -62,8 +62,8 @@ describe("bookingTotal", () => {
 describe("allowedItemActions", () => {
   const open = { status: "assigned" as const, payment_status: "unpaid" as const };
   it("mengikuti mesin status item", () => {
-    expect(allowedItemActions({ status: "unassigned" }, open)).toEqual(["assign", "reschedule", "cancel"]);
-    expect(allowedItemActions({ status: "assigned" }, open)).toEqual(["start", "complete", "unassign", "reschedule", "cancel"]);
+    expect(allowedItemActions({ status: "unassigned" }, open)).toEqual(["assign", "cancel"]);
+    expect(allowedItemActions({ status: "assigned" }, open)).toEqual(["start", "complete", "unassign", "cancel"]);
     expect(allowedItemActions({ status: "in_treatment" }, open)).toEqual(["complete"]);
     expect(allowedItemActions({ status: "completed" }, open)).toEqual([]);
     expect(allowedItemActions({ status: "cancelled" }, open)).toEqual([]);
@@ -82,6 +82,7 @@ describe("aksi booking", () => {
     expect(canCancelBooking(booking("assigned"))).toBe(true);
     expect(canCancelBooking(booking("assigned", "paid"))).toBe(false);
     expect(canCancelBooking(booking("in_treatment", "unpaid", [item("in_treatment")]))).toBe(false);
+    expect(canCancelBooking(booking("in_treatment", "unpaid", [item("assigned")]))).toBe(false);
     expect(canCancelBooking(booking("completed", "unpaid", [item("completed")]))).toBe(false);
     expect(canCancelBooking(booking("cancelled"))).toBe(false);
   });
@@ -89,9 +90,10 @@ describe("aksi booking", () => {
     expect(canAddItem({ status: "unassigned", payment_status: "unpaid" })).toBe(true);
     expect(canAddItem({ status: "assigned", payment_status: "paid" })).toBe(false);
     expect(canAddItem({ status: "expired", payment_status: "unpaid" })).toBe(false);
+    expect(canAddItem({ status: "in_treatment", payment_status: "unpaid", items: [item("assigned")] })).toBe(false);
   });
   it("checkout", () => {
-    expect(checkoutState(booking("assigned"))).toEqual({ allowed: true, reason: null });
+    expect(checkoutState(booking("assigned"))).toEqual({ allowed: false, reason: "Selesaikan semua treatment sebelum checkout." });
     expect(checkoutState(booking("completed", "unpaid", [item("completed"), item("cancelled")])).allowed).toBe(true);
     expect(checkoutState(booking("unassigned", "unpaid", [item("unassigned")])).allowed).toBe(false);
     expect(checkoutState(booking("cancelled")).reason).toBe("Booking dibatalkan.");
@@ -159,7 +161,7 @@ describe("treatment", () => {
     expect(variantPrice(variant, null)).toBe(200000);
   });
   it("opsi varian hanya yang aktif", () => {
-    const v = (id: string, is_active: boolean) => ({ id, name: id, duration_min: 60, buffer_min: 0, price_idr: 1, is_active, sort_order: 0, outlet_prices: [] });
+    const v = (id: string, is_active: boolean) => ({ id, name: id, duration_min: 60, price_idr: 1, is_active, sort_order: 0, outlet_prices: [] });
     const t = (id: string, is_active: boolean, variants: ReturnType<typeof v>[]) => ({
       id, code: id, name: id, category: null, description: null, is_active, sort_order: 0, variants,
     });

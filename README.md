@@ -92,6 +92,35 @@ Password login demo diatur lewat env `MIZU_DEMO_PASSWORD`. Kalau env itu tidak d
 
 ## Perintah lain
 
+### Build dan deploy ke mizu.reddie.id
+
+Jalankan dari mesin yang saat ini menjalankan Docker Mizu:
+
+```bash
+cd /home/wit/Desktop/Mizu
+bash tools/deploy-mizu.sh
+```
+
+Skrip memakai kode lokal, termasuk perubahan yang belum di-commit. Konfigurasi
+server dibaca dari `~/.config/mizu/web.env` dan `api.env`; rahasia tidak disimpan
+di repository. Docker, curl, ripgrep (`rg`), dan flock harus tersedia.
+
+Skrip membangun image frontend dan API, menerapkan migrasi SQL yang belum
+dijalankan, memeriksa skema, lalu mengganti container `mizu` dan `mizu-api`.
+Database `mizu-db` dan volume unggahan `mizu-storage` tetap dipakai.
+Jika build atau migrasi gagal, container lama tetap melayani. Jika pemeriksaan
+layanan setelah penggantian gagal, skrip mencoba menjalankan image sebelumnya;
+migrasi yang sudah diterapkan tidak dibatalkan.
+
+Perubahan file lokal, `pnpm build`, atau `docker restart mizu` saja tidak
+memperbarui image yang melayani domain. Setelah deploy selesai, muat ulang
+browser dengan **Ctrl+Shift+R**. Periksa layanan dengan:
+
+```bash
+docker ps --filter name=mizu --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
+curl -f https://mizu.reddie.id/login -o /dev/null
+```
+
 ```bash
 pnpm test                                  # tes frontend + go test ./...
 pnpm lint                                  # eslint + go vet

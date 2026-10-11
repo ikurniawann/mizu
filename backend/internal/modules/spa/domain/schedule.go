@@ -16,15 +16,14 @@ var WIB = func() *time.Location {
 	return loc
 }()
 
-// Interval is a therapist's occupation of [Start, End) — End includes the
-// clean-up buffer.
+// Interval is a therapist's occupation of [Start, End).
 type Interval struct {
 	Start, End time.Time
 }
 
-// ItemInterval is the occupation of an item: start to end plus buffer.
-func ItemInterval(start time.Time, durationMin, bufferMin int) Interval {
-	return Interval{Start: start, End: start.Add(time.Duration(durationMin+bufferMin) * time.Minute)}
+// ItemInterval is the occupation of a treatment with the given duration.
+func ItemInterval(start time.Time, durationMin int) Interval {
+	return Interval{Start: start, End: start.Add(time.Duration(durationMin) * time.Minute)}
 }
 
 // Overlaps reports whether two half-open intervals share time.

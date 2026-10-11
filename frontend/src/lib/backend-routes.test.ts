@@ -97,6 +97,7 @@ describe("goBackendTarget", () => {
   });
 
   it("uses the generated manifest by default", () => {
+    expect(goBackendTarget("/api/spa/bookings/booking-id/therapist", "PUT", { env })).toBe("http://go-api:8080/api/spa/bookings/booking-id/therapist");
     expect(
       goBackendTarget("/api/gym/credits/no/such/route", "GET", { env }),
     ).toBeNull();
@@ -104,6 +105,21 @@ describe("goBackendTarget", () => {
       "http://go-api:8080/api/auth/me",
     );
     expect(goBackendTarget("/api/auth/me", "GET", { env: {} })).toBeNull();
+  });
+
+  it.each([
+    ["GET", "/api/reports/sales-vs-target"],
+    ["GET", "/api/reports/sales-targets"],
+    ["POST", "/api/reports/sales-targets"],
+    ["PATCH", "/api/reports/sales-targets/target-id"],
+    ["DELETE", "/api/reports/sales-targets/target-id"],
+    ["GET", "/api/reports/sales-target-years"],
+    ["PUT", "/api/reports/sales-target-years/2037"],
+    ["DELETE", "/api/reports/sales-target-years/2037"],
+  ])("forwards the Sales vs Target endpoint %s %s to Go", (method, pathname) => {
+    expect(goBackendTarget(pathname, method, { env })).toBe(
+      `http://go-api:8080${pathname}`,
+    );
   });
 });
 
@@ -170,7 +186,7 @@ describe("Go route manifest", () => {
     ];
     // Routes born in Go: no TypeScript route ever existed under these
     // prefixes, so there is nothing to fall back to.
-    const goNativePrefixes = ["/api/shop/wholesale", "/api/wholesale", "/api/public/site", "/api/site", "/api/public/spa", "/api/spa"];
+    const goNativePrefixes = ["/api/shop/wholesale", "/api/wholesale", "/api/public/site", "/api/site", "/api/public/spa", "/api/spa", "/api/reports"];
     const goNative = (p: string) =>
       goNativePrefixes.some((n) => p === n || p.startsWith(`${n}/`));
     const missing = switched

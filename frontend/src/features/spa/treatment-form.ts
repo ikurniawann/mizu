@@ -7,7 +7,6 @@ export interface VariantRow {
   id?: string;
   name: string;
   duration_min: string;
-  buffer_min: string;
   price_idr: string;
   is_active: boolean;
 }
@@ -26,7 +25,7 @@ let seq = 0;
 const nextKey = () => `v${++seq}`;
 
 export function emptyVariantRow(): VariantRow {
-  return { key: nextKey(), name: "", duration_min: "60", buffer_min: "15", price_idr: "", is_active: true };
+  return { key: nextKey(), name: "", duration_min: "60", price_idr: "", is_active: true };
 }
 
 export function initialTreatmentForm(treatment: Treatment | null): TreatmentForm {
@@ -47,28 +46,41 @@ export function initialTreatmentForm(treatment: Treatment | null): TreatmentForm
         id: v.id,
         name: v.name,
         duration_min: String(v.duration_min),
-        buffer_min: String(v.buffer_min),
         price_idr: String(v.price_idr),
         is_active: v.is_active,
       })),
   };
 }
 
-const isInt = (value: string, min: number) => /^\d+$/.test(value.trim()) && Number(value) >= min;
+export const MAX_PRICE_IDR = 999_999_999_999;
+const isInt = (value: string, min: number, max: number) =>
+  /^\d+$/.test(value.trim()) && Number(value) >= min && Number(value) <= max;
+
+/** Kosong berarti harga dasar; nol tetap harga khusus. */
+export function parseOutletPrice(raw: string): number | null {
+  const value = raw.trim();
+  if (!value) return null;
+  if (!isInt(value, 0, MAX_PRICE_IDR)) throw new Error("Harga tidak valid. Isi bilangan bulat 0–999.999.999.999 atau kosongkan untuk harga dasar.");
+  return Number(value);
+}
 
 /** Daftar pesan galat; kosong = valid. */
 export function validateTreatmentForm(form: TreatmentForm): string[] {
   const errors: string[] = [];
   if (!form.code.trim()) errors.push("Kode treatment wajib diisi.");
+  else if (!/^[A-Z0-9][A-Z0-9-]{0,19}$/.test(form.code.trim().toUpperCase())) errors.push("Kode harus 1–20 karakter huruf, angka, atau tanda hubung; diawali huruf atau angka.");
   if (!form.name.trim()) errors.push("Nama treatment wajib diisi.");
-  if (form.sort_order.trim() && !/^-?\d+$/.test(form.sort_order.trim())) errors.push("Urutan harus bilangan bulat.");
-  if (form.variants.length === 0) errors.push("Minimal satu varian.");
+  if (form.name.trim().length > 120) errors.push("Nama treatment maksimal 120 karakter.");
+  if (form.category.trim().length > 60) errors.push("Kategori maksimal 60 karakter.");
+  if (form.description.trim().length > 2000) errors.push("Deskripsi maksimal 2.000 karakter.");
+  if (!isInt(form.sort_order.trim() || "0", 0, 9999)) errors.push("Urutan harus bilangan bulat 0–9.999.");
+  if (form.variants.length < 1 || form.variants.length > 20) errors.push("Daftar harus berisi 1–20 varian.");
   form.variants.forEach((v, i) => {
     const n = i + 1;
     if (!v.name.trim()) errors.push(`Varian ${n}: nama wajib diisi.`);
-    if (!isInt(v.duration_min, 1)) errors.push(`Varian ${n}: durasi minimal 1 menit.`);
-    if (!isInt(v.buffer_min || "0", 0)) errors.push(`Varian ${n}: jeda harus ≥ 0 menit.`);
-    if (!isInt(v.price_idr, 0)) errors.push(`Varian ${n}: harga harus angka ≥ 0.`);
+    if (v.name.trim().length > 60) errors.push(`Varian ${n}: nama maksimal 60 karakter.`);
+    if (!isInt(v.duration_min, 5, 600)) errors.push(`Varian ${n}: durasi harus bilangan bulat 5–600 menit.`);
+    if (!isInt(v.price_idr, 0, MAX_PRICE_IDR)) errors.push(`Varian ${n}: harga harus bilangan bulat 0–999.999.999.999.`);
   });
   const names = form.variants.map((v) => v.name.trim().toLowerCase()).filter(Boolean);
   if (new Set(names).size !== names.length) errors.push("Nama varian tidak boleh sama.");
@@ -88,7 +100,6 @@ export function toTreatmentInput(form: TreatmentForm): TreatmentInput {
       ...(v.id ? { id: v.id } : {}),
       name: v.name.trim(),
       duration_min: Number(v.duration_min),
-      buffer_min: Number(v.buffer_min || 0),
       price_idr: Number(v.price_idr),
       is_active: v.is_active,
       sort_order: index,
@@ -126,12 +137,25 @@ export function toPriceInputs(treatment: Treatment, grid: PriceGrid): PriceInput
         if (existing) out.push({ variant_id: v.id, branch_id: branchId, price_idr: null });
         continue;
       }
-      if (!/^\d+$/.test(text)) throw new Error(`Harga "${raw}" untuk ${v.name} tidak valid.`);
-      const price = Number(text);
+      const price = parseOutletPrice(raw);
       if (!existing || Number(existing.price_idr) !== price) {
         out.push({ variant_id: v.id, branch_id: branchId, price_idr: price });
       }
     }
   }
   return out;
+}
+
+/** Validasi seluruh draft terlebih dulu, lalu bagi per treatment sesuai batas API. */
+export function buildPriceBatches(treatments: Treatment[], grid: PriceGrid): { id: string; prices: PriceInput[] }[] {
+  const variants = new Set(treatments.flatMap((t) => t.variants.map((v) => v.id)));
+  if (Object.keys(grid).some((id) => !variants.has(id))) {
+    throw new Error("Varian pada draft tidak ditemukan. Muat ulang daftar sebelum menyimpan.");
+  }
+  return treatments.flatMap((treatment) => {
+    const prices = toPriceInputs(treatment, grid);
+    const batches = [];
+    for (let i = 0; i < prices.length; i += 500) batches.push({ id: treatment.id, prices: prices.slice(i, i + 500) });
+    return batches;
+  });
 }

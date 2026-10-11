@@ -105,6 +105,8 @@ const EVENT_LABEL: Record<string, string> = {
   unassign: "Terapis dilepas",
   start: "Treatment dimulai",
   complete: "Treatment selesai",
+  start_booking: "Booking dimulai",
+  complete_booking: "Booking selesai",
   cancel: "Dibatalkan",
   cancel_item: "Item dibatalkan",
   reschedule: "Jadwal diubah",
@@ -137,7 +139,7 @@ export function isBookingClosed(booking: Pick<Booking, "status">): boolean {
 
 /**
  * Aksi item yang diizinkan (mesin status EPIC-052):
- * unassigned → assign/cancel/reschedule; assigned → unassign/start/complete(override)/cancel/reschedule;
+ * unassigned → assign/remove; assigned → unassign/start/complete(override)/remove;
  * in_treatment → complete; completed/cancelled → tidak ada. Booking batal/kedaluwarsa → tidak ada.
  * Item tidak dapat dibatalkan setelah booking lunas.
  */
@@ -149,11 +151,11 @@ export function allowedItemActions(
   const paid = booking.payment_status !== "unpaid";
   switch (item.status) {
     case "unassigned":
-      return paid ? ["assign", "reschedule"] : ["assign", "reschedule", "cancel"];
+      return paid ? ["assign"] : ["assign", "cancel"];
     case "assigned":
       return paid
-        ? ["start", "complete", "unassign", "reschedule"]
-        : ["start", "complete", "unassign", "reschedule", "cancel"];
+        ? ["start", "complete", "unassign"]
+        : ["start", "complete", "unassign", "cancel"];
     case "in_treatment":
       return ["complete"];
     default:
@@ -161,16 +163,17 @@ export function allowedItemActions(
   }
 }
 
-/** Tambah item hanya pada booking yang belum batal/kedaluwarsa dan belum dibayar. */
-export function canAddItem(booking: Pick<Booking, "status" | "payment_status">): boolean {
-  return !isBookingClosed(booking) && booking.payment_status === "unpaid";
+/** Tambah item hanya sebelum layanan dimulai dan sebelum dibayar. */
+export function canAddItem(booking: Pick<Booking, "status" | "payment_status"> & { items?: Pick<BookingItem, "status">[] }): boolean {
+  return (booking.status === "unassigned" || booking.status === "assigned") && booking.payment_status === "unpaid" &&
+    !booking.items?.some((item) => item.status === "in_treatment" || item.status === "completed");
 }
 
 type BookingWithItemStatus = Pick<Booking, "status" | "payment_status"> & { items: Pick<BookingItem, "status">[] };
 
-/** Batal booking: belum lunas, tidak ada item yang sudah dimulai/selesai. */
+/** Batal booking hanya sebelum layanan dimulai dan sebelum dibayar. */
 export function canCancelBooking(booking: BookingWithItemStatus): boolean {
-  if (isBookingClosed(booking) || booking.payment_status === "paid") return false;
+  if ((booking.status !== "unassigned" && booking.status !== "assigned") || booking.payment_status === "paid") return false;
   return !booking.items.some((i) => i.status === "in_treatment" || i.status === "completed");
 }
 
@@ -180,16 +183,17 @@ export interface CheckoutState {
   reason: string | null;
 }
 
-/** Syarat checkout: tidak batal/kedaluwarsa, belum dibayar, ada item aktif, semua item aktif sudah ditugaskan. */
+/** Syarat checkout: booking selesai, belum dibayar, dan semua treatment aktif selesai. */
 export function checkoutState(booking: BookingWithItemStatus): CheckoutState {
   if (booking.status === "cancelled") return { allowed: false, reason: "Booking dibatalkan." };
   if (booking.status === "expired") return { allowed: false, reason: "Booking kedaluwarsa." };
   if (booking.payment_status === "paid") return { allowed: false, reason: "Booking sudah lunas." };
   if (booking.payment_status === "void") return { allowed: false, reason: "Pembayaran booking di-void." };
+  if (booking.status !== "completed") return { allowed: false, reason: "Selesaikan semua treatment sebelum checkout." };
   const active = booking.items.filter(isActiveItem);
   if (active.length === 0) return { allowed: false, reason: "Belum ada item treatment aktif." };
-  if (active.some((i) => i.status === "unassigned"))
-    return { allowed: false, reason: "Masih ada item yang belum ditugaskan terapis." };
+  if (active.some((i) => i.status !== "completed"))
+    return { allowed: false, reason: "Masih ada treatment yang belum selesai." };
   return { allowed: true, reason: null };
 }
 

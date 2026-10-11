@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatRupiah } from "@/lib/format";
@@ -13,7 +12,7 @@ import { ItemStatusBadge, TableNote, TimeRange } from "./shared";
 export function BookOrderList({ items, onOpenItem }: { items: BoardItem[]; onOpenItem: (item: BoardItem) => void }) {
   const rows = sortByStart(items);
   return (
-    <Card className="py-0">
+    <Card className="py-0 shadow-none!">
       {rows.length === 0 ? (
         <TableNote>Belum ada treatment pada tanggal ini.</TableNote>
       ) : (
@@ -49,13 +48,13 @@ export function BookOrderList({ items, onOpenItem }: { items: BoardItem[]; onOpe
                   <ItemStatusBadge status={item.status} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  <Link
-                    href={`/dashboard/spa/bookings/${item.booking_id}`}
+                  <button
+                    type="button"
                     className="font-mono text-brand-text hover:underline"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); onOpenItem(item); }}
                   >
                     {item.booking_code}
-                  </Link>
+                  </button>
                 </TableCell>
                 <TableCell className="hidden text-right tabular-nums lg:table-cell">{formatRupiah(item.price_idr)}</TableCell>
               </TableRow>

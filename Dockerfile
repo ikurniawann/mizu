@@ -30,6 +30,11 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY frontend/ .
 ENV NODE_ENV=production
+# This host serves other apps too. Limit native build threads, Next's page
+# workers (CIRCLE_NODE_TOTAL - 1), and the Node heap during builds only.
+ARG RAYON_NUM_THREADS=4
+ARG CIRCLE_NODE_TOTAL=4
+ARG NODE_OPTIONS=--max-old-space-size=4096
 # `next build` inlines NEXT_PUBLIC_* into the bundles, so the build needs the
 # env. CI passes it as a BuildKit secret (`--secret id=dotenv,src=<file>`):
 # a secret never lands in a layer, the registry build cache, or the image.

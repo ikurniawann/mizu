@@ -51,8 +51,29 @@ func (h *Handler) Routes() []module.Route {
 	public := func(pattern string, fn httpx.HandlerFunc) module.Route {
 		return module.Route{Pattern: pattern, Handler: httpx.Handle(fn)}
 	}
+	report := func(pattern string, prefixes []string, fn staffFunc) module.Route {
+		return module.Route{Pattern: pattern, Handler: httpx.Handle(func(w http.ResponseWriter, r *http.Request) error {
+			user, err := h.auth.RequireMenuAction(r, "read", prefixes...)
+			if err != nil {
+				return err
+			}
+			return fn(w, r, user)
+		})}
+	}
+	categoryAction := func(pattern, action string, fn staffFunc) module.Route {
+		return module.Route{Pattern: pattern, Handler: httpx.Handle(func(w http.ResponseWriter, r *http.Request) error {
+			user, err := h.auth.RequireMenuAction(r, action, iam.SpaCategories...)
+			if err != nil {
+				return err
+			}
+			return fn(w, r, user)
+		})}
+	}
 	p := staffPrefix
 	return []module.Route{
+		report("GET "+p+"/reports/rush-hour", iam.SpaRushHour, h.rushHourReport),
+		report("GET "+p+"/reports/trend", iam.SpaTrend, h.trendReport),
+		report("GET "+p+"/reports/rating", iam.SpaRating, h.ratingReport),
 		staff("GET "+p+"/outlets", iam.Spa, h.listOutlets),
 		staff("PUT "+p+"/outlets/{branchId}", iam.SpaOutlets, h.putOutlet),
 		staff("POST "+p+"/outlets/{branchId}/sync-pos", iam.SpaOutlets, h.syncPOS),
@@ -61,6 +82,10 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/treatments", iam.SpaTreatments, h.createTreatment),
 		staff("PATCH "+p+"/treatments/{id}", iam.SpaTreatments, h.updateTreatment),
 		staff("PUT "+p+"/treatments/{id}/prices", iam.SpaTreatments, h.setPrices),
+		staff("GET "+p+"/treatment-categories", iam.Spa, h.listCategories),
+		categoryAction("POST "+p+"/treatment-categories", "create", h.createCategory),
+		categoryAction("PATCH "+p+"/treatment-categories/{id}", "update", h.updateCategory),
+		categoryAction("DELETE "+p+"/treatment-categories/{id}", "delete", h.deleteCategory),
 
 		staff("GET "+p+"/therapists", iam.Spa, h.listTherapists),
 		staff("POST "+p+"/therapists", iam.SpaTherapists, h.createTherapist),
@@ -74,10 +99,14 @@ func (h *Handler) Routes() []module.Route {
 		staff("DELETE "+p+"/outlet-pics", iam.SpaTherapists, h.removePIC),
 
 		staff("GET "+p+"/customers", iam.SpaBookings, h.listCustomers),
+		report("GET "+p+"/customer-directory", iam.SpaCustomer, h.customerDirectory),
+		report("GET "+p+"/customer-directory/{id}", iam.SpaCustomer, h.customerDetail),
 		staff("GET "+p+"/bookings", iam.SpaBookings, h.listBookings),
 		staff("POST "+p+"/bookings", iam.SpaBookings, h.createBooking),
 		staff("GET "+p+"/bookings/{id}", iam.SpaBookings, h.getBooking),
 		staff("PATCH "+p+"/bookings/{id}", iam.SpaBookings, h.patchBooking),
+		staff("PUT "+p+"/bookings/{id}/therapist", iam.SpaBookings, h.assignBooking),
+		staff("POST "+p+"/bookings/{id}/status", iam.SpaBookings, h.bookingStatus),
 		staff("POST "+p+"/bookings/{id}/items", iam.SpaBookings, h.addItem),
 		staff("PATCH "+p+"/bookings/{id}/items/{itemId}", iam.SpaBookings, h.itemAction),
 		staff("POST "+p+"/bookings/{id}/cancel", iam.SpaBookings, h.cancelBooking),
@@ -168,8 +197,9 @@ var (
 		_, ok := domain.ClockMinutes(s)
 		return "invalid_format", "Format jam HH:MM", ok
 	}}
-	datetimeOpts = validate.StrOpts{Check: validate.DatetimeCheck}
-	moneyOpts    = validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(1e12)}
+	datetimeOpts       = validate.StrOpts{Check: validate.DatetimeCheck}
+	moneyOpts          = validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(1e12)}
+	treatmentMoneyOpts = validate.NumOpts{Integer: true, Min: validate.Bound(0), Max: validate.Bound(999999999999)}
 )
 
 func parseTime(s *string) *time.Time {
@@ -242,6 +272,62 @@ func (h *Handler) syncPOS(w http.ResponseWriter, r *http.Request, u *auth.User) 
 
 /* ── treatments ──────────────────────────────────────────────────────── */
 
+func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+	list, err := h.svc.Categories(r.Context())
+	if err != nil {
+		return err
+	}
+	return ok(w, list)
+}
+
+func categoryName(r *http.Request) (string, error) {
+	f := body(r)
+	name := f.Str("name", req, validate.StrOpts{Trim: true, Min: 1, Max: 60})
+	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+		return "", err
+	}
+	return *name, nil
+}
+
+func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+	name, err := categoryName(r)
+	if err != nil {
+		return err
+	}
+	category, err := h.svc.CreateCategory(r.Context(), name)
+	if err != nil {
+		return err
+	}
+	return created(w, category)
+}
+
+func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	name, err := categoryName(r)
+	if err != nil {
+		return err
+	}
+	category, err := h.svc.UpdateCategory(r.Context(), id, name)
+	if err != nil {
+		return err
+	}
+	return ok(w, category)
+}
+
+func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	if err := h.svc.DeleteCategory(r.Context(), id); err != nil {
+		return err
+	}
+	return ok(w, map[string]string{"id": id})
+}
+
 var codePattern = regexp.MustCompile(`^[A-Z0-9][A-Z0-9-]{0,19}$`)
 
 func (h *Handler) listTreatments(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
@@ -285,10 +371,7 @@ func treatmentFields(f *validate.Form, partial bool) treatmentInput {
 		if n := item.Int("duration_min", req, validate.NumOpts{Min: validate.Bound(5), Max: validate.Bound(600)}); n != nil {
 			vi.DurationMin = *n
 		}
-		if n := item.Int("buffer_min", opt, validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(120)}); n != nil {
-			vi.BufferMin = *n
-		}
-		if p := item.Num("price_idr", req, moneyOpts); p != nil {
+		if p := item.Num("price_idr", req, treatmentMoneyOpts); p != nil {
 			vi.PriceIDR = *p
 		}
 		if n := item.Int("sort_order", opt, validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(9999)}); n != nil {
@@ -340,7 +423,7 @@ func (h *Handler) updateTreatment(w http.ResponseWriter, r *http.Request, _ *aut
 	return ok(w, t)
 }
 
-func (h *Handler) setPrices(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+func (h *Handler) setPrices(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	id, err := pathUUID(r, "id")
 	if err != nil {
 		return err
@@ -352,13 +435,13 @@ func (h *Handler) setPrices(w http.ResponseWriter, r *http.Request, _ *auth.User
 		prices = append(prices, priceInput{
 			VariantID: str(item.Str("variant_id", req, uuidOpts)),
 			BranchID:  str(item.Str("branch_id", req, uuidOpts)),
-			Price:     item.Num("price_idr", validate.Rule{Nullable: true, Optional: true}, moneyOpts),
+			Price:     item.Num("price_idr", validate.Rule{Nullable: true, Optional: true}, treatmentMoneyOpts),
 		})
 	})
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
 	}
-	t, err := h.svc.SetPrices(r.Context(), id, prices)
+	t, err := h.svc.SetPrices(r.Context(), u.ID, id, prices)
 	if err != nil {
 		return err
 	}
@@ -558,6 +641,34 @@ func (h *Handler) listCustomers(w http.ResponseWriter, r *http.Request, _ *auth.
 	return ok(w, list)
 }
 
+func (h *Handler) customerDirectory(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+	page, limit := readPage(r)
+	rows, total, err := h.svc.CustomerDirectory(r.Context(), strings.TrimSpace(r.URL.Query().Get("q")), page, limit)
+	if err != nil {
+		return err
+	}
+	pages := (total + limit - 1) / limit
+	return httpx.JSON(w, http.StatusOK, paginated{Success: true, Data: rows,
+		Pagination: paginationInfo{Page: page, Limit: limit, Total: total, TotalPages: pages}})
+}
+
+func (h *Handler) customerDetail(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	page, limit := readPage(r)
+	profile, history, total, err := h.svc.CustomerDetail(r.Context(), id, page, limit)
+	if err != nil {
+		return err
+	}
+	return ok(w, struct {
+		Customer   *CustomerProfile    `json:"customer"`
+		History    []CustomerTreatment `json:"history"`
+		Pagination paginationInfo      `json:"pagination"`
+	}{profile, history, paginationInfo{Page: page, Limit: limit, Total: total, TotalPages: (total + limit - 1) / limit}})
+}
+
 func oneOf(r *http.Request, name string, options []string) (string, error) {
 	v := strings.TrimSpace(r.URL.Query().Get(name))
 	if v == "" {
@@ -620,7 +731,6 @@ func itemFields(f *validate.Form) []itemRequest {
 		item := list.Item(i, v)
 		items = append(items, itemRequest{
 			VariantID:   str(item.Str("variant_id", req, uuidOpts)),
-			StartsAt:    parseTime(item.Str("starts_at", optNull, datetimeOpts)),
 			TherapistID: str(item.Str("therapist_id", optNull, uuidOpts)),
 		})
 	})
@@ -633,11 +743,13 @@ func itemFields(f *validate.Form) []itemRequest {
 func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	f := body(r)
 	in := createBookingInput{
+		TherapistID:         str(f.Str("therapist_id", optNull, uuidOpts)),
 		BranchID:            str(f.Str("branch_id", req, uuidOpts)),
 		BookingType:         str(f.Enum("booking_type", req, bookingTypes)),
 		CustomerID:          str(f.Str("customer_id", optNull, uuidOpts)),
 		CustomerName:        str(f.Str("customer_name", req, validate.StrOpts{Trim: true, Min: 1, Max: 120})),
 		CustomerPhone:       f.StrDefault("customer_phone", "", validate.StrOpts{Trim: true, Max: 30}),
+		CustomerGender:      str(f.Enum("customer_gender", optNull, genders)),
 		TherapistGenderPref: f.StrDefault("therapist_gender_pref", "any", validate.StrOpts{Check: validate.EnumCheck(genderPrefs)}),
 		Notes:               f.StrDefault("notes", "", validate.StrOpts{Trim: true, Max: 1000}),
 	}
@@ -653,6 +765,23 @@ func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request, u *auth.
 		return err
 	}
 	return created(w, b)
+}
+
+func (h *Handler) assignBooking(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	f := body(r)
+	therapistID := str(f.Str("therapist_id", validate.Rule{Nullable: true}, uuidOpts))
+	if err := f.ErrAtPath("Terapis tidak valid"); err != nil {
+		return err
+	}
+	b, err := h.svc.AssignBooking(r.Context(), u.ID, id, therapistID)
+	if err != nil {
+		return err
+	}
+	return ok(w, b)
 }
 
 func (h *Handler) getBooking(w http.ResponseWriter, r *http.Request, u *auth.User) error {
@@ -678,6 +807,7 @@ func (h *Handler) patchBooking(w http.ResponseWriter, r *http.Request, u *auth.U
 		CustomerPhone: f.Str("customer_phone", opt, validate.StrOpts{Trim: true, Max: 30}),
 		Notes:         f.Str("notes", opt, validate.StrOpts{Trim: true, Max: 1000}),
 		GenderPref:    f.Enum("therapist_gender_pref", opt, genderPrefs),
+		ScheduledAt:   parseTime(f.Str("scheduled_at", optNull, datetimeOpts)),
 	}
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
@@ -697,7 +827,6 @@ func (h *Handler) addItem(w http.ResponseWriter, r *http.Request, u *auth.User) 
 	f := body(r)
 	item := itemRequest{
 		VariantID:   str(f.Str("variant_id", req, uuidOpts)),
-		StartsAt:    parseTime(f.Str("starts_at", optNull, datetimeOpts)),
 		TherapistID: str(f.Str("therapist_id", optNull, uuidOpts)),
 	}
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
@@ -724,13 +853,28 @@ func (h *Handler) itemAction(w http.ResponseWriter, r *http.Request, u *auth.Use
 	switch ch.Action {
 	case domain.ActionAssign:
 		ch.TherapistID = str(f.Str("therapist_id", req, uuidOpts))
-	case domain.ActionReschedule:
-		ch.StartsAt = parseTime(f.Str("starts_at", req, datetimeOpts))
 	}
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
 	}
 	b, err := h.svc.ItemAction(r.Context(), u.ID, id, itemID, ch)
+	if err != nil {
+		return err
+	}
+	return ok(w, b)
+}
+
+func (h *Handler) bookingStatus(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	f := body(r)
+	action := str(f.Enum("action", req, []string{domain.ActionStart, domain.ActionComplete}))
+	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+		return err
+	}
+	b, err := h.svc.BookingAction(r.Context(), u.ID, id, action)
 	if err != nil {
 		return err
 	}
@@ -759,7 +903,12 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request, u *auth.User)
 	if err != nil {
 		return err
 	}
-	res, err := h.svc.Checkout(r.Context(), u.ID, id)
+	f := body(r)
+	rating := f.Int("therapist_rating", opt, validate.NumOpts{Min: validate.Bound(1), Max: validate.Bound(5)})
+	if err := f.ErrAtPath("Rating terapis harus 1–5 bintang"); err != nil {
+		return err
+	}
+	res, err := h.svc.Checkout(r.Context(), u.ID, id, rating)
 	if err != nil {
 		return err
 	}
@@ -786,7 +935,11 @@ func (h *Handler) availability(w http.ResponseWriter, r *http.Request, u *auth.U
 	if err != nil {
 		return err
 	}
-	list, err := h.svc.Availability(r.Context(), u.ID, branchID, start, end, exclude)
+	bookingID, err := queryUUID(r, "booking_id", false)
+	if err != nil {
+		return err
+	}
+	list, err := h.svc.Availability(r.Context(), u.ID, branchID, start, end, exclude, bookingID)
 	if err != nil {
 		return err
 	}

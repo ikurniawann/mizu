@@ -5,6 +5,13 @@
 -- =============================================================================
 
 INSERT INTO iam.menus (code, menu_name, route_path, icon, menu_type, order_number, permission_context) VALUES
+  ('report', 'Laporan', NULL, 'chart', 'group', 80, '{"actions":["read"]}'::jsonb),
+  ('report.sales-vs-target', 'Sales vs Target', '/dashboard/report/sales-vs-target', 'chart', 'sidebar', 10, '{"actions":["read","create","update","delete"]}'::jsonb),
+  ('spa.bookings', 'Booking History', '/dashboard/spa/bookings', 'ticket', 'sidebar', 30, '{"actions":["read","create","update"]}'::jsonb),
+  ('spa.customer', 'Customer', '/dashboard/spa/customer', 'users', 'sidebar', 25, '{"actions":["read"]}'::jsonb),
+  ('spa.rush-hour', 'Rush Hour', '/dashboard/spa/report/rush-hour', 'clock', 'sidebar', 70, '{"actions":["read"]}'::jsonb),
+  ('spa.trend', 'Trend', '/dashboard/spa/report/trend', 'chart', 'sidebar', 20, '{"actions":["read"]}'::jsonb),
+  ('spa.rating', 'Rating', '/dashboard/spa/report/rating', 'star', 'sidebar', 40, '{"actions":["read"]}'::jsonb),
   ('dashboard', 'Beranda', '/dashboard', 'home', 'sidebar', 0, '{"actions":["read"]}'::jsonb),
   ('ess', 'Area Karyawan', NULL, 'calendar', 'group', 5, '{"actions":["read"]}'::jsonb),
   ('ess.attendance', 'Absensi', '/dashboard/me/absensi', 'calendar', 'sidebar', 10, '{"actions":["read"]}'::jsonb),
@@ -218,6 +225,14 @@ WHERE child.code LIKE '%.%'
 
 UPDATE iam.menus SET parent_id = NULL WHERE code NOT LIKE '%.%' AND deleted_at IS NULL;
 
+-- Keep report permission codes while nesting their sidebar group under Spa.
+UPDATE iam.menus child SET parent_id = parent.id, module = 'spa', level = 2
+FROM iam.menus parent WHERE child.code = 'report' AND parent.code = 'spa';
+UPDATE iam.menus child SET parent_id = parent.id, module = 'spa', level = 3
+FROM iam.menus parent
+WHERE child.code IN ('report.sales-vs-target', 'spa.trend', 'spa.bookings', 'spa.rating') AND parent.code = 'report';
+
+
 -- Soft-delete menus yang tidak ada di canonical tree
 UPDATE iam.menus
 SET is_active = false, is_visible = false, deleted_at = now(), updated_at = now()
@@ -228,8 +243,9 @@ WHERE deleted_at IS NULL
     'ess.home', 'ess.overtime', 'ess.loans', 'ess.payroll', 'ess.kpi',
     'ess.announcements', 'ess.team-shifts',
     -- Spa Mizu (EPIC-052, 8 Okt 2026)
-    'ess.spa', 'spa', 'spa.bookings', 'spa.book-order', 'spa.treatments', 'spa.therapists',
-    'spa.commissions', 'spa.outlets',
+    'ess.spa', 'spa', 'spa.bookings', 'spa.book-order', 'spa.customer', 'spa.treatments', 'spa.categories', 'spa.therapists',
+    'report', 'report.sales-vs-target',
+    'spa.commissions', 'spa.outlets', 'spa.rush-hour', 'spa.trend', 'spa.rating',
     'hris.kepegawaian.overtime', 'hris.kepegawaian.loans',
     'hris.kepegawaian.announcements',
     'hris.performance.kpi-scorecard', 'hris.performance.dept-tasks', 'hris.performance.kpi-config',

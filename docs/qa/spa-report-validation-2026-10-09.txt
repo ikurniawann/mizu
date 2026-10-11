@@ -1,0 +1,79 @@
+Spa Report — catatan implementasi dan validasi, 9 Oktober 2026
+
+Lokasi
+- Feature Trend: frontend/src/features/report/
+- Feature Rush Hour: frontend/src/features/spa/components/rush-hour-page.tsx
+- Halaman: /dashboard/spa/report/rush-hour dan /dashboard/spa/report/trend.
+- /dashboard/spa/report memilih laporan yang memiliki izin read.
+- URL PRD /dashboard/spa/rush-hour dan /dashboard/spa/trend mengalihkan
+  ke lokasi baru. Guard navigasi mengenali alias tanpa membuka laporan lain.
+- API tetap /api/spa/reports/rush-hour dan /api/spa/reports/trend.
+- Izin tetap spa.rush-hour / spa.trend; grup sidebar spa-report setelah Spa.
+
+Backend menghitung booking header berdasarkan scheduled_at dalam WIB.
+Status cancelled/expired dikecualikan, pembayaran tidak menjadi filter.
+Rush Hour mengisi 24 jam dan semua puncak seri positif. Trend mengisi periode
+kalender termasuk nol, membatasi 1000 periode, dan menjaga batas tanggal asli.
+Filter outlet dan laporan menerapkan scope branch/company/holding.
+Query laporan diinvalidasi ketika booking berubah. Tidak ada dependency baru.
+
+Aktivasi pada database aplikasi
+1. Gunakan setup/env lokal sesuai README repository, dengan BACKEND_URL terisi.
+2. Jalankan pnpm db:migrate:apply.
+3. Restart API Go dan refresh frontend/session navigasi.
+Migrasi baru:
+- 20261009100000_spa_rush_hour_menu.sql
+- 20261009110000_spa_report_sidebar.sql
+- 20261009120000_spa_trend_menu.sql
+Seeder canonical mempertahankan ketiga menu dan parent Spa Report.
+IAM prefixes dan manifest Go routes sudah digenerate dengan make -C backend generate.
+Database aplikasi tidak digunakan atau dimigrasikan selama pekerjaan ini.
+
+Validasi yang selesai
+- 46 tes terarah frontend lulus, termasuk 8 tes UI Spa Report, API Spa,
+  guard alias IAM, prefixes, manifest proxy, dan 3 tes payment-modal POS.
+- TypeScript: pnpm --dir frontend exec tsc --noEmit, lulus.
+- ESLint pada file report/integrasi IAM/cache yang disentuh, lulus.
+- Tes unit/domain Spa dan IAM, lulus; gofmt dan git diff --check bersih.
+- Migrasi baseline dan 179 delta berhasil diterapkan pada PostgreSQL sementara
+  di /tmp, localhost:55491. Termasuk ketiga migrasi menu Spa Report.
+- Tes integrasi Spa awal lulus terhadap database sementara: batas WIB,
+  status eligible, booking multi-treatment dihitung satu kali, jam puncak seri,
+  bucket kosong, total yang sama untuk daily/monthly/yearly, invalid input,
+  scope outlet, IAM read, serta pemegang izin Trend saja.
+- Sesudah itu tes scope diperluas untuk memeriksa jumlah booking Semua outlet.
+  Versi tes yang diperluas sudah dikompilasi; eksekusi database ulang belum
+  selesai karena permintaan akses terputus saat menunggu persetujuan.
+- Screenshot desktop dan mobile diperiksa melalui preview dengan data contoh.
+  Grafik Rush Hour dapat digulir horizontal; tabel menggunakan overflow-x-auto.
+  File preview sementara di repository sudah dihapus.
+
+Batas pemeriksaan menyeluruh
+- Suite frontend dengan --maxWorkers=2: 715 file lulus, 1 gagal, 2 dilewati;
+  5318 tes lulus, 1 timeout, 10 dilewati. Timeout tersebut berada di
+  src/features/pos/cashier/payment/payment-modal.test.tsx:
+  "abandons the prepared order when the cashier picks another method".
+  File tersebut kemudian dijalankan ulang dalam pemeriksaan terarah: 3/3 lulus.
+  Suite pertama tanpa pembatasan worker mengalami tekanan memori dan timeout;
+  hasilnya tidak dianggap sebagai suite lulus.
+- Suite backend ./... dalam sandbox gagal pada tes yang memerlukan socket
+  localhost, dengan pesan "socket: operation not permitted":
+  internal/app: TestXenditInvoiceClient
+  modules/crm/advance: TestWebhookRefusesInternalDestinations
+  modules/crm/engagement: TestWebPushRefusesInternalEndpoints
+  modules/desktop: TestStatus
+  modules/gymcredits: TestMemberPortalRoutes
+  modules/integrations/gobiz: TestGofoodImageFromPublicOrigin
+  modules/memberportal: TestIntegrationPushRefusesInternalEndpoints
+  platform/gobiz: TestAccessTokenCachesUntilNearExpiry
+  platform/safehttp: TestAllowlistAndRedirects
+  platform/whatsapp: TestGatewayStaysOnTheConfiguredHost
+  Suite ini tidak dilaporkan lulus. Integrasi modul selain Spa tidak diperiksa
+  pada database sementara.
+- Pengulangan migrasi/seeder secara rollback disiapkan tetapi belum dieksekusi
+  setelah perintah akses database terputus; tidak diklaim telah diverifikasi.
+
+Pekerjaan berada pada working tree branch feat/mizu-spa-booking, di atas
+08c3c9a3. Belum dibuat commit/PR. Ada pekerjaan lain pada workspace yang
+berjalan bersamaan; perubahan booking/treatment/deployment milik pekerjaan
+tersebut dipertahankan.

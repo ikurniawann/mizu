@@ -83,7 +83,7 @@ async function load(c) {
   const byBranch = new Map(outlets.map((o) => [o.id, o]));
 
   const variantRows = await c.query(
-    `SELECT v.id, v.name, v.duration_min, v.buffer_min, v.price_idr::float8 AS price, t.id AS treatment_id, t.code, t.name AS treatment
+    `SELECT v.id, v.name, v.duration_min, v.price_idr::float8 AS price, t.id AS treatment_id, t.code, t.name AS treatment
        FROM spa.treatment_variants v JOIN spa.treatments t ON t.id = v.treatment_id
       WHERE v.is_active AND t.is_active AND t.code = ANY($1)`, [D.TREATMENTS.map((t) => t.code)]);
   const treatments = D.TREATMENTS.map((t) => ({ ...t, variants: variantRows.rows.filter((v) => v.code === t.code) }))
@@ -196,11 +196,9 @@ function generate(ctx, existingCodes, orderSeq) {
     return loan ? loan.branch_id === outlet.id : t.home === outlet.id;
   });
 
-  // [startMin, endMin) is the treatment, busyEnd adds the clean-up buffer: the
-  // shift must cover the treatment, the calendar must be free through the buffer.
-  function findTherapist(outlet, date, startMin, endMin, busyEnd, gender, exclude) {
-    const pool = working(outlet, date).filter((t) => !exclude.includes(t.id) && (gender === "any" || t.gender === gender)
-      && t.shiftStart <= startMin && endMin <= t.shiftEnd && fits(t.id, date, startMin, busyEnd));
+  function findTherapist(outlet, date, startMin, endMin, gender) {
+    const pool = working(outlet, date).filter((t) => (gender === "any" || t.gender === gender)
+      && t.shiftStart <= startMin && endMin <= t.shiftEnd && fits(t.id, date, startMin, endMin));
     return pool.length ? pick(pool) : null;
   }
 
@@ -231,14 +229,13 @@ function generate(ctx, existingCodes, orderSeq) {
           ? weighted([["reservation", 70], ["public", 30]], (x) => x[1])[0]
           : weighted([["walk_in", 40], ["reservation", 45], ["public", 15]], (x) => x[1])[0];
         const pref = weighted([["any", 70], ["female", 25], ["male", 5]], (x) => x[1])[0];
-        // Lines: [variant, guestIndex]; couple = 2 guests at once, combo = consecutive.
+        // Every treatment in a booking is consecutive and handled by one therapist.
         const first = treatmentPick();
         const lines = [{ v: variantPick(first), t: first, offset: 0 }];
-        if (kind === "couple") lines.push({ v: lines[0].v, t: first, offset: 0, partner: true });
+        if (kind === "couple") lines.push({ v: lines[0].v, t: first, offset: lines[0].v.duration_min });
         if (kind === "combo") {
           const extra = pick(ctx.treatments.filter((t) => ["REFLEX", "TOTOK", "HEAD", "LULUR"].includes(t.code)));
-          // Lanjut setelah jeda treatment pertama (persiapan ruang/terapis).
-          lines.push({ v: variantPick(extra), t: extra, offset: lines[0].v.duration_min + lines[0].v.buffer_min });
+          lines.push({ v: variantPick(extra), t: extra, offset: lines[0].v.duration_min });
         }
         const span = Math.max(...lines.map((l) => l.offset + l.v.duration_min));
         let placed = null;
@@ -249,19 +246,9 @@ function generate(ctx, existingCodes, orderSeq) {
           const start = Math.min(Math.max(open, hourPeak + 30 * between(-2, 3)), close - span);
           if (start < open) continue;
           const startAt = at(date, start);
-          const assigned = [];
-          let ok = true;
-          for (const l of lines) {
-            const s = start + l.offset;
-            const e = s + l.v.duration_min + l.v.buffer_min;
-            const same = l.offset > 0 ? assigned[0] : null; // combo: same therapist if free
-            let t = same && fits(same.id, date, s, e) && same.shiftEnd >= e - l.v.buffer_min ? same : null;
-            if (!t) t = findTherapist(outlet, date, s, s + l.v.duration_min, e, l.partner ? "any" : pref, assigned.filter((x) => x && l.partner).map((x) => x.id));
-            if (!t) { ok = false; break; }
-            assigned.push(t);
-          }
-          if (!ok && offset < 0) continue; // lampau: semua treatment yang terjadi pasti punya terapis
-          placed = { start, startAt, therapists: ok ? assigned : lines.map(() => null) };
+          const assigned = findTherapist(outlet, date, start, start + span, pref);
+          if (!assigned && offset < 0) continue;
+          placed = { start, startAt, therapist: assigned };
         }
         if (!placed) continue;
 
@@ -269,7 +256,7 @@ function generate(ctx, existingCodes, orderSeq) {
         const items = lines.map((l, i) => {
           const s = at(date, placed.start + l.offset);
           const e = new Date(s.getTime() + l.v.duration_min * MIN);
-          return { line: l, startsAt: s, endsAt: e, therapist: placed.therapists[i] };
+          return { line: l, startsAt: s, endsAt: e, therapist: placed.therapist };
         });
         const lastEnd = items.reduce((m, it) => Math.max(m, it.endsAt.getTime()), 0);
         const created = source === "walk_in"
@@ -279,7 +266,7 @@ function generate(ctx, existingCodes, orderSeq) {
 
         let fate = "normal";
         if (lastEnd < now.getTime()) fate = weighted([["done", 91], ["cancel", 6], ["noshow", 3]], (x) => x[1])[0];
-        if (fate === "normal" && placed.therapists.some((t) => !t)) fate = "open"; // tidak ada terapis kosong
+        if (fate === "normal" && !placed.therapist) fate = "open"; // tidak ada terapis kosong
         const unassignFuture = items[0].startsAt > now && (source === "public" ? chance(0.7) : chance(0.3));
 
         for (const it of items) {
@@ -290,10 +277,9 @@ function generate(ctx, existingCodes, orderSeq) {
           else if (fate === "done" || isPast) it.status = it.therapist ? "completed" : "unassigned";
           else if (running && it.therapist) it.status = "in_treatment";
           else it.status = it.therapist && !unassignFuture ? "assigned" : "unassigned";
-          if (it.status === "unassigned" || (it.status === "cancelled" && chance(0.5))) it.therapist = null;
+          if (it.status === "unassigned" || it.status === "cancelled") it.therapist = null;
           if (it.therapist && it.status !== "cancelled") {
-            const s = Math.round((it.startsAt - at(date, 0)) / MIN);
-            occupy(it.therapist.id, date, s, s + it.line.v.duration_min + it.line.v.buffer_min);
+            if (it === items[0]) occupy(it.therapist.id, date, placed.start, placed.start + span);
           }
           it.price = priceOf(it.line.v, outlet);
           if (it.status === "in_treatment" || it.status === "completed") it.startedAt = new Date(it.startsAt.getTime() + between(0, 6) * MIN);
@@ -312,7 +298,8 @@ function generate(ctx, existingCodes, orderSeq) {
           type: source === "walk_in" ? "walk_in" : "reservation", customer, name,
           phone: customer ? customer.phone : "", pref, notes: chance(0.15) ? pick(["Fokus punggung dan bahu", "Tekanan lembut",
             "Alergi minyak kacang", "Minta terapis yang sama seperti kunjungan lalu", "Ulang tahun, siapkan teh hangat"]) : "",
-          scheduledAt: items[0].startsAt, status, items, created, paid,
+          scheduledAt: items[0].startsAt, endsAt: new Date(items[0].startsAt.getTime() + span * MIN),
+          therapist: items.find((i) => i.therapist)?.therapist || null, status, items, created, paid,
         };
         if (fate === "cancel") {
           booking.cancelledAt = new Date(Math.min(items[0].startsAt.getTime() - between(30, 1440) * MIN, now.getTime()));
@@ -375,7 +362,8 @@ async function persist(c, ctx, bookings) {
       historyRows.push([uuid(), orderId, "pending", "completed", ctx.cashier[b.outlet.id], `Dibayar ${METHOD_NAME[b.method]}`, b.paidAt]);
     }
     bookingRows.push([b.id, b.code, b.outlet.company_id, b.outlet.id, b.outlet.warehouse_id, b.type, b.source,
-      b.customer ? b.customer.id : null, b.name, b.phone, b.pref, b.notes, b.scheduledAt, b.status,
+      b.customer ? b.customer.id : null, b.name, b.phone, b.pref, b.notes, b.scheduledAt, b.endsAt,
+      b.therapist ? b.therapist.id : null, b.status,
       b.paid ? "paid" : "unpaid", orderId, b.checkoutAt || null, b.paidAt || null, b.cancelledAt || null,
       b.cancelReason || null, D.SEED_ACTOR, b.created, b.paidAt || b.cancelledAt || b.created]);
     ev(b, null, "create", null, "unassigned", b.created, b.source === "public" ? "Booking online" : "");
@@ -385,8 +373,8 @@ async function persist(c, ctx, bookings) {
       const id = uuid();
       it.id = id;
       const v = it.line.v;
-      itemRows.push([id, b.id, v.id, v.treatment, v.name, v.duration_min, v.buffer_min, it.price,
-        it.therapist ? it.therapist.id : null, it.startsAt, it.endsAt, it.status, it.startedAt || null, it.completedAt || null,
+      itemRows.push([id, b.id, v.id, v.treatment, v.name, v.duration_min, it.price,
+        b.therapist ? b.therapist.id : null, it.status, it.startedAt || null, it.completedAt || null,
         it.commission ? it.commission.type : null, it.commission ? it.commission.value : null,
         it.status === "completed" ? (it.commission ? it.commission.amount : 0) : null, i, b.created, it.completedAt || b.created]);
       const assignAt = new Date(Math.min(b.type === "walk_in" ? b.created.getTime() + 2 * MIN
@@ -444,13 +432,26 @@ async function persist(c, ctx, bookings) {
   await insertMany(c, "pos.pos_order_status_history", ["id", "order_id", "from_status", "to_status", "changed_by", "notes",
     "changed_at"], historyRows);
   await insertMany(c, "spa.bookings", ["id", "booking_code", "company_id", "branch_id", "warehouse_id", "booking_type", "source",
-    "customer_id", "customer_name", "customer_phone", "therapist_gender_pref", "notes", "scheduled_at", "status", "payment_status",
+    "customer_id", "customer_name", "customer_phone", "therapist_gender_pref", "notes", "scheduled_at", "ends_at", "therapist_id", "status", "payment_status",
     "pos_order_id", "checked_out_at", "paid_at", "cancelled_at", "cancel_reason", "created_by", "created_at", "updated_at"], bookingRows);
   await insertMany(c, "spa.booking_items", ["id", "booking_id", "variant_id", "treatment_name", "variant_name", "duration_min",
-    "buffer_min", "price_idr", "therapist_id", "starts_at", "ends_at", "status", "started_at", "completed_at", "commission_type",
+    "price_idr", "therapist_id", "status", "started_at", "completed_at", "commission_type",
     "commission_value", "commission_idr", "sort_order", "created_at", "updated_at"], itemRows);
   await insertMany(c, "spa.booking_events", ["id", "booking_id", "item_id", "action", "from_status", "to_status", "actor_user_id",
     "note", "created_at"], eventRows.map((r) => { r[6] = null; return r; }));
+
+  // Contoh survei pada booking demo yang selesai: delapan booking terbaru per outlet.
+  // Hanya booking milik seeder yang diperbarui; rating booking staf tidak disentuh.
+  await c.query(`WITH recent AS (
+      SELECT id, row_number() OVER (PARTITION BY branch_id ORDER BY scheduled_at DESC, id) AS n
+      FROM spa.bookings
+      WHERE created_by = $1 AND status = 'completed' AND pos_order_id IS NOT NULL
+        AND therapist_id IS NOT NULL
+        AND scheduled_at >= now() - interval '14 days' AND scheduled_at < now()
+    )
+    UPDATE spa.bookings b SET therapist_rating = CASE recent.n % 5
+      WHEN 1 THEN 5 WHEN 2 THEN 4 WHEN 3 THEN 5 WHEN 4 THEN 3 ELSE 4 END
+    FROM recent WHERE b.id = recent.id AND recent.n <= 8 AND b.therapist_rating IS NULL`, [D.SEED_ACTOR]);
 
   // Statistik pelanggan demo dari transaksi spa lunas.
   await c.query(

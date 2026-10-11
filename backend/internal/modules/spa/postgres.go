@@ -206,14 +206,14 @@ func (s store) treatments(ctx context.Context, q Q, activeOnly bool, id string) 
 		var x vrow
 		var priceBranches []string
 		var prices []float64
-		err := r.Scan(&x.treatmentID, &x.v.ID, &x.v.Name, &x.v.DurationMin, &x.v.BufferMin, &x.v.PriceIDR,
+		err := r.Scan(&x.treatmentID, &x.v.ID, &x.v.Name, &x.v.DurationMin, &x.v.PriceIDR,
 			&x.v.IsActive, &x.v.SortOrder, &priceBranches, &prices)
 		x.v.OutletPrices = make([]OutletPrice, len(priceBranches))
 		for i := range priceBranches {
 			x.v.OutletPrices[i] = OutletPrice{BranchID: priceBranches[i], PriceIDR: prices[i]}
 		}
 		return x, err
-	}, `SELECT v.treatment_id::text, v.id::text, v.name, v.duration_min, v.buffer_min, v.price_idr, v.is_active, v.sort_order,
+	}, `SELECT v.treatment_id::text, v.id::text, v.name, v.duration_min, v.price_idr, v.is_active, v.sort_order,
 	        COALESCE((SELECT array_agg(p.branch_id::text ORDER BY p.branch_id) FROM spa.variant_outlet_prices p WHERE p.variant_id = v.id), '{}'),
 	        COALESCE((SELECT array_agg(p.price_idr::float8 ORDER BY p.branch_id) FROM spa.variant_outlet_prices p WHERE p.variant_id = v.id), '{}')
 	   FROM spa.treatment_variants v
@@ -245,12 +245,12 @@ type treatmentInput struct {
 }
 
 type variantInput struct {
-	ID                     string
-	Name                   string
-	DurationMin, BufferMin int
-	PriceIDR               float64
-	IsActive               bool
-	SortOrder              int
+	ID          string
+	Name        string
+	DurationMin int
+	PriceIDR    float64
+	IsActive    bool
+	SortOrder   int
 }
 
 func (store) insertTreatment(ctx context.Context, q Q, in treatmentInput) (string, error) {
@@ -275,9 +275,9 @@ func (store) replaceVariants(ctx context.Context, q Q, treatmentID string, varia
 	keep := []string{}
 	for _, v := range variants {
 		if v.ID != "" {
-			tag, err := q.Exec(ctx, `UPDATE spa.treatment_variants SET name = $3, duration_min = $4, buffer_min = $5,
-			    price_idr = $6, is_active = $7, sort_order = $8, updated_at = now()
-			  WHERE id = $1 AND treatment_id = $2`, v.ID, treatmentID, v.Name, v.DurationMin, v.BufferMin, v.PriceIDR, v.IsActive, v.SortOrder)
+			tag, err := q.Exec(ctx, `UPDATE spa.treatment_variants SET name = $3, duration_min = $4,
+			    price_idr = $5, is_active = $6, sort_order = $7, updated_at = now()
+			  WHERE id = $1 AND treatment_id = $2`, v.ID, treatmentID, v.Name, v.DurationMin, v.PriceIDR, v.IsActive, v.SortOrder)
 			if err != nil {
 				return err
 			}
@@ -288,9 +288,9 @@ func (store) replaceVariants(ctx context.Context, q Q, treatmentID string, varia
 			continue
 		}
 		var id string
-		if err := q.QueryRow(ctx, `INSERT INTO spa.treatment_variants (treatment_id, name, duration_min, buffer_min, price_idr, is_active, sort_order)
-		  VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id::text`,
-			treatmentID, v.Name, v.DurationMin, v.BufferMin, v.PriceIDR, v.IsActive, v.SortOrder).Scan(&id); err != nil {
+		if err := q.QueryRow(ctx, `INSERT INTO spa.treatment_variants (treatment_id, name, duration_min, price_idr, is_active, sort_order)
+		  VALUES ($1, $2, $3, $4, $5, $6) RETURNING id::text`,
+			treatmentID, v.Name, v.DurationMin, v.PriceIDR, v.IsActive, v.SortOrder).Scan(&id); err != nil {
 			return err
 		}
 		keep = append(keep, id)
@@ -323,7 +323,6 @@ type variantRow struct {
 	ID            string
 	Name          string
 	DurationMin   int
-	BufferMin     int
 	Price         float64
 	IsActive      bool
 	TreatmentID   string
@@ -337,10 +336,10 @@ type variantRow struct {
 func (store) variants(ctx context.Context, q Q, ids []string, branchID string) (map[string]variantRow, error) {
 	list, err := many(ctx, q, func(r pgx.Row) (variantRow, error) {
 		var v variantRow
-		err := r.Scan(&v.ID, &v.Name, &v.DurationMin, &v.BufferMin, &v.Price, &v.IsActive,
+		err := r.Scan(&v.ID, &v.Name, &v.DurationMin, &v.Price, &v.IsActive,
 			&v.TreatmentID, &v.TreatmentCode, &v.TreatmentName, &v.Category, &v.TreatmentOn, &v.PosProductID)
 		return v, err
-	}, `SELECT v.id::text, v.name, v.duration_min, v.buffer_min, COALESCE(p.price_idr, v.price_idr), v.is_active,
+	}, `SELECT v.id::text, v.name, v.duration_min, COALESCE(p.price_idr, v.price_idr), v.is_active,
 	        t.id::text, t.code, t.name, t.category, t.is_active, m.pos_product_id::text
 	   FROM spa.treatment_variants v
 	   JOIN spa.treatments t ON t.id = v.treatment_id
@@ -555,22 +554,23 @@ type bookingFilter struct {
 }
 
 const summaryColumns = `b.id::text, b.booking_code, b.branch_id::text, br.name, b.booking_type, b.source, b.customer_name,
-	b.customer_phone, b.scheduled_at, b.status, b.payment_status,
+	b.customer_phone, b.scheduled_at, b.ends_at, b.status, b.payment_status,
 	(SELECT count(*) FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled')::int,
 	(SELECT COALESCE(sum(i.price_idr), 0) FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled')::float8,
 	COALESCE((SELECT array_agg(DISTINCT e.full_name) FROM spa.booking_items i
 	            JOIN spa.therapists t ON t.id = i.therapist_id JOIN hris.employees e ON e.id = t.employee_id
 	           WHERE i.booking_id = b.id AND i.status <> 'cancelled'), '{}'),
-	b.pos_order_id::text, b.created_at`
+	b.pos_order_id::text, b.created_at, b.therapist_id::text,
+ (SELECT e.full_name FROM spa.therapists t JOIN hris.employees e ON e.id = t.employee_id WHERE t.id = b.therapist_id)`
 
 func scanSummary(r pgx.Row, extra ...any) (BookingSummary, error) {
 	var s BookingSummary
-	var scheduled, created time.Time
+	var scheduled, ends, created time.Time
 	dest := append([]any{&s.ID, &s.BookingCode, &s.BranchID, &s.BranchName, &s.BookingType, &s.Source, &s.CustomerName,
-		&s.CustomerPhone, &scheduled, &s.Status, &s.PaymentStatus, &s.ItemCount, &s.TotalIDR, &s.TherapistNames,
-		&s.PosOrderID, &created}, extra...)
+		&s.CustomerPhone, &scheduled, &ends, &s.Status, &s.PaymentStatus, &s.ItemCount, &s.TotalIDR, &s.TherapistNames,
+		&s.PosOrderID, &created, &s.TherapistID, &s.TherapistName}, extra...)
 	err := r.Scan(dest...)
-	s.ScheduledAt, s.CreatedAt = jsTime(scheduled), jsTime(created)
+	s.ScheduledAt, s.EndsAt, s.CreatedAt = jsTime(scheduled), jsTime(ends), jsTime(created)
 	return s, err
 }
 
@@ -608,32 +608,35 @@ func (store) bookings(ctx context.Context, q Q, f bookingFilter) ([]BookingSumma
 
 // bookingRow is the booking header the service rules need.
 type bookingRow struct {
-	ID            string
-	Code          string
-	CompanyID     *string
-	BranchID      string
-	WarehouseID   string
-	CustomerID    *string
-	CustomerName  string
-	CustomerPhone string
-	GenderPref    string
-	Status        string
-	PaymentStatus string
-	PosOrderID    *string
-	CheckedOutAt  *time.Time
-	ScheduledAt   time.Time
+	TherapistID     *string
+	ID              string
+	Code            string
+	CompanyID       *string
+	BranchID        string
+	WarehouseID     string
+	CustomerID      *string
+	CustomerName    string
+	CustomerPhone   string
+	GenderPref      string
+	Status          string
+	PaymentStatus   string
+	PosOrderID      *string
+	CheckedOutAt    *time.Time
+	ScheduledAt     time.Time
+	EndsAt          time.Time
+	TherapistRating *int
 }
 
 func (store) bookingRow(ctx context.Context, q Q, id string, lock bool) (*bookingRow, error) {
 	sql := `SELECT id::text, booking_code, company_id::text, branch_id::text, warehouse_id::text, customer_id::text,
-	        customer_name, customer_phone, therapist_gender_pref, status, payment_status, pos_order_id::text, checked_out_at, scheduled_at
+	        customer_name, customer_phone, therapist_gender_pref, status, payment_status, pos_order_id::text, checked_out_at, scheduled_at, ends_at, therapist_id::text, therapist_rating
 	   FROM spa.bookings WHERE id = $1`
 	if lock {
 		sql += ` FOR UPDATE`
 	}
 	var b bookingRow
 	err := q.QueryRow(ctx, sql, id).Scan(&b.ID, &b.Code, &b.CompanyID, &b.BranchID, &b.WarehouseID, &b.CustomerID,
-		&b.CustomerName, &b.CustomerPhone, &b.GenderPref, &b.Status, &b.PaymentStatus, &b.PosOrderID, &b.CheckedOutAt, &b.ScheduledAt)
+		&b.CustomerName, &b.CustomerPhone, &b.GenderPref, &b.Status, &b.PaymentStatus, &b.PosOrderID, &b.CheckedOutAt, &b.ScheduledAt, &b.EndsAt, &b.TherapistID, &b.TherapistRating)
 	return one(&b, err)
 }
 
@@ -646,8 +649,8 @@ func (store) bookingIDOfItem(ctx context.Context, q Q, itemID string) (string, e
 	return id, err
 }
 
-const itemColumns = `i.id::text, i.variant_id::text, i.treatment_name, i.variant_name, i.duration_min, i.buffer_min,
-	i.price_idr::float8, i.therapist_id::text, e.full_name, i.starts_at, i.ends_at, i.status, i.started_at, i.completed_at,
+const itemColumns = `i.id::text, i.variant_id::text, i.treatment_name, i.variant_name, i.duration_min,
+	i.price_idr::float8, i.therapist_id::text, e.full_name, i.status, i.started_at, i.completed_at,
 	i.commission_idr::float8`
 
 const itemJoins = `LEFT JOIN spa.therapists t ON t.id = i.therapist_id
@@ -655,12 +658,10 @@ const itemJoins = `LEFT JOIN spa.therapists t ON t.id = i.therapist_id
 
 func scanItem(r pgx.Row, extra ...any) (Item, error) {
 	var it Item
-	var starts, ends time.Time
 	var started, completed *time.Time
-	dest := append([]any{&it.ID, &it.VariantID, &it.TreatmentName, &it.VariantName, &it.DurationMin, &it.BufferMin,
-		&it.PriceIDR, &it.TherapistID, &it.TherapistName, &starts, &ends, &it.Status, &started, &completed, &it.CommissionIDR}, extra...)
+	dest := append([]any{&it.ID, &it.VariantID, &it.TreatmentName, &it.VariantName, &it.DurationMin,
+		&it.PriceIDR, &it.TherapistID, &it.TherapistName, &it.Status, &started, &completed, &it.CommissionIDR}, extra...)
 	err := r.Scan(dest...)
-	it.StartsAt, it.EndsAt = jsTime(starts), jsTime(ends)
 	it.StartedAt, it.CompletedAt = httpx.NewJSTime(started), httpx.NewJSTime(completed)
 	return it, err
 }
@@ -668,7 +669,7 @@ func scanItem(r pgx.Row, extra ...any) (Item, error) {
 func (store) items(ctx context.Context, q Q, bookingID string) ([]Item, error) {
 	return many(ctx, q, func(r pgx.Row) (Item, error) { return scanItem(r) },
 		`SELECT `+itemColumns+` FROM spa.booking_items i `+itemJoins+`
-		  WHERE i.booking_id = $1 ORDER BY i.sort_order, i.starts_at`, bookingID)
+		  WHERE i.booking_id = $1 ORDER BY i.sort_order, i.id`, bookingID)
 }
 
 func (store) events(ctx context.Context, q Q, bookingID string) ([]Event, error) {
@@ -690,9 +691,9 @@ func (s store) bookingDetail(ctx context.Context, q Q, id string) (*Booking, err
 	var b Booking
 	var checked, paid, cancelled *time.Time
 	summary, err := scanSummary(q.QueryRow(ctx, `SELECT `+summaryColumns+`, b.company_id::text, b.warehouse_id::text,
-	        b.customer_id::text, b.therapist_gender_pref, b.notes, b.checked_out_at, b.paid_at, b.cancelled_at, b.cancel_reason
+	        b.customer_id::text, b.therapist_gender_pref, b.notes, b.checked_out_at, b.paid_at, b.cancelled_at, b.cancel_reason, b.therapist_rating
 	   FROM spa.bookings b JOIN configuration.branches br ON br.id = b.branch_id WHERE b.id = $1`, id),
-		&b.CompanyID, &b.WarehouseID, &b.CustomerID, &b.TherapistGenderPref, &b.Notes, &checked, &paid, &cancelled, &b.CancelReason)
+		&b.CompanyID, &b.WarehouseID, &b.CustomerID, &b.TherapistGenderPref, &b.Notes, &checked, &paid, &cancelled, &b.CancelReason, &b.TherapistRating)
 	if database.IsNoRows(err) {
 		return nil, nil
 	}
@@ -723,16 +724,17 @@ type newBooking struct {
 	TherapistGenderPref string
 	Notes               string
 	ScheduledAt         time.Time
+	EndsAt              time.Time
 	CreatedBy           string
 }
 
 func (store) insertBooking(ctx context.Context, q Q, b newBooking) (string, error) {
 	var id string
 	err := q.QueryRow(ctx, `INSERT INTO spa.bookings (booking_code, company_id, branch_id, warehouse_id, booking_type, source,
-	    customer_id, customer_name, customer_phone, therapist_gender_pref, notes, scheduled_at, created_by)
-	  VALUES ($1, $2::uuid, $3, $4, $5, $6, $7::uuid, $8, $9, $10, $11, $12, $13) RETURNING id::text`,
+	    customer_id, customer_name, customer_phone, therapist_gender_pref, notes, scheduled_at, ends_at, created_by)
+	  VALUES ($1, $2::uuid, $3, $4, $5, $6, $7::uuid, $8, $9, $10, $11, $12, $13, $14) RETURNING id::text`,
 		b.Code, b.CompanyID, b.BranchID, b.WarehouseID, b.BookingType, b.Source, b.CustomerID, b.CustomerName, b.CustomerPhone,
-		b.TherapistGenderPref, b.Notes, b.ScheduledAt, nullable(b.CreatedBy)).Scan(&id)
+		b.TherapistGenderPref, b.Notes, b.ScheduledAt, b.EndsAt, nullable(b.CreatedBy)).Scan(&id)
 	return id, err
 }
 
@@ -740,19 +742,18 @@ type newItem struct {
 	BookingID   string
 	Variant     variantRow
 	TherapistID *string
-	StartsAt    time.Time
+	StartsAt    time.Time // ephemeral planning value; not stored on the item
 	Status      string
 	SortOrder   int
 }
 
 func (store) insertItem(ctx context.Context, q Q, it newItem) (string, error) {
 	var id string
-	ends := it.StartsAt.Add(time.Duration(it.Variant.DurationMin) * time.Minute)
 	err := q.QueryRow(ctx, `INSERT INTO spa.booking_items (booking_id, variant_id, treatment_name, variant_name, duration_min,
-	    buffer_min, price_idr, therapist_id, starts_at, ends_at, status, sort_order)
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8::uuid, $9, $10, $11, $12) RETURNING id::text`,
-		it.BookingID, it.Variant.ID, it.Variant.TreatmentName, it.Variant.Name, it.Variant.DurationMin, it.Variant.BufferMin,
-		it.Variant.Price, it.TherapistID, it.StartsAt, ends, it.Status, it.SortOrder).Scan(&id)
+	    price_idr, therapist_id, status, sort_order)
+	  VALUES ($1, $2, $3, $4, $5, $6, $7::uuid, $8, $9) RETURNING id::text`,
+		it.BookingID, it.Variant.ID, it.Variant.TreatmentName, it.Variant.Name, it.Variant.DurationMin,
+		it.Variant.Price, it.TherapistID, it.Status, it.SortOrder).Scan(&id)
 	return id, err
 }
 
@@ -764,32 +765,24 @@ type itemRow struct {
 	TreatmentID string
 	Status      string
 	TherapistID *string
-	StartsAt    time.Time
 	DurationMin int
-	BufferMin   int
 	Price       float64
 }
 
 func (store) itemRows(ctx context.Context, q Q, bookingID string, lock bool) ([]itemRow, error) {
 	sql := `SELECT i.id::text, i.booking_id::text, i.variant_id::text, v.treatment_id::text, i.status, i.therapist_id::text,
-	        i.starts_at, i.duration_min, i.buffer_min, i.price_idr::float8
+	        i.duration_min, i.price_idr::float8
 	   FROM spa.booking_items i JOIN spa.treatment_variants v ON v.id = i.variant_id
-	  WHERE i.booking_id = $1 ORDER BY i.sort_order, i.starts_at`
+	  WHERE i.booking_id = $1 ORDER BY i.sort_order, i.id`
 	if lock {
 		sql += ` FOR UPDATE OF i`
 	}
 	return many(ctx, q, func(r pgx.Row) (itemRow, error) {
 		var it itemRow
 		err := r.Scan(&it.ID, &it.BookingID, &it.VariantID, &it.TreatmentID, &it.Status, &it.TherapistID,
-			&it.StartsAt, &it.DurationMin, &it.BufferMin, &it.Price)
+			&it.DurationMin, &it.Price)
 		return it, err
 	}, sql, bookingID)
-}
-
-func (store) setItemTherapist(ctx context.Context, q Q, itemID string, therapistID *string, status string) error {
-	_, err := q.Exec(ctx, `UPDATE spa.booking_items SET therapist_id = $2::uuid, status = $3, updated_at = now() WHERE id = $1`,
-		itemID, therapistID, status)
-	return err
 }
 
 func (store) setItemStatus(ctx context.Context, q Q, itemID, status string, at time.Time) error {
@@ -807,9 +800,8 @@ func (store) setItemCommission(ctx context.Context, q Q, itemID string, ctype *s
 	return err
 }
 
-func (store) rescheduleItem(ctx context.Context, q Q, itemID string, start time.Time, durationMin int) error {
-	_, err := q.Exec(ctx, `UPDATE spa.booking_items SET starts_at = $2, ends_at = $3, updated_at = now() WHERE id = $1`,
-		itemID, start, start.Add(time.Duration(durationMin)*time.Minute))
+func (store) setBookingWindow(ctx context.Context, q Q, id string, start, end time.Time) error {
+	_, err := q.Exec(ctx, `UPDATE spa.bookings SET scheduled_at = $2, ends_at = $3, updated_at = now() WHERE id = $1`, id, start, end)
 	return err
 }
 
@@ -818,16 +810,9 @@ func (store) setBookingStatus(ctx context.Context, q Q, id, status string) error
 	return err
 }
 
-// syncScheduledAt keeps the booking time at its earliest active item.
-func (store) syncScheduledAt(ctx context.Context, q Q, id string) error {
-	_, err := q.Exec(ctx, `UPDATE spa.bookings b SET scheduled_at = x.first, updated_at = now()
-	   FROM (SELECT min(starts_at) AS first FROM spa.booking_items WHERE booking_id = $1 AND status <> 'cancelled') x
-	  WHERE b.id = $1 AND x.first IS NOT NULL AND x.first <> b.scheduled_at`, id)
-	return err
-}
-
 type bookingPatch struct {
 	CustomerName, CustomerPhone, Notes, GenderPref *string
+	ScheduledAt                                    *time.Time
 }
 
 func (store) patchBooking(ctx context.Context, q Q, id string, p bookingPatch) error {
@@ -848,9 +833,15 @@ func (store) cancelBooking(ctx context.Context, q Q, id, reason string, at time.
 	return err
 }
 
-func (store) setCheckout(ctx context.Context, q Q, id, orderID string, at time.Time) error {
-	_, err := q.Exec(ctx, `UPDATE spa.bookings SET pos_order_id = $2::uuid, checked_out_at = $3, payment_status = 'unpaid', updated_at = now()
-	  WHERE id = $1`, id, orderID, at)
+func (store) setCheckout(ctx context.Context, q Q, id, orderID string, at time.Time, rating int) error {
+	_, err := q.Exec(ctx, `UPDATE spa.bookings SET pos_order_id = $2::uuid, checked_out_at = $3,
+	  therapist_rating = $4, payment_status = 'unpaid', updated_at = now()
+	  WHERE id = $1`, id, orderID, at, rating)
+	return err
+}
+
+func (store) setTherapistRating(ctx context.Context, q Q, id string, rating int) error {
+	_, err := q.Exec(ctx, `UPDATE spa.bookings SET therapist_rating = $2, updated_at = now() WHERE id = $1`, id, rating)
 	return err
 }
 
@@ -866,8 +857,8 @@ func (store) lockTherapist(ctx context.Context, q Q, therapistID string) error {
 	return err
 }
 
-// conflicts lists the therapist's active items overlapping [start, end).
-func (store) conflicts(ctx context.Context, q Q, therapistIDs []string, start, end time.Time, excludeItemID string) (map[string][]Conflict, error) {
+// conflicts lists the therapist's bookings overlapping [start, end).
+func (store) bookingConflicts(ctx context.Context, q Q, therapistIDs []string, start, end time.Time, excludeBookingID string) (map[string][]Conflict, error) {
 	type row struct {
 		therapist string
 		c         Conflict
@@ -878,13 +869,11 @@ func (store) conflicts(ctx context.Context, q Q, therapistIDs []string, start, e
 		err := r.Scan(&x.therapist, &x.c.ItemID, &x.c.BookingCode, &s, &e)
 		x.c.StartsAt, x.c.EndsAt = jsTime(s), jsTime(e)
 		return x, err
-	}, `SELECT i.therapist_id::text, i.id::text, b.booking_code, i.starts_at, i.ends_at
-	   FROM spa.booking_items i JOIN spa.bookings b ON b.id = i.booking_id
-	  WHERE i.therapist_id = ANY($1::uuid[]) AND i.status IN ('assigned', 'in_treatment')
-	    AND b.status NOT IN ('cancelled', 'expired')
-	    AND i.id::text <> $4
-	    AND i.starts_at < $3 AND i.ends_at + make_interval(mins => i.buffer_min) > $2
-	  ORDER BY i.starts_at`, therapistIDs, start, end, excludeItemID)
+	}, `SELECT b.therapist_id::text, b.id::text, b.booking_code, b.scheduled_at, b.ends_at
+ FROM spa.bookings b
+ WHERE b.therapist_id = ANY($1::uuid[]) AND b.status IN ('assigned', 'in_treatment')
+   AND b.id::text <> $4 AND b.scheduled_at < $3 AND b.ends_at > $2
+ ORDER BY b.scheduled_at`, therapistIDs, start, end, excludeBookingID)
 	if err != nil {
 		return nil, err
 	}
@@ -895,12 +884,12 @@ func (store) conflicts(ctx context.Context, q Q, therapistIDs []string, start, e
 	return out, nil
 }
 
-// expire marks untouched bookings whose last item ended before cutoff.
+// expire marks untouched bookings whose booking window ended before cutoff.
 func (store) expire(ctx context.Context, q Q, cutoff time.Time) error {
 	_, err := q.Exec(ctx, `WITH due AS (
 	    SELECT b.id, b.status FROM spa.bookings b
 	     WHERE b.status IN ('unassigned', 'assigned')
-	       AND (SELECT max(i.ends_at) FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled') < $1
+	       AND b.ends_at < $1
 	     FOR UPDATE SKIP LOCKED),
 	  upd AS (UPDATE spa.bookings b SET status = 'expired', updated_at = now() FROM due WHERE b.id = due.id RETURNING b.id, due.status)
 	  INSERT INTO spa.booking_events (booking_id, action, from_status, to_status, note)
@@ -941,12 +930,14 @@ func (store) markVoid(ctx context.Context, q Q, orderIDs []string) ([]string, er
 	  WHERE pos_order_id = ANY($1::uuid[]) AND payment_status = 'paid' RETURNING id::text`, orderIDs)
 }
 
-const boardItemColumns = itemColumns + `, b.id::text, b.booking_code, b.branch_id::text, br.name, b.customer_name, b.status, b.payment_status`
+const boardItemColumns = itemColumns + `, b.scheduled_at, b.ends_at, b.id::text, b.booking_code, b.branch_id::text, br.name, b.customer_name, b.therapist_gender_pref, b.status, b.payment_status`
 
 func scanBoardItem(r pgx.Row) (BoardItem, error) {
 	var bi BoardItem
-	item, err := scanItem(r, &bi.BookingID, &bi.BookingCode, &bi.BranchID, &bi.BranchName, &bi.CustomerName, &bi.BookingStatus, &bi.PaymentStatus)
+	var starts, ends time.Time
+	item, err := scanItem(r, &starts, &ends, &bi.BookingID, &bi.BookingCode, &bi.BranchID, &bi.BranchName, &bi.CustomerName, &bi.GenderPref, &bi.BookingStatus, &bi.PaymentStatus)
 	bi.Item = item
+	bi.StartsAt, bi.EndsAt = jsTime(starts), jsTime(ends)
 	return bi, err
 }
 
@@ -955,9 +946,9 @@ func (store) dayItems(ctx context.Context, q Q, branchID string, start, end time
 	return many(ctx, q, scanBoardItem, `SELECT `+boardItemColumns+`
 	   FROM spa.booking_items i JOIN spa.bookings b ON b.id = i.booking_id
 	   JOIN configuration.branches br ON br.id = b.branch_id `+itemJoins+`
-	  WHERE b.branch_id = $1 AND i.starts_at >= $2 AND i.starts_at < $3
+	  WHERE b.branch_id = $1 AND b.scheduled_at >= $2 AND b.scheduled_at < $3
 	    AND i.status <> 'cancelled' AND b.status <> 'cancelled'
-	  ORDER BY i.starts_at, b.booking_code`, branchID, start, end)
+	  ORDER BY b.scheduled_at, b.booking_code, i.sort_order`, branchID, start, end)
 }
 
 // therapistItems are a therapist's items starting in [start, end), any outlet.
@@ -965,9 +956,9 @@ func (store) therapistItems(ctx context.Context, q Q, therapistID string, start,
 	return many(ctx, q, scanBoardItem, `SELECT `+boardItemColumns+`
 	   FROM spa.booking_items i JOIN spa.bookings b ON b.id = i.booking_id
 	   JOIN configuration.branches br ON br.id = b.branch_id `+itemJoins+`
-	  WHERE i.therapist_id = $1 AND i.starts_at >= $2 AND i.starts_at < $3
+	  WHERE i.therapist_id = $1 AND b.scheduled_at >= $2 AND b.scheduled_at < $3
 	    AND i.status <> 'cancelled' AND b.status <> 'cancelled'
-	  ORDER BY i.starts_at`, therapistID, start, end)
+	  ORDER BY b.scheduled_at, i.sort_order`, therapistID, start, end)
 }
 
 func (store) boardItem(ctx context.Context, q Q, itemID string) (*BoardItem, error) {
@@ -989,11 +980,9 @@ func (store) openPublicBookings(ctx context.Context, q Q, phone string, now time
 // Unassigned bookings reserve therapist capacity before a receptionist assigns one.
 func (store) unassignedOverlaps(ctx context.Context, q Q, branchID string, start, end time.Time) (int, error) {
 	var n int
-	err := q.QueryRow(ctx, `SELECT count(*) FROM spa.booking_items i
-	  JOIN spa.bookings b ON b.id = i.booking_id
-	 WHERE b.branch_id = $1 AND i.status = 'unassigned'
-	   AND b.status NOT IN ('cancelled', 'expired')
-	   AND i.starts_at < $3 AND i.ends_at + make_interval(mins => i.buffer_min) > $2`,
+	err := q.QueryRow(ctx, `SELECT count(*) FROM spa.bookings b
+ WHERE b.branch_id = $1 AND b.therapist_id IS NULL AND b.status = 'unassigned'
+   AND b.scheduled_at < $3 AND b.ends_at > $2`,
 		branchID, start, end).Scan(&n)
 	return n, err
 }
@@ -1038,15 +1027,15 @@ func (store) releasePublicItemsForReschedule(ctx context.Context, q Q, bookingID
 	return err
 }
 
-func (store) movePublicItem(ctx context.Context, q Q, itemID string, at time.Time, minutes int) error {
+func (store) movePublicItem(ctx context.Context, q Q, itemID string) error {
 	_, err := q.Exec(ctx, `UPDATE spa.booking_items
-	 SET starts_at = $2, ends_at = $3, status = 'unassigned', therapist_id = NULL, updated_at = now()
-	 WHERE id = $1`, itemID, at, at.Add(time.Duration(minutes)*time.Minute))
+	 SET status = 'unassigned', therapist_id = NULL, updated_at = now()
+	 WHERE id = $1`, itemID)
 	return err
 }
 
-func (store) setPublicBookingTime(ctx context.Context, q Q, bookingID string, at time.Time) error {
-	_, err := q.Exec(ctx, `UPDATE spa.bookings SET scheduled_at = $2, status = 'unassigned', updated_at = now() WHERE id = $1`, bookingID, at)
+func (store) setPublicBookingTime(ctx context.Context, q Q, bookingID string, at, end time.Time) error {
+	_, err := q.Exec(ctx, `UPDATE spa.bookings SET scheduled_at = $2, ends_at = $3, status = 'unassigned', updated_at = now() WHERE id = $1`, bookingID, at, end)
 	return err
 }
 

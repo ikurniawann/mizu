@@ -1,9 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -16,22 +13,22 @@ import { useSpaBookings, useSpaOutlets } from "../queries";
 import { BOOKING_STATUS, BOOKING_STATUSES, BOOKING_TYPE_LABEL, PAYMENT_STATUS, PAYMENT_STATUSES, sourceLabel } from "../rules";
 import { addDaysToDate } from "../time";
 import type { BookingStatus, PaymentStatus } from "../types";
-import { BookingCreateDialog } from "./booking-create-dialog";
 import { BookingFunnelCard } from "./booking-funnel-card";
+import { BookingDetailDialog } from "./booking-detail-page";
 import {
   BookingStatusBadge,
   OutletSelect,
   Pager,
   PaymentStatusBadge,
   SELECT,
-  SPA_KICKER,
   TableNote,
 } from "./shared";
 
 const LIMIT = 20;
 
-/** Spa → Booking: daftar booking per outlet & periode, filter status layanan/pembayaran. */
+/** Laporan → Booking History: daftar booking per outlet & periode. */
 export function SpaBookingsPage() {
+  const [openedBookingId, setOpenedBookingId] = useState<string | null>(null);
   const [today] = useState(() => todayWib());
   const [branchId, setBranchId] = useState("");
   const [from, setFrom] = useState(today);
@@ -40,7 +37,6 @@ export function SpaBookingsPage() {
   const [payment, setPayment] = useState<PaymentStatus | "">("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
-  const [creating, setCreating] = useState(false);
   const search = useDebouncedValue(q.trim(), 350);
 
   const outlets = useSpaOutlets();
@@ -65,14 +61,9 @@ export function SpaBookingsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        kicker={SPA_KICKER}
-        title="Booking"
+        kicker="Laporan"
+        title="Booking History"
         description="Booking treatment semua outlet. Status layanan dan status pembayaran ditampilkan terpisah — selesai belum tentu lunas."
-        actions={
-          <Button onClick={() => setCreating(true)} disabled={outlets.isLoading}>
-            <Plus /> Booking baru
-          </Button>
-        }
       />
 
       <BookingFunnelCard />
@@ -141,11 +132,11 @@ export function SpaBookingsPage() {
                 {rows.map((b) => (
                   <TableRow key={b.id} className={bookings.isPlaceholderData ? "opacity-60" : undefined}>
                     <TableCell>
-                      <Link href={`/dashboard/spa/bookings/${b.id}`} className="font-mono font-medium text-brand-text hover:underline">
+                      <button type="button" onClick={() => setOpenedBookingId(b.id)} className="font-mono font-medium text-brand-text hover:underline">
                         {b.booking_code}
-                      </Link>
+                      </button>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(b.scheduled_at)} · {formatTime(b.scheduled_at)} · {BOOKING_TYPE_LABEL[b.booking_type] ?? b.booking_type}
+                        {formatDate(b.scheduled_at)} · {formatTime(b.scheduled_at)}–{formatTime(b.ends_at)} · {BOOKING_TYPE_LABEL[b.booking_type] ?? b.booking_type}
                         {b.source === "public" ? ` · ${sourceLabel(b.source)}` : ""}
                       </p>
                     </TableCell>
@@ -155,7 +146,7 @@ export function SpaBookingsPage() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{b.branch_name}</TableCell>
                     <TableCell className="hidden max-w-[14rem] whitespace-normal lg:table-cell">
-                      <p className="text-sm">{b.therapist_names.length ? b.therapist_names.join(", ") : "—"}</p>
+                      <p className="text-sm">{b.therapist_name ?? (b.therapist_names.length ? b.therapist_names.join(", ") : "—")}</p>
                       <p className="text-xs text-muted-foreground">{b.item_count} treatment</p>
                     </TableCell>
                     <TableCell>
@@ -173,10 +164,7 @@ export function SpaBookingsPage() {
           </>
         )}
       </Card>
-
-      {creating && (
-        <BookingCreateDialog outlets={outlets.data ?? []} defaultBranchId={branchId} onClose={() => setCreating(false)} />
-      )}
+      {openedBookingId && <BookingDetailDialog id={openedBookingId} readOnly onClose={() => setOpenedBookingId(null)} />}
     </div>
   );
 }

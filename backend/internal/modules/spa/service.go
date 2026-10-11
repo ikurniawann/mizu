@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -142,7 +141,7 @@ func ptr[T any](v T) *T { return &v }
 // Outlets lists every active branch with its spa configuration, limited to
 // the user's business scope.
 func (s *Service) Outlets(ctx context.Context, userID string) ([]Outlet, error) {
-	sc, err := s.scope(ctx, userID)
+	branches, err := s.reportBranchIDs(ctx, userID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +151,7 @@ func (s *Service) Outlets(ctx context.Context, userID string) ([]Outlet, error) 
 	}
 	out := make([]Outlet, 0, len(all))
 	for _, o := range all {
-		if inScope(sc, o.CompanyID, o.BranchID) {
+		if slices.Contains(branches, o.BranchID) {
 			out = append(out, o)
 		}
 	}
@@ -293,6 +292,11 @@ func (s *Service) CreateTreatment(ctx context.Context, in treatmentInput) (*Trea
 	var id string
 	err := s.tx(ctx, func(q Q) error {
 		var err error
+		if in.Category != nil && *in.Category != "" {
+			if _, err = q.Exec(ctx, `INSERT INTO spa.treatment_categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, *in.Category); err != nil {
+				return err
+			}
+		}
 		if id, err = s.st.insertTreatment(ctx, q, in); err != nil {
 			return codeTaken(err)
 		}
@@ -307,6 +311,11 @@ func (s *Service) CreateTreatment(ctx context.Context, in treatmentInput) (*Trea
 // UpdateTreatment patches a treatment; a sent variant list replaces the set.
 func (s *Service) UpdateTreatment(ctx context.Context, id string, in treatmentInput) (*Treatment, error) {
 	err := s.tx(ctx, func(q Q) error {
+		if in.Category != nil && *in.Category != "" {
+			if _, err := q.Exec(ctx, `INSERT INTO spa.treatment_categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, *in.Category); err != nil {
+				return err
+			}
+		}
 		found, err := s.st.updateTreatment(ctx, q, id, in)
 		if err != nil {
 			return codeTaken(err)
@@ -331,8 +340,21 @@ type priceInput struct {
 }
 
 // SetPrices sets or clears per-outlet prices of a treatment's variants.
-func (s *Service) SetPrices(ctx context.Context, id string, prices []priceInput) (*Treatment, error) {
-	err := s.tx(ctx, func(q Q) error {
+func (s *Service) SetPrices(ctx context.Context, userID, id string, prices []priceInput) (*Treatment, error) {
+	outlets, err := s.Outlets(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	allowed := make(map[string]bool)
+	for _, outlet := range outlets {
+		allowed[outlet.BranchID] = outlet.Configured
+	}
+	for _, price := range prices {
+		if !allowed[price.BranchID] {
+			return nil, httpx.Forbidden("Outlet di luar akses Anda atau belum dikonfigurasi sebagai outlet spa")
+		}
+	}
+	err = s.tx(ctx, func(q Q) error {
 		t, err := s.st.treatment(ctx, q, id)
 		if err != nil {
 			return err
@@ -525,6 +547,24 @@ func (s *Service) Customers(ctx context.Context, term string) ([]CustomerRef, er
 	return s.ports.Customers.Search(ctx, s.db, term, 20)
 }
 
+// CustomerDirectory lists the same active POS customers used by booking search.
+func (s *Service) CustomerDirectory(ctx context.Context, term string, page, limit int) ([]CustomerRef, int, error) {
+	return s.ports.Customers.Page(ctx, s.db, term, page, limit)
+}
+
+// CustomerDetail combines the customer profile with completed spa treatments.
+func (s *Service) CustomerDetail(ctx context.Context, id string, page, limit int) (*CustomerProfile, []CustomerTreatment, int, error) {
+	profile, err := s.ports.Customers.Detail(ctx, s.db, id)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if profile == nil {
+		return nil, nil, 0, httpx.NotFound("Customer tidak ditemukan")
+	}
+	history, total, err := s.ports.Customers.Treatments(ctx, s.db, id, page, limit)
+	return profile, history, total, err
+}
+
 /* ── bookings ────────────────────────────────────────────────────────── */
 
 // Bookings lists bookings in the user's scope.
@@ -575,19 +615,20 @@ type itemRequest struct {
 }
 
 type createBookingInput struct {
+	TherapistID         string
 	BranchID            string
 	BookingType         string
 	CustomerID          string
 	CustomerName        string
 	CustomerPhone       string
+	CustomerGender      string
 	TherapistGenderPref string
 	Notes               string
 	ScheduledAt         time.Time
 	Items               []itemRequest
 }
 
-// planItems resolves variants and start times: an item without starts_at
-// follows the previous one (one guest, consecutive treatments).
+// planItems resolves variants; planning times are transient, never item data.
 func (s *Service) planItems(ctx context.Context, q Q, branchID string, start time.Time, reqs []itemRequest) ([]newItem, error) {
 	ids := make([]string, len(reqs))
 	for i, r := range reqs {
@@ -600,22 +641,32 @@ func (s *Service) planItems(ctx context.Context, q Q, branchID string, start tim
 	cursor := start
 	out := make([]newItem, len(reqs))
 	for i, r := range reqs {
+		if r.StartsAt != nil {
+			return nil, httpx.BadRequest("Jadwal hanya dapat diatur pada booking")
+		}
 		v, ok := variants[r.VariantID]
 		if !ok || !v.IsActive || !v.TreatmentOn {
 			return nil, httpx.BadRequest("Treatment tidak ditemukan atau tidak aktif")
 		}
-		at := cursor
-		if r.StartsAt != nil {
-			at = *r.StartsAt
-		}
-		out[i] = newItem{Variant: v, StartsAt: at, Status: domain.ItemUnassigned, SortOrder: i}
-		cursor = at.Add(time.Duration(v.DurationMin) * time.Minute)
+		out[i] = newItem{Variant: v, StartsAt: cursor, Status: domain.ItemUnassigned, SortOrder: i}
+		cursor = cursor.Add(time.Duration(v.DurationMin) * time.Minute)
 	}
 	return out, nil
 }
 
 // CreateBooking records a front-office booking (walk-in or reservation).
 func (s *Service) CreateBooking(ctx context.Context, userID string, in createBookingInput) (*Booking, error) {
+	// Older clients may still send an item-level therapist. Accept only one
+	// consistent value, and apply it once to the entire booking.
+	for _, item := range in.Items {
+		if item.TherapistID == "" {
+			continue
+		}
+		if in.TherapistID != "" && in.TherapistID != item.TherapistID {
+			return nil, httpx.BadRequest("Satu booking hanya dapat ditugaskan ke satu terapis")
+		}
+		in.TherapistID = item.TherapistID
+	}
 	sc, err := s.scope(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -637,11 +688,16 @@ func (s *Service) CreateBooking(ctx context.Context, userID string, in createBoo
 		if err != nil {
 			return err
 		}
+		if customerID != nil && in.CustomerGender != "" {
+			if err := s.ports.Customers.SetGender(ctx, q, *customerID, in.CustomerGender); err != nil {
+				return err
+			}
+		}
 		id, err = s.st.insertBooking(ctx, q, newBooking{
 			Code: domain.BookingCode(s.clock()), CompanyID: o.CompanyID, BranchID: o.BranchID, WarehouseID: o.WarehouseID,
 			BookingType: in.BookingType, Source: "front_office", CustomerID: customerID, CustomerName: in.CustomerName,
 			CustomerPhone: phone, TherapistGenderPref: in.TherapistGenderPref, Notes: in.Notes,
-			ScheduledAt: items[0].StartsAt, CreatedBy: userID,
+			ScheduledAt: in.ScheduledAt, EndsAt: items[len(items)-1].StartsAt.Add(time.Duration(items[len(items)-1].Variant.DurationMin) * time.Minute), CreatedBy: userID,
 		})
 		if err != nil {
 			return err
@@ -651,15 +707,24 @@ func (s *Service) CreateBooking(ctx context.Context, userID string, in createBoo
 		}
 		for i := range items {
 			items[i].BookingID = id
-			itemID, err := s.st.insertItem(ctx, q, items[i])
+			_, err := s.st.insertItem(ctx, q, items[i])
 			if err != nil {
 				return err
 			}
-			if t := in.Items[i].TherapistID; t != "" {
-				if err := s.itemAction(ctx, q, userID, id, itemID, itemChange{Action: domain.ActionAssign, TherapistID: t}, domain.ActorStaff); err != nil {
-					return err
-				}
+		}
+		stored, err := s.st.itemRows(ctx, q, id, true)
+		if err != nil {
+			return err
+		}
+		if _, err := bookingInterval(in.ScheduledAt, stored); err != nil {
+			return err
+		}
+		if in.TherapistID != "" {
+			b, err := s.st.bookingRow(ctx, q, id, true)
+			if err != nil {
+				return err
 			}
+			return s.assignBooking(ctx, q, userID, b, in.TherapistID)
 		}
 		return s.syncStatus(ctx, q, id, userID)
 	})
@@ -712,8 +777,55 @@ func (s *Service) PatchBooking(ctx context.Context, userID, id string, p booking
 		if !domain.IsOpenBooking(b.Status) {
 			return httpx.Conflict("Booking sudah " + domain.BookingLabel(b.Status))
 		}
+		if p.GenderPref != nil {
+			b.GenderPref = *p.GenderPref
+		}
+		if p.ScheduledAt != nil {
+			if b.Status != domain.BookingUnassigned && b.Status != domain.BookingAssigned {
+				return httpx.Conflict("Jadwal booking tidak dapat diubah setelah booking dimulai")
+			}
+			items, err := s.st.itemRows(ctx, q, id, true)
+			if err != nil {
+				return err
+			}
+			for _, item := range items {
+				if item.Status == domain.ItemInTreatment || item.Status == domain.ItemCompleted {
+					return httpx.Conflict("Jadwal booking tidak dapat diubah setelah treatment dimulai")
+				}
+			}
+			if err := domain.CanEditItems(b.Status, b.PaymentStatus, b.PosOrderID != nil && s.orderLive(ctx, q, *b.PosOrderID)); err != nil {
+				return ruleErr(err)
+			}
+			interval, err := bookingInterval(*p.ScheduledAt, items)
+			if err != nil {
+				return err
+			}
+			b.ScheduledAt = interval.Start
+			if b.TherapistID != nil {
+				if _, err := s.checkBookingTherapist(ctx, q, b, items, *b.TherapistID); err != nil {
+					return err
+				}
+			}
+			if err := s.st.setBookingWindow(ctx, q, id, interval.Start, interval.End); err != nil {
+				return err
+			}
+			if err := s.st.event(ctx, q, id, nil, "reschedule", nil, nil, userID, interval.Start.In(domain.WIB).Format("02/01 15:04")+" WIB"); err != nil {
+				return err
+			}
+		} else if p.GenderPref != nil && b.TherapistID != nil {
+			items, err := s.st.itemRows(ctx, q, id, true)
+			if err != nil {
+				return err
+			}
+			if _, err := s.checkBookingTherapist(ctx, q, b, items, *b.TherapistID); err != nil {
+				return err
+			}
+		}
 		if err := s.st.patchBooking(ctx, q, id, p); err != nil {
 			return err
+		}
+		if p.CustomerName == nil && p.CustomerPhone == nil && p.Notes == nil && p.GenderPref == nil {
+			return nil
 		}
 		return s.st.event(ctx, q, id, nil, "update", nil, nil, userID, "Data booking diubah")
 	})
@@ -752,29 +864,42 @@ func (s *Service) AddItem(ctx context.Context, userID, id string, req itemReques
 		if err != nil {
 			return err
 		}
-		start := b.ScheduledAt
-		for _, it := range existing {
-			if it.Status == domain.ItemCancelled {
-				continue
-			}
-			if end := it.StartsAt.Add(time.Duration(it.DurationMin) * time.Minute); end.After(start) {
-				start = end
-			}
+		if b.Status != domain.BookingUnassigned && b.Status != domain.BookingAssigned {
+			return httpx.Conflict("Treatment tidak dapat ditambah setelah booking dimulai")
 		}
+		if req.TherapistID != "" && req.TherapistID != deref(b.TherapistID) {
+			return httpx.BadRequest("Treatment mengikuti terapis booking; ubah penugasan pada booking")
+		}
+		start := b.EndsAt
 		items, err := s.planItems(ctx, q, b.BranchID, start, []itemRequest{req})
 		if err != nil {
 			return err
 		}
 		items[0].BookingID, items[0].SortOrder = id, len(existing)
+		items[0].TherapistID = b.TherapistID
+		if b.TherapistID != nil {
+			items[0].Status = domain.ItemAssigned
+		}
 		itemID, err := s.st.insertItem(ctx, q, items[0])
 		if err != nil {
 			return err
 		}
-		if err := s.st.event(ctx, q, id, &itemID, "add_item", nil, ptr(domain.ItemUnassigned), userID, productName(items[0].Variant)); err != nil {
+		if err := s.st.event(ctx, q, id, &itemID, "add_item", nil, &items[0].Status, userID, productName(items[0].Variant)); err != nil {
 			return err
 		}
-		if req.TherapistID != "" {
-			if err := s.itemAction(ctx, q, userID, id, itemID, itemChange{Action: domain.ActionAssign, TherapistID: req.TherapistID}, domain.ActorStaff); err != nil {
+		updated, err := s.st.itemRows(ctx, q, id, true)
+		if err != nil {
+			return err
+		}
+		interval, err := bookingInterval(b.ScheduledAt, updated)
+		if err != nil {
+			return err
+		}
+		if err := s.st.setBookingWindow(ctx, q, id, interval.Start, interval.End); err != nil {
+			return err
+		}
+		if b.TherapistID != nil {
+			if _, err := s.checkBookingTherapist(ctx, q, b, updated, *b.TherapistID); err != nil {
 				return err
 			}
 		}
@@ -822,6 +947,66 @@ func (s *Service) ItemAction(ctx context.Context, userID, bookingID, itemID stri
 	return s.visibleBooking(ctx, nil, bookingID)
 }
 
+// BookingAction starts or completes every active treatment in one transaction.
+func (s *Service) BookingAction(ctx context.Context, userID, id, action string) (*Booking, error) {
+	sc, err := s.scope(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.tx(ctx, func(q Q) error {
+		b, err := s.lockBooking(ctx, q, sc, id)
+		if err != nil {
+			return err
+		}
+		if action != domain.ActionStart && action != domain.ActionComplete {
+			return httpx.BadRequest("Aksi booking tidak dikenal")
+		}
+		if action == domain.ActionStart && b.Status != domain.BookingAssigned ||
+			action == domain.ActionComplete && b.Status != domain.BookingInTreatment {
+			return httpx.Conflict("Status booking tidak sesuai untuk aksi ini")
+		}
+		items, err := s.st.itemRows(ctx, q, id, true)
+		if err != nil {
+			return err
+		}
+		changed := 0
+		now := s.clock()
+		for _, item := range items {
+			if item.Status == domain.ItemCancelled || item.Status == domain.ItemCompleted {
+				continue
+			}
+			next, err := domain.NextItemStatus(action, item.Status, b.Status, b.PaymentStatus == domain.PaymentPaid, domain.ActorStaff)
+			if err != nil {
+				return ruleErr(err)
+			}
+			if err := s.st.setItemStatus(ctx, q, item.ID, next, now); err != nil {
+				return err
+			}
+			if action == domain.ActionComplete {
+				if err := s.freezeCommission(ctx, q, b.BranchID, item); err != nil {
+					return err
+				}
+			}
+			changed++
+		}
+		if changed == 0 {
+			return httpx.Conflict("Booking tidak memiliki treatment yang dapat diproses")
+		}
+		if err := s.syncStatus(ctx, q, id, userID); err != nil {
+			return err
+		}
+		event := "start_booking"
+		if action == domain.ActionComplete {
+			event = "complete_booking"
+		}
+		return s.st.event(ctx, q, id, nil, event, &b.Status, nil, userID, "")
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.visibleBooking(ctx, nil, id)
+}
+
 // itemAction applies ch to an item of a locked booking; the caller syncs the
 // booking status afterwards.
 func (s *Service) itemAction(ctx context.Context, q Q, userID, bookingID, itemID string, ch itemChange, actor domain.Actor) error {
@@ -838,6 +1023,19 @@ func (s *Service) itemAction(ctx context.Context, q Q, userID, bookingID, itemID
 		return httpx.NotFound("Treatment tidak ditemukan")
 	}
 	it := items[idx]
+	if ch.Action == domain.ActionAssign || ch.Action == domain.ActionUnassign {
+		if actor != domain.ActorStaff {
+			return httpx.Forbidden("Penugasan hanya dapat diubah staf")
+		}
+		if it.Status == domain.ItemCancelled {
+			return httpx.Conflict("Treatment sudah dibatalkan")
+		}
+		therapistID := ch.TherapistID
+		if ch.Action == domain.ActionUnassign {
+			therapistID = ""
+		}
+		return s.assignBooking(ctx, q, userID, b, therapistID)
+	}
 	next, err := domain.NextItemStatus(ch.Action, it.Status, b.Status, b.PaymentStatus == domain.PaymentPaid, actor)
 	if err != nil {
 		return ruleErr(err)
@@ -845,36 +1043,10 @@ func (s *Service) itemAction(ctx context.Context, q Q, userID, bookingID, itemID
 	now := s.clock()
 	note := ""
 	switch ch.Action {
-	case domain.ActionAssign:
-		t, err := s.checkAssign(ctx, q, b, it, it.StartsAt, ch.TherapistID)
-		if err != nil {
-			return err
-		}
-		if err := s.st.setItemTherapist(ctx, q, it.ID, &t.ID, next); err != nil {
-			return err
-		}
-		note = t.FullName
-	case domain.ActionUnassign:
-		if err := s.st.setItemTherapist(ctx, q, it.ID, nil, next); err != nil {
-			return err
-		}
-	case domain.ActionReschedule:
-		if ch.StartsAt == nil {
-			return httpx.BadRequest("Waktu mulai wajib diisi")
-		}
-		if it.TherapistID != nil {
-			if _, err := s.checkAssign(ctx, q, b, it, *ch.StartsAt, *it.TherapistID); err != nil {
-				return err
-			}
-		}
-		if err := s.st.rescheduleItem(ctx, q, it.ID, *ch.StartsAt, it.DurationMin); err != nil {
-			return err
-		}
-		note = ch.StartsAt.In(domain.WIB).Format("02/01 15:04") + " WIB"
-		if err := s.st.syncScheduledAt(ctx, q, bookingID); err != nil {
-			return err
-		}
 	case domain.ActionCancel:
+		if b.Status != domain.BookingUnassigned && b.Status != domain.BookingAssigned {
+			return httpx.Conflict("Treatment tidak dapat dihapus setelah booking dimulai")
+		}
 		checkedOut := b.PosOrderID != nil && s.orderLive(ctx, q, *b.PosOrderID)
 		if err := domain.CanEditItems(b.Status, b.PaymentStatus, checkedOut); err != nil {
 			return ruleErr(err)
@@ -882,7 +1054,20 @@ func (s *Service) itemAction(ctx context.Context, q Q, userID, bookingID, itemID
 		if err := s.st.setItemStatus(ctx, q, it.ID, next, now); err != nil {
 			return err
 		}
+		items[idx].Status = next
+		interval, err := bookingInterval(b.ScheduledAt, items)
+		if err != nil {
+			return httpx.Conflict("Treatment terakhir tidak dapat dihapus; batalkan booking")
+		}
+		if err := s.st.setBookingWindow(ctx, q, bookingID, interval.Start, interval.End); err != nil {
+			return err
+		}
 	case domain.ActionStart:
+		for _, other := range items {
+			if other.ID != it.ID && other.Status == domain.ItemInTreatment {
+				return httpx.Conflict("Selesaikan treatment yang sedang berjalan sebelum memulai treatment berikutnya")
+			}
+		}
 		if err := s.st.setItemStatus(ctx, q, it.ID, next, now); err != nil {
 			return err
 		}
@@ -896,33 +1081,6 @@ func (s *Service) itemAction(ctx context.Context, q Q, userID, bookingID, itemID
 	}
 	from := it.Status
 	return s.st.event(ctx, q, bookingID, &it.ID, ch.Action, &from, &next, userID, note)
-}
-
-// checkAssign verifies the therapist works at the outlet that day and has
-// no overlapping active item, under a per-therapist lock.
-func (s *Service) checkAssign(ctx context.Context, q Q, b *bookingRow, it itemRow, start time.Time, therapistID string) (*Therapist, error) {
-	if err := s.st.lockTherapist(ctx, q, therapistID); err != nil {
-		return nil, err
-	}
-	eligible, err := s.st.eligibleTherapists(ctx, q, b.BranchID, domain.WIBDate(start))
-	if err != nil {
-		return nil, err
-	}
-	idx := slices.IndexFunc(eligible, func(t eligibleTherapist) bool { return t.ID == therapistID })
-	if idx < 0 {
-		return nil, httpx.Conflict("Terapis tidak bertugas di outlet ini pada tanggal tersebut")
-	}
-	iv := domain.ItemInterval(start, it.DurationMin, it.BufferMin)
-	conflicts, err := s.st.conflicts(ctx, q, []string{therapistID}, iv.Start, iv.End, it.ID)
-	if err != nil {
-		return nil, err
-	}
-	if c := conflicts[therapistID]; len(c) > 0 {
-		first := c[0]
-		return nil, httpx.Conflict(fmt.Sprintf("Terapis bentrok dengan booking %s (%s–%s WIB)", first.BookingCode,
-			time.Time(first.StartsAt).In(domain.WIB).Format("15:04"), time.Time(first.EndsAt).In(domain.WIB).Format("15:04")))
-	}
-	return &eligible[idx].Therapist, nil
 }
 
 // freezeCommission stores the commission of a completed item with the rule
@@ -1002,7 +1160,7 @@ func (s *Service) CancelBooking(ctx context.Context, userID, id, reason string) 
 }
 
 // Checkout opens (or reopens) the POS bill of a booking.
-func (s *Service) Checkout(ctx context.Context, userID, id string) (*CheckoutResult, error) {
+func (s *Service) Checkout(ctx context.Context, userID, id string, rating *int) (*CheckoutResult, error) {
 	sc, err := s.scope(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -1024,7 +1182,24 @@ func (s *Service) Checkout(ctx context.Context, userID, id string) (*CheckoutRes
 		if err := domain.CanCheckout(b.Status, b.PaymentStatus, statuses); err != nil {
 			return ruleErr(err)
 		}
+		if b.TherapistID == nil {
+			return httpx.Conflict("Terapis booking belum ditugaskan")
+		}
+		if rating == nil && b.TherapistRating == nil {
+			return httpx.BadRequest("Rating terapis 1–5 bintang wajib diisi sebelum checkout")
+		}
+		if rating != nil && b.TherapistRating != nil && *rating != *b.TherapistRating {
+			return httpx.Conflict("Rating terapis sudah tercatat untuk booking ini")
+		}
+		if rating == nil {
+			rating = b.TherapistRating
+		}
 		if b.PosOrderID != nil {
+			if b.TherapistRating == nil {
+				if err := s.st.setTherapistRating(ctx, q, id, *rating); err != nil {
+					return err
+				}
+			}
 			states, err := s.ports.POS.OrderStates(ctx, q, []string{*b.PosOrderID})
 			if err != nil {
 				return err
@@ -1082,7 +1257,7 @@ func (s *Service) Checkout(ctx context.Context, userID, id string) (*CheckoutRes
 		if err != nil {
 			return err
 		}
-		if err := s.st.setCheckout(ctx, q, id, ref.ID, s.clock()); err != nil {
+		if err := s.st.setCheckout(ctx, q, id, ref.ID, s.clock(), *rating); err != nil {
 			return err
 		}
 		return s.st.event(ctx, q, id, nil, "checkout", nil, nil, userID, "Tagihan POS "+ref.Number)
@@ -1103,13 +1278,37 @@ func (s *Service) Checkout(ctx context.Context, userID, id string) (*CheckoutRes
 /* ── availability and board ──────────────────────────────────────────── */
 
 // Availability rates every therapist of the outlet for a time window.
-func (s *Service) Availability(ctx context.Context, userID, branchID string, start, end time.Time, excludeItemID string) ([]Availability, error) {
+func (s *Service) Availability(ctx context.Context, userID, branchID string, start, end time.Time, excludeItemID, bookingID string) ([]Availability, error) {
 	sc, err := s.scope(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := s.outletIn(ctx, s.db, sc, branchID); err != nil {
 		return nil, err
+	}
+	if bookingID == "" && excludeItemID != "" {
+		bookingID, err = s.st.bookingIDOfItem(ctx, s.db, excludeItemID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if bookingID != "" {
+		b, err := s.visibleBooking(ctx, sc, bookingID)
+		if err != nil {
+			return nil, err
+		}
+		if b.BranchID != branchID {
+			return nil, httpx.BadRequest("Outlet booking tidak sesuai")
+		}
+		items, err := s.st.itemRows(ctx, s.db, bookingID, false)
+		if err != nil {
+			return nil, err
+		}
+		iv, err := bookingInterval(time.Time(b.ScheduledAt), items)
+		if err != nil {
+			return nil, err
+		}
+		start, end = iv.Start, iv.End
 	}
 	date := domain.WIBDate(start)
 	eligible, err := s.st.eligibleTherapists(ctx, s.db, branchID, date)
@@ -1121,7 +1320,7 @@ func (s *Service) Availability(ctx context.Context, userID, branchID string, sta
 	for i, t := range eligible {
 		ids[i], employees[i] = t.ID, t.EmployeeID
 	}
-	conflicts, err := s.st.conflicts(ctx, s.db, ids, start, end, excludeItemID)
+	conflicts, err := s.st.bookingConflicts(ctx, s.db, ids, start, end, bookingID)
 	if err != nil {
 		return nil, err
 	}
@@ -1170,7 +1369,7 @@ func (s *Service) Board(ctx context.Context, userID, branchID, date string) (*Bo
 		lane[t.ID] = len(board.Therapists)
 		board.Therapists = append(board.Therapists, BoardTherapist{Therapist: t.Therapist, Assisting: t.Assisting, Items: []BoardItem{}})
 	}
-	for _, it := range items {
+	for _, it := range groupBoardBookings(items) {
 		if it.TherapistID == nil || it.Status == domain.ItemUnassigned {
 			if domain.IsOpenBooking(it.BookingStatus) {
 				board.Unassigned = append(board.Unassigned, it)
@@ -1426,49 +1625,54 @@ func (s *Service) PublicTreatments(ctx context.Context, branchID string) ([]Publ
 // publicCapacity checks assigned work and reservations that have not yet been assigned.
 // The booking write repeats this check under an outlet lock because a displayed slot can age.
 func (s *Service) publicCapacity(ctx context.Context, q Q, branchID string, items []newItem, pref string) (bool, error) {
-	for _, item := range items {
-		interval := domain.ItemInterval(item.StartsAt, item.Variant.DurationMin, item.Variant.BufferMin)
-		eligible, err := s.st.eligibleTherapists(ctx, q, branchID, domain.WIBDate(item.StartsAt))
-		if err != nil {
-			return false, err
+	rows := make([]itemRow, len(items))
+	for i, item := range items {
+		rows[i] = itemRow{DurationMin: item.Variant.DurationMin, Status: item.Status}
+	}
+	interval, err := bookingInterval(items[0].StartsAt, rows)
+	if err != nil {
+		return false, err
+	}
+	eligible, err := s.st.eligibleTherapists(ctx, q, branchID, domain.WIBDate(interval.Start))
+	if err != nil {
+		return false, err
+	}
+	ids := make([]string, 0, len(eligible))
+	employees := make([]string, 0, len(eligible))
+	for _, therapist := range eligible {
+		if pref != "any" && (therapist.Gender == nil || *therapist.Gender != pref) {
+			continue
 		}
-		ids := make([]string, 0, len(eligible))
-		employees := make([]string, 0, len(eligible))
-		for _, therapist := range eligible {
-			if pref != "any" && (therapist.Gender == nil || *therapist.Gender != pref) {
-				continue
-			}
-			ids = append(ids, therapist.ID)
-			employees = append(employees, therapist.EmployeeID)
+		ids = append(ids, therapist.ID)
+		employees = append(employees, therapist.EmployeeID)
+	}
+	if len(ids) == 0 {
+		return false, nil
+	}
+	rosters, err := s.ports.People.Rosters(ctx, q, employees, domain.WIBDate(interval.Start))
+	if err != nil {
+		return false, err
+	}
+	conflicts, err := s.st.bookingConflicts(ctx, q, ids, interval.Start, interval.End, "")
+	if err != nil {
+		return false, err
+	}
+	reserved, err := s.st.unassignedOverlaps(ctx, q, branchID, interval.Start, interval.End)
+	if err != nil {
+		return false, err
+	}
+	free := 0
+	for _, therapist := range eligible {
+		if pref != "any" && (therapist.Gender == nil || *therapist.Gender != pref) {
+			continue
 		}
-		if len(ids) == 0 {
-			return false, nil
+		roster := rosters[therapist.EmployeeID]
+		if !roster.OnLeave && !roster.DayOff && len(conflicts[therapist.ID]) == 0 {
+			free++
 		}
-		rosters, err := s.ports.People.Rosters(ctx, q, employees, domain.WIBDate(item.StartsAt))
-		if err != nil {
-			return false, err
-		}
-		conflicts, err := s.st.conflicts(ctx, q, ids, interval.Start, interval.End, "")
-		if err != nil {
-			return false, err
-		}
-		reserved, err := s.st.unassignedOverlaps(ctx, q, branchID, interval.Start, interval.End)
-		if err != nil {
-			return false, err
-		}
-		free := 0
-		for _, therapist := range eligible {
-			if pref != "any" && (therapist.Gender == nil || *therapist.Gender != pref) {
-				continue
-			}
-			roster := rosters[therapist.EmployeeID]
-			if !roster.OnLeave && !roster.DayOff && len(conflicts[therapist.ID]) == 0 {
-				free++
-			}
-		}
-		if free <= reserved {
-			return false, nil
-		}
+	}
+	if free <= reserved {
+		return false, nil
 	}
 	return true, nil
 }
@@ -1614,6 +1818,9 @@ func (s *Service) PublicChangeBooking(ctx context.Context, token, grant, action 
 		if !ok || o.SlotMinutes <= 0 || (newAt.In(domain.WIB).Hour()*60+newAt.In(domain.WIB).Minute()-open)%o.SlotMinutes != 0 {
 			return httpx.BadRequest("Pilih jam dari daftar yang tersedia")
 		}
+		if _, err := q.Exec(ctx, `UPDATE spa.bookings SET therapist_id = NULL WHERE id = $1`, id); err != nil {
+			return err
+		}
 		if err := s.st.releasePublicItemsForReschedule(ctx, q, id); err != nil {
 			return err
 		}
@@ -1632,7 +1839,7 @@ func (s *Service) PublicChangeBooking(ctx context.Context, token, grant, action 
 			if !exists {
 				return httpx.Conflict("Treatment booking tidak ditemukan")
 			}
-			variant.DurationMin, variant.BufferMin = item.DurationMin, item.BufferMin
+			variant.DurationMin = item.DurationMin
 			planned[i] = newItem{Variant: variant, StartsAt: cursor, Status: domain.ItemUnassigned, SortOrder: i}
 			cursor = cursor.Add(time.Duration(item.DurationMin) * time.Minute)
 		}
@@ -1643,12 +1850,12 @@ func (s *Service) PublicChangeBooking(ctx context.Context, token, grant, action 
 		if !available {
 			return httpx.Conflict("Jam ini sudah penuh. Pilih jam lain")
 		}
-		for i, item := range items {
-			if err := s.st.movePublicItem(ctx, q, item.ID, planned[i].StartsAt, item.DurationMin); err != nil {
+		for _, item := range items {
+			if err := s.st.movePublicItem(ctx, q, item.ID); err != nil {
 				return err
 			}
 		}
-		if err := s.st.setPublicBookingTime(ctx, q, id, newAt); err != nil {
+		if err := s.st.setPublicBookingTime(ctx, q, id, newAt, cursor); err != nil {
 			return err
 		}
 		return s.st.event(ctx, q, id, nil, "reschedule", &b.Status, ptr(domain.BookingUnassigned), "", "Diubah pelanggan setelah verifikasi nomor HP")
@@ -1729,6 +1936,7 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 			Code: code, CompanyID: o.CompanyID, BranchID: o.BranchID, WarehouseID: o.WarehouseID,
 			BookingType: "reservation", Source: "public", CustomerID: &customerID, CustomerName: in.CustomerName,
 			CustomerPhone: phone, TherapistGenderPref: in.TherapistGenderPref, Notes: in.Notes, ScheduledAt: in.ScheduledAt,
+			EndsAt: in.ScheduledAt.Add(time.Duration(total) * time.Minute),
 		})
 		if err != nil {
 			return err

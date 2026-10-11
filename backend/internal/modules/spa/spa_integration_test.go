@@ -34,8 +34,9 @@ func setup(t *testing.T) *env {
 	t.Helper()
 	deps := testutil.Deps(t, func() time.Time { return fixedNow })
 	admin := testutil.CreateStaff(t, testutil.StaffOptions{Menus: map[string][]string{
-		"spa.bookings": nil, "spa.book-order": nil, "spa.treatments": nil, "spa.therapists": nil,
-		"spa.commissions": nil, "spa.outlets": nil,
+		"spa.bookings": nil, "spa.book-order": nil, "spa.treatments": nil,
+		"spa.categories": {"read", "create", "update", "delete"}, "spa.therapists": nil,
+		"spa.commissions": nil, "spa.outlets": nil, "spa.rush-hour": nil, "spa.trend": nil, "spa.rating": nil, "spa.customer": nil,
 	}})
 	// Created before the transaction: cleanups run in reverse, so the
 	// rollback releases rows that reference these users first.
@@ -97,6 +98,68 @@ func items(b map[string]any) []map[string]any {
 	return out
 }
 
+func TestCustomerDirectoryUsesBookingCustomerRecords(t *testing.T) {
+	e := setup(t)
+	e.call(&e.therapist, "GET", "/api/spa/customer-directory", nil, http.StatusForbidden)
+	phone := "628" + testutil.RandomHex(8)
+	name := "Spa Customer " + testutil.RandomHex(6)
+	var id string
+	if err := e.tx.QueryRow(e.ctx, `INSERT INTO pos.pos_customers (name, phone) VALUES ($1, $2) RETURNING id::text`, name, phone).Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	search := e.list(&e.admin, "/api/spa/customers?q="+phone)
+	if len(search) != 1 || search[0].(map[string]any)["id"] != id {
+		t.Fatalf("booking search should find customer %s: %v", id, search)
+	}
+	page := e.call(&e.admin, "GET", "/api/spa/customer-directory?q="+phone+"&page=1&limit=20", nil, http.StatusOK)
+	rows, _ := page["data"].([]any)
+	meta, _ := page["pagination"].(map[string]any)
+	if len(rows) != 1 || rows[0].(map[string]any)["id"] != id || meta["total"] != float64(1) {
+		t.Fatalf("directory should return booking customer: %v", page)
+	}
+}
+
+func TestTreatmentOutletPriceScope(t *testing.T) {
+	e := setup(t)
+	other := testutil.CreateOrg(t, e.tx)
+	for _, branch := range []string{e.org.BranchID, other.BranchID} {
+		if _, err := e.tx.Exec(e.ctx, `INSERT INTO spa.outlets (branch_id, warehouse_id)
+		  SELECT $1, id FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, branch); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tr := e.data(&e.admin, "POST", "/api/spa/treatments", map[string]any{
+		"code": "SCOPE" + testutil.RandomHex(2), "name": "Scoped price",
+		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}},
+	}, http.StatusCreated)
+	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	path := "/api/spa/treatments/" + tr["id"].(string) + "/prices"
+	prices := []any{
+		map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 220000},
+		map[string]any{"variant_id": variant, "branch_id": other.BranchID, "price_idr": 230000},
+	}
+	var count int
+	for _, level := range []string{"branch", "company", "holding"} {
+		if _, err := e.tx.Exec(e.ctx, `UPDATE configuration.users SET business_scope = $2, holding_id = $3, company_id = $4, branch_id = $5 WHERE id = $1`,
+			e.admin.UserID, level, e.org.HoldingID, e.org.CompanyID, e.org.BranchID); err != nil {
+			t.Fatal(err)
+		}
+		e.call(&e.admin, "PUT", path, map[string]any{"prices": prices}, http.StatusForbidden)
+		if err := e.tx.QueryRow(e.ctx, `SELECT count(*) FROM spa.variant_outlet_prices WHERE variant_id = $1`, variant).Scan(&count); err != nil {
+			t.Fatal(err)
+		}
+		if count != 0 {
+			t.Fatalf("%s: denied batch committed %d prices", level, count)
+		}
+	}
+	e.call(&e.admin, "PUT", path, map[string]any{"prices": prices[:1]}, http.StatusOK)
+	prices[0] = map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil}
+	e.call(&e.admin, "PUT", path, map[string]any{"prices": prices[:1]}, http.StatusOK)
+	if err := e.tx.QueryRow(e.ctx, `SELECT count(*) FROM spa.variant_outlet_prices WHERE variant_id = $1`, variant).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("clearing price: count=%d err=%v", count, err)
+	}
+}
+
 func TestSpaBookingFlow(t *testing.T) {
 	e := setup(t)
 	admin := &e.admin
@@ -125,7 +188,7 @@ func TestSpaBookingFlow(t *testing.T) {
 	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{
 		"code": code, "name": "Balinese Massage", "category": "Massage",
 		"variants": []any{
-			map[string]any{"name": "60 menit", "duration_min": 60, "buffer_min": 15, "price_idr": 200000},
+			map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000},
 			map[string]any{"name": "90 menit", "duration_min": 90, "price_idr": 280000},
 		},
 	}, http.StatusCreated)
@@ -160,7 +223,7 @@ func TestSpaBookingFlow(t *testing.T) {
 	// Booking 1: 10:00 WIB with therapist A, the outlet price applies.
 	start := "2026-10-08T03:00:00.000Z"
 	b1 := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
-		"branch_id": branch, "booking_type": "reservation", "customer_name": "Citra", "customer_phone": "+62 812-3456-7890",
+		"branch_id": branch, "booking_type": "reservation", "customer_name": "Citra", "customer_phone": "+62 812-3456-7890", "customer_gender": "female",
 		"scheduled_at": start, "items": []any{map[string]any{"variant_id": v60, "therapist_id": tA}},
 	}, http.StatusCreated)
 	if b1["status"] != "assigned" || b1["payment_status"] != "unpaid" || b1["customer_phone"] != "081234567890" {
@@ -172,10 +235,10 @@ func TestSpaBookingFlow(t *testing.T) {
 	b1ID := b1["id"].(string)
 	b1Item := items(b1)[0]["id"].(string)
 
-	// Booking 2 at 11:00 overlaps A's 15-minute buffer (10:00–11:15).
+	// Booking 2 at 10:30 overlaps A's booking window (10:00–11:00).
 	b2 := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
 		"branch_id": branch, "booking_type": "walk_in", "customer_name": "Dewi",
-		"scheduled_at": "2026-10-08T04:00:00.000Z", "items": []any{map[string]any{"variant_id": v90}},
+		"scheduled_at": "2026-10-08T03:30:00.000Z", "items": []any{map[string]any{"variant_id": v90}},
 	}, http.StatusCreated)
 	b2ID := b2["id"].(string)
 	b2Item := items(b2)[0]["id"].(string)
@@ -186,10 +249,10 @@ func TestSpaBookingFlow(t *testing.T) {
 	if msg, _ := out["error"].(string); msg == "" {
 		t.Fatalf("conflict without message: %v", out)
 	}
-	e.call(admin, "POST", "/api/spa/bookings/"+b2ID+"/checkout", nil, http.StatusConflict) // unassigned item
+	e.call(admin, "POST", "/api/spa/bookings/"+b2ID+"/checkout", map[string]any{"therapist_rating": 4}, http.StatusConflict) // unassigned item
 
-	// Availability at 11:00–12:30: A busy, B free.
-	avail := e.list(admin, "/api/spa/availability?branch_id="+branch+"&starts_at=2026-10-08T04:00:00.000Z&ends_at=2026-10-08T05:30:00.000Z")
+	// Availability at 10:30–12:00: A busy, B free.
+	avail := e.list(admin, "/api/spa/availability?branch_id="+branch+"&starts_at=2026-10-08T03:30:00.000Z&ends_at=2026-10-08T05:00:00.000Z")
 	seen := map[string]bool{}
 	for _, raw := range avail {
 		a := raw.(map[string]any)
@@ -210,28 +273,8 @@ func TestSpaBookingFlow(t *testing.T) {
 		t.Fatalf("board lanes = %v", board["therapists"])
 	}
 
-	// Checkout booking 1 into a POS open bill; a second checkout reuses it.
-	co := e.data(admin, "POST", "/api/spa/bookings/"+b1ID+"/checkout", nil, http.StatusOK)
-	orderID, _ := co["order_id"].(string)
-	if orderID == "" {
-		t.Fatalf("checkout = %v", co)
-	}
-	again := e.data(admin, "POST", "/api/spa/bookings/"+b1ID+"/checkout", nil, http.StatusOK)
-	if again["order_id"] != orderID {
-		t.Fatalf("second checkout made a new order: %v vs %v", again["order_id"], orderID)
-	}
-	var total float64
-	var station, payment, wh string
-	if err := e.tx.QueryRow(e.ctx, `SELECT o.total_amount::float8, i.station, o.payment_status::text, o.warehouse_id::text
-	   FROM pos.pos_orders o JOIN pos.pos_order_items i ON i.order_id = o.id WHERE o.id = $1`, orderID).
-		Scan(&total, &station, &payment, &wh); err != nil {
-		t.Fatal(err)
-	}
-	if total != 220000 || station != "spa" || payment != "unpaid" || wh != warehouse {
-		t.Fatalf("order total=%v station=%s payment=%s wh=%s", total, station, payment, wh)
-	}
-	// Adding a treatment after checkout is refused while the bill stands.
-	e.call(admin, "POST", "/api/spa/bookings/"+b1ID+"/items", map[string]any{"variant_id": v90}, http.StatusConflict)
+	// Checkout must wait until the service is complete.
+	e.call(admin, "POST", "/api/spa/bookings/"+b1ID+"/checkout", map[string]any{"therapist_rating": 4}, http.StatusConflict)
 
 	// The therapist works from their own login.
 	me := e.data(&therapistUser, "GET", "/api/spa/me", nil, http.StatusOK)
@@ -249,6 +292,41 @@ func TestSpaBookingFlow(t *testing.T) {
 	if done["status"] != "completed" || done["commission_idr"] != float64(22000) || done["booking_status"] != "completed" {
 		t.Fatalf("completed item = %v", done)
 	}
+	// Rating is required on first checkout; reopening the POS bill keeps it.
+	e.call(admin, "POST", "/api/spa/bookings/"+b1ID+"/checkout", map[string]any{}, http.StatusBadRequest)
+	co := e.data(admin, "POST", "/api/spa/bookings/"+b1ID+"/checkout", map[string]any{"therapist_rating": 4}, http.StatusOK)
+	orderID, _ := co["order_id"].(string)
+	if orderID == "" || co["booking"].(map[string]any)["therapist_rating"] != float64(4) {
+		t.Fatalf("checkout = %v", co)
+	}
+	again := e.data(admin, "POST", "/api/spa/bookings/"+b1ID+"/checkout", map[string]any{}, http.StatusOK)
+	if again["order_id"] != orderID {
+		t.Fatalf("second checkout made a new order: %v vs %v", again["order_id"], orderID)
+	}
+	var total float64
+	var station, payment, wh string
+	if err := e.tx.QueryRow(e.ctx, `SELECT o.total_amount::float8, i.station, o.payment_status::text, o.warehouse_id::text
+	   FROM pos.pos_orders o JOIN pos.pos_order_items i ON i.order_id = o.id WHERE o.id = $1`, orderID).
+		Scan(&total, &station, &payment, &wh); err != nil {
+		t.Fatal(err)
+	}
+	if total != 220000 || station != "spa" || payment != "unpaid" || wh != warehouse {
+		t.Fatalf("order total=%v station=%s payment=%s wh=%s", total, station, payment, wh)
+	}
+	// Adding a treatment after checkout is refused while the bill stands.
+	e.call(admin, "POST", "/api/spa/bookings/"+b1ID+"/items", map[string]any{"variant_id": v90}, http.StatusConflict)
+	var customerID string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM pos.pos_customers WHERE phone = '081234567890'`).Scan(&customerID); err != nil {
+		t.Fatal(err)
+	}
+	detail := e.data(admin, "GET", "/api/spa/customer-directory/"+customerID, nil, http.StatusOK)
+	profile := detail["customer"].(map[string]any)
+	history := detail["history"].([]any)
+	if profile["gender"] != "female" || len(history) != 1 ||
+		history[0].(map[string]any)["treatment_name"] != "Balinese Massage" {
+		t.Fatalf("customer profile/history = %v", detail)
+	}
+	e.call(&e.therapist, "GET", "/api/spa/customer-directory/"+customerID, nil, http.StatusForbidden)
 
 	// Staff override: complete booking 2 without a start (flat 90-minute rule).
 	b2 = e.data(admin, "PATCH", "/api/spa/bookings/"+b2ID+"/items/"+b2Item, map[string]any{"action": "complete"}, http.StatusOK)
@@ -369,10 +447,9 @@ func TestSpaPublicBookingAndAuth(t *testing.T) {
 	// A previously cancelled treatment must not return when the guest moves the booking.
 	var cancelledItemID string
 	if err := e.tx.QueryRow(e.ctx, `INSERT INTO spa.booking_items
-	  (booking_id, variant_id, treatment_name, variant_name, duration_min, buffer_min, price_idr,
-	   starts_at, ends_at, status, sort_order)
-	  SELECT booking_id, variant_id, treatment_name, variant_name, duration_min, buffer_min,
-	         price_idr, starts_at, ends_at, 'cancelled', 99
+	  (booking_id, variant_id, treatment_name, variant_name, duration_min, price_idr, status, sort_order)
+	  SELECT booking_id, variant_id, treatment_name, variant_name, duration_min,
+	         price_idr, 'cancelled', 99
 	    FROM spa.booking_items WHERE booking_id = (SELECT id FROM spa.bookings WHERE public_token = $1::uuid)
 	    LIMIT 1 RETURNING id::text`, token).Scan(&cancelledItemID); err != nil {
 		t.Fatal(err)

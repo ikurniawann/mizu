@@ -4,6 +4,7 @@
  */
 export const IAM = {
   dashboard: ["dashboard"],
+  reportSalesTarget: ["report.sales-vs-target"],
   ess: ["ess"],
   items: ["items"],
   itemsPurchasing: ["items.product.purchasing", "items.raw-material.purchasing"],
@@ -122,10 +123,15 @@ export const IAM = {
   /** Spa (Mizu): booking, terapis, treatment, komisi, outlet. */
   spa: ["spa"],
   spaBookings: ["spa.bookings", "spa.book-order"],
+  spaCustomer: ["spa.customer"],
   spaTreatments: ["spa.treatments"],
+  spaCategories: ["spa.categories"],
   spaTherapists: ["spa.therapists"],
   spaCommissions: ["spa.commissions"],
   spaOutlets: ["spa.outlets"],
+  spaRushHour: ["spa.rush-hour"],
+  spaTrend: ["spa.trend"],
+  spaRating: ["spa.rating"],
   /** Items → approval PR per modul. */
   itemsPrApproval: [
     "items.general.purchasing.approval-pr",

@@ -98,6 +98,7 @@ async function seedTreatments(c) {
   const variants = {}; // "BALI|60 menit" -> { id, treatmentId }
   const treatments = {};
   for (const [i, t] of D.TREATMENTS.entries()) {
+    await c.query(`INSERT INTO spa.treatment_categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [t.category]);
     const r = await c.query(
       `INSERT INTO spa.treatments (code, name, category, description, is_active, sort_order)
        VALUES ($1, $2, $3, $4, true, $5)
@@ -106,7 +107,7 @@ async function seedTreatments(c) {
        RETURNING id`, [t.code, t.name, t.category, t.description, (i + 1) * 10]);
     const treatmentId = r.rows[0].id;
     treatments[t.code] = treatmentId;
-    for (const [j, [name, duration, buffer, price]] of t.variants.entries()) {
+    for (const [j, [name, duration, , price]] of t.variants.entries()) {
       const existing = await c.query(
         `SELECT id FROM spa.treatment_variants WHERE treatment_id = $1 AND lower(name) = lower($2) ORDER BY created_at LIMIT 1`,
         [treatmentId, name]);
@@ -114,14 +115,14 @@ async function seedTreatments(c) {
       if (existing.rowCount) {
         id = existing.rows[0].id;
         await c.query(
-          `UPDATE spa.treatment_variants SET duration_min = $2, buffer_min = $3, price_idr = $4, is_active = true,
-             sort_order = $5, updated_at = NOW() WHERE id = $1`, [id, duration, buffer, price, j]);
+          `UPDATE spa.treatment_variants SET duration_min = $2, price_idr = $3, is_active = true,
+             sort_order = $4, updated_at = NOW() WHERE id = $1`, [id, duration, price, j]);
       } else {
         id = (await c.query(
-          `INSERT INTO spa.treatment_variants (treatment_id, name, duration_min, buffer_min, price_idr, sort_order)
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`, [treatmentId, name, duration, buffer, price, j])).rows[0].id;
+          `INSERT INTO spa.treatment_variants (treatment_id, name, duration_min, price_idr, sort_order)
+           VALUES ($1, $2, $3, $4, $5) RETURNING id`, [treatmentId, name, duration, price, j])).rows[0].id;
       }
-      variants[`${t.code}|${name}`] = { id, treatmentId, treatment: t, name, duration, buffer, price };
+      variants[`${t.code}|${name}`] = { id, treatmentId, treatment: t, name, duration, price };
     }
   }
   return { treatments, variants };

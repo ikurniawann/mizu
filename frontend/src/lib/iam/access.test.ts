@@ -40,3 +40,17 @@ describe("isPathAllowedByMenus", () => {
     expect(isPathAllowedByMenus("/dashboard/purchasing/print/po/abc", [RM_PR])).toBe(false);
   });
 });
+
+it("allows Spa Report entry and legacy URLs only with the matching report menu", () => {
+  const rush = "/dashboard/spa/report/rush-hour";
+  const trend = "/dashboard/spa/report/trend";
+	const rating = "/dashboard/spa/report/rating";
+  expect(isPathAllowedByMenus("/dashboard/spa/report", [trend])).toBe(true);
+  expect(isPathAllowedByMenus("/dashboard/spa/report", [rating])).toBe(true);
+  expect(isPathAllowedByMenus(rating, [rating])).toBe(true);
+  expect(isPathAllowedByMenus(rating, [trend])).toBe(false);
+  expect(isPathAllowedByMenus("/dashboard/spa/rush-hour", [rush])).toBe(true);
+  expect(isPathAllowedByMenus("/dashboard/spa/trend", [trend])).toBe(true);
+  expect(isPathAllowedByMenus("/dashboard/spa/rush-hour", [trend])).toBe(false);
+  expect(isPathAllowedByMenus("/dashboard/spa/report", [HOME])).toBe(false);
+});

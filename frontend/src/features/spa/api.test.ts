@@ -37,6 +37,26 @@ describe("fetch wrapper", () => {
     });
   });
 
+  it("mengambil halaman customer dari direktori yang sama dengan pencarian booking", async () => {
+    const fetchMock = vi.fn(async (..._args: unknown[]) =>
+      new Response(JSON.stringify({ success: true, data: [{ id: "c1", name: "Ayu", phone: "08123", email: null }], pagination: { page: 2, limit: 20, total: 21, totalPages: 2 } }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(spaApi.customerDirectory({ q: "Ayu", page: 2 })).resolves.toEqual({
+      data: [{ id: "c1", name: "Ayu", phone: "08123", email: null }],
+      pagination: { page: 2, limit: 20, total: 21, totalPages: 2 },
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/spa/customer-directory?q=Ayu&page=2");
+  });
+
+  it("mengambil profil dan riwayat treatment customer pada halaman yang dipilih", async () => {
+    const payload = { customer: { id: "c1", name: "Ayu", phone: "08123", gender: "female" }, history: [], pagination: { page: 2, limit: 20, total: 21, totalPages: 2 } };
+    const fetchMock = vi.fn(async (..._args: unknown[]) => new Response(JSON.stringify({ success: true, data: payload })));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(spaApi.customerDetail("c1", 2)).resolves.toEqual(payload);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/spa/customer-directory/c1?page=2");
+  });
+
   it("melempar pesan server saat success=false walau HTTP 200", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ success: false, error: "Gagal" }))));
     await expect(spaApi.outlets()).rejects.toThrow("Gagal");
@@ -50,5 +70,15 @@ describe("fetch wrapper", () => {
     expect(url).toBe("/api/spa/bookings/b/items/i");
     expect(init.method).toBe("PATCH");
     expect(JSON.parse(String(init.body))).toEqual({ action: "assign", therapist_id: "t" });
+  });
+
+  it("mengirim rating terapis saat checkout booking", async () => {
+    const fetchMock = vi.fn(async (..._args: unknown[]) => new Response(JSON.stringify({ success: true, data: { order_id: "o1" } })));
+    vi.stubGlobal("fetch", fetchMock);
+    await spaApi.checkout("b1", 4);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/spa/bookings/b1/checkout");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(String(init.body))).toEqual({ therapist_rating: 4 });
   });
 });

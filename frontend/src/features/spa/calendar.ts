@@ -1,7 +1,6 @@
 /**
  * Tata letak kalender Book Order (tampilan per terapis): sumbu jam vertikal
- * per hari WIB, satu kolom per terapis, blok treatment setinggi durasinya
- * ditambah ekor jeda (buffer). Fungsi murni — mudah diuji tanpa DOM.
+ * per hari WIB, satu kolom per terapis, blok booking setinggi total durasinya.
  */
 import type { Shift } from "./types";
 import { parseClock, wibClockOf, wibDateOf } from "./time";
@@ -23,12 +22,11 @@ export function minuteOfDay(iso: string): number {
 interface Timed {
   starts_at: string;
   ends_at: string;
-  buffer_min: number;
 }
 
 /**
  * Rentang tampilan: jam buka–tutup outlet, diperlebar agar setiap treatment
- * (termasuk jeda) terlihat, dibulatkan ke jam penuh. Bawaan 09:00–22:00.
+ * terlihat, dibulatkan ke jam penuh. Bawaan 09:00–22:00.
  */
 export function dayRange(open: string | null | undefined, close: string | null | undefined, items: Timed[] = []): DayRange {
   let start = parseClock(open) ?? 9 * 60;
@@ -36,7 +34,7 @@ export function dayRange(open: string | null | undefined, close: string | null |
   if (end <= start) end = start + 12 * 60;
   for (const it of items) {
     start = Math.min(start, minuteOfDay(it.starts_at));
-    end = Math.max(end, minuteOfDay(it.starts_at) + durationMin(it) + (it.buffer_min || 0));
+    end = Math.max(end, minuteOfDay(it.starts_at) + durationMin(it));
   }
   return { start: Math.floor(start / 60) * 60, end: Math.min(24 * 60, Math.ceil(end / 60) * 60) };
 }
@@ -81,7 +79,7 @@ export function layoutColumn<T extends Timed>(items: T[], range: DayRange, pxPer
 
   for (const item of sorted) {
     const s = minuteOfDay(item.starts_at);
-    const e = s + durationMin(item) + (item.buffer_min || 0);
+    const e = s + durationMin(item);
     if (cluster.length && s >= clusterEnd) flush();
     let lane = laneEnds.findIndex((end) => end <= s);
     if (lane === -1) {
@@ -95,7 +93,7 @@ export function layoutColumn<T extends Timed>(items: T[], range: DayRange, pxPer
       item,
       top: (s - range.start) * pxPerMin,
       height: durationMin(item) * pxPerMin,
-      bufferHeight: (item.buffer_min || 0) * pxPerMin,
+      bufferHeight: 0,
       lane,
       lanes: 1,
     };
@@ -148,27 +146,29 @@ export function clockOf(minute: number): string {
 }
 
 /** Item yang boleh dipindah ke terapis lain lewat seret (belum dimulai, booking masih terbuka). */
-export function isDraggable(item: { status: string; booking_status: string }): boolean {
-  return (item.status === "unassigned" || item.status === "assigned") && item.booking_status !== "cancelled" && item.booking_status !== "expired";
+export function isDraggable(item: { status: string; booking_status: string; assignment_locked?: boolean }): boolean {
+  return !item.assignment_locked && (item.status === "unassigned" || item.status === "assigned") && item.booking_status !== "cancelled" && item.booking_status !== "expired";
 }
 
-/**
- * Alasan treatment jatuh di luar ketersediaan terapis (cuti, libur, tanpa
- * shift, atau di luar jam shift); null bila aman. Server hanya menolak
- * bentrok jadwal, jadi ini dipakai untuk konfirmasi sebelum menugaskan.
- */
+/** Booking di luar rentang shift yang memang terjadwal tidak boleh ditugaskan. */
+export function shiftMismatch(item: Timed, shift: Shift | null): string | null {
+  const s = parseClock(shift?.start_time);
+  const e = parseClock(shift?.end_time);
+  if (s === null || e === null) return null;
+  const from = minuteOfDay(item.starts_at);
+  const to = from + durationMin(item);
+  const end = e > s ? e : 24 * 60;
+  if (from < s || to > end) return `Booking ${clockOf(from)}–${clockOf(to)} di luar shift ${clockOf(s)}–${clockOf(e)}.`;
+  return null;
+}
+
+/** Alasan ketersediaan yang masih perlu dikonfirmasi sebelum penugasan. */
 export function availabilityWarning(
   item: Timed,
   row: { shift: Shift | null; on_leave: boolean; day_off?: boolean }
 ): string | null {
   if (row.on_leave) return "Terapis sedang cuti pada tanggal ini.";
   if (row.day_off) return "Hari ini jadwal libur terapis.";
-  const s = parseClock(row.shift?.start_time);
-  const e = parseClock(row.shift?.end_time);
-  if (s === null || e === null) return "Terapis tidak punya shift pada tanggal ini.";
-  const from = minuteOfDay(item.starts_at);
-  const to = from + durationMin(item);
-  const end = e > s ? e : 24 * 60;
-  if (from < s || to > end) return `Treatment ${clockOf(from)}–${clockOf(to)} di luar shift ${clockOf(s)}–${clockOf(e)}.`;
-  return null;
+  if (!row.shift) return "Terapis tidak punya shift pada tanggal ini.";
+  return shiftMismatch(item, row.shift);
 }

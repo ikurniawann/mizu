@@ -6,6 +6,7 @@ package iam
 // Menu code prefixes, one var per key of IAM in prefixes.ts.
 var (
 	Dashboard               = []string{"dashboard"}
+	ReportSalesTarget       = []string{"report.sales-vs-target"}
 	Ess                     = []string{"ess"}
 	Items                   = []string{"items"}
 	ItemsPurchasing         = []string{"items.product.purchasing", "items.raw-material.purchasing"}
@@ -81,16 +82,22 @@ var (
 	SiteEvents              = []string{"site.events"}
 	Spa                     = []string{"spa"}
 	SpaBookings             = []string{"spa.bookings", "spa.book-order"}
+	SpaCustomer             = []string{"spa.customer"}
 	SpaTreatments           = []string{"spa.treatments"}
+	SpaCategories           = []string{"spa.categories"}
 	SpaTherapists           = []string{"spa.therapists"}
 	SpaCommissions          = []string{"spa.commissions"}
 	SpaOutlets              = []string{"spa.outlets"}
+	SpaRushHour             = []string{"spa.rush-hour"}
+	SpaTrend                = []string{"spa.trend"}
+	SpaRating               = []string{"spa.rating"}
 	ItemsPrApproval         = []string{"items.general.purchasing.approval-pr", "items.product.approval.pr", "items.raw-material.approval.pr"}
 )
 
 // ByKey maps the TS key (e.g. "gymPackages") to its prefixes.
 var ByKey = map[string][]string{
 	"dashboard":               Dashboard,
+	"reportSalesTarget":       ReportSalesTarget,
 	"ess":                     Ess,
 	"items":                   Items,
 	"itemsPurchasing":         ItemsPurchasing,
@@ -166,9 +173,14 @@ var ByKey = map[string][]string{
 	"siteEvents":              SiteEvents,
 	"spa":                     Spa,
 	"spaBookings":             SpaBookings,
+	"spaCustomer":             SpaCustomer,
 	"spaTreatments":           SpaTreatments,
+	"spaCategories":           SpaCategories,
 	"spaTherapists":           SpaTherapists,
 	"spaCommissions":          SpaCommissions,
 	"spaOutlets":              SpaOutlets,
+	"spaRushHour":             SpaRushHour,
+	"spaTrend":                SpaTrend,
+	"spaRating":               SpaRating,
 	"itemsPrApproval":         ItemsPrApproval,
 }

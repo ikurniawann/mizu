@@ -93,7 +93,7 @@ func (m mod) Routes() []module.Route {
 	if s.ports.Overview != nil {
 		routes = append(routes, module.Route{Pattern: "GET /api/dashboard/executive", Handler: httpx.Handle(s.executive)})
 	}
-	return routes
+	return append(routes, s.salesTargetRoutes()...)
 }
 
 // parallel runs fns concurrently on a pool (the TS Promise.all) and in

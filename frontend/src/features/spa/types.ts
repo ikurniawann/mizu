@@ -11,7 +11,7 @@ export type BookingType = "walk_in" | "reservation";
 export type GenderPref = "any" | "male" | "female";
 export type TherapistGender = "male" | "female";
 export type CommissionType = "percent" | "fixed";
-export type ItemAction = "assign" | "unassign" | "start" | "complete" | "cancel" | "reschedule";
+export type ItemAction = "assign" | "unassign" | "start" | "complete" | "cancel";
 
 export interface Pagination {
   page: number;
@@ -57,7 +57,6 @@ export interface Variant {
   id: string;
   name: string;
   duration_min: number;
-  buffer_min: number;
   price_idr: number;
   is_active: boolean;
   sort_order: number;
@@ -73,6 +72,12 @@ export interface Treatment {
   is_active: boolean;
   sort_order: number;
   variants: Variant[];
+}
+
+export interface TreatmentCategory {
+  id: string;
+  name: string;
+  treatment_count: number;
 }
 
 export interface Therapist {
@@ -93,6 +98,28 @@ export interface SpaCustomer {
   name: string;
   phone: string | null;
   email: string | null;
+  gender: "male" | "female" | null;
+}
+
+export interface SpaCustomerProfile extends Pick<SpaCustomer, "id" | "name" | "phone"> {
+  gender: "male" | "female" | null;
+}
+
+export interface SpaCustomerTreatment {
+  id: string;
+  booking_id: string;
+  booking_code: string;
+  branch_name: string;
+  treatment_name: string;
+  variant_name: string;
+  therapist_name: string | null;
+  completed_at: string;
+}
+
+export interface SpaCustomerDetail {
+  customer: SpaCustomerProfile;
+  history: SpaCustomerTreatment[];
+  pagination: Pagination;
 }
 
 // ── Outlet ───────────────────────────────────────────────────────────────────
@@ -112,7 +139,6 @@ export interface VariantInput {
   id?: string;
   name: string;
   duration_min: number;
-  buffer_min: number;
   price_idr: number;
   is_active: boolean;
   sort_order: number;
@@ -186,6 +212,8 @@ export interface OutletPic {
 // ── Booking ──────────────────────────────────────────────────────────────────
 
 export interface BookingSummary {
+  therapist_id: string | null;
+  therapist_name: string | null;
   id: string;
   booking_code: string;
   branch_id: string;
@@ -195,6 +223,7 @@ export interface BookingSummary {
   customer_name: string;
   customer_phone: string | null;
   scheduled_at: string;
+  ends_at: string;
   status: BookingStatus;
   payment_status: PaymentStatus;
   item_count: number;
@@ -210,12 +239,9 @@ export interface BookingItem {
   treatment_name: string;
   variant_name: string;
   duration_min: number;
-  buffer_min: number;
   price_idr: number;
   therapist_id: string | null;
   therapist_name: string | null;
-  starts_at: string;
-  ends_at: string;
   status: ItemStatus;
   started_at: string | null;
   completed_at: string | null;
@@ -234,6 +260,7 @@ export interface BookingEvent {
 }
 
 export interface Booking extends BookingSummary {
+	therapist_rating: number | null;
   company_id: string;
   warehouse_id: string | null;
   customer_id: string | null;
@@ -261,16 +288,16 @@ export interface BookingListParams {
 
 export interface BookingItemInput {
   variant_id: string;
-  starts_at?: string;
-  therapist_id?: string;
 }
 
 export interface BookingCreateInput {
+  therapist_id?: string;
   branch_id: string;
   booking_type: BookingType;
   customer_id?: string;
   customer_name: string;
   customer_phone: string;
+  customer_gender: "male" | "female";
   therapist_gender_pref: GenderPref;
   notes?: string;
   scheduled_at: string;
@@ -278,6 +305,7 @@ export interface BookingCreateInput {
 }
 
 export interface BookingUpdateInput {
+  scheduled_at?: string;
   customer_name?: string;
   customer_phone?: string;
   notes?: string;
@@ -286,8 +314,7 @@ export interface BookingUpdateInput {
 
 export type ItemActionInput =
   | { action: "assign"; therapist_id: string }
-  | { action: "unassign" | "start" | "complete" | "cancel" }
-  | { action: "reschedule"; starts_at: string };
+  | { action: "unassign" | "start" | "complete" | "cancel" };
 
 export interface CheckoutResult {
   booking: Booking;
@@ -319,6 +346,7 @@ export interface TherapistAvailability {
 }
 
 export interface AvailabilityParams {
+  booking_id?: string;
   branch_id: string;
   starts_at: string;
   ends_at: string;
@@ -326,9 +354,14 @@ export interface AvailabilityParams {
 }
 
 export interface BoardItem extends BookingItem {
+  starts_at: string;
+  ends_at: string;
+  treatment_count?: number;
+  assignment_locked?: boolean;
   booking_id: string;
   booking_code: string;
   customer_name: string;
+	therapist_gender_pref: GenderPref;
   booking_status: BookingStatus;
 }
 

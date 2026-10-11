@@ -1,6 +1,10 @@
 package spa
 
-import "nuhabit/backend/internal/platform/httpx"
+import (
+	"time"
+
+	"nuhabit/backend/internal/platform/httpx"
+)
 
 // Wire types: the JSON contract of EPIC-052 (docs/epics/EPIC-052-*.md).
 
@@ -38,7 +42,6 @@ type Variant struct {
 	ID           string        `json:"id"`
 	Name         string        `json:"name"`
 	DurationMin  int           `json:"duration_min"`
-	BufferMin    int           `json:"buffer_min"`
 	PriceIDR     float64       `json:"price_idr"`
 	IsActive     bool          `json:"is_active"`
 	SortOrder    int           `json:"sort_order"`
@@ -102,14 +105,37 @@ type OutletPIC struct {
 
 // CustomerRef is a POS customer found by search.
 type CustomerRef struct {
-	ID    string  `json:"id"`
-	Name  string  `json:"name"`
-	Phone string  `json:"phone"`
-	Email *string `json:"email"`
+	ID     string  `json:"id"`
+	Name   string  `json:"name"`
+	Phone  string  `json:"phone"`
+	Email  *string `json:"email"`
+	Gender *string `json:"gender"`
+}
+
+// CustomerProfile is the POS identity shown in Spa's customer detail.
+type CustomerProfile struct {
+	ID     string  `json:"id"`
+	Name   string  `json:"name"`
+	Phone  string  `json:"phone"`
+	Gender *string `json:"gender"`
+}
+
+// CustomerTreatment is one completed spa treatment for a customer.
+type CustomerTreatment struct {
+	ID            string    `json:"id"`
+	BookingID     string    `json:"booking_id"`
+	BookingCode   string    `json:"booking_code"`
+	BranchName    string    `json:"branch_name"`
+	TreatmentName string    `json:"treatment_name"`
+	VariantName   string    `json:"variant_name"`
+	TherapistName *string   `json:"therapist_name"`
+	CompletedAt   time.Time `json:"completed_at"`
 }
 
 // BookingSummary is one row of the booking list.
 type BookingSummary struct {
+	TherapistID    *string      `json:"therapist_id"`
+	TherapistName  *string      `json:"therapist_name"`
 	ID             string       `json:"id"`
 	BookingCode    string       `json:"booking_code"`
 	BranchID       string       `json:"branch_id"`
@@ -119,6 +145,7 @@ type BookingSummary struct {
 	CustomerName   string       `json:"customer_name"`
 	CustomerPhone  string       `json:"customer_phone"`
 	ScheduledAt    httpx.JSTime `json:"scheduled_at"`
+	EndsAt         httpx.JSTime `json:"ends_at"`
 	Status         string       `json:"status"`
 	PaymentStatus  string       `json:"payment_status"`
 	ItemCount      int          `json:"item_count"`
@@ -135,12 +162,9 @@ type Item struct {
 	TreatmentName string        `json:"treatment_name"`
 	VariantName   string        `json:"variant_name"`
 	DurationMin   int           `json:"duration_min"`
-	BufferMin     int           `json:"buffer_min"`
 	PriceIDR      float64       `json:"price_idr"`
 	TherapistID   *string       `json:"therapist_id"`
 	TherapistName *string       `json:"therapist_name"`
-	StartsAt      httpx.JSTime  `json:"starts_at"`
-	EndsAt        httpx.JSTime  `json:"ends_at"`
 	Status        string        `json:"status"`
 	StartedAt     *httpx.JSTime `json:"started_at"`
 	CompletedAt   *httpx.JSTime `json:"completed_at"`
@@ -172,6 +196,7 @@ type Booking struct {
 	CancelledAt         *httpx.JSTime `json:"cancelled_at"`
 	CancelReason        *string       `json:"cancel_reason"`
 	PosOrderNumber      *string       `json:"pos_order_number"`
+	TherapistRating     *int          `json:"therapist_rating"`
 	Items               []Item        `json:"items"`
 	Events              []Event       `json:"events"`
 }
@@ -180,13 +205,18 @@ type Booking struct {
 // therapist's own list.
 type BoardItem struct {
 	Item
-	BookingID     string `json:"booking_id"`
-	BookingCode   string `json:"booking_code"`
-	BranchID      string `json:"branch_id"`
-	BranchName    string `json:"branch_name"`
-	CustomerName  string `json:"customer_name"`
-	BookingStatus string `json:"booking_status"`
-	PaymentStatus string `json:"payment_status"`
+	StartsAt         httpx.JSTime `json:"starts_at"`
+	EndsAt           httpx.JSTime `json:"ends_at"`
+	TreatmentCount   int          `json:"treatment_count,omitempty"`
+	AssignmentLocked bool         `json:"assignment_locked"`
+	BookingID        string       `json:"booking_id"`
+	BookingCode      string       `json:"booking_code"`
+	BranchID         string       `json:"branch_id"`
+	BranchName       string       `json:"branch_name"`
+	CustomerName     string       `json:"customer_name"`
+	GenderPref       string       `json:"therapist_gender_pref"`
+	BookingStatus    string       `json:"booking_status"`
+	PaymentStatus    string       `json:"payment_status"`
 }
 
 // ShiftInfo is a therapist's scheduled shift that day.
@@ -196,7 +226,7 @@ type ShiftInfo struct {
 	EndTime   string `json:"end_time"`
 }
 
-// Conflict is an item that blocks an assignment.
+// Conflict is an occupied booking window, referencing its first treatment.
 type Conflict struct {
 	ItemID      string       `json:"item_id"`
 	BookingCode string       `json:"booking_code"`

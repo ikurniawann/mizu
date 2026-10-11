@@ -5,6 +5,7 @@ export const spaKeys = {
   outlets: () => ["spa", "outlets"] as const,
   treatments: (active?: boolean) => ["spa", "treatments", { active: !!active }] as const,
   treatmentsAll: () => ["spa", "treatments"] as const,
+  treatmentCategories: () => ["spa", "treatment-categories"] as const,
   therapistsAll: () => ["spa", "therapists"] as const,
   therapists: (params: { branch_id?: string; active?: boolean }) => ["spa", "therapists", params] as const,
   customers: (q: string) => ["spa", "customers", q] as const,

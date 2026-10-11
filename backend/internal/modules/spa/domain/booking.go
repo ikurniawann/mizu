@@ -56,16 +56,15 @@ const (
 
 // Item actions.
 const (
-	ActionAssign     = "assign"
-	ActionUnassign   = "unassign"
-	ActionStart      = "start"
-	ActionComplete   = "complete"
-	ActionCancel     = "cancel"
-	ActionReschedule = "reschedule"
+	ActionAssign   = "assign"
+	ActionUnassign = "unassign"
+	ActionStart    = "start"
+	ActionComplete = "complete"
+	ActionCancel   = "cancel"
 )
 
 // ItemActions lists the actions of PATCH .../items/{itemId}.
-var ItemActions = []string{ActionAssign, ActionUnassign, ActionStart, ActionComplete, ActionCancel, ActionReschedule}
+var ItemActions = []string{ActionAssign, ActionUnassign, ActionStart, ActionComplete, ActionCancel}
 
 // RuleError is a business rule violation; the HTTP layer maps it to 409.
 type RuleError struct{ Msg string }
@@ -127,11 +126,6 @@ func NextItemStatus(action, from, bookingStatus string, paid bool, actor Actor) 
 			return "", rule("Treatment yang sudah dimulai tidak bisa dibatalkan")
 		}
 		return ItemCancelled, nil
-	case ActionReschedule:
-		if from != ItemUnassigned && from != ItemAssigned {
-			return "", rule("Jadwal hanya bisa diubah sebelum treatment dimulai")
-		}
-		return from, nil
 	}
 	return "", rule("Aksi tidak dikenal: %s", action)
 }
@@ -175,6 +169,9 @@ func CanCancelBooking(status string, paid bool, items []string) error {
 	if !IsOpenBooking(status) {
 		return rule("Booking sudah %s", BookingLabel(status))
 	}
+	if status != BookingUnassigned && status != BookingAssigned {
+		return rule("Booking yang sudah dimulai tidak bisa dibatalkan")
+	}
 	if paid {
 		return rule("Booking sudah dibayar, tidak bisa dibatalkan")
 	}
@@ -191,6 +188,9 @@ func CanCheckout(status, payment string, items []string) error {
 	if !IsOpenBooking(status) {
 		return rule("Booking sudah %s, tidak bisa checkout", BookingLabel(status))
 	}
+	if status != BookingCompleted {
+		return rule("Selesaikan semua treatment sebelum checkout")
+	}
 	if payment == PaymentPaid {
 		return rule("Booking sudah dibayar")
 	}
@@ -200,8 +200,8 @@ func CanCheckout(status, payment string, items []string) error {
 			continue
 		}
 		active++
-		if s == ItemUnassigned {
-			return rule("Masih ada treatment yang belum ditugaskan ke terapis")
+		if s != ItemCompleted {
+			return rule("Masih ada treatment yang belum selesai")
 		}
 	}
 	if active == 0 {

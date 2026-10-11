@@ -165,7 +165,7 @@ var _ spa.Customers = spaCustomers{}
 
 func (spaCustomers) Search(ctx context.Context, q database.Querier, term string, limit int) ([]spa.CustomerRef, error) {
 	like := "%" + strings.ReplaceAll(strings.ReplaceAll(term, "%", ""), "_", "") + "%"
-	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(name, ''), phone, email FROM pos.pos_customers
+	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(name, ''), phone, email, gender FROM pos.pos_customers
 	  WHERE COALESCE(is_active, true) AND (name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1)
 	  ORDER BY last_visit DESC NULLS LAST, name LIMIT $2`, like, limit)
 	if err != nil {
@@ -175,12 +175,87 @@ func (spaCustomers) Search(ctx context.Context, q database.Querier, term string,
 	out := []spa.CustomerRef{}
 	for rows.Next() {
 		var c spa.CustomerRef
-		if err := rows.Scan(&c.ID, &c.Name, &c.Phone, &c.Email); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Phone, &c.Email, &c.Gender); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
 	}
 	return out, rows.Err()
+}
+
+func (spaCustomers) Page(ctx context.Context, q database.Querier, term string, page, limit int) ([]spa.CustomerRef, int, error) {
+	like := "%" + strings.ReplaceAll(strings.ReplaceAll(term, "%", ""), "_", "") + "%"
+	where := `COALESCE(is_active, true) AND (name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1)`
+	var total int
+	if err := q.QueryRow(ctx, `SELECT count(*) FROM pos.pos_customers WHERE `+where, like).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(name, ''), phone, email, gender FROM pos.pos_customers
+	  WHERE `+where+` ORDER BY name, id LIMIT $2 OFFSET $3`, like, limit, (page-1)*limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	out := []spa.CustomerRef{}
+	for rows.Next() {
+		var c spa.CustomerRef
+		if err := rows.Scan(&c.ID, &c.Name, &c.Phone, &c.Email, &c.Gender); err != nil {
+			return nil, 0, err
+		}
+		out = append(out, c)
+	}
+	return out, total, rows.Err()
+}
+
+func (spaCustomers) Detail(ctx context.Context, q database.Querier, id string) (*spa.CustomerProfile, error) {
+	var profile spa.CustomerProfile
+	err := q.QueryRow(ctx, `SELECT id::text, COALESCE(name, ''), phone, gender
+	  FROM pos.pos_customers WHERE id = $1 AND COALESCE(is_active, true)`, id).
+		Scan(&profile.ID, &profile.Name, &profile.Phone, &profile.Gender)
+	if database.IsNoRows(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
+func (spaCustomers) SetGender(ctx context.Context, q database.Querier, id, gender string) error {
+	_, err := q.Exec(ctx, `UPDATE pos.pos_customers SET gender = $2, updated_at = now() WHERE id = $1`, id, gender)
+	return err
+}
+
+func (spaCustomers) Treatments(ctx context.Context, q database.Querier, id string, page, limit int) ([]spa.CustomerTreatment, int, error) {
+	where := `b.customer_id = $1 AND i.status = 'completed'`
+	var total int
+	if err := q.QueryRow(ctx, `SELECT count(*) FROM spa.booking_items i
+	  JOIN spa.bookings b ON b.id = i.booking_id WHERE `+where, id).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	rows, err := q.Query(ctx, `SELECT i.id::text, b.id::text, b.booking_code, br.name, i.treatment_name, i.variant_name,
+	  e.full_name, COALESCE(i.completed_at, b.ends_at)
+	  FROM spa.booking_items i
+	  JOIN spa.bookings b ON b.id = i.booking_id
+	  JOIN configuration.branches br ON br.id = b.branch_id
+	  LEFT JOIN spa.therapists t ON t.id = i.therapist_id
+	  LEFT JOIN hris.employees e ON e.id = t.employee_id
+	  WHERE `+where+` ORDER BY COALESCE(i.completed_at, b.ends_at) DESC, i.id DESC LIMIT $2 OFFSET $3`,
+		id, limit, (page-1)*limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	out := []spa.CustomerTreatment{}
+	for rows.Next() {
+		var item spa.CustomerTreatment
+		if err := rows.Scan(&item.ID, &item.BookingID, &item.BookingCode, &item.BranchName, &item.TreatmentName,
+			&item.VariantName, &item.TherapistName, &item.CompletedAt); err != nil {
+			return nil, 0, err
+		}
+		out = append(out, item)
+	}
+	return out, total, rows.Err()
 }
 
 func (spaCustomers) FindOrCreate(ctx context.Context, q database.Querier, name, phone string) (string, error) {
