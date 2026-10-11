@@ -4136,6 +4136,16 @@
   },
   {
     "module": "spa",
+    "method": "POST",
+    "path": "/api/public/spa/bookings/{token}/mock-pay"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/public/spa/bookings/{token}/pay"
+  },
+  {
+    "module": "spa",
     "method": "GET",
     "path": "/api/public/spa/outlets"
   },
@@ -4147,7 +4157,17 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/public/spa/outlets/{branchId}/therapists"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/public/spa/outlets/{branchId}/treatments"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/public/spa/webhook/xendit"
   },
   {
     "module": "inventory",

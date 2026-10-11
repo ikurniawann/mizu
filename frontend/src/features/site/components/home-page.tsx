@@ -11,8 +11,14 @@ import { Container, Picture } from "./site-section";
 
 /** The seniors promo runs at the Westhoff outlet (branch slug from the seed). */
 const PROMO_BRANCH_SLUG = "mizu-westhoff";
-/** Brand art used wherever the CMS has no photo yet. */
-const WALLPAPER = "/brand/mizu-wallpaper.webp";
+/** CC0 stock photos (public/site/photos/CREDITS.md); a CMS photo wins when set. */
+const PHOTO = {
+  hero: "/site/photos/mizu-hero.webp",
+  menu: "/site/photos/mizu-hot-stone.webp",
+  seniors: "/site/photos/mizu-reflexology.webp",
+  signature: "/site/photos/mizu-stones-orchid.webp",
+  together: "/site/photos/mizu-relax.webp",
+} as const;
 
 /**
  * Mizu home: a calm, image-led page in five parts — full-bleed hero, a short
@@ -52,9 +58,9 @@ function Hero({ hero }: { hero: HomeContent["hero"] }) {
           playsInline
         />
       ) : (
-        <Picture src={hero.image_url || WALLPAPER} alt="" className="absolute inset-0 -z-20 h-full w-full" />
+        <Picture src={hero.image_url || PHOTO.hero} alt="" className="absolute inset-0 -z-20 h-full w-full object-[center_60%]" />
       )}
-      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/80 via-ink/20 to-ink/40" />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/85 via-ink/30 to-ink/50" />
       <Container className="flex min-h-[88dvh] flex-col justify-end gap-8 pt-40 pb-16 md:min-h-[92dvh] md:pb-24">
         <div className="max-w-3xl space-y-5">
           {hero.kicker ? <p className="text-xs font-medium tracking-[0.3em] text-white/75 uppercase">{hero.kicker}</p> : null}
@@ -135,7 +141,7 @@ function MenuCard({ outlet, treatments, photo }: { outlet: PublicOutlet | null; 
             </div>
           </div>
           <div className="relative min-h-72 bg-ink md:min-h-[26rem]">
-            <Picture src={photo || WALLPAPER} alt="" className={cn("absolute inset-0 h-full w-full", !photo && "object-[60%_center]")} />
+            <Picture src={photo || PHOTO.menu} alt="Pijat batu panas" className="absolute inset-0 h-full w-full" />
           </div>
         </div>
       </Container>
@@ -148,7 +154,8 @@ interface Offer {
   eyebrow: string;
   title: string;
   href: string;
-  /** Background treatment for cards without a photo. */
+  image: string;
+  /** Gradient over the photo, keeps the caption readable. */
   tone: string;
   imagePosition: string;
 }
@@ -162,8 +169,9 @@ function offersFor(outlet: PublicOutlet | null, treatments: PublicTreatment[], b
       eyebrow: `Setiap hari kerja di ${promoBranch.name}`,
       title: "Buy 1 Get 1 untuk usia 60+",
       href: bookingHref({ outlet: promoBranch.slug }),
+      image: PHOTO.seniors,
       tone: "from-ink/90 via-ink/40 to-transparent",
-      imagePosition: "object-[50%_35%]",
+      imagePosition: "object-[center_40%]",
     });
   }
   const signature = featured(treatments, 1)[0];
@@ -174,8 +182,9 @@ function offersFor(outlet: PublicOutlet | null, treatments: PublicTreatment[], b
       eyebrow: [durationsLabel(signature.variants), from !== null ? `mulai ${formatRupiah(from)}` : ""].filter(Boolean).join(" · "),
       title: signature.name,
       href: bookingHref({ outlet: outlet.slug, treatment: signature.id }),
-      tone: "from-accent-dark/90 via-ink/50 to-ink/10",
-      imagePosition: "object-[20%_60%] scale-x-[-1]",
+      image: PHOTO.signature,
+      tone: "from-ink/90 via-ink/40 to-transparent",
+      imagePosition: "object-[center_55%]",
     });
   }
   offers.push({
@@ -183,8 +192,9 @@ function offersFor(outlet: PublicOutlet | null, treatments: PublicTreatment[], b
     eyebrow: "Me-time berdua atau bersama keluarga, di ruangan yang sama.",
     title: "Better together.",
     href: bookingHref(),
-    tone: "from-ink/95 via-ink/50 to-ink/20",
-    imagePosition: "object-[80%_80%]",
+    image: PHOTO.together,
+    tone: "from-ink/90 via-ink/40 to-transparent",
+    imagePosition: "object-[center_35%]",
   });
   return offers;
 }
@@ -211,7 +221,7 @@ function Offers({ outlet, treatments, branches }: { outlet: PublicOutlet | null;
               className="group relative isolate flex h-72 items-end overflow-hidden rounded-card bg-ink p-6 text-white md:h-96 md:p-8"
             >
               <Picture
-                src={WALLPAPER}
+                src={o.image}
                 alt=""
                 className={cn("absolute inset-0 -z-20 h-full w-full transition duration-700 group-hover:scale-105", o.imagePosition)}
               />

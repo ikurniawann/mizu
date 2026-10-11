@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  bookingQrFileName,
   clampDate,
   dateStrip,
   endClock,
@@ -91,5 +92,13 @@ describe("treatment", () => {
     expect(out.map((t) => t.id)).toEqual(["d", "a", "b"]);
     expect(out[1].variants.map((x) => x.id)).toEqual(["a1", "a2"]);
     expect(orderedTreatments(list, "zzz").map((t) => t.id)).toEqual(["a", "b", "d"]);
+  });
+});
+
+describe("bookingQrFileName", () => {
+  it("nama file aman dari kode booking", () => {
+    expect(bookingQrFileName("MZ-261009-VXL3")).toBe("mizu-booking-MZ-261009-VXL3.png");
+    expect(bookingQrFileName("../x y")).toBe("mizu-booking-xy.png");
+    expect(bookingQrFileName("")).toBe("mizu-booking-booking.png");
   });
 });

@@ -21,6 +21,8 @@ const PUBLIC_AUTH_PREFIXES = [
   "/products/",
   "/qris/",
   "/site/sample/",
+  // Foto stok website Mizu (public/site/photos) untuk beranda & booking publik.
+  "/site/photos/",
   // Desktop NüHabit OS (/os) & alamat lamanya: tampil juga untuk pengunjung.
   "/arkiv-os",
   "/qa",

@@ -329,6 +329,8 @@ type PublicOutlet struct {
 	OpenTime    string  `json:"open_time"`
 	CloseTime   string  `json:"close_time"`
 	SlotMinutes int     `json:"slot_minutes"`
+	// OnlinePayment: the guest may pay by Xendit invoice.
+	OnlinePayment bool `json:"online_payment"`
 }
 
 // PublicVariant is a bookable variant with the outlet price.
@@ -382,6 +384,15 @@ type PublicBookingResult struct {
 	CanManage     bool         `json:"can_manage"`
 	Items         []PublicItem `json:"items"`
 	TotalIDR      float64      `json:"total_idr"`
+	// TherapistName is the assigned therapist's short public name.
+	TherapistName *string `json:"therapist_name"`
+	// PaymentMethod is outlet or online; InvoiceURL is the live payment link.
+	PaymentMethod string  `json:"payment_method"`
+	InvoiceURL    *string `json:"invoice_url"`
+	PaidOnline    bool    `json:"paid_online"`
+	// MockPayment: the link is a simulation (XENDIT_MOCK=1).
+	MockPayment   bool `json:"mock_payment"`
+	OnlinePayment bool `json:"online_payment"`
 }
 
 // MeResult is GET /api/spa/me.

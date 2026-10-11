@@ -2,6 +2,7 @@ package spa
 
 import (
 	"context"
+	"time"
 
 	"nuhabit/backend/internal/platform/database"
 )
@@ -12,6 +13,36 @@ type Ports struct {
 	POS       POS
 	Customers Customers
 	People    People
+	// Payments is optional: nil (or unconfigured) hides online payment.
+	Payments Payments
+}
+
+// InvoiceRequest is one Xendit invoice for a booking.
+type InvoiceRequest struct {
+	ExternalID  string
+	Amount      float64
+	PayerName   string
+	Description string
+	RedirectURL string
+}
+
+// Invoice is a created invoice; Mock is set in XENDIT_MOCK mode, where no
+// real payment page exists and the URL is the redirect itself.
+type Invoice struct {
+	ID        string
+	URL       string
+	ExpiresAt time.Time
+	Mock      bool
+}
+
+// Payments is the hosted online payment (Xendit invoices).
+type Payments interface {
+	Configured() bool
+	Mock() bool
+	ValidWebhookToken(token string) bool
+	CreateInvoice(ctx context.Context, in InvoiceRequest) (Invoice, error)
+	// InvoiceStatus is the upper-cased Xendit status: PENDING, PAID, SETTLED, EXPIRED.
+	InvoiceStatus(ctx context.Context, invoiceID string) (string, error)
 }
 
 // TreatmentProduct asks POS for the product that sells a variant at an

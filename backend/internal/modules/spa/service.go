@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log/slog"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -1600,7 +1601,12 @@ const MaxPublicOpenBookings = 3
 
 // PublicOutlets lists outlets open for online booking.
 func (s *Service) PublicOutlets(ctx context.Context) ([]PublicOutlet, error) {
-	return s.st.publicOutlets(ctx, s.db)
+	list, err := s.st.publicOutlets(ctx, s.db)
+	online := s.onlinePaymentReady()
+	for i := range list {
+		list[i].OnlinePayment = online
+	}
+	return list, err
 }
 
 func (s *Service) publicOutlet(ctx context.Context, q Q, branchID string) (*outletRow, error) {
@@ -1728,7 +1734,12 @@ func (s *Service) PublicSlots(ctx context.Context, branchID, date string, varian
 }
 
 func (s *Service) PublicBooking(ctx context.Context, token string) (*PublicBookingResult, error) {
-	return s.st.publicBookingByToken(ctx, s.db, token)
+	s.syncOnlinePayment(ctx, token)
+	result, err := s.st.publicBookingByToken(ctx, s.db, token)
+	if result != nil {
+		result.OnlinePayment = s.onlinePaymentReady()
+	}
+	return result, err
 }
 
 func (s *Service) BookingFunnel(ctx context.Context, from, to string) ([]BookingFunnelStage, error) {
@@ -1874,6 +1885,10 @@ type publicBookingInput struct {
 	TherapistGenderPref string
 	Notes               string
 	VariantIDs          []string
+	// TherapistID is the guest's pick ("" = the outlet assigns).
+	TherapistID string
+	// PaymentMethod is outlet (default) or online.
+	PaymentMethod string
 }
 
 // PublicBook records an online booking, unassigned, for the front office.
@@ -1888,6 +1903,12 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 	phone := domain.NormalizePhone(in.CustomerPhone)
 	if phone == "" {
 		return nil, httpx.BadRequest("Nomor HP tidak valid")
+	}
+	if in.PaymentMethod == "" {
+		in.PaymentMethod = PaymentAtOutlet
+	}
+	if in.PaymentMethod == PaymentOnline && !s.onlinePaymentReady() {
+		return nil, httpx.BadRequest("Pembayaran online belum tersedia. Pilih bayar di outlet.")
 	}
 	var result *PublicBookingResult
 	err := s.tx(ctx, func(q Q) error {
@@ -1963,9 +1984,33 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 				DurationMin: v.DurationMin, PriceIDR: v.Price})
 			result.TotalIDR += v.Price
 		}
+		if in.PaymentMethod == PaymentOnline {
+			if _, err := q.Exec(ctx, `UPDATE spa.bookings SET payment_method = 'online' WHERE id = $1`, id); err != nil {
+				return err
+			}
+		}
+		if in.TherapistID == "" {
+			return nil
+		}
+		// The guest's pick goes through the same checks as a front-office
+		// assignment (duty, shift, gender, overlap) under the booking lock.
+		b, err := s.st.bookingRow(ctx, q, id, true)
+		if err != nil {
+			return err
+		}
+		if err := s.assignBooking(ctx, q, "", b, in.TherapistID); err != nil {
+			var rule *httpx.Error
+			if errors.As(err, &rule) && rule.Status == http.StatusConflict {
+				return httpx.Conflict("Terapis pilihanmu baru saja terisi. Pilih terapis lain, atau biarkan Mizu memilihkan.")
+			}
+			return err
+		}
 		return nil
 	})
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	return s.PublicBooking(ctx, result.AccessToken)
 }
 
 /* ── POS events ──────────────────────────────────────────────────────── */

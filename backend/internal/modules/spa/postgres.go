@@ -1043,14 +1043,21 @@ func (store) publicBookingByToken(ctx context.Context, q Q, token string) (*Publ
 	var bookingID string
 	var at time.Time
 	result := &PublicBookingResult{AccessToken: token, Items: []PublicItem{}}
+	var therapistName *string
 	err := q.QueryRow(ctx, `SELECT b.id::text, b.branch_id::text, b.booking_code, b.scheduled_at, br.name, br.phone,
 	    b.therapist_gender_pref, b.status, b.payment_status,
 	    (b.status IN ('unassigned', 'assigned') AND b.payment_status = 'unpaid'
-	      AND b.pos_order_id IS NULL AND b.scheduled_at >= now() + interval '24 hours')
+	      AND b.pos_order_id IS NULL AND b.scheduled_at >= now() + interval '24 hours'),
+	    e.full_name, b.payment_method,
+	    CASE WHEN b.payment_status = 'unpaid' AND b.invoice_expires_at > now() THEN b.xendit_invoice_url END,
+	    b.paid_online_at IS NOT NULL, COALESCE(b.xendit_invoice_id LIKE 'mock-%', false)
 	  FROM spa.bookings b JOIN configuration.branches br ON br.id = b.branch_id
+	  LEFT JOIN spa.therapists t ON t.id = b.therapist_id
+	  LEFT JOIN hris.employees e ON e.id = t.employee_id
 	 WHERE b.public_token = $1::uuid AND b.source = 'public'`, token).Scan(
 		&bookingID, &result.BranchID, &result.BookingCode, &at, &result.BranchName, &result.BranchPhone, &result.GenderPref,
-		&result.Status, &result.PaymentStatus, &result.CanManage)
+		&result.Status, &result.PaymentStatus, &result.CanManage, &therapistName, &result.PaymentMethod,
+		&result.InvoiceURL, &result.PaidOnline, &result.MockPayment)
 	if database.IsNoRows(err) {
 		return nil, httpx.NotFound("Booking tidak ditemukan")
 	}
@@ -1058,6 +1065,10 @@ func (store) publicBookingByToken(ctx context.Context, q Q, token string) (*Publ
 		return nil, err
 	}
 	result.ScheduledAt = jsTime(at)
+	if therapistName != nil {
+		name := publicName(*therapistName)
+		result.TherapistName = &name
+	}
 	items, err := many(ctx, q, func(r pgx.Row) (PublicItem, error) {
 		var item PublicItem
 		err := r.Scan(&item.VariantID, &item.TreatmentName, &item.VariantName, &item.DurationMin, &item.PriceIDR)

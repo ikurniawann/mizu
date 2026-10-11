@@ -110,3 +110,12 @@ export const usePublicSpaSlots = (branchId: string, date: string, variantIds: st
     refetchInterval: 60_000,
     staleTime: 15_000,
   });
+
+/** Terapis yang masih kosong untuk jam terpilih (dipakai langkah Jadwal booking publik). */
+export const usePublicSpaTherapists = (branchId: string, startsAt: string | null, variantIds: string[], pref: string) =>
+  useQuery({
+    queryKey: spaKeys.publicTherapists(branchId, startsAt ?? "", variantIds, pref),
+    queryFn: () => publicSpaApi.therapists(branchId, startsAt ?? "", variantIds, pref),
+    enabled: !!branchId && !!startsAt && variantIds.length > 0,
+    staleTime: 15_000,
+  });

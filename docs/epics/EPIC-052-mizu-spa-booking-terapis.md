@@ -298,3 +298,19 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   kebutuhan, kutipan, Instagram, galeri, cerita member, grid outlet dan berita dihapus dari beranda
   (`home-discovery.tsx` tak terpakai lagi, dihapus). Foto memakai CMS bila ada, selain itu art wallpaper Mizu.
   Deploy `mizu:demo-8`.
+- 2026-10-12 — Revisi website & booking publik:
+  - Foto stok spa CC0 (StockSnap/rawpixel via Openverse, pratinjau ~1000 px) di `frontend/public/site/photos/`
+    (sumber di `CREDITS.md`) untuk hero beranda, kartu menu, kartu penawaran, hero booking & status. `/site/photos/`
+    ditambahkan ke daftar aset publik middleware (sebelumnya 307 ke /login).
+  - Pilih terapis: `GET /api/public/spa/outlets/{id}/therapists` (aturan sama dengan penugasan FO: bertugas, di dalam
+    shift, gender, tidak bentrok; nama publik dipendekkan "Ayu L."). Bawaan "Pilihkan oleh Mizu". Pilihan tamu
+    disimpan lewat `assignBooking`; bila keburu terisi → 409 tanpa membocorkan kode booking lain.
+  - Bayar online: migrasi `20261012130000_spa_online_payment` (payment_method, invoice Xendit, nominal, paid_online_at).
+    `POST …/bookings/{token}/pay` membuat/menggunakan ulang invoice Xendit; settle lewat webhook
+    `POST /api/public/spa/webhook/xendit` (x-callback-token, cek nominal, idempoten) dan cek status saat halaman status
+    dibuka. Lunas online = `payment_status=paid` tanpa order POS. Server demo memakai `XENDIT_MOCK=1`: halaman
+    status `?bayar=simulasi` mensimulasikan halaman bayar (`…/mock-pay`, hanya aktif di mode mock).
+  - Halaman status: QR kode booking + "Simpan QR" (PNG bermerek, bagikan di ponsel), kartu pembayaran.
+  - Tes: integrasi `TestPublicTherapistChoiceAndOnlinePayment` + seluruh tes spa hijau di DB uji (salinan live,
+    `mizu-devdb`); 5383 tes frontend hijau. Backup `mizu-before-payment-20261012-050524.dump`. Deploy `mizu:pay-3`,
+    `mizu-api:pay-1`. Booking uji MZ-261012-5VEN (simulasi) dibatalkan & di-void.

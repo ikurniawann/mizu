@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"strings"
 
 	"nuhabit/backend/internal/modules/hris/domain"
@@ -16,7 +18,29 @@ import (
 
 // SpaPorts wires the spa module.
 func SpaPorts() spa.Ports {
-	return spa.Ports{POS: spaPOS{}, Customers: spaCustomers{}, People: spaPeople{}}
+	return spa.Ports{POS: spaPOS{}, Customers: spaCustomers{}, People: spaPeople{},
+		Payments: spaPayments{newXenditInvoices(os.Getenv, slog.Default())}}
+}
+
+/* ── online payment (Xendit invoices) ────────────────────────────────── */
+
+type spaPayments struct{ x xenditInvoices }
+
+var _ spa.Payments = spaPayments{}
+
+func (p spaPayments) Configured() bool { return p.x.configured() }
+
+func (p spaPayments) Mock() bool { return p.x.mock() }
+
+func (p spaPayments) ValidWebhookToken(token string) bool { return p.x.validWebhookToken(token) }
+
+func (p spaPayments) CreateInvoice(ctx context.Context, in spa.InvoiceRequest) (spa.Invoice, error) {
+	inv, err := p.x.create(ctx, in.ExternalID, in.Amount, in.PayerName, in.Description, in.RedirectURL)
+	return spa.Invoice{ID: inv.id, URL: inv.url, ExpiresAt: inv.expiresAt, Mock: p.x.mock()}, err
+}
+
+func (p spaPayments) InvoiceStatus(ctx context.Context, invoiceID string) (string, error) {
+	return p.x.status(ctx, invoiceID)
 }
 
 // spaFallbackCashier is the POS placeholder cashier for staff without an

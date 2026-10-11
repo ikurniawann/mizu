@@ -8,11 +8,18 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function Page({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ bayar?: string | string[] }>;
+}) {
+  const [{ token }, { bayar }] = await Promise.all([params, searchParams]);
+  const notice = typeof bayar === "string" && /^(simulasi|gagal)$/.test(bayar) ? bayar : undefined;
   return (
     <SiteLayout>
-      <PublicSpaBookingStatus token={token} />
+      <PublicSpaBookingStatus token={token} notice={notice} />
     </SiteLayout>
   );
 }

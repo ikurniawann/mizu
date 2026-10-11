@@ -1,6 +1,8 @@
 package spa
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -129,9 +131,13 @@ func (h *Handler) Routes() []module.Route {
 		public("GET "+publicPrefix+"/outlets", h.publicOutlets),
 		public("GET "+publicPrefix+"/outlets/{branchId}/treatments", h.publicTreatments),
 		public("GET "+publicPrefix+"/outlets/{branchId}/slots", h.publicSlots),
+		public("GET "+publicPrefix+"/outlets/{branchId}/therapists", h.publicTherapists),
 		public("GET "+publicPrefix+"/bookings/{token}", h.publicBooking),
 		public("POST "+publicPrefix+"/bookings/{token}/change", h.publicChangeBooking),
+		public("POST "+publicPrefix+"/bookings/{token}/pay", h.publicPay),
+		public("POST "+publicPrefix+"/bookings/{token}/mock-pay", h.publicMockPay),
 		public("POST "+publicPrefix+"/bookings", h.publicBook),
+		public("POST "+publicPrefix+"/webhook/xendit", h.publicXenditWebhook),
 	}
 }
 
@@ -1140,19 +1146,16 @@ func (h *Handler) publicTreatments(w http.ResponseWriter, r *http.Request) error
 	return ok(w, list)
 }
 
-func (h *Handler) publicSlots(w http.ResponseWriter, r *http.Request) error {
-	branchID, err := pathUUID(r, "branchId")
-	if err != nil {
-		return err
-	}
-	date := r.URL.Query().Get("date")
+// publicSlotQuery is the variant_ids and therapist_gender_pref of the
+// public slot and therapist lookups.
+func publicSlotQuery(r *http.Request) ([]string, string, error) {
 	ids := strings.Split(r.URL.Query().Get("variant_ids"), ",")
 	if len(ids) == 0 || len(ids) > 5 {
-		return httpx.BadRequest("Pilih 1–5 treatment")
+		return nil, "", httpx.BadRequest("Pilih 1–5 treatment")
 	}
 	for _, id := range ids {
 		if !validate.IsUUID(id) {
-			return httpx.BadRequest("Treatment tidak valid")
+			return nil, "", httpx.BadRequest("Treatment tidak valid")
 		}
 	}
 	pref := r.URL.Query().Get("therapist_gender_pref")
@@ -1160,7 +1163,20 @@ func (h *Handler) publicSlots(w http.ResponseWriter, r *http.Request) error {
 		pref = "any"
 	}
 	if pref != "any" && pref != "male" && pref != "female" {
-		return httpx.BadRequest("Preferensi terapis tidak valid")
+		return nil, "", httpx.BadRequest("Preferensi terapis tidak valid")
+	}
+	return ids, pref, nil
+}
+
+func (h *Handler) publicSlots(w http.ResponseWriter, r *http.Request) error {
+	branchID, err := pathUUID(r, "branchId")
+	if err != nil {
+		return err
+	}
+	date := r.URL.Query().Get("date")
+	ids, pref, err := publicSlotQuery(r)
+	if err != nil {
+		return err
 	}
 	slots, err := h.svc.PublicSlots(r.Context(), branchID, date, ids, pref)
 	if err != nil {
@@ -1178,6 +1194,8 @@ func (h *Handler) publicBook(w http.ResponseWriter, r *http.Request) error {
 		TherapistGenderPref: f.StrDefault("therapist_gender_pref", "any", validate.StrOpts{Check: validate.EnumCheck(genderPrefs)}),
 		Notes:               f.StrDefault("notes", "", validate.StrOpts{Trim: true, Max: 500}),
 		VariantIDs:          f.Strings("variant_ids", req, 5, uuidOpts),
+		TherapistID:         f.StrDefault("therapist_id", "", uuidOpts),
+		PaymentMethod:       f.StrDefault("payment_method", PaymentAtOutlet, validate.StrOpts{Check: validate.EnumCheck([]string{PaymentAtOutlet, PaymentOnline})}),
 	}
 	if at := parseTime(f.Str("scheduled_at", req, datetimeOpts)); at != nil {
 		in.ScheduledAt = *at
@@ -1205,6 +1223,79 @@ func (h *Handler) publicBooking(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	return ok(w, booking)
+}
+
+func (h *Handler) publicTherapists(w http.ResponseWriter, r *http.Request) error {
+	branchID, err := pathUUID(r, "branchId")
+	if err != nil {
+		return err
+	}
+	at, err := time.Parse(time.RFC3339, r.URL.Query().Get("starts_at"))
+	if err != nil {
+		return httpx.BadRequest("Jam mulai tidak valid")
+	}
+	ids, pref, err := publicSlotQuery(r)
+	if err != nil {
+		return err
+	}
+	list, err := h.svc.PublicTherapists(r.Context(), branchID, at, ids, pref)
+	if err != nil {
+		return err
+	}
+	return ok(w, list)
+}
+
+func (h *Handler) publicPay(w http.ResponseWriter, r *http.Request) error {
+	token, err := pathUUID(r, "token")
+	if err != nil {
+		return err
+	}
+	pay, err := h.svc.PublicPay(r.Context(), token)
+	if err != nil {
+		return err
+	}
+	return ok(w, pay)
+}
+
+func (h *Handler) publicMockPay(w http.ResponseWriter, r *http.Request) error {
+	token, err := pathUUID(r, "token")
+	if err != nil {
+		return err
+	}
+	result, err := h.svc.PublicMockPay(r.Context(), token)
+	if err != nil {
+		return err
+	}
+	return ok(w, result)
+}
+
+// publicXenditWebhook is the invoice callback for spa bookings
+// (external_id spa-booking-…). A valid callback is acknowledged 200,
+// ignored ones included; a processing error is a 500 so Xendit retries.
+func (h *Handler) publicXenditWebhook(w http.ResponseWriter, r *http.Request) error {
+	if h.svc.ports.Payments == nil || !h.svc.ports.Payments.ValidWebhookToken(r.Header.Get("x-callback-token")) {
+		return httpx.Unauthorized("Unauthorized")
+	}
+	var cb struct {
+		ID         string   `json:"id"`
+		ExternalID string   `json:"external_id"`
+		Status     string   `json:"status"`
+		PaidAmount *float64 `json:"paid_amount"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&cb); err != nil || cb.ExternalID == "" {
+		return httpx.BadRequest("Payload tidak dikenal")
+	}
+	outcome, err := h.svc.PublicInvoiceCallback(r.Context(), InvoiceCallback{
+		ID: cb.ID, ExternalID: cb.ExternalID, Status: cb.Status, PaidAmount: cb.PaidAmount,
+	})
+	if err != nil {
+		h.svc.log.Error("[spa] webhook error", "error", err)
+		return httpx.Status(http.StatusInternalServerError, "Webhook gagal diproses")
+	}
+	return httpx.JSON(w, http.StatusOK, struct {
+		Success bool   `json:"success"`
+		Outcome string `json:"outcome"`
+	}{true, outcome})
 }
 
 func (h *Handler) publicChangeBooking(w http.ResponseWriter, r *http.Request) error {

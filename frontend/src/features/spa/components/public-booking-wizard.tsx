@@ -7,6 +7,8 @@ import {
   CalendarDays,
   Check,
   Clock,
+  CreditCard,
+  QrCode,
   Loader2,
   MapPin,
   Moon,
@@ -35,10 +37,11 @@ import {
   type SlotGroup,
 } from "../public-booking";
 import { resetBookingFunnel, trackBookingStep } from "../booking-funnel";
-import { usePublicSpaOutlets, usePublicSpaSlots, usePublicSpaTreatments } from "../queries";
+import { publicSpaApi } from "../api";
+import { usePublicSpaOutlets, usePublicSpaSlots, usePublicSpaTherapists, usePublicSpaTreatments } from "../queries";
 import { isValidPhone } from "../rules";
 import { addDaysToDate, shortClock, wibClockOf, wibDateOf } from "../time";
-import type { GenderPref, PublicOutlet, PublicVariant } from "../types";
+import type { GenderPref, PublicOutlet, PublicPaymentMethod, PublicTherapist, PublicVariant } from "../types";
 
 const MAX_DAYS_AHEAD = 30;
 const STRIP_DAYS = 14;
@@ -48,7 +51,7 @@ type Step = (typeof STEPS)[number];
 const STEP_META: Record<Step, { label: string; title: string; hint: string }> = {
   outlet: { label: "Outlet", title: "Mau datang ke outlet mana?", hint: "Dua outlet Mizu di Bandung, buka setiap hari." },
   treatment: { label: "Treatment", title: "Pilih treatment", hint: "Boleh lebih dari satu, mis. massage lalu refleksi kaki." },
-  waktu: { label: "Jadwal", title: "Kapan kamu mau datang?", hint: "Semua jam dalam WIB." },
+  waktu: { label: "Jadwal", title: "Kapan kamu mau datang?", hint: "Pilih jam, lalu pilih terapis atau biarkan Mizu yang memilihkan. Semua jam dalam WIB." },
   kontak: { label: "Data diri", title: "Sedikit tentang kamu", hint: "Kami hubungi lewat WhatsApp bila jadwal perlu dikonfirmasi." },
 };
 
@@ -90,6 +93,10 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const [phone, setPhone] = useState("");
   const [pref, setPref] = useState<GenderPref>("any");
   const [notes, setNotes] = useState("");
+  // null = "Pilihkan oleh Mizu"; pilihan hanya berlaku selama terapis itu masih kosong di jam terpilih.
+  const [therapistId, setTherapistId] = useState<string | null>(null);
+  const [payMethod, setPayMethod] = useState<PublicPaymentMethod>("outlet");
+  const [redirecting, setRedirecting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<"name" | "phone" | null>(null);
   const top = useRef<HTMLDivElement>(null);
@@ -126,6 +133,10 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
     [availableSlots.data]
   );
   const slotValid = !!slotIso && slots.some((s) => s.iso === slotIso);
+  const freeTherapists = usePublicSpaTherapists(outlet?.branch_id ?? "", slotValid ? slotIso : null, ids, pref);
+  const therapist = freeTherapists.data?.find((t) => t.id === therapistId) ?? null;
+  const onlineReady = !!outlet?.online_payment;
+  const payOnline = onlineReady && payMethod === "online";
 
   // Langkah yang boleh dibuka; langkah yang diminta mundur sampai yang terpenuhi.
   const reach: Record<Step, boolean> = {
@@ -199,21 +210,35 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
         therapist_gender_pref: pref,
         notes: notes.trim(),
         variant_ids: picked.map((p) => p.variant.id),
+        ...(therapist ? { therapist_id: therapist.id } : {}),
+        payment_method: payOnline ? "online" : "outlet",
       },
       {
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
           trackBookingStep("success", outlet.branch_id);
           resetBookingFunnel();
-          router.replace(`/booking/spa/status/${encodeURIComponent(res.access_token)}`);
+          const statusPath = `/booking/spa/status/${encodeURIComponent(res.access_token)}`;
+          if (!payOnline) return router.replace(statusPath);
+          // Bayar online: langsung ke halaman bayar; bila gagal, halaman status
+          // menyediakan tombol "Bayar online" untuk mencoba lagi.
+          setRedirecting(true);
+          try {
+            const pay = await publicSpaApi.pay(res.access_token);
+            window.location.assign(pay.invoice_url);
+          } catch {
+            router.replace(`${statusPath}?bayar=gagal`);
+          }
         },
         onError: (err) => {
           trackBookingStep("error", outlet.branch_id);
           setFormError(err.message);
-          // Jam keburu terisi orang lain: kembali ke pilihan jam yang segar.
-          if (err.message.includes("penuh")) {
-            setSlotIso(null);
+          // Jam atau terapis keburu terisi orang lain: kembali ke pilihan yang segar.
+          if (err.message.includes("penuh") || err.message.includes("Terapis pilihanmu")) {
+            if (err.message.includes("penuh")) setSlotIso(null);
+            setTherapistId(null);
             go("waktu");
             void availableSlots.refetch();
+            void freeTherapists.refetch();
           }
         },
       }
@@ -228,7 +253,10 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
         ? { label: picked.length ? "Lanjut pilih jadwal" : "Pilih treatment dulu", disabled: picked.length === 0 }
         : step === "waktu"
           ? { label: slotValid && slotIso ? `Lanjut · ${wibClockOf(slotIso)} WIB` : "Pilih jam dulu", disabled: !slotValid }
-          : { label: create.isPending ? "Mengirim…" : "Konfirmasi booking", disabled: create.isPending };
+          : {
+              label: redirecting ? "Menuju pembayaran…" : create.isPending ? "Mengirim…" : payOnline ? "Konfirmasi & bayar" : "Konfirmasi booking",
+              disabled: create.isPending || redirecting,
+            };
   const next = () => {
     if (step === "treatment") go("waktu");
     else if (step === "waktu") go("kontak");
@@ -296,13 +324,24 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               }}
               error={formError}
               totalDuration={totalDuration}
+              therapists={freeTherapists.data ?? []}
+              therapistsLoading={freeTherapists.isLoading}
+              therapistId={therapist?.id ?? null}
+              onTherapist={setTherapistId}
             />
           )}
 
           {step === "kontak" && outlet && slotIso && (
             <div className="space-y-5">
               <div className="lg:hidden">
-                <Summary outlet={outlet} slotIso={slotIso} picked={picked} totalDuration={totalDuration} total={totalPrice} />
+                <Summary
+                  outlet={outlet}
+                  slotIso={slotIso}
+                  picked={picked}
+                  totalDuration={totalDuration}
+                  total={totalPrice}
+                  therapistName={therapist?.name ?? null}
+                />
               </div>
               <div className="space-y-5 rounded-card bg-card p-5 shadow-card md:p-6">
                 <Field label="Nama lengkap" error={fieldError === "name" ? "Isi nama kamu (minimal 2 huruf)." : undefined} id="spa-name">
@@ -343,6 +382,36 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                     aria-describedby={fieldError === "phone" ? "spa-phone-error" : undefined}
                   />
                 </Field>
+                {onlineReady && (
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-semibold">Pembayaran</legend>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {(
+                        [
+                          { value: "outlet", title: "Bayar di outlet", text: "Setelah treatment, tunai atau non-tunai di kasir.", icon: Wallet },
+                          { value: "online", title: "Bayar online sekarang", text: "Transfer VA, e-wallet, QRIS atau kartu lewat Xendit.", icon: CreditCard },
+                        ] as const
+                      ).map(({ value, title, text, icon: Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={payMethod === value}
+                          onClick={() => setPayMethod(value)}
+                          className={cn(
+                            "flex items-start gap-3 rounded-2xl border p-4 text-left transition",
+                            payMethod === value ? "border-ink bg-ink text-on-ink" : "border-border bg-background hover:border-foreground/40"
+                          )}
+                        >
+                          <Icon className={cn("mt-0.5 size-5 shrink-0", payMethod === value ? "text-accent" : "text-muted-foreground")} />
+                          <span>
+                            <span className="block text-sm font-semibold">{title}</span>
+                            <span className={cn("block text-xs", payMethod === value ? "text-on-ink-muted" : "text-muted-foreground")}>{text}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
                 <Field label="Catatan untuk terapis" optional>
                   <textarea
                     className={cn(INPUT, "h-auto min-h-24 py-3")}
@@ -368,6 +437,8 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               picked={picked}
               totalDuration={totalDuration}
               total={totalPrice}
+              therapistName={therapist?.name ?? null}
+              showTherapist={step === "waktu" || step === "kontak"}
               onRemove={step === "treatment" ? toggleVariant : undefined}
             />
             <Button size="lg" className="w-full" disabled={cta.disabled} onClick={next}>
@@ -376,7 +447,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               {!cta.disabled && !create.isPending ? <ArrowRight /> : null}
             </Button>
             <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <Wallet className="size-3.5" /> Bayar di outlet setelah treatment
+              <Wallet className="size-3.5" /> {payOnline ? "Bayar online lewat Xendit" : "Bayar di outlet atau online"}
             </p>
           </div>
         </aside>
@@ -415,20 +486,20 @@ function Hero({ step, reach, onStep }: { step: Step; reach: Record<Step, boolean
   return (
     <section className="relative isolate overflow-hidden bg-ink text-on-ink">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/mizu-wallpaper.webp" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" />
+      <img src="/site/photos/mizu-back-massage.webp" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_40%]" />
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/40" />
       <Container className="space-y-8 pt-12 pb-8 md:pt-16">
         <div className="max-w-2xl space-y-4">
           <Kicker onInk>Booking online · Mizu Family Massage &amp; Reflexology</Kicker>
           <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-5xl">Waktunya istirahat sejenak.</h1>
           <p className="max-w-xl text-on-ink-muted md:text-lg">
-            Pilih outlet, treatment dan jam yang pas. Tanpa deposit, pembayaran langsung di outlet setelah treatment.
+            Pilih outlet, treatment, jam dan terapis favoritmu. Bayar di outlet setelah treatment, atau langsung online.
           </p>
           <ul className="flex flex-wrap gap-2 pt-1 text-xs font-medium text-on-ink">
             {[
-              { icon: Wallet, text: "Bayar di outlet" },
-              { icon: Sparkles, text: "Kode booking langsung" },
-              { icon: UserRound, text: "Pilih terapis pria / wanita" },
+              { icon: UserRound, text: "Pilih terapis sendiri" },
+              { icon: CreditCard, text: "Bayar di outlet atau online" },
+              { icon: QrCode, text: "Kode & QR booking langsung" },
             ].map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur">
                 <Icon className="size-3.5 text-accent" /> {text}
@@ -693,6 +764,10 @@ function TimeStep({
   onPref,
   error,
   totalDuration,
+  therapists,
+  therapistsLoading,
+  therapistId,
+  onTherapist,
 }: {
   outlet: PublicOutlet;
   today: string;
@@ -707,6 +782,10 @@ function TimeStep({
   onPref: (g: GenderPref) => void;
   error: string | null;
   totalDuration: number;
+  therapists: PublicTherapist[];
+  therapistsLoading: boolean;
+  therapistId: string | null;
+  onTherapist: (id: string | null) => void;
 }) {
   const strip = dateStrip(today, STRIP_DAYS);
   const inStrip = strip.some((d) => d.date === date);
@@ -841,6 +920,10 @@ function TimeStep({
         )}
       </div>
 
+      {selected && (
+        <TherapistPicker therapists={therapists} loading={therapistsLoading} value={therapistId} onChange={onTherapist} />
+      )}
+
       {selected ? (
         <div className="flex items-center gap-3 rounded-2xl bg-accent-soft px-4 py-3 text-sm">
           <Clock className="size-5 shrink-0 text-forest dark:text-accent" />
@@ -848,13 +931,93 @@ function TimeStep({
             <strong className="font-semibold">
               {selected.time}–{endClock(selected.time, totalDuration)} WIB
             </strong>{" "}
-            · {formatDateLong(date)}. Jam ini masih ada terapis yang kosong; terapis ditentukan outlet.
+            · {formatDateLong(date)}.
           </p>
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">Terapis ditentukan outlet sesuai preferensimu. Datang 10 menit lebih awal ya.</p>
       )}
     </div>
+  );
+}
+
+// ── Pilih terapis ────────────────────────────────────────────────────────
+
+function initials(name: string): string {
+  return name
+    .replace(/\./g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+}
+
+/** Terapis untuk jam terpilih: "Pilihkan oleh Mizu" (bawaan) atau salah satu terapis yang kosong. */
+function TherapistPicker({
+  therapists,
+  loading,
+  value,
+  onChange,
+}: {
+  therapists: PublicTherapist[];
+  loading: boolean;
+  value: string | null;
+  onChange: (id: string | null) => void;
+}) {
+  const option = (on: boolean) =>
+    cn(
+      "flex items-center gap-3 rounded-2xl p-3 text-left text-sm shadow-card ring-2 transition",
+      on ? "bg-ink text-on-ink ring-ink" : "bg-card ring-transparent hover:bg-surface"
+    );
+  return (
+    <fieldset className="space-y-3">
+      <legend className="flex w-full items-baseline justify-between gap-3">
+        <span className="text-sm font-semibold">Terapis</span>
+        <span className="text-xs text-muted-foreground">{loading ? "Mengecek terapis…" : `${therapists.length} terapis kosong di jam ini`}</span>
+      </legend>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <button type="button" aria-pressed={value === null} onClick={() => onChange(null)} className={option(value === null)}>
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-full",
+              value === null ? "bg-accent text-ink" : "bg-accent-soft text-forest dark:text-accent"
+            )}
+          >
+            <Sparkles className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">Pilihkan oleh Mizu</span>
+            <span className={cn("block text-xs", value === null ? "text-on-ink-muted" : "text-muted-foreground")}>
+              Terapis terbaik yang kosong di jam ini
+            </span>
+          </span>
+        </button>
+        {loading
+          ? [0, 1].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-surface" />)
+          : therapists.map((t) => {
+              const on = value === t.id;
+              return (
+                <button key={t.id} type="button" aria-pressed={on} onClick={() => onChange(t.id)} className={option(on)}>
+                  <span
+                    className={cn(
+                      "flex size-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold",
+                      on ? "bg-accent text-ink" : "bg-surface text-foreground"
+                    )}
+                  >
+                    {initials(t.name)}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{t.name}</span>
+                    <span className={cn("block text-xs", on ? "text-on-ink-muted" : "text-muted-foreground")}>
+                      {t.gender === "female" ? "Terapis wanita" : t.gender === "male" ? "Terapis pria" : "Terapis"} · tersedia
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+      </div>
+    </fieldset>
   );
 }
 
@@ -866,6 +1029,8 @@ function Summary({
   picked,
   totalDuration,
   total,
+  therapistName,
+  showTherapist = true,
   onRemove,
 }: {
   outlet: PublicOutlet | null;
@@ -873,6 +1038,8 @@ function Summary({
   picked: Picked[];
   totalDuration: number;
   total: number;
+  therapistName: string | null;
+  showTherapist?: boolean;
   onRemove?: (v: PublicVariant) => void;
 }) {
   return (
@@ -896,6 +1063,11 @@ function Summary({
             <span className="text-muted-foreground">Belum dipilih</span>
           )}
         </SummaryRow>
+        {showTherapist && (
+          <SummaryRow icon={UserRound} label="Terapis">
+            {therapistName ?? <span className="text-body">Dipilihkan oleh Mizu</span>}
+          </SummaryRow>
+        )}
         <SummaryRow icon={Sparkles} label="Treatment">
           {picked.length === 0 ? (
             <span className="text-muted-foreground">Belum dipilih</span>

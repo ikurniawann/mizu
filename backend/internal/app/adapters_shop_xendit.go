@@ -12,6 +12,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -114,4 +116,38 @@ func (x xenditInvoices) create(ctx context.Context, externalID string, amount fl
 		}
 	}
 	return inv, nil
+}
+
+// status is GET /v2/invoices/{id}: the upper-cased invoice status. A mock
+// invoice has no remote state and reports PENDING (spa settles mock
+// payments explicitly).
+func (x xenditInvoices) status(ctx context.Context, invoiceID string) (string, error) {
+	if strings.HasPrefix(invoiceID, "mock-") {
+		return "PENDING", nil
+	}
+	secret := x.getenv("XENDIT_SECRET_KEY")
+	if secret == "" {
+		return "", errors.New("XENDIT_SECRET_KEY belum dikonfigurasi")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, x.url+"/"+url.PathEscape(invoiceID), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(secret+":")))
+	res, err := x.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return "", fmt.Errorf("Xendit: status invoice gagal dibaca (HTTP %d)", res.StatusCode)
+	}
+	var data struct {
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return "", err
+	}
+	return strings.ToUpper(data.Status), nil
 }

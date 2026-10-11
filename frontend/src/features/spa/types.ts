@@ -463,6 +463,23 @@ export interface PublicOutlet {
   open_time: string;
   close_time: string;
   slot_minutes: number;
+  /** Tamu boleh bayar online (invoice Xendit). */
+  online_payment?: boolean;
+}
+
+/** Terapis yang bisa dipilih tamu untuk satu jam; nama dipendekkan ("Ayu L."). */
+export interface PublicTherapist {
+  id: string;
+  name: string;
+  gender: TherapistGender | null;
+}
+
+export type PublicPaymentMethod = "outlet" | "online";
+
+export interface PublicPayment {
+  invoice_url: string;
+  /** Mode demo XENDIT_MOCK: halaman bayar disimulasikan di halaman status. */
+  mock: boolean;
 }
 
 export interface PublicVariant {
@@ -492,6 +509,9 @@ export interface PublicBookingInput {
   therapist_gender_pref: GenderPref;
   notes: string;
   variant_ids: string[];
+  /** Terapis pilihan tamu; kosong = dipilihkan outlet. */
+  therapist_id?: string;
+  payment_method?: PublicPaymentMethod;
 }
 
 export interface PublicBookingResult {
@@ -507,4 +527,11 @@ export interface PublicBookingResult {
   can_manage: boolean;
   items: { variant_id: string; treatment_name: string; variant_name: string; duration_min: number; price_idr: number }[];
   total_idr: number;
+  therapist_name?: string | null;
+  payment_method?: PublicPaymentMethod;
+  /** Link bayar yang masih berlaku (belum dibayar). */
+  invoice_url?: string | null;
+  paid_online?: boolean;
+  mock_payment?: boolean;
+  online_payment?: boolean;
 }

@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, Check, Copy, Link2, Loader2, MapPin, MessageCircle, Phone, Sparkles, X } from "lucide-react";
+import { CalendarDays, Check, Copy, Link2, Loader2, MapPin, MessageCircle, Phone, Sparkles, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container, Kicker } from "@/features/site/components/site-section";
 import { formatDateLong, formatRupiah } from "@/lib/format";
 import { publicSpaApi } from "../api";
 import { whatsappHref } from "../public-booking";
 import { wibClockOf, wibDateOf } from "../time";
+import { BookingQr } from "./booking-qr";
 import { PublicBookingManage } from "./public-booking-manage";
+import { PublicBookingPayment } from "./public-booking-payment";
 import { SummaryRow } from "./public-booking-wizard";
 
 const LABEL: Record<string, string> = {
@@ -23,7 +25,7 @@ const LABEL: Record<string, string> = {
 };
 
 /** Halaman status booking publik (/booking/spa/status/<token>) — juga layar "booking diterima". */
-export function PublicSpaBookingStatus({ token }: { token: string }) {
+export function PublicSpaBookingStatus({ token, notice }: { token: string; notice?: string }) {
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const booking = useQuery({
     queryKey: ["spa", "public", "booking", token],
@@ -68,7 +70,7 @@ export function PublicSpaBookingStatus({ token }: { token: string }) {
     <div className="bg-background pb-20">
       <section className="relative isolate overflow-hidden bg-ink text-on-ink">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/mizu-wallpaper.webp" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+        <img src="/site/photos/mizu-head-massage.webp" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_35%]" />
         <div aria-hidden className="absolute inset-0 -z-10 bg-ink/70" />
         <Container className="flex flex-col items-center gap-4 py-14 text-center md:py-20">
           <span className={inactive ? "flex size-16 items-center justify-center rounded-full bg-white/15 text-on-ink" : "flex size-16 items-center justify-center rounded-full bg-accent text-ink"}>
@@ -98,12 +100,17 @@ export function PublicSpaBookingStatus({ token }: { token: string }) {
       </section>
 
       <Container className="mt-8 max-w-2xl space-y-4">
+        {!cancelled && <PublicBookingPayment booking={result} token={token} notice={notice} />}
+        {!inactive && <BookingQr code={result.booking_code} outlet={result.branch_name} when={when} />}
         <div className="space-y-4 rounded-card bg-card p-6 shadow-card">
           <SummaryRow icon={MapPin} label="Outlet">
             {result.branch_name}
           </SummaryRow>
           <SummaryRow icon={CalendarDays} label="Jadwal">
             <span className={cancelled ? "line-through" : undefined}>{when}</span>
+          </SummaryRow>
+          <SummaryRow icon={UserRound} label="Terapis">
+            {result.therapist_name ?? <span className="font-normal text-body">Dipilihkan oleh Mizu sebelum kunjungan</span>}
           </SummaryRow>
           <SummaryRow icon={Sparkles} label="Treatment">
             <ul className="space-y-1.5">
@@ -112,7 +119,7 @@ export function PublicSpaBookingStatus({ token }: { token: string }) {
                   <span>
                     {item.treatment_name}
                     <span className="block text-xs font-normal text-muted-foreground">
-                      {item.variant_name} · {item.duration_min} menit
+                      {item.variant_name.trim() === `${item.duration_min} menit` ? item.variant_name : `${item.variant_name} · ${item.duration_min} menit`}
                     </span>
                   </span>
                   <span className="tabular-nums">{formatRupiah(item.price_idr)}</span>
@@ -124,7 +131,15 @@ export function PublicSpaBookingStatus({ token }: { token: string }) {
             <span className="text-body">
               Total
               <span className="block text-xs text-muted-foreground">
-                {cancelled ? "Tidak ada pembayaran untuk booking ini" : result.payment_status === "paid" ? "Sudah dibayar" : "Bayar di outlet setelah treatment"}
+                {cancelled
+                  ? "Tidak ada pembayaran untuk booking ini"
+                  : result.payment_status === "paid"
+                    ? result.paid_online
+                      ? "Lunas · dibayar online"
+                      : "Lunas"
+                    : result.payment_method === "online"
+                      ? "Menunggu pembayaran online"
+                      : "Bayar di outlet setelah treatment"}
               </span>
             </span>
             <span className="font-display text-2xl font-bold tabular-nums">{formatRupiah(result.total_idr)}</span>
