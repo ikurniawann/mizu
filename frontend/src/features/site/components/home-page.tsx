@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { PublicOutlet, PublicTreatment } from "@/features/spa/types";
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SITE_PHOTOS } from "../lib/photos";
 import { bookable, durationsLabel, featured, openingHours, startingPrice } from "../lib/treatments";
 import type { BranchSummary, HomeContent, SocialContent } from "../types";
 import { BookingButton, bookingHref } from "./booking-link";
@@ -11,13 +12,13 @@ import { Container, Picture } from "./site-section";
 
 /** The seniors promo runs at the Westhoff outlet (branch slug from the seed). */
 const PROMO_BRANCH_SLUG = "mizu-westhoff";
-/** CC0 stock photos (public/site/photos/CREDITS.md); a CMS photo wins when set. */
+/** Sample photos (see lib/photos); a CMS photo wins when set. */
 const PHOTO = {
-  hero: "/site/photos/mizu-hero.webp",
-  menu: "/site/photos/mizu-hot-stone.webp",
-  seniors: "/site/photos/mizu-reflexology.webp",
-  signature: "/site/photos/mizu-stones-orchid.webp",
-  together: "/site/photos/mizu-relax.webp",
+  hero: SITE_PHOTOS.hero,
+  menu: SITE_PHOTOS.hotStone,
+  seniors: SITE_PHOTOS.reflexology,
+  signature: SITE_PHOTOS.stonesOrchid,
+  together: SITE_PHOTOS.relax,
 } as const;
 
 /**

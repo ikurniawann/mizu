@@ -11,6 +11,7 @@ import type { BranchSummary } from "../types";
 import { bookingHref } from "./booking-link";
 import { BranchMap, type MapPin as Pin } from "./branch-map";
 import { Container, EmptyNote, Picture, Section, SectionHeading } from "./site-section";
+import { outletPhoto, photoOr } from "../lib/photos";
 
 const noSubscribe = () => () => {};
 
@@ -92,7 +93,7 @@ export function LocationsPage({ branches }: { branches: BranchSummary[] }) {
                     onClick={() => setSelected(item.slug)}
                     className={`flex gap-4 rounded-card bg-card p-4 shadow-card transition-shadow ${selected === item.slug ? "ring-2 ring-forest" : ""}`}
                   >
-                    <Picture src={item.hero_image_url} alt="" className="size-20 shrink-0 rounded-2xl" />
+                    <Picture src={photoOr(item.hero_image_url, outletPhoto(item.slug))} alt="" className="size-20 shrink-0 rounded-2xl" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
                         <h2 className="font-display text-lg font-semibold">{item.name}</h2>

@@ -7,7 +7,8 @@ import type { Loaded } from "../lib/public-api";
 import { durationsLabel, groupByCategory, openingHours } from "../lib/treatments";
 import type { TrainingContent } from "../types";
 import { BookingButton } from "./booking-link";
-import { Container, EmptyNote, Section, SectionHeading } from "./site-section";
+import { categoryPhoto } from "../lib/photos";
+import { Container, EmptyNote, Picture, Section, SectionHeading } from "./site-section";
 import { BeforeTreatment, TreatmentNeeds, VisitSteps } from "./treatment-guide";
 
 /** The outlet chosen by ?outlet=, else the first one. */
@@ -96,9 +97,13 @@ function Menu({ treatments, outlet }: { treatments: Loaded<PublicTreatment[]>; o
     <div className="space-y-10">
       {groups.map((group) => (
         <section key={group.category} aria-labelledby={`cat-${group.category}`} className="space-y-4">
-          <h2 id={`cat-${group.category}`} className="font-display text-2xl font-semibold md:text-3xl">
-            {group.category}
-          </h2>
+          <div className="relative isolate flex h-32 items-end overflow-hidden rounded-card bg-ink p-5 text-white md:h-40 md:p-6">
+            <Picture src={categoryPhoto(group.category)} alt="" className="absolute inset-0 -z-20 h-full w-full" />
+            <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink/85 via-ink/45 to-ink/10" />
+            <h2 id={`cat-${group.category}`} className="font-display text-2xl font-semibold md:text-3xl">
+              {group.category}
+            </h2>
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {group.treatments.map((t) => (
               <TreatmentCard key={t.id} treatment={t} outlet={outlet} />

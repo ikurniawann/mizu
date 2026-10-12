@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { BranchProfile } from "../types";
 import { BookingButton } from "./booking-link";
 import { Container, Kicker, Picture, Section, SectionHeading, Tile } from "./site-section";
+import { outletPhoto, photoOr } from "../lib/photos";
 
 const ACCORDION_LABELS: { key: keyof BranchProfile["accordions"]; label: string }[] = [
   { key: "facilities", label: "Fasilitas" },
@@ -43,11 +44,12 @@ export function BranchPage({ branch }: { branch: BranchProfile }) {
   return (
     <>
       <section className="relative isolate overflow-hidden bg-ink text-on-ink">
-        {branch.hero_image_url ? (
-          <Picture src={branch.hero_image_url} alt="" className="absolute inset-0 -z-10 h-full w-full opacity-45" />
-        ) : (
-          <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-accent/25 blur-3xl" />
-        )}
+        <Picture
+          src={photoOr(branch.hero_image_url, outletPhoto(branch.slug))}
+          alt=""
+          className="absolute inset-0 -z-20 h-full w-full"
+        />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/90 via-ink/55 to-ink/30" />
         <Container className="flex min-h-[52dvh] flex-col justify-end gap-6 py-14 md:py-20">
           <div className="space-y-3">
             <Kicker onInk>Mizu Family Massage & Reflexology{branch.city ? ` · ${branch.city}` : ""}</Kicker>
