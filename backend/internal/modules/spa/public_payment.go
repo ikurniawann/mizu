@@ -10,6 +10,7 @@ import (
 	"nuhabit/backend/internal/modules/spa/domain"
 	"nuhabit/backend/internal/platform/database"
 	"nuhabit/backend/internal/platform/httpx"
+	"nuhabit/backend/internal/platform/outbox"
 	"nuhabit/backend/internal/platform/validate"
 )
 
@@ -306,7 +307,16 @@ func (s *Service) settleOnline(ctx context.Context, bookingID, invoiceID string,
 			note += " setelah booking " + b.Status + " — perlu refund"
 		}
 		settled = true
-		return s.st.event(ctx, q, b.ID, nil, "paid", ptr(domain.PaymentUnpaid), ptr(domain.PaymentPaid), "", note)
+		if err := s.st.event(ctx, q, b.ID, nil, "paid", ptr(domain.PaymentUnpaid), ptr(domain.PaymentPaid), "", note); err != nil {
+			return err
+		}
+		// Tell the guest (WhatsApp bot subscribes; EPIC-053).
+		if n, err := s.st.notice(ctx, q, b.ID); err != nil {
+			return err
+		} else if n != nil {
+			return outbox.Publish(ctx, q, TopicBookingPaidOnline, b.ID, n)
+		}
+		return nil
 	})
 	return settled, err
 }

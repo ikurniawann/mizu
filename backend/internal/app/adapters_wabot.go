@@ -92,6 +92,9 @@ func (a waBotSpa) OpenWaitlist(ctx context.Context) ([]spa.WaitlistEntry, error)
 func (a waBotSpa) MarkWaitlistNotified(ctx context.Context, id string) error {
 	return a.svc.MarkWaitlistNotified(ctx, id)
 }
+func (a waBotSpa) UpcomingBookings(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
+	return a.svc.UpcomingBookings(ctx, from, to)
+}
 
 /* ── WhatsApp ────────────────────────────────────────────────────────── */
 

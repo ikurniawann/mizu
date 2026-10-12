@@ -12,8 +12,8 @@ import (
 // WaitlistEvery is how often open waitlist entries are re-checked.
 const WaitlistEvery = 10 * time.Minute
 
-// WatchWaitlist re-checks open entries until ctx ends.
-func (e *Engine) WatchWaitlist(ctx context.Context, db database.DB, every time.Duration) {
+// Watch re-checks the waitlist and sends visit reminders until ctx ends.
+func (e *Engine) Watch(ctx context.Context, db database.DB, every time.Duration) {
 	ticker := time.NewTicker(every)
 	defer ticker.Stop()
 	for {
@@ -25,6 +25,11 @@ func (e *Engine) WatchWaitlist(ctx context.Context, db database.DB, every time.D
 				e.log.Error("[wabot] daftar tunggu", "error", err)
 			} else if n > 0 {
 				e.log.Info("[wabot] daftar tunggu dikabari", "count", n)
+			}
+			if n, err := e.RemindUpcoming(ctx, db); err != nil {
+				e.log.Error("[wabot] pengingat", "error", err)
+			} else if n > 0 {
+				e.log.Info("[wabot] pengingat terkirim", "count", n)
 			}
 		}
 	}

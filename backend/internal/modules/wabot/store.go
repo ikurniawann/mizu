@@ -14,7 +14,7 @@ type store struct{}
 
 // settings reads the bot_* keys (jsonb values).
 func (store) settings(ctx context.Context, q database.Querier) (Settings, error) {
-	s := Settings{Name: "Mizu Assistant", HandoverKeywords: []string{"admin", "cs", "manusia", "operator"}}
+	s := Settings{Name: "Mizu Assistant", HandoverKeywords: []string{"admin", "cs", "manusia", "operator"}, NotifyCustomer: true}
 	rows, err := q.Query(ctx, `SELECT key, value FROM crm.crm_settings WHERE key LIKE 'bot_%'`)
 	if err != nil {
 		return s, err
@@ -35,6 +35,13 @@ func (store) settings(ctx context.Context, q database.Querier) (Settings, error)
 				s.Enabled = x
 			case string:
 				s.Enabled = x == "true"
+			}
+		case "bot_notify_customer":
+			switch x := v.(type) {
+			case bool:
+				s.NotifyCustomer = x
+			case string:
+				s.NotifyCustomer = x != "false"
 			}
 		case "bot_name":
 			if text, ok := v.(string); ok && strings.TrimSpace(text) != "" {
@@ -168,4 +175,15 @@ func (store) recordBotMessage(ctx context.Context, q database.Querier, conversat
 func (store) afterBotReply(ctx context.Context, q database.Querier, conversationID string) error {
 	_, err := q.Exec(ctx, `UPDATE crm.wa_conversations SET awaiting_since = NULL WHERE id = $1::uuid`, conversationID)
 	return err
+}
+
+// conversationID finds the WhatsApp conversation of a phone (62… form), ""
+// when the guest never chatted.
+func (store) conversationID(ctx context.Context, q database.Querier, phone string) string {
+	var id string
+	err := q.QueryRow(ctx, `SELECT id::text FROM crm.wa_conversations WHERE channel = 'whatsapp' AND external_id = $1`, phone).Scan(&id)
+	if err != nil {
+		return ""
+	}
+	return id
 }

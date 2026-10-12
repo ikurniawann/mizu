@@ -77,6 +77,9 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
 - [x] T-539c **Daftar tunggu** `spa.booking_waitlist`: bot menawarkan saat penuh (atau ketik *daftar tunggu*); pengawas tiap 10 menit mengecek ulang dan mengabari lewat WA sekali ("Kabar baik… balas *ambil*"), sesi diisi ulang sehingga *ambil* langsung ke pilihan jam; booking apa pun (bot/web) menutup entri otomatis. Backoffice: Spa → Booking History → **Daftar tunggu** (`/dashboard/spa/waitlist`, hak `spa.bookings`): daftar, catat tamu manual, tandai jadi booking/batal. Rute `GET/POST /api/spa/waitlist`, `POST /api/spa/waitlist/{id}/status`.
 - [ ] T-539d Tautan ke tabel `spa.booking_groups` (satu tagihan POS) — menunggu fitur grup FO di-commit; bot sekarang membuat N booking terpisah bernama "Nama (1)…(N)".
 
+### Notifikasi ke customer (disepakati 2026-10-13, sebelum Fase 4)
+- [x] T-542 Konfirmasi WA saat pembayaran online lunas (event outbox `spa.booking.paid_online` → pelanggan `wabot.customer-paid-notice`) dan pengingat kunjungan H-1 & ±2 jam sebelum (pengawas bot tiap 10 menit, jendela 22–26 jam & 90–150 menit). Hanya booking `source` website/chat; dedup lewat `configuration.wa_notif_log` (`spa_paid`, `spa_remind_h1`, `spa_remind_2h`); saklar `bot_notify_customer` di Pengaturan CRM (bawaan aktif).
+
 ### Fase 4 — Meta Cloud API
 - [ ] T-540 Tombol/list interaktif, template pesan, pengingat H-1, jendela 24 jam.
 
@@ -135,3 +138,8 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   `TestBotWaitlistAndAlternatives`: penuh → opsi hari/outlet lain/daftar tunggu → pembatalan → pengawas
   mengabari → *ambil* → booking → entri `booked`), tes spa publik tetap lulus; frontend tsc/eslint/vitest
   (`waitlist-page.test.tsx`). Migrasi `20261013000000_spa_booking_waitlist.sql`.
+- 2026-10-13 — T-542 notifikasi customer: konfirmasi lunas via outbox (dikirim ulang otomatis bila
+  gateway gagal, klaim dedup ikut transaksi pengiriman) dan pengingat dari pengawas bot (klaim
+  dilepas bila kirim gagal supaya dicoba lagi). Keputusan: booking front office tidak dikirimi (nomor
+  tidak diberikan lewat kanal WA); pesan pengingat memuat link status/QR & ubah jadwal. Bukti:
+  `TestBotRemindsUpcomingBookingsOnce`, `TestBotPaidNoticeOnce`.

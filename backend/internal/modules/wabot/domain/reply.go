@@ -265,3 +265,47 @@ func clockOfISO(iso string) string {
 	}
 	return Clock(t)
 }
+
+/* ── customer notices (payment & reminders) ──────────────────────────── */
+
+// PaidNotice confirms an online payment.
+func PaidNotice(name, code, outlet, date, clock string, items []string, total float64, statusURL string) string {
+	var b strings.Builder
+	b.WriteString("Pembayaran diterima ✅")
+	if strings.TrimSpace(name) != "" {
+		b.WriteString(" Terima kasih, " + strings.TrimSpace(name) + "!")
+	}
+	b.WriteString("\n\nKode booking: *" + code + "*\nOutlet: " + outlet + "\nJadwal: " + LongDate(date) + ", " + clock + " WIB\n")
+	if len(items) > 0 {
+		b.WriteString("Treatment: " + strings.Join(items, ", ") + "\n")
+	}
+	b.WriteString("Total: *" + Rupiah(total) + "* (lunas)\n\nStatus & QR booking:\n" + statusURL + "\n\nTunjukkan kode/QR ke resepsionis saat tiba. Sampai jumpa di Mizu 🌿")
+	return b.String()
+}
+
+// ReminderNotice is sent the day before (kind "h1") and about two hours
+// before (kind "2h") a visit.
+func ReminderNotice(kind, name, code, outlet, date, clock string, items []string, paid bool, statusURL string) string {
+	var b strings.Builder
+	switch kind {
+	case "2h":
+		b.WriteString("Pengingat: sekitar 2 jam lagi, jam *" + clock + "* WIB di *" + outlet + "*")
+	default:
+		b.WriteString("Pengingat: besok *" + LongDate(date) + "* jam *" + clock + "* WIB di *" + outlet + "*")
+	}
+	if strings.TrimSpace(name) != "" {
+		b.WriteString(" — " + strings.TrimSpace(name))
+	}
+	b.WriteString(".\n")
+	if len(items) > 0 {
+		b.WriteString("Treatment: " + strings.Join(items, ", ") + "\n")
+	}
+	b.WriteString("Kode booking: *" + code + "*\n")
+	if paid {
+		b.WriteString("Pembayaran: lunas ✅\n")
+	} else {
+		b.WriteString("Pembayaran: di outlet setelah treatment\n")
+	}
+	b.WriteString("\nStatus, QR & ubah jadwal (sampai 1 jam sebelum):\n" + statusURL + "\n\nSampai jumpa di Mizu 🌿")
+	return b.String()
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Clock, Headset, Loader2, MessageSquareReply, Save, Star, Timer } from "lucide-react";
+import { BellRing, Bot, Clock, Headset, Loader2, MessageSquareReply, Save, Star, Timer } from "lucide-react";
 import type { CrmSettings } from "../types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,7 @@ type Draft = {
   bot_name: string;
   bot_greeting: string;
   bot_handover_keywords: string;
+  bot_notify_customer: boolean;
 };
 
 function toDraft(settings: CrmSettings | undefined): Draft {
@@ -38,6 +39,7 @@ function toDraft(settings: CrmSettings | undefined): Draft {
     bot_name: settings?.bot_name ?? "Mizu Assistant",
     bot_greeting: settings?.bot_greeting ?? "",
     bot_handover_keywords: settings?.bot_handover_keywords ?? "admin, cs, manusia, operator",
+    bot_notify_customer: settings?.bot_notify_customer ?? true,
   };
 }
 
@@ -80,6 +82,7 @@ export function CsSettingsSection({
       bot_name: draft.bot_name.trim() || "Mizu Assistant",
       bot_greeting: draft.bot_greeting.trim() || undefined,
       bot_handover_keywords: draft.bot_handover_keywords.trim() || undefined,
+      bot_notify_customer: draft.bot_notify_customer,
     });
   }
 
@@ -292,6 +295,23 @@ export function CsSettingsSection({
                 className={inputClass}
               />
             </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200/70 bg-white p-3">
+            <div>
+              <Label className="flex items-center gap-2 text-sm text-foreground">
+                <BellRing className="h-4 w-4 text-muted-foreground" />
+                Konfirmasi lunas & pengingat kunjungan ke customer
+              </Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Dikirim ke WhatsApp customer yang booking lewat website/chat: saat pembayaran online diterima,
+                H-1, dan ±2 jam sebelum jadwal. Booking yang dibuat front office tidak dikirimi.
+              </p>
+            </div>
+            <Switch
+              checked={draft.bot_notify_customer}
+              onCheckedChange={(checked) => setDraft((current) => ({ ...current, bot_notify_customer: checked }))}
+              disabled={disabled}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="bot-greeting" className="text-xs text-muted-foreground">

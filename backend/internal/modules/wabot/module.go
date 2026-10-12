@@ -37,8 +37,10 @@ type Handler struct {
 func New(deps module.Deps, ports Ports) module.Module {
 	engine := NewEngine(ports, deps.Log, deps.Now)
 	if ports.Spa != nil && ports.Sender != nil {
-		// Waitlist watcher: tells waiting guests when a slot frees up.
-		go engine.WatchWaitlist(context.Background(), deps.DB, WaitlistEvery)
+		// Watcher: waitlist (slot freed) and visit reminders.
+		go engine.Watch(context.Background(), deps.DB, WaitlistEvery)
+		// Payment confirmations ride the outbox.
+		engine.Subscribe(deps.Events, deps.DB)
 	}
 	h := &Handler{engine: engine, db: deps.DB, auth: deps.Auth, now: deps.Now}
 	if h.now == nil {

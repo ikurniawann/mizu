@@ -32,6 +32,8 @@ type Spa interface {
 	CancelWaitlist(ctx context.Context, id string) error
 	OpenWaitlist(ctx context.Context) ([]spa.WaitlistEntry, error)
 	MarkWaitlistNotified(ctx context.Context, id string) error
+	// UpcomingBookings feeds the reminders (website & chat bookings only).
+	UpcomingBookings(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error)
 }
 
 // Sender delivers one bot reply to the customer and logs it on the
@@ -97,6 +99,9 @@ type Settings struct {
 	Name             string
 	Greeting         string
 	HandoverKeywords []string
+	// NotifyCustomer sends payment confirmations and visit reminders by
+	// WhatsApp to guests who booked online or by chat (default on).
+	NotifyCustomer bool
 }
 
 // Conversation is the inbox row the bot reads.

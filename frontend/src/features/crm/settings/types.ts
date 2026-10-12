@@ -18,6 +18,7 @@ export type CrmSettings = {
   bot_name: string;
   bot_greeting: string;
   bot_handover_keywords: string;
+  bot_notify_customer: boolean;
 };
 
 export type CrmTierConfig = {

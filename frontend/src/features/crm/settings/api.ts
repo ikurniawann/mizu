@@ -27,6 +27,7 @@ export async function getCrmSettings(): Promise<CrmSettings> {
     bot_name: String(d.bot_name ?? "Mizu Assistant"),
     bot_greeting: String(d.bot_greeting ?? ""),
     bot_handover_keywords: String(d.bot_handover_keywords ?? "admin, cs, manusia, operator"),
+    bot_notify_customer: d.bot_notify_customer !== false,
   };
 }
 
