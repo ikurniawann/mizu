@@ -45,3 +45,27 @@ func (n *OwnerNotifierWA) Fire(notifType, dedupKey, message string) {
 		}
 	}()
 }
+
+// SendMenu dispatches an interactive menu (Meta) or the fallback text.
+func (g *WhatsAppGateway) SendMenu(ctx context.Context, q database.Querier, target, body string, options []whatsapp.Option, fallback string) SendResult {
+	return toSendResult(g.Client.DispatchMenu(ctx, q, target, body, "", options, fallback))
+}
+
+// SendTemplate dispatches a Meta template or the fallback text.
+func (g *WhatsAppGateway) SendTemplate(ctx context.Context, q database.Querier, target, name, lang string, params []string, fallback string) SendResult {
+	return toSendResult(g.Client.DispatchTemplate(ctx, q, target, name, lang, params, fallback))
+}
+
+// Provider names the active provider.
+func (g *WhatsAppGateway) Provider(ctx context.Context, q database.Querier) string {
+	return g.Client.Provider(ctx, q)
+}
+
+func toSendResult(res whatsapp.Result) SendResult {
+	out := SendResult{Success: res.Success, Reason: res.Reason, Provider: res.Provider}
+	if res.MessageID != "" {
+		id := res.MessageID
+		out.MessageID = &id
+	}
+	return out
+}

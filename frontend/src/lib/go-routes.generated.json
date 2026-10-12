@@ -5837,6 +5837,16 @@
   {
     "module": "integrations",
     "method": "GET",
+    "path": "/api/settings/wa-meta"
+  },
+  {
+    "module": "integrations",
+    "method": "PATCH",
+    "path": "/api/settings/wa-meta"
+  },
+  {
+    "module": "integrations",
+    "method": "GET",
     "path": "/api/settings/wa-notifications"
   },
   {
@@ -6688,6 +6698,16 @@
     "module": "integrations",
     "method": "POST",
     "path": "/api/wa/inbound"
+  },
+  {
+    "module": "integrations",
+    "method": "GET",
+    "path": "/api/wa/meta"
+  },
+  {
+    "module": "integrations",
+    "method": "POST",
+    "path": "/api/wa/meta"
   },
   {
     "module": "stored-value",

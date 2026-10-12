@@ -68,8 +68,17 @@ func (e *Engine) Handle(ctx context.Context, db database.DB, conversationID, tex
 	if sender == nil {
 		sender = e.ports.Sender
 	}
-	for _, r := range replies {
-		if err := sender.Send(ctx, db, conv.Phone, conv.ID, r); err != nil {
+	menuSender, _ := sender.(MenuSender)
+	for i, r := range replies {
+		var err error
+		// The last reply carries this turn's menu: offer it as buttons/list
+		// where the provider supports it (Meta), text elsewhere.
+		if menuSender != nil && i == len(replies)-1 && len(sess.Menu) > 0 {
+			err = menuSender.SendMenu(ctx, db, conv.Phone, conv.ID, r, sess.Menu)
+		} else {
+			err = sender.Send(ctx, db, conv.Phone, conv.ID, r)
+		}
+		if err != nil {
 			e.log.Error("[wabot] balasan gagal dikirim", "conversation", conv.ID, "error", err)
 		}
 	}

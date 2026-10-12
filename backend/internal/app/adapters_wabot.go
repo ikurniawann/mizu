@@ -12,8 +12,10 @@ import (
 	inboxdomain "nuhabit/backend/internal/modules/crm/inbox/domain"
 	"nuhabit/backend/internal/modules/spa"
 	"nuhabit/backend/internal/modules/wabot"
+	"nuhabit/backend/internal/modules/wabot/domain"
 	"nuhabit/backend/internal/platform/database"
 	"nuhabit/backend/internal/platform/module"
+	"nuhabit/backend/internal/platform/whatsapp"
 )
 
 // wabot adapters: the spa's public booking service, WhatsApp sending and
@@ -102,6 +104,30 @@ type waBotSender struct{ gw inbox.Gateway }
 
 func (s waBotSender) Send(ctx context.Context, db database.DB, phone, conversationID, text string) error {
 	res := s.gw.SendText(ctx, db, phone, text, "bot", "", conversationID)
+	if !res.Success {
+		return errors.New(firstNonEmptyStr(res.Reason, "pengiriman WhatsApp gagal"))
+	}
+	return nil
+}
+
+// SendMenu shows the options as a Meta list/buttons; the text (which
+// already numbers them) goes out as-is on other providers.
+func (s waBotSender) SendMenu(ctx context.Context, db database.DB, phone, conversationID, text string, options []domain.MenuOption) error {
+	opts := make([]whatsapp.Option, len(options))
+	for i, o := range options {
+		opts[i] = whatsapp.Option{ID: "k:" + o.Key, Title: o.Label, Description: o.Label}
+	}
+	res := s.gw.SendMenu(ctx, db, phone, text, opts, "bot", conversationID)
+	if !res.Success {
+		return errors.New(firstNonEmptyStr(res.Reason, "pengiriman WhatsApp gagal"))
+	}
+	return nil
+}
+
+// SendNotice sends text inside the 24-hour window, the template outside it
+// (Meta); other providers always send the text.
+func (s waBotSender) SendNotice(ctx context.Context, db database.DB, phone, conversationID, text string, tpl wabot.Template) error {
+	res := s.gw.SendNotice(ctx, db, phone, text, inbox.Template{Name: tpl.Name, Lang: tpl.Lang, Params: tpl.Params}, "bot", conversationID)
 	if !res.Success {
 		return errors.New(firstNonEmptyStr(res.Reason, "pengiriman WhatsApp gagal"))
 	}

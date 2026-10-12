@@ -63,7 +63,43 @@ func (e *Engine) PaidNotice(ctx context.Context, q database.Querier, db database
 	if err != nil || id == "" {
 		return err // "" = already sent
 	}
-	return e.ports.Sender.Send(ctx, db, phone, e.st.conversationID(ctx, q, phone), msg)
+	tpl := e.template(ctx, q, metaPaidTemplateKey, []string{firstNonBlank(n.CustomerName, "Kak"), n.Code, n.BranchName,
+		domain.LongDate(at.Format("2006-01-02")) + " " + domain.Clock(at), domain.Rupiah(n.TotalIDR), e.statusURL(n.Token)})
+	return e.sendNotice(ctx, db, phone, e.st.conversationID(ctx, q, phone), msg, tpl)
+}
+
+// sendNotice prefers the template-aware sender (Meta outside the 24-hour
+// window); plain senders get the text.
+func (e *Engine) sendNotice(ctx context.Context, db database.DB, phone, conversationID, text string, tpl Template) error {
+	if ns, ok := e.ports.Sender.(NoticeSender); ok {
+		return ns.SendNotice(ctx, db, phone, conversationID, text, tpl)
+	}
+	return e.ports.Sender.Send(ctx, db, phone, conversationID, text)
+}
+
+// Meta template names/language live in configuration.app_settings (set on
+// the WhatsApp settings page); an empty name means "text only".
+const (
+	metaReminderTemplateKey = "meta_wa_reminder_template"
+	metaPaidTemplateKey     = "meta_wa_paid_template"
+	metaTemplateLangKey     = "meta_wa_template_lang"
+)
+
+func (e *Engine) template(ctx context.Context, q database.Querier, key string, params []string) Template {
+	stored, err := appSettings(ctx, q, key, metaTemplateLangKey)
+	if err != nil {
+		return Template{}
+	}
+	return Template{Name: strings.TrimSpace(stored[key]), Lang: firstNonBlank(stored[metaTemplateLangKey], "id"), Params: params}
+}
+
+func firstNonBlank(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
 }
 
 // RemindUpcoming sends the H-1 and 2-hour reminders due now; it returns how
@@ -95,7 +131,9 @@ func (e *Engine) RemindUpcoming(ctx context.Context, db database.DB) (int, error
 			if id == "" {
 				continue
 			}
-			if err := e.ports.Sender.Send(ctx, db, phone, e.st.conversationID(ctx, db, phone), msg); err != nil {
+			tpl := e.template(ctx, db, metaReminderTemplateKey, []string{firstNonBlank(n.CustomerName, "Kak"), n.Code, n.BranchName,
+				domain.LongDate(at.Format("2006-01-02")) + " " + domain.Clock(at), strings.Join(n.Items, ", "), e.statusURL(n.Token)})
+			if err := e.sendNotice(ctx, db, phone, e.st.conversationID(ctx, db, phone), msg, tpl); err != nil {
 				e.log.Warn("[wabot] pengingat gagal dikirim", "booking", n.Code, "error", err)
 				_ = whatsapp.Release(ctx, db, id)
 				continue

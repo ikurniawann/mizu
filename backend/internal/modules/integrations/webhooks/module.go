@@ -140,6 +140,8 @@ func (h *Handler) Routes() []module.Route {
 		{Pattern: "GET /api/payments/xendit/webhook", Handler: http.HandlerFunc(h.xenditProbe)},
 		{Pattern: "POST /api/payments/xendit/webhook", Handler: http.HandlerFunc(h.xenditWebhook)},
 		{Pattern: "POST /api/wa/inbound", Handler: http.HandlerFunc(h.waInbound)},
+		{Pattern: "GET /api/wa/meta", Handler: http.HandlerFunc(h.metaHandshake)},
+		{Pattern: "POST /api/wa/meta", Handler: http.HandlerFunc(h.metaWebhook)},
 		{Pattern: "POST /api/integrations/telegram/webhook/{secret}", Handler: http.HandlerFunc(h.telegramWebhook)},
 		{Pattern: "POST /api/integrations/loyalty-events/{partner}", Handler: http.HandlerFunc(h.loyaltyEvent)},
 	}

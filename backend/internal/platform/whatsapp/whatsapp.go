@@ -67,12 +67,40 @@ func New(log *slog.Logger) *Client {
 
 type metaConfig struct{ accessToken, phoneNumberID, graphVersion string }
 
-func (c *Client) metaConfig() *metaConfig {
-	token, phoneID := c.Getenv("META_WA_ACCESS_TOKEN"), c.Getenv("META_WA_PHONE_NUMBER_ID")
+// metaConfig reads the Cloud API credentials from configuration.app_settings
+// (set on the WhatsApp settings page) with the env as fallback.
+func (c *Client) metaConfig(ctx context.Context, q database.Querier) *metaConfig {
+	stored := c.metaSettings(ctx, q)
+	token := firstSet(stored[MetaAccessTokenKey], c.Getenv("META_WA_ACCESS_TOKEN"))
+	phoneID := firstSet(stored[MetaPhoneNumberIDKey], c.Getenv("META_WA_PHONE_NUMBER_ID"))
 	if token == "" || phoneID == "" {
 		return nil
 	}
-	return &metaConfig{accessToken: token, phoneNumberID: phoneID, graphVersion: firstSet(c.Getenv("META_WA_GRAPH_VERSION"), "v21.0")}
+	return &metaConfig{accessToken: token, phoneNumberID: phoneID,
+		graphVersion: firstSet(stored[MetaGraphVersionKey], c.Getenv("META_WA_GRAPH_VERSION"), "v21.0")}
+}
+
+// metaSettings loads the meta_wa_* and whatsapp_provider rows (empty when
+// the table is unreachable, so the env still works).
+func (c *Client) metaSettings(ctx context.Context, q database.Querier) map[string]string {
+	out := map[string]string{}
+	if q == nil {
+		return out
+	}
+	rows, err := q.Query(ctx, `SELECT key, value FROM configuration.app_settings WHERE key = ANY($1)`,
+		[]string{MetaAccessTokenKey, MetaPhoneNumberIDKey, MetaGraphVersionKey, ProviderKey})
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var k string
+		var v *string
+		if rows.Scan(&k, &v) == nil && v != nil {
+			out[k] = strings.TrimSpace(*v)
+		}
+	}
+	return out
 }
 
 // provider is resolveProviderAsync: WHATSAPP_PROVIDER when set, else the
@@ -82,11 +110,12 @@ func (c *Client) provider(ctx context.Context, q database.Querier) string {
 		name string
 		ok   func() bool
 	}{
-		{"meta", func() bool { return c.metaConfig() != nil }},
+		{"meta", func() bool { return c.metaConfig(ctx, q) != nil }},
 		{"gateway", func() bool { return c.LoadGateway(ctx, q) != nil }},
 		{"fonnte", func() bool { return c.Getenv("FONNTE_API_KEY") != "" }},
 	}
-	explicit := strings.ToLower(strings.TrimSpace(c.Getenv("WHATSAPP_PROVIDER")))
+	// The settings page's choice wins over the env.
+	explicit := strings.ToLower(strings.TrimSpace(firstSet(c.metaSettings(ctx, q)[ProviderKey], c.Getenv("WHATSAPP_PROVIDER"))))
 	for _, p := range checks {
 		if explicit == p.name {
 			if p.ok() {
@@ -107,7 +136,7 @@ func (c *Client) provider(ctx context.Context, q database.Querier) string {
 func (c *Client) Dispatch(ctx context.Context, q database.Querier, target, message string) Result {
 	switch c.provider(ctx, q) {
 	case "meta":
-		return c.postMeta(ctx, c.metaConfig(), map[string]any{
+		return c.postMeta(ctx, c.metaConfig(ctx, q), map[string]any{
 			"messaging_product": "whatsapp",
 			"recipient_type":    "individual",
 			"to":                target,
@@ -147,7 +176,7 @@ func (c *Client) SendOTP(ctx context.Context, q database.Querier, target, code, 
 				"parameters": []any{map[string]any{"type": "text", "text": code}},
 			})
 		}
-		res = c.postMeta(ctx, c.metaConfig(), map[string]any{
+		res = c.postMeta(ctx, c.metaConfig(ctx, q), map[string]any{
 			"messaging_product": "whatsapp",
 			"recipient_type":    "individual",
 			"to":                target,

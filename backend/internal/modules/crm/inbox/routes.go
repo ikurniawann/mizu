@@ -17,6 +17,7 @@ import (
 	"nuhabit/backend/internal/platform/database"
 	"nuhabit/backend/internal/platform/httpx"
 	"nuhabit/backend/internal/platform/module"
+	"nuhabit/backend/internal/platform/whatsapp"
 )
 
 // SendResult is lib/whatsapp's WhatsAppResult. MessageID nil is undefined.
@@ -32,6 +33,21 @@ type SendResult struct {
 // itself.
 type WhatsApp interface {
 	SendText(ctx context.Context, q database.Querier, target, message string) SendResult
+	// SendMenu shows options interactively where the provider can (Meta
+	// list/buttons); otherwise fallback is sent as text.
+	SendMenu(ctx context.Context, q database.Querier, target, body string, options []whatsapp.Option, fallback string) SendResult
+	// SendTemplate sends an approved Meta template; other providers send
+	// fallback as text.
+	SendTemplate(ctx context.Context, q database.Querier, target, name, lang string, params []string, fallback string) SendResult
+	// Provider names the active provider ("meta", "gateway", "fonnte", "").
+	Provider(ctx context.Context, q database.Querier) string
+}
+
+// Template is a Meta message template with its body parameters.
+type Template struct {
+	Name   string
+	Lang   string
+	Params []string
 }
 
 // InstagramWebhookConfig is what the webhook needs (app secret, verify token).

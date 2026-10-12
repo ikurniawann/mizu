@@ -9,6 +9,7 @@ import {
   saveGatewayConfig,
   type GatewayState,
 } from "../api";
+import { MetaCloudSection } from "./meta-cloud-section";
 import { QRCodeSVG } from "qrcode.react";
 import {
   ArrowLeft,
@@ -210,6 +211,8 @@ export function WaGatewayPage() {
               hanya bisa dibuka Super Admin; jangan membagikan tangkapan
               layarnya.
             </div>
+
+            <MetaCloudSection />
           </>
         )}
       </div>

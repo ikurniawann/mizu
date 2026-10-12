@@ -81,7 +81,7 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
 - [x] T-542 Konfirmasi WA saat pembayaran online lunas (event outbox `spa.booking.paid_online` → pelanggan `wabot.customer-paid-notice`) dan pengingat kunjungan H-1 & ±2 jam sebelum (pengawas bot tiap 10 menit, jendela 22–26 jam & 90–150 menit). Hanya booking `source` website/chat; dedup lewat `configuration.wa_notif_log` (`spa_paid`, `spa_remind_h1`, `spa_remind_2h`); saklar `bot_notify_customer` di Pengaturan CRM (bawaan aktif).
 
 ### Fase 4 — Meta Cloud API
-- [ ] T-540 Tombol/list interaktif, template pesan, pengingat H-1, jendela 24 jam.
+- [x] T-540 Meta Cloud API: webhook `GET/POST /api/wa/meta` (hub.challenge + HMAC app secret; balasan tombol/daftar `k:<n>` dibaca sebagai angka menu), kredensial & provider dari `configuration.app_settings` (Settings → WhatsApp Gateway → **Meta Cloud API**, cek nomor via Graph), menu bot sebagai **tombol/daftar interaktif** (≤3 tombol, ≤10 baris, selebihnya teks), notifikasi lunas/pengingat memakai **template** di luar jendela 24 jam (`meta_wa_reminder_template`, `meta_wa_paid_template`). Runbook: `docs/crm/RUNBOOK-META-CLOUD-API.md`. *Menunggu pemilik:* WABA + nomor + token + template disetujui.
 
 ### Fase 5 — Laporan
 - [ ] T-541 Funnel bot (chat → paket → booking → bayar) & waktu balas per pesan.
@@ -143,3 +143,9 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   dilepas bila kirim gagal supaya dicoba lagi). Keputusan: booking front office tidak dikirimi (nomor
   tidak diberikan lewat kanal WA); pesan pengingat memuat link status/QR & ubah jadwal. Bukti:
   `TestBotRemindsUpcomingBookingsOnce`, `TestBotPaidNoticeOnce`.
+- 2026-10-13 — T-540 Meta Cloud API selesai di kode (belum diuji dengan WABA nyata — pemilik belum punya
+  akun Meta Business; diuji dengan stub Graph API & webhook bertanda tangan). Keputusan: kredensial di
+  app_settings agar bisa diubah tanpa deploy; provider dipilih di halaman setelan (env sebagai cadangan);
+  gateway Baileys tetap tersedia berdampingan. Bukti: `TestMetaMenusAndTemplates`, `TestWaMeta`,
+  `TestBotOffersMenusInteractively`. Kunci OpenAI (pemahaman kalimat bebas) diaktifkan pemilik 2026-10-13
+  lewat `openai_api_key`.

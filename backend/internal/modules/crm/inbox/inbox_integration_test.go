@@ -35,6 +35,18 @@ func (f *fakeWA) SendText(_ context.Context, _ database.Querier, target, message
 	return f.result
 }
 
+func (f *fakeWA) SendMenu(_ context.Context, _ database.Querier, target, _ string, _ []whatsapp.Option, fallback string) SendResult {
+	f.sent = append(f.sent, target+"|"+fallback)
+	return f.result
+}
+
+func (f *fakeWA) SendTemplate(_ context.Context, _ database.Querier, target, _, _ string, _ []string, fallback string) SendResult {
+	f.sent = append(f.sent, target+"|"+fallback)
+	return f.result
+}
+
+func (f *fakeWA) Provider(context.Context, database.Querier) string { return "gateway" }
+
 type fakeIG struct {
 	cfg  *InstagramWebhookConfig
 	send InstagramSend

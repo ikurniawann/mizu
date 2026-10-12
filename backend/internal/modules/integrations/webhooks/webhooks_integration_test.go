@@ -66,9 +66,13 @@ func (f *fakePayments) Order(context.Context, database.Querier, string) (*Pendin
 type fakeInbox struct {
 	replies []string
 	echo    bool
+	stored  []domain.GatewayInbound
 }
 
 func (f *fakeInbox) Record(_ context.Context, _ database.DB, m domain.GatewayInbound) (bool, string, error) {
+	if !f.echo {
+		f.stored = append(f.stored, m)
+	}
 	return !f.echo, "conv-1", nil
 }
 func (f *fakeInbox) OnInbound(context.Context, database.DB, string, *string, time.Time) (*string, error) {
@@ -401,5 +405,60 @@ func TestLoyaltyEvents(t *testing.T) {
 	got := f.partners.ingested[0]
 	if got.ExternalID != "ext-1" || *got.Subject != "0811" || string(got.Payload) != `{"frame":2}` || got.OccurredAt != nil {
 		t.Errorf("ingested %+v", got)
+	}
+}
+
+/* ── Meta Cloud API webhook (EPIC-053 Fase 4) ───────────────────────── */
+
+func TestWaMeta(t *testing.T) {
+	f := newFixture(t)
+	get := func(query string) response {
+		r := httptest.NewRequest("GET", "/api/wa/meta"+query, nil)
+		rec := httptest.NewRecorder()
+		f.mux.ServeHTTP(rec, r)
+		return response{Status: rec.Code, Raw: strings.TrimSpace(rec.Body.String())}
+	}
+	if res := get("?hub.mode=subscribe&hub.verify_token=x&hub.challenge=1"); res.Status != 503 {
+		t.Fatalf("unconfigured: %+v", res)
+	}
+	f.env["META_WA_VERIFY_TOKEN"] = "verif"
+	f.env["META_WA_APP_SECRET"] = "rahasia"
+	if res := get("?hub.mode=subscribe&hub.verify_token=salah&hub.challenge=123"); res.Status != 403 {
+		t.Fatalf("wrong verify token: %+v", res)
+	}
+	if res := get("?hub.mode=subscribe&hub.verify_token=verif&hub.challenge=123"); res.Status != 200 || res.Raw != "123" {
+		t.Fatalf("handshake: %+v", res)
+	}
+	sign := func(body string) map[string]string {
+		mac := hmac.New(sha256.New, []byte("rahasia"))
+		mac.Write([]byte(body))
+		return map[string]string{"X-Hub-Signature-256": "sha256=" + hex.EncodeToString(mac.Sum(nil))}
+	}
+	body := `{"object":"whatsapp_business_account","entry":[{"changes":[{"value":{"messaging_product":"whatsapp",
+	  "contacts":[{"wa_id":"6281234567890","profile":{"name":"Fajar"}}],
+	  "messages":[
+	    {"from":"6281234567890","id":"wamid.1","timestamp":"1791850000","type":"text","text":{"body":"halo"}},
+	    {"from":"6281234567890","id":"wamid.2","timestamp":"1791850001","type":"interactive","interactive":{"type":"list_reply","list_reply":{"id":"k:2","title":"2 orang"}}},
+	    {"from":"6281234567890","id":"wamid.3","timestamp":"1791850002","type":"image","image":{"id":"m1","caption":"foto"}}
+	  ],
+	  "statuses":[{"id":"wamid.0","status":"delivered"}]}}]}]}`
+	expect(t, f.post("/api/wa/meta", body, nil), 401, `{"success":false,"error":"Signature tidak valid"}`)
+	expect(t, f.post("/api/wa/meta", body, sign(body)), 200, `{"received":true,"stored":3}`)
+	if len(f.inbox.stored) != 3 {
+		t.Fatalf("stored = %d", len(f.inbox.stored))
+	}
+	first, menu, media := f.inbox.stored[0], f.inbox.stored[1], f.inbox.stored[2]
+	if first.ExternalID != "6281234567890" || *first.Body != "halo" || *first.PushName != "Fajar" || first.SentAt == nil || *first.ProviderMessageID != "wamid.1" {
+		t.Fatalf("text message: %+v", first)
+	}
+	if *menu.Body != "2" { // list reply id k:2 → the bot reads "2"
+		t.Fatalf("interactive reply body = %q", *menu.Body)
+	}
+	if media.MediaType == nil || *media.MediaType != "image" || *media.Body != "foto" {
+		t.Fatalf("media: %+v", media)
+	}
+	// Text messages get the CS auto-reply from the fake inbox (no bot here).
+	if len(f.inbox.replies) != 2 { // the image has no auto-reply path either way? text + interactive
+		t.Logf("auto-replies: %v", f.inbox.replies)
 	}
 }

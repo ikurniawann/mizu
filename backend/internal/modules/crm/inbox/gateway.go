@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"log/slog"
 	"math"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"nuhabit/backend/internal/modules/crm/inbox/domain"
 	"nuhabit/backend/internal/platform/database"
+	"nuhabit/backend/internal/platform/whatsapp"
 )
 
 // Gateway is the inbox's exported service for the WhatsApp gateway webhook
@@ -167,6 +170,74 @@ func jsNumber(s string) (float64, bool) {
 // SendText sends message to phone and logs it on conversationID ("" =
 // none) with messageType and sentByUserID ("" = NULL), like
 // sendWhatsAppText(…, { messageType, sentByUserId, conversationId }).
+// SendMenu sends an interactive menu where the provider supports it (the
+// text, which numbers the options itself, is the fallback and what the
+// inbox logs).
+func (g Gateway) SendMenu(ctx context.Context, db database.DB, phone, text string, options []whatsapp.Option, messageType, conversationID string) SendResult {
+	h := &handler{Ports: Ports{WhatsApp: g.WhatsApp}, db: db, log: g.logger()}
+	res := g.WhatsApp.SendMenu(ctx, db, phone, menuBody(text), options, text)
+	if err := h.logOutbound(ctx, &phone, text, res, textMeta{messageType: messageType, conversationID: conversationID}); err != nil {
+		h.log.Error("[wa-log] Gagal mencatat pesan keluar", "error", err)
+	}
+	return res
+}
+
+// SendNotice sends text while the customer's 24-hour window is open; on
+// Meta, outside it, an approved template is sent instead (and the text is
+// logged as what the guest effectively received). Without a template name
+// the notice is skipped rather than refused by Meta.
+func (g Gateway) SendNotice(ctx context.Context, db database.DB, phone, text string, tpl Template, messageType, conversationID string) SendResult {
+	h := &handler{Ports: Ports{WhatsApp: g.WhatsApp}, db: db, log: g.logger()}
+	var res SendResult
+	if g.WhatsApp.Provider(ctx, db) == "meta" && !customerWindowOpen(ctx, db, phone) {
+		if tpl.Name == "" {
+			return SendResult{Success: false, Provider: "meta", Reason: "Di luar jendela 24 jam dan template Meta belum diatur"}
+		}
+		res = g.WhatsApp.SendTemplate(ctx, db, phone, tpl.Name, tpl.Lang, tpl.Params, text)
+	} else {
+		res = g.WhatsApp.SendText(ctx, db, phone, text)
+	}
+	if err := h.logOutbound(ctx, &phone, text, res, textMeta{messageType: messageType, conversationID: conversationID}); err != nil {
+		h.log.Error("[wa-log] Gagal mencatat pesan keluar", "error", err)
+	}
+	return res
+}
+
+func (g Gateway) logger() *slog.Logger {
+	if g.Log == nil {
+		return slog.Default()
+	}
+	return g.Log
+}
+
+// customerWindowOpen: Meta lets a business send free-form text for 24 hours
+// after the customer's last message.
+func customerWindowOpen(ctx context.Context, q database.Querier, phone string) bool {
+	var ok bool
+	err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM crm.wa_messages
+	  WHERE direction = 'in' AND phone = $1 AND created_at > now() - interval '24 hours')`, phone).Scan(&ok)
+	return err == nil && ok
+}
+
+// menuBody drops the numbered option lines from text: the interactive
+// message lists them itself.
+func menuBody(text string) string {
+	var keep []string
+	for _, line := range strings.Split(text, "\n") {
+		if numberedLine.MatchString(line) {
+			continue
+		}
+		keep = append(keep, line)
+	}
+	out := strings.TrimSpace(strings.Join(keep, "\n"))
+	for strings.Contains(out, "\n\n\n") {
+		out = strings.ReplaceAll(out, "\n\n\n", "\n\n")
+	}
+	return out
+}
+
+var numberedLine = regexp.MustCompile(`^\s*\d{1,2}\. `)
+
 func (g Gateway) SendText(ctx context.Context, db database.DB, phone, message, messageType, sentByUserID, conversationID string) SendResult {
 	log := g.Log
 	if log == nil {

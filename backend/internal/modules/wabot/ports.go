@@ -38,6 +38,27 @@ type Spa interface {
 
 // Sender delivers one bot reply to the customer and logs it on the
 // conversation (message_type "bot").
+// MenuSender is a Sender that can show numbered options as an interactive
+// list/buttons (Meta Cloud API); the text carries the same menu for
+// providers without interactive messages.
+type MenuSender interface {
+	SendMenu(ctx context.Context, db database.DB, phone, conversationID, text string, options []domain.MenuOption) error
+}
+
+// Template is an approved Meta message template with body parameters, used
+// for notices outside the 24-hour customer window.
+type Template struct {
+	Name   string
+	Lang   string
+	Params []string
+}
+
+// NoticeSender is a Sender that can fall back to a template when the
+// customer window is closed (Meta); other providers send the text.
+type NoticeSender interface {
+	SendNotice(ctx context.Context, db database.DB, phone, conversationID, text string, tpl Template) error
+}
+
 type Sender interface {
 	Send(ctx context.Context, db database.DB, phone, conversationID, text string) error
 }

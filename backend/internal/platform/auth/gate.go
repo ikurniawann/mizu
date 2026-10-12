@@ -46,6 +46,7 @@ var PublicAuthPrefixes = []string{
 	"/share",
 	"/api/share",
 	"/api/wa/inbound",
+	"/api/wa/meta",
 	"/api/crm/instagram/webhook",
 	"/api/payments/xendit/webhook",
 	"/booking",

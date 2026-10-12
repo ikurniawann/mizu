@@ -107,6 +107,8 @@ func (h *Handler) Routes() []module.Route {
 		r("PATCH /api/settings/wa-gateway", h.patchWaGateway),
 		r("GET /api/settings/wa-gateway/messages", h.listMessages),
 		r("POST /api/settings/wa-gateway/messages", h.resendMessage),
+		r("GET /api/settings/wa-meta", h.getWaMeta),
+		r("PATCH /api/settings/wa-meta", h.patchWaMeta),
 		r("GET /api/settings/wa-notifications", h.getWaNotif),
 		r("PUT /api/settings/wa-notifications", h.putWaNotif),
 		r("POST /api/settings/wa-notifications/test", h.testWaNotif),

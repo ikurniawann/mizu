@@ -14,6 +14,7 @@ import (
 	"nuhabit/backend/internal/app"
 	"nuhabit/backend/internal/modules/spa"
 	"nuhabit/backend/internal/modules/wabot"
+	"nuhabit/backend/internal/modules/wabot/domain"
 	"nuhabit/backend/internal/platform/database"
 	"nuhabit/backend/internal/platform/testutil"
 )
@@ -484,4 +485,31 @@ func smallSuffix(e *botEnv, branchID string) string {
 		e.t.Fatal(err)
 	}
 	return strings.TrimPrefix(name, "Go Test B")
+}
+
+/* ── Fase 4: interactive menus ──────────────────────────────────────── */
+
+type menuSender struct {
+	memSender
+	menus [][]domain.MenuOption
+}
+
+func (m *menuSender) SendMenu(_ context.Context, _ database.DB, _, _, text string, options []domain.MenuOption) error {
+	m.sent = append(m.sent, text)
+	m.menus = append(m.menus, options)
+	return nil
+}
+
+// A sender that can show menus gets the turn's options (the last reply)
+// as an interactive message; the plain greeting stays text.
+func TestBotOffersMenusInteractively(t *testing.T) {
+	e := setupBot(t)
+	ms := &menuSender{}
+	handled, err := e.engine.Handle(e.ctx, e.tx, e.conv, "halo", e.at, ms)
+	if err != nil || !handled {
+		t.Fatalf("handle: %v %v", handled, err)
+	}
+	if len(ms.sent) != 2 || len(ms.menus) != 1 || len(ms.menus[0]) != 3 || ms.menus[0][0].Key != "1" || ms.menus[0][2].Label != "3 orang" {
+		t.Fatalf("menus: sent=%d menus=%v", len(ms.sent), ms.menus)
+	}
 }
