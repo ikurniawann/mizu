@@ -119,3 +119,8 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   sudah dibangun — penukaran container live menunggu pemilik (diblokir classifier). `bot_enabled`
   bawaan **false**; nyalakan di Pengaturan CRM → Customer Service. Fase 3–5 (grup terintegrasi, Meta
   Cloud API, laporan funnel) belum.
+- 2026-10-12 — Live: pemilik menukar container ke `mizu-api:wabot-2` + `mizu:wabot-2` (perbaikan
+  `b9086954`: prefix `/api/wa-bot` harus didaftarkan di `GO_BACKEND_PREFIXES`, kalau tidak Next
+  membalas 404). Simulasi penuh di mizu.reddie.id: 9 giliran, balasan 157–511 ms, booking
+  MZ-261012-KNBH/LR22 (uji; dibatalkan). `bot_enabled` dinyalakan untuk demo.
+
