@@ -379,7 +379,7 @@ func MatchName(query string, labels []string) int {
 		ll := Normalize(l)
 		score := 0
 		for _, w := range words {
-			if genericWords[w] || shared[w] || (len(w) < 4 && !isDigits(w)) {
+			if genericWords[w] || shared[w] || (len(w) < 4 && !hasDigit(w)) {
 				continue
 			}
 			if containsWord(ll, w) {
@@ -396,13 +396,14 @@ func MatchName(query string, labels []string) int {
 // genericWords carry no choice on their own.
 var genericWords = map[string]bool{"massage": true, "pijat": true, "menit": true, "jam": true, "treatment": true, "paket": true, "mizu": true, "outlet": true, "spa": true, "yang": true, "mau": true, "saja": true, "aja": true}
 
-func isDigits(w string) bool {
+// hasDigit: "1.0", "60", "90" are distinctive even when short.
+func hasDigit(w string) bool {
 	for _, r := range w {
-		if r < '0' || r > '9' {
-			return false
+		if r >= '0' && r <= '9' {
+			return true
 		}
 	}
-	return w != ""
+	return false
 }
 
 // sharedWords are words every label contains ("mizu", "massage").
@@ -427,6 +428,14 @@ func sharedWords(labels []string) map[string]bool {
 }
 
 func containsWord(text, w string) bool {
+	if strings.ContainsAny(w, ".-/") { // "1.0": whole-token match on whitespace
+		for _, t := range strings.Fields(text) {
+			if strings.Trim(t, ".,!?") == w {
+				return true
+			}
+		}
+		return false
+	}
 	for _, t := range strings.FieldsFunc(text, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }) {
 		if t == w {
 			return true

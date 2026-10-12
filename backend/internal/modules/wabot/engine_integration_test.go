@@ -583,6 +583,8 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 	}
 	r = e.say("parkirnya luas?")
 	e.wants(r, "belum punya jawabannya", "*admin*")
+	r = e.say("terapisnya ada yang pria?") // a preference word alone is still a question
+	e.wants(r, "Jawaban AI untuk: terapisnya ada yang pria?")
 	// A booking-shaped question is not a FAQ: "bisa besok jam 3?" asks for a slot.
 	e.say("2")
 	e.say("1")

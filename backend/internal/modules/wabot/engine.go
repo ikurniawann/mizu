@@ -180,7 +180,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 	}
 	// Questions (address, hours, prices, …) are answered from system data
 	// without touching the draft; the pending booking question follows.
-	if kind := domain.DetectQuestion(text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).useful()) {
+	if kind := domain.DetectQuestion(text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).bookingShaped()) {
 		if answer := t.answer(ctx, kind, text); answer != "" {
 			prompts := t.prompt(ctx)
 			if len(prompts) > 0 {
@@ -234,6 +234,12 @@ func (t *turn) prompt(ctx context.Context) []string {
 }
 
 /* ── understanding ───────────────────────────────────────────────────── */
+
+// bookingShaped: the message asks for a visit (where/who/what/when), not
+// merely mentions a preference ("terapisnya ada yang pria?").
+func (x Extraction) bookingShaped() bool {
+	return x.Outlet != "" || x.People > 0 || len(x.Treatments) > 0 || x.Date != "" || x.Time != "" || x.Period != ""
+}
 
 func (x Extraction) useful() bool {
 	return x.Outlet != "" || x.People > 0 || len(x.Treatments) > 0 || x.Date != "" || x.Time != "" || x.Period != "" ||

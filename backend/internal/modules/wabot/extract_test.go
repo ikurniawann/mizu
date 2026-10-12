@@ -55,3 +55,16 @@ func TestStripWords(t *testing.T) {
 		t.Fatalf("outlet word must not pick the Signature Ritual treatment: %d", i)
 	}
 }
+
+func TestMatchNameWithNumberedOutlet(t *testing.T) {
+	labels := []string{"Mizu 1.0", "Mizu Signature"}
+	if i := domain.MatchName("Kalau alamat mizu 1.0 itu dimana?", labels); i != 0 {
+		t.Fatalf("mizu 1.0 → %d", i)
+	}
+	if i := domain.MatchName("alamat signature dimana", labels); i != 1 {
+		t.Fatalf("signature → %d", i)
+	}
+	if !(Extraction{GenderPref: "male"}).useful() || (Extraction{GenderPref: "male"}).bookingShaped() {
+		t.Fatal("a bare gender preference is useful but not booking-shaped")
+	}
+}
