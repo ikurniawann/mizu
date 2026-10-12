@@ -182,7 +182,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 	if nums := domain.MenuNumbers(text); nums != nil && len(s.Menu) > 0 {
 		applied = t.applyMenu(ctx, nums)
 	} else {
-		ext := t.localExtract(text)
+		ext := t.localExtract(ctx, text)
 		// The AI reads what the local parser missed: always for a message
 		// it could not read, and for free-form sentences it read only partly.
 		if t.e.ports.Extractor != nil && (!ext.useful() || domain.FreeForm(text)) {
@@ -230,17 +230,26 @@ func (x Extraction) useful() bool {
 }
 
 // localExtract reads what the deterministic parsers can, without AI.
-func (t *turn) localExtract(text string) Extraction {
+func (t *turn) localExtract(ctx context.Context, text string) Extraction {
 	s := t.sess
 	var x Extraction
 	n := domain.Normalize(text)
+	if len(s.Outlets) == 0 {
+		t.loadOutlets(ctx) // outlet names are needed to read "di signature" (and for the AI's context)
+	}
 	if i := domain.MatchName(text, outletNames(s.Outlets)); i >= 0 {
 		x.Outlet = s.Outlets[i].Name
 	}
 	x.People = domain.ParsePeople(text)
-	if len(s.Catalog) > 0 {
-		if i := domain.MatchName(text, catalogLabels(s.Catalog)); i >= 0 {
-			x.Treatments = []string{s.Catalog[i].Label()}
+	vocab := s.Catalog
+	if len(vocab) == 0 && len(s.Outlets) > 0 {
+		// No outlet yet: treatment names are shared, so any outlet's catalog
+		// serves as vocabulary ("mau reflexology" before "di Signature").
+		vocab, _ = t.e.catalogFor(ctx, s.Outlets[0].ID)
+	}
+	if len(vocab) > 0 {
+		if i := domain.MatchName(text, catalogLabels(vocab)); i >= 0 {
+			x.Treatments = []string{vocab[i].Label()}
 		}
 	}
 	x.Date = domain.ParseDate(text, t.at)
@@ -390,6 +399,12 @@ func (t *turn) apply(ctx context.Context, x *Extraction) bool {
 			}
 			s.ClearSlot()
 		}
+		applied = true
+	}
+	if len(x.Treatments) > 0 && s.OutletID == "" {
+		// Named before the outlet ("thai massage dua-duanya"): matched once
+		// the outlet's catalog is known.
+		s.PendingTreatments = x.Treatments
 		applied = true
 	}
 	if len(x.Treatments) > 0 && s.OutletID != "" {
@@ -615,6 +630,11 @@ func (t *turn) setOutlet(ctx context.Context, o domain.OutletOpt) {
 	s.OutletID, s.OutletName = o.ID, o.Name
 	s.Catalog, s.Persons, s.SlotISO, s.TherapistID, s.TherapistName = nil, nil, "", "", ""
 	t.loadCatalog(ctx)
+	if len(s.PendingTreatments) > 0 {
+		pending := s.PendingTreatments
+		s.PendingTreatments = nil
+		t.apply(ctx, &Extraction{Treatments: pending})
+	}
 }
 
 func (t *turn) loadCatalog(ctx context.Context) {

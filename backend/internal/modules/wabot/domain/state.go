@@ -111,6 +111,8 @@ type Session struct {
 	// session the watcher refilled after telling the guest a slot is free.
 	WaitlistID   string `json:"waitlist_id,omitempty"`
 	FromWaitlist bool   `json:"from_waitlist,omitempty"`
+	// PendingTreatments were named before the outlet was known.
+	PendingTreatments []string `json:"pending_treatments,omitempty"`
 }
 
 // NewSession starts at the outlet step.

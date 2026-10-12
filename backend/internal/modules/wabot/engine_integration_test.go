@@ -513,3 +513,24 @@ func TestBotOffersMenusInteractively(t *testing.T) {
 		t.Fatalf("menus: sent=%d menus=%v", len(ms.sent), ms.menus)
 	}
 }
+
+// Treatments named before the outlet is chosen are applied once it is; the
+// outlet name is read from free text even on the first message.
+func TestBotKeepsTreatmentsNamedBeforeOutlet(t *testing.T) {
+	e := setupBot(t)
+	second := e.addOutlet("10:00", "20:00", 2)
+	g := e.newConv("6281255500301", "Tamu Awal")
+	r := g.say("halo, mau reflexology buat 2 orang besok")
+	g.wants(r, "Mau datang ke outlet mana?")
+	name := "Go Test B" + smallSuffix(e, second)
+	r = g.say("di " + name + " saja")
+	// Outlet matched from text, treatments applied from the pending list: straight to the time question.
+	g.wants(r, "Jam yang masih tersedia pada *Jumat, 9 Okt 2026*")
+	var outlet string
+	if err := e.tx.QueryRow(e.ctx, `SELECT state->>'outlet_id' FROM crm.wa_bot_sessions WHERE conversation_id = $1::uuid`, g.conv).Scan(&outlet); err != nil {
+		t.Fatal(err)
+	}
+	if outlet != second {
+		t.Fatalf("outlet from text: %s want %s", outlet, second)
+	}
+}
