@@ -35,7 +35,7 @@ func (o OpenAIExtractor) Configured(ctx context.Context, q database.Querier) boo
 	return strings.TrimSpace(firstSet(s["openai_api_key"], o.Getenv("OPENAI_API_KEY"))) != ""
 }
 
-const extractPrompt = `Kamu membaca pesan WhatsApp dari calon pelanggan spa/massage Mizu dan mengisi JSON. Jangan menjawab pelanggan; hanya ekstrak.
+const extractPrompt = `Kamu membaca pesan WhatsApp dari calon pelanggan spa/massage Mizu (bisa berbahasa Indonesia atau Inggris) dan mengisi JSON. Jangan menjawab pelanggan; hanya ekstrak.
 Keluarkan JSON dengan kunci (kosongkan "" / 0 / false / [] bila tidak disebut):
 - outlet: nama outlet persis dari daftar OUTLET bila disebut atau jelas dimaksud
 - people: jumlah orang (angka)
@@ -155,7 +155,7 @@ func truncate(s string, n int) string {
 	return s[:n]
 }
 
-const answerPrompt = `Kamu asisten WhatsApp spa Mizu. Jawab pertanyaan pelanggan dalam bahasa Indonesia yang ramah dan singkat (maksimal 3 kalimat, boleh emoji seperlunya), HANYA berdasarkan FAKTA di bawah. Jangan mengarang harga, jam, alamat, promo, atau kebijakan. Jika jawabannya tidak ada di FAKTA, balas persis: TIDAK_TAHU`
+const answerPrompt = `Kamu asisten WhatsApp spa Mizu. Jawab pertanyaan pelanggan dengan ramah dan singkat (maksimal 3 kalimat, boleh emoji seperlunya) dalam bahasa yang disebut di BAHASA JAWABAN, HANYA berdasarkan FAKTA di bawah. Jangan mengarang harga, jam, alamat, promo, atau kebijakan. Jika jawabannya tidak ada di FAKTA, balas persis: TIDAK_TAHU`
 
 var _ Answerer = OpenAIExtractor{}
 

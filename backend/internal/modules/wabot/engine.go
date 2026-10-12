@@ -112,27 +112,59 @@ type turn struct {
 func (t *turn) run(ctx context.Context, text string) []string {
 	s := t.sess
 	var out []string
+	// Language first: a menu answer, an explicit choice, or a clearly
+	// English/Indonesian message decides; anything else gets the menu.
+	if s.Lang == "" {
+		if nums := domain.MenuNumbers(text); nums != nil && s.MenuStep == domain.StepLang {
+			if nums[0] == 2 {
+				s.Lang = domain.LangEN
+			} else {
+				s.Lang = domain.LangID
+			}
+			s.Greeted = true
+			s.ClearMenu()
+			return append([]string{domain.Greeting(s.Lang, t.settings.Name, t.settings.Greeting)}, t.prompt(ctx)...)
+		}
+		// A stated choice or a clearly English message decides; an Indonesian
+		// message that already carries a booking or a question continues in
+		// Indonesian; a bare greeting gets the language question once.
+		lang := domain.DetectLang(text)
+		carries := t.localExtract(ctx, text).useful() || domain.DetectQuestion(text) != domain.QuestionNone
+		switch {
+		case domain.ExplicitLang(text) != "" || lang == domain.LangEN:
+			s.Lang = lang
+		case s.MenuStep == domain.StepLang:
+			s.Lang = domain.LangID // asked once; an unclear answer means Indonesian
+		case lang == domain.LangID && carries:
+			s.Lang = domain.LangID
+		default:
+			s.SetMenu(domain.StepLang, domain.LangMenu())
+			return []string{domain.AskLang(t.settings.Name)}
+		}
+		s.ClearMenu()
+	}
+	l := s.Lang
 	greet := func() {
 		if !s.Greeted {
 			s.Greeted = true
-			out = append(out, domain.Greeting(t.settings.Name, t.settings.Greeting))
+			out = append(out, domain.Greeting(l, t.settings.Name, t.settings.Greeting))
 		}
 	}
 	intent := domain.DetectIntent(text, t.settings.HandoverKeywords)
 	switch intent {
 	case domain.IntentAdmin:
 		t.handedOver = "customer"
-		return []string{domain.Handover(t.settings.Name)}
+		return []string{domain.Handover(l, t.settings.Name)}
 	case domain.IntentRestart:
 		if strings.Contains(domain.Normalize(text), "daftar tunggu") && s.WaitlistID != "" {
 			t.cancelWaitlist(ctx)
 			s.WaitlistID = ""
-			return []string{domain.WaitlistCancelled()}
+			return []string{domain.WaitlistCancelled(l)}
 		}
 		s.ResetBooking()
 		return append(out, t.prompt(ctx)...)
 	case domain.IntentStatus:
-		return []string{domain.StatusOf(s.Bookings)}
+		return []string{domain.StatusOf(l, s.Bookings)}
 	case domain.IntentHelp:
 		greet()
 		return append(out, t.prompt(ctx)...)
@@ -145,10 +177,10 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		n := domain.Normalize(text)
 		if strings.Contains(n, "batal") && s.WaitlistID != "" {
 			t.cancelWaitlist(ctx)
-			return append(out, domain.WaitlistCancelled())
+			return append(out, domain.WaitlistCancelled(l))
 		}
 		if s.OutletID == "" || s.Date == "" {
-			return append(out, domain.WaitlistNeedsDate())
+			return append(out, domain.WaitlistNeedsDate(l))
 		}
 		return append(out, t.joinWaitlist(ctx, s.Date))
 	}
@@ -156,15 +188,20 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		t.cancelWaitlist(ctx)
 		s.ResetBooking()
 		s.WaitlistID = ""
-		return append(out, domain.WaitlistCancelled())
+		return append(out, domain.WaitlistCancelled(l))
 	}
 	if s.NextStep() == domain.StepDone {
+		if kind := domain.DetectQuestion(text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).bookingShaped()) {
+			if answer := t.answer(ctx, kind, text); answer != "" {
+				return []string{answer}
+			}
+		}
 		n := domain.Normalize(text)
-		if strings.Contains(n, "bayar") || strings.Contains(n, "lunas") || strings.Contains(n, "transfer") {
+		if strings.Contains(n, "bayar") || strings.Contains(n, "lunas") || strings.Contains(n, "transfer") || strings.Contains(n, "paid") || strings.Contains(n, "payment") {
 			return []string{t.paymentCheck(ctx)}
 		}
 		if intent == domain.IntentGreeting || intent == domain.IntentYes {
-			return []string{domain.Done(t.settings.Name)}
+			return []string{domain.Done(l, t.settings.Name)}
 		}
 		// Anything else after a finished booking: let the AI decide if it is a new booking.
 		if ext := t.extract(ctx, text); ext != nil && (ext.Outlet != "" || ext.Date != "" || len(ext.Treatments) > 0 || ext.People > 0) {
@@ -172,7 +209,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 			t.apply(ctx, ext)
 			return t.prompt(ctx)
 		}
-		return []string{domain.Done(t.settings.Name)}
+		return []string{domain.Done(l, t.settings.Name)}
 	}
 	greet()
 	if intent == domain.IntentGreeting && len(strings.Fields(text)) <= 3 {
@@ -184,12 +221,27 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		if answer := t.answer(ctx, kind, text); answer != "" {
 			prompts := t.prompt(ctx)
 			if len(prompts) > 0 {
-				prompts[0] = domain.ContinuePrompt(prompts[0])
+				prompts[0] = domain.ContinuePrompt(l, prompts[0])
 			}
 			return append(append(out, answer), prompts...)
 		}
 	}
 	applied := false
+	if s.NextStep() == domain.StepName {
+		// The name is asked before anything else: option 1 = profile name.
+		if nums := domain.MenuNumbers(text); nums != nil && nums[0] == 1 && looksLikeName(t.conv.DisplayName) {
+			s.Name = t.conv.DisplayName
+			applied = true
+		} else if name := strings.TrimSpace(strings.Trim(text, ".!")); looksLikeName(name) && domain.MenuNumbers(text) == nil &&
+			len([]rune(name)) >= 3 && intent == domain.IntentNone && domain.DetectQuestion(text) == domain.QuestionNone {
+			s.Name = titleCase(name)
+			applied = true
+		}
+		if applied {
+			s.Misses = 0
+			return append(out, t.prompt(ctx)...)
+		}
+	}
 	if nums := domain.MenuNumbers(text); nums != nil && len(s.Menu) > 0 {
 		applied = t.applyMenu(ctx, nums)
 	} else {
@@ -203,7 +255,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		}
 		if ext.WantAdmin {
 			t.handedOver = "customer"
-			return append(out, domain.Handover(t.settings.Name))
+			return append(out, domain.Handover(l, t.settings.Name))
 		}
 		applied = t.apply(ctx, &ext)
 	}
@@ -211,11 +263,11 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		s.Misses++
 		if s.Misses >= domain.MaxMisses {
 			t.handedOver = "lost"
-			return append(out, domain.Handover(t.settings.Name))
+			return append(out, domain.Handover(l, t.settings.Name))
 		}
 		prompts := t.prompt(ctx)
 		if len(prompts) > 0 {
-			prompts[0] = domain.NotUnderstood(prompts[0], s.Misses)
+			prompts[0] = domain.NotUnderstood(l, prompts[0], s.Misses)
 		}
 		return append(out, prompts...)
 	}
@@ -339,6 +391,7 @@ func (t *turn) extract(ctx context.Context, text string) *Extraction {
 // question goes to the AI with the same facts. "" = not a question after all.
 func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string) string {
 	s := t.sess
+	l := s.Lang
 	if len(s.Outlets) == 0 {
 		t.loadOutlets(ctx)
 	}
@@ -349,9 +402,9 @@ func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string
 	}
 	switch kind {
 	case domain.QuestionAddress:
-		return domain.AnswerAddress(s.Outlets, chosen)
+		return domain.AnswerAddress(l, s.Outlets, chosen)
 	case domain.QuestionHours:
-		return domain.AnswerHours(s.Outlets, chosen)
+		return domain.AnswerHours(l, s.Outlets, chosen)
 	case domain.QuestionPrice:
 		outletID, outletName := chosen, ""
 		if outletID == "" && len(s.Outlets) > 0 {
@@ -366,17 +419,17 @@ func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string
 		if outletID != s.OutletID || len(catalog) == 0 {
 			catalog, _ = t.e.catalogFor(ctx, outletID)
 		}
-		return domain.AnswerPrices(outletName, catalog)
+		return domain.AnswerPrices(l, outletName, catalog)
 	case domain.QuestionPayment:
-		return domain.AnswerPayment(t.e.ports.Spa.OnlinePayment())
+		return domain.AnswerPayment(l, t.e.ports.Spa.OnlinePayment())
 	case domain.QuestionReschedule:
-		return domain.AnswerReschedule()
+		return domain.AnswerReschedule(l)
 	}
 	if answerer, ok := t.e.ports.Extractor.(Answerer); ok {
 		ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 		defer cancel()
 		started := time.Now()
-		reply, err := answerer.Answer(ctx, t.db, text, t.facts(ctx))
+		reply, err := answerer.Answer(ctx, t.db, text, t.facts(ctx)+"\nBAHASA JAWABAN: "+map[domain.L]string{domain.LangEN: "English", domain.LangID: "Bahasa Indonesia"}[l])
 		if err != nil {
 			t.e.log.Warn("[wabot] jawaban AI gagal", "error", err)
 		} else {
@@ -386,7 +439,7 @@ func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string
 			return reply
 		}
 	}
-	return domain.AnswerUnknown()
+	return domain.AnswerUnknown(l)
 }
 
 // facts is what the AI may answer from: outlets, the catalog, policies.
@@ -936,8 +989,8 @@ func (o staggerOption) value(people int) string {
 	return "stagger:" + strings.Join(parts, ",")
 }
 
-func (o staggerOption) label(people int) string {
-	return domain.Clock(o.First.At) + " (" + strconv.Itoa(o.Firsts) + " orang) & " + domain.Clock(o.Second.At) + " (" + strconv.Itoa(people-o.Firsts) + " orang)"
+func (o staggerOption) label(l domain.L, people int) string {
+	return domain.StaggerLabel(l, domain.Clock(o.First.At), o.Firsts, domain.Clock(o.Second.At), people-o.Firsts)
 }
 
 // distance ranks a slot by closeness to what the guest asked for.
@@ -958,8 +1011,12 @@ func (t *turn) distance(at time.Time) int {
 
 func (t *turn) promptSteps(ctx context.Context) []string {
 	s := t.sess
+	l := s.Lang
 	for guard := 0; guard < 6; guard++ {
 		switch s.NextStep() {
+		case domain.StepLang:
+			s.SetMenu(domain.StepLang, domain.LangMenu())
+			return []string{domain.AskLang(t.settings.Name)}
 		case domain.StepOutlet:
 			if len(s.Outlets) == 0 {
 				t.loadOutlets(ctx)
@@ -970,28 +1027,28 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 			}
 			if len(s.Outlets) == 0 {
 				t.handedOver = "no_outlet"
-				return []string{domain.Handover(t.settings.Name)}
+				return []string{domain.Handover(l, t.settings.Name)}
 			}
 			opts := make([]domain.MenuOption, len(s.Outlets))
 			for i, o := range s.Outlets {
-				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: o.Name + " (buka " + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + ")", Value: o.ID}
+				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: o.Name + " (" + openWord(l) + " " + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + ")", Value: o.ID}
 			}
 			s.SetMenu(domain.StepOutlet, opts)
-			return []string{domain.AskOutlet(opts)}
+			return []string{domain.AskOutlet(l, opts)}
 		case domain.StepPeople:
 			opts := make([]domain.MenuOption, domain.MaxPeople)
 			for i := range opts {
-				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: strconv.Itoa(i+1) + " orang", Value: strconv.Itoa(i + 1)}
+				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: domain.PeopleLabel(l, i+1), Value: strconv.Itoa(i + 1)}
 			}
 			s.SetMenu(domain.StepPeople, opts)
-			return []string{domain.AskPeople()}
+			return []string{domain.AskPeople(l)}
 		case domain.StepTreatment:
 			if len(s.Catalog) == 0 {
 				t.loadCatalog(ctx)
 			}
 			if len(s.Catalog) == 0 {
 				t.handedOver = "no_catalog"
-				return []string{domain.Handover(t.settings.Name)}
+				return []string{domain.Handover(l, t.settings.Name)}
 			}
 			var opts []domain.MenuOption
 			for i, v := range s.Catalog {
@@ -1001,17 +1058,17 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 				opts = append(opts, domain.MenuOption{Key: strconv.Itoa(i + 1), Label: v.Label() + " — " + domain.Rupiah(v.Price), Value: v.VariantID})
 			}
 			s.SetMenu(domain.StepTreatment, opts)
-			return []string{domain.AskTreatment(s.OutletName, s.People, opts)}
+			return []string{domain.AskTreatment(l, s.OutletName, s.People, opts)}
 		case domain.StepDate:
 			today := t.at.In(domain.WIB)
-			labels := []string{"Hari ini", "Besok", "Lusa"}
+			labels := domain.DayLabels(l)
 			opts := make([]domain.MenuOption, 3)
 			for i := range opts {
 				d := today.AddDate(0, 0, i).Format("2006-01-02")
-				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: labels[i] + " (" + domain.LongDate(d) + ")", Value: d}
+				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: labels[i] + " (" + domain.LongDate(l, d) + ")", Value: d}
 			}
 			s.SetMenu(domain.StepDate, opts)
-			return []string{domain.AskDate(opts)}
+			return []string{domain.AskDate(l, opts)}
 		case domain.StepTime:
 			msg, done := t.promptTime(ctx)
 			if done {
@@ -1025,15 +1082,18 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 			}
 			return []string{msg}
 		case domain.StepName:
-			if s.Name == "" && t.conv.DisplayName != "" && looksLikeName(t.conv.DisplayName) {
-				s.Name = t.conv.DisplayName
-				continue
+			profile := ""
+			if looksLikeName(t.conv.DisplayName) {
+				profile = t.conv.DisplayName
+				s.SetMenu(domain.StepName, []domain.MenuOption{{Key: "1", Label: profile, Value: profile}})
+			} else {
+				s.ClearMenu()
 			}
-			s.ClearMenu()
-			return []string{domain.AskName()}
+			return []string{domain.AskName(l, profile)}
 		case domain.StepConfirm:
-			s.SetMenu(domain.StepConfirm, []domain.MenuOption{{Key: "1", Label: "Ya, buat booking", Value: "yes"}, {Key: "2", Label: "Ubah", Value: "no"}})
-			return []string{domain.Summary(s)}
+			yes, change := domain.ConfirmLabels(l)
+			s.SetMenu(domain.StepConfirm, []domain.MenuOption{{Key: "1", Label: yes, Value: "yes"}, {Key: "2", Label: change, Value: "no"}})
+			return []string{domain.Summary(l, s)}
 		case domain.StepPayment:
 			s.OnlinePay = t.e.ports.Spa.OnlinePayment()
 			if !s.OnlinePay {
@@ -1041,16 +1101,17 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 				t.setPayment(ctx, "outlet")
 				continue
 			}
-			opts := []domain.MenuOption{{Key: "1", Label: "Bayar di outlet", Value: "outlet"}, {Key: "2", Label: "Bayar online", Value: "online"}}
+			payOutlet, payOnline := domain.PaymentLabels(l)
+			opts := []domain.MenuOption{{Key: "1", Label: payOutlet, Value: "outlet"}, {Key: "2", Label: payOnline, Value: "online"}}
 			s.SetMenu(domain.StepPayment, opts)
-			return []string{domain.AskPayment(s.TotalPrice(), true)}
+			return []string{domain.AskPayment(l, s.TotalPrice(), true)}
 		default:
 			s.ClearMenu()
 			if t.justBooked {
 				t.justBooked = false
-				return []string{domain.Confirmed(s, t.settings.Name)}
+				return []string{domain.Confirmed(l, s, t.settings.Name)}
 			}
-			return []string{domain.Done(t.settings.Name)}
+			return []string{domain.Done(l, t.settings.Name)}
 		}
 	}
 	return nil
@@ -1060,19 +1121,23 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 // free time; done=true when a slot was chosen without asking.
 func (t *turn) promptTime(ctx context.Context) (string, bool) {
 	s := t.sess
+	l := s.Lang
 	slots, err := t.slots(ctx, s.Date)
 	if err != nil {
 		t.e.log.Error("[wabot] slot", "error", err)
+		if l == domain.LangEN {
+			return "Sorry, I can't check the schedule right now. Please try again shortly, or type *admin*.", false
+		}
 		return "Maaf, jadwal sedang tidak bisa dicek. Coba lagi sebentar, atau ketik *admin*.", false
 	}
 	if len(slots) == 0 {
 		if len(t.stagger) > 0 {
 			opts := make([]domain.MenuOption, len(t.stagger))
 			for i, o := range t.stagger {
-				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: o.label(s.People), Value: o.value(s.People)}
+				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: o.label(l, s.People), Value: o.value(s.People)}
 			}
 			s.SetMenu(domain.StepTime, opts)
-			return domain.AskTimeStaggered(s.Date, s.People, opts), false
+			return domain.AskTimeStaggered(l, s.Date, s.People, opts), false
 		}
 		return t.noSlots(ctx), false
 	}
@@ -1104,7 +1169,7 @@ func (t *turn) promptTime(ctx context.Context) (string, bool) {
 	sort.Slice(ranked, func(i, j int) bool { return ranked[i].At.Before(ranked[j].At) })
 	opts := make([]domain.MenuOption, len(ranked))
 	for i, sl := range ranked {
-		label := domain.Clock(sl.At) + " (" + domain.PeriodOf(domain.ClockMinute(sl.At)) + ")"
+		label := domain.Clock(sl.At) + " (" + domain.PeriodLabel(l, domain.PeriodOf(domain.ClockMinute(sl.At))) + ")"
 		opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: label, Value: sl.ISO}
 	}
 	requested := ""
@@ -1113,13 +1178,14 @@ func (t *turn) promptTime(ctx context.Context) (string, bool) {
 		s.WantedTime = ""
 	}
 	s.SetMenu(domain.StepTime, opts)
-	return domain.AskTime(s.Date, opts, requested), false
+	return domain.AskTime(l, s.Date, opts, requested), false
 }
 
 // noSlots offers the next days with room, the other outlets the same day
 // and the waitlist.
 func (t *turn) noSlots(ctx context.Context) string {
 	s := t.sess
+	l := s.Lang
 	day, _ := time.ParseInLocation("2006-01-02", s.Date, domain.WIB)
 	var opts []domain.MenuOption
 	add := func(label, value string) {
@@ -1133,7 +1199,7 @@ func (t *turn) noSlots(ctx context.Context) string {
 			break
 		}
 		if len(slots) > 0 {
-			add(domain.LongDate(d)+" ("+strconv.Itoa(len(slots))+" jam tersedia)", d)
+			add(domain.SlotsAvailableLabel(l, d, len(slots)), d)
 			days++
 		}
 	}
@@ -1146,14 +1212,14 @@ func (t *turn) noSlots(ctx context.Context) string {
 		}
 		n := t.e.countSlots(ctx, o.ID, s.Date, s.FirstVariantIDs(), s.Pref, s.People, t.at)
 		if n > 0 {
-			add(o.Name+", hari yang sama ("+strconv.Itoa(n)+" jam tersedia)", "outlet:"+o.ID+":"+s.Date)
+			add(domain.OtherOutletLabel(l, o.Name, n), "outlet:"+o.ID+":"+s.Date)
 		}
 	}
 	if s.WaitlistID == "" {
-		add("Masuk daftar tunggu "+domain.LongDate(s.Date)+" — saya kabari begitu ada jam kosong", "waitlist:"+s.Date)
+		add(domain.WaitlistOptionLabel(l, s.Date), "waitlist:"+s.Date)
 	}
 	s.SetMenu(domain.StepDate, opts)
-	return domain.NoSlots(s.Date, opts, s.People)
+	return domain.NoSlots(l, s.Date, opts, s.People)
 }
 
 // countSlots is how many starts an outlet has on a day for a party (the
@@ -1187,6 +1253,7 @@ func (e *Engine) countSlots(ctx context.Context, outletID, date string, variantI
 // joinWaitlist records the wish for date and tells the guest.
 func (t *turn) joinWaitlist(ctx context.Context, date string) string {
 	s := t.sess
+	l := s.Lang
 	ids := make([]string, 0, len(s.Persons))
 	labels := make([]string, 0, len(s.Persons))
 	for _, p := range s.Persons {
@@ -1207,6 +1274,9 @@ func (t *turn) joinWaitlist(ctx context.Context, date string) string {
 	})
 	if err != nil {
 		t.e.log.Warn("[wabot] daftar tunggu gagal", "error", err)
+		if l == domain.LangEN {
+			return "Sorry, I can't add you to the waitlist right now. Please try again shortly, or type *admin*."
+		}
 		return "Maaf, daftar tunggu sedang tidak bisa dicatat. Coba lagi sebentar, atau ketik *admin*."
 	}
 	s.WaitlistID = e.ID
@@ -1214,7 +1284,7 @@ func (t *turn) joinWaitlist(ctx context.Context, date string) string {
 	s.Date, s.Period = "", ""
 	s.ClearSlot()
 	s.ClearMenu()
-	return domain.WaitlistJoined(s.OutletName, date, people, e.Period)
+	return domain.WaitlistJoined(l, s.OutletName, date, people, e.Period)
 }
 
 func (t *turn) cancelWaitlist(ctx context.Context) {
@@ -1230,6 +1300,7 @@ func (t *turn) cancelWaitlist(ctx context.Context) {
 
 func (t *turn) promptTherapist(ctx context.Context) (string, bool) {
 	s := t.sess
+	l := s.Lang
 	at, err := domain.ParseISO(s.SlotISO)
 	if err != nil {
 		s.ClearSlot()
@@ -1243,23 +1314,19 @@ func (t *turn) promptTherapist(ctx context.Context) (string, bool) {
 		s.SystemPick = true
 		return "", true
 	}
-	opts := []domain.MenuOption{{Key: "0", Label: "Pilihkan oleh Mizu", Value: "system"}}
+	opts := []domain.MenuOption{{Key: "0", Label: domain.SystemPickLabel(l), Value: "system"}}
 	for i, th := range list {
 		if i >= 8 {
 			break
 		}
 		label := th.Name
 		if th.Gender != nil {
-			if *th.Gender == "female" {
-				label += " (wanita)"
-			} else if *th.Gender == "male" {
-				label += " (pria)"
-			}
+			label += domain.GenderSuffix(l, *th.Gender)
 		}
 		opts = append(opts, domain.MenuOption{Key: strconv.Itoa(i + 1), Label: label, Value: th.ID})
 	}
 	s.SetMenu(domain.StepTherapist, opts)
-	return domain.AskTherapist(opts, s.Pref), false
+	return domain.AskTherapist(l, opts, s.Pref), false
 }
 
 /* ── actions ─────────────────────────────────────────────────────────── */
@@ -1334,7 +1401,11 @@ func (t *turn) bookingFailed(err error, made []domain.BookingRef) {
 	case strings.Contains(msg, "terlalu banyak"):
 		// Not a handover: the guest can free a slot (cancel via the status
 		// link) or ask for an admin; the bot keeps answering.
-		msg += " Ketik *status* untuk melihat booking terakhir Anda, atau *admin* untuk dibantu tim Mizu."
+		if s.Lang == domain.LangEN {
+			msg = "This number already has too many active bookings. Cancel the ones you no longer need via the status link, or type *status* / *admin*."
+		} else {
+			msg += " Ketik *status* untuk melihat booking terakhir Anda, atau *admin* untuk dibantu tim Mizu."
+		}
 	case strings.Contains(msg, "Terapis pilihanmu"):
 		s.TherapistID, s.TherapistName = "", ""
 	case strings.Contains(msg, "penuh") || strings.Contains(msg, "lewat"):
@@ -1365,6 +1436,7 @@ func (t *turn) setPayment(ctx context.Context, method string) {
 
 func (t *turn) paymentCheck(ctx context.Context) string {
 	s := t.sess
+	l := s.Lang
 	for i, b := range s.Bookings {
 		res, err := t.e.ports.Spa.Booking(ctx, b.Token)
 		if err == nil && res.PaymentStatus == "paid" {
@@ -1372,13 +1444,13 @@ func (t *turn) paymentCheck(ctx context.Context) string {
 		}
 	}
 	if len(s.Bookings) == 0 {
-		return domain.StatusOf(nil)
+		return domain.StatusOf(l, nil)
 	}
 	allPaid := true
 	for _, b := range s.Bookings {
 		allPaid = allPaid && b.Paid
 	}
-	return domain.PaymentSeen(allPaid, s.Bookings[0].Code)
+	return domain.PaymentSeen(l, allPaid, s.Bookings[0].Code)
 }
 
 /* ── small helpers ───────────────────────────────────────────────────── */
@@ -1445,4 +1517,11 @@ func titleCase(s string) string {
 		words[i] = strings.ToUpper(w[:1]) + w[1:]
 	}
 	return strings.Join(words, " ")
+}
+
+func openWord(l domain.L) string {
+	if l == domain.LangEN {
+		return "open"
+	}
+	return "buka"
 }

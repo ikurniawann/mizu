@@ -73,7 +73,7 @@ func (e *Engine) NotifyWaitlist(ctx context.Context, db database.DB) (int, error
 		if outlet == "" {
 			outlet = "Mizu"
 		}
-		msg := domain.WaitlistAvailable(entry.CustomerName, outlet, entry.VisitDate, clocks)
+		msg := domain.WaitlistAvailable(e.st.sessionLang(ctx, db, conv.ID), entry.CustomerName, outlet, entry.VisitDate, clocks)
 		if err := e.ports.Sender.Send(ctx, db, conv.Phone, conv.ID, msg); err != nil {
 			e.log.Warn("[wabot] kabar daftar tunggu gagal dikirim", "error", err)
 			continue
@@ -135,6 +135,9 @@ func (e *Engine) refillSession(ctx context.Context, db database.DB, conv *Conver
 	}
 	sess.ResetBooking()
 	sess.Greeted = true
+	if sess.Lang == "" {
+		sess.Lang = domain.LangID
+	}
 	sess.WaitlistID, sess.FromWaitlist = entry.ID, true
 	sess.OutletID, sess.OutletName = entry.BranchID, entry.BranchName
 	if sess.Name == "" {

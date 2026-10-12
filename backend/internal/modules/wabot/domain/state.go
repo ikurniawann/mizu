@@ -10,6 +10,7 @@ import "time"
 // Steps of the booking conversation, in order. A step is "the next thing
 // the bot needs"; a message may fill several steps at once.
 const (
+	StepLang      = "lang"
 	StepOutlet    = "outlet"
 	StepPeople    = "people"
 	StepTreatment = "treatment"
@@ -88,6 +89,7 @@ type OutletOpt struct {
 // Session is the state stored per conversation (crm.wa_bot_sessions.state).
 type Session struct {
 	Step          string       `json:"step"`
+	Lang          L            `json:"lang,omitempty"`
 	Outlets       []OutletOpt  `json:"outlets,omitempty"`
 	OutletID      string       `json:"outlet_id,omitempty"`
 	OutletName    string       `json:"outlet_name,omitempty"`
@@ -119,12 +121,13 @@ type Session struct {
 }
 
 // NewSession starts at the outlet step.
-func NewSession() *Session { return &Session{Step: StepOutlet, Pref: "any"} }
+func NewSession() *Session { return &Session{Step: StepLang, Pref: "any"} }
 
-// ResetBooking keeps what identifies the guest and starts a new booking.
+// ResetBooking keeps what identifies the guest (language, name) and starts
+// a new booking.
 func (s *Session) ResetBooking() {
-	name, wl := s.Name, s.WaitlistID
-	*s = Session{Step: StepOutlet, Pref: "any", Name: name, Greeted: true, WaitlistID: wl}
+	name, wl, lang := s.Name, s.WaitlistID, s.Lang
+	*s = Session{Step: StepLang, Pref: "any", Name: name, Greeted: true, WaitlistID: wl, Lang: lang}
 }
 
 // Staggered reports whether some guest starts at another time than the first.
@@ -164,6 +167,10 @@ func (s *Session) ClearMenu() { s.MenuStep, s.Menu = "", nil }
 // NextStep is the first step still missing data; StepDone when none.
 func (s *Session) NextStep() string {
 	switch {
+	case s.Lang == "":
+		return StepLang
+	case s.Name == "":
+		return StepName
 	case s.OutletID == "":
 		return StepOutlet
 	case s.People == 0:
@@ -176,8 +183,6 @@ func (s *Session) NextStep() string {
 		return StepTime
 	case s.People == 1 && s.TherapistID == "" && !s.SystemPick:
 		return StepTherapist
-	case s.Name == "":
-		return StepName
 	case len(s.Bookings) == 0:
 		return StepConfirm
 	case s.PayMethod == "":

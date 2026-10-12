@@ -11,7 +11,7 @@ import (
 // Reminders go out once per window to guests who booked by chat/website.
 func TestBotRemindsUpcomingBookingsOnce(t *testing.T) {
 	e := setupBot(t)
-	e.say("halo")
+	e.start()
 	e.say("1")
 	e.say("1")
 	r := e.say("besok jam 10 pagi") // 2026-10-09 10:00 WIB = 25h after fixedNow (09:00 WIB on the 8th)

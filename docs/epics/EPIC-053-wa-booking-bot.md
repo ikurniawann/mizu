@@ -83,6 +83,9 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
 ### Tanya-jawab (disepakati 2026-10-13, dari uji WA pemilik)
 - [x] T-543 Pertanyaan alamat/lokasi (+ link Maps), jam buka, daftar harga, cara bayar, ubah jadwal dijawab dari data sistem tanpa mengubah draf booking, lalu pertanyaan booking yang tertunda diulang ("Lanjut booking — …"). Pertanyaan lain dijawab AI hanya dari FAKTA sistem (outlet, katalog, kebijakan); bila tidak tahu → arahkan ke *admin*. "jam 3" tanpa keterangan = 15.00.
 
+### Bahasa & nama di awal (permintaan pemilik 2026-10-13)
+- [x] T-544 Pesan pertama: sapaan dwibahasa + pilihan **1. Bahasa Indonesia / 2. English** (dilewati bila pesan pertama jelas berbahasa Inggris, atau pesan Indonesia yang sudah memuat isi booking/pertanyaan); lalu **nama ditanya dulu** (opsi 1 = nama profil WhatsApp, atau ketik nama) sebelum outlet. Semua template, label menu, tanggal, ringkasan, notifikasi lunas/pengingat, kabar daftar tunggu, dan jawaban AI mengikuti bahasa sesi; parser memahami kata Inggris (tomorrow, Saturday, 3pm, 2 people, female therapist, yes/no, where/how much, waitlist…). Bahasa & nama dipertahankan saat *booking baru*.
+
 ### Fase 4 — Meta Cloud API
 - [x] T-540 Meta Cloud API: webhook `GET/POST /api/wa/meta` (hub.challenge + HMAC app secret; balasan tombol/daftar `k:<n>` dibaca sebagai angka menu), kredensial & provider dari `configuration.app_settings` (Settings → WhatsApp Gateway → **Meta Cloud API**, cek nomor via Graph), menu bot sebagai **tombol/daftar interaktif** (≤3 tombol, ≤10 baris, selebihnya teks), notifikasi lunas/pengingat memakai **template** di luar jendela 24 jam (`meta_wa_reminder_template`, `meta_wa_paid_template`). Runbook: `docs/crm/RUNBOOK-META-CLOUD-API.md`. *Menunggu pemilik:* WABA + nomor + token + template disetujui.
 
@@ -170,3 +173,7 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   mengurangi booking yang belum ditugaskan sehingga jam yang sudah terisi masih ditawarkan — diperbaiki
   (`freeTherapists` kini memotong `unassignedOverlaps`, selaras `publicCapacity`); (4) preferensi terapis
   kosong = "any". Bukti: `TestBotGroupCountsOnceAgainstCap`.
+- 2026-10-13 — T-544 dwibahasa + nama di awal. Keputusan: pertanyaan bahasa hanya untuk sapaan kosong
+  ("halo"); pesan berisi langsung diproses dalam bahasa yang terdeteksi; jawaban tak jelas setelah menu
+  bahasa = Indonesia; nama bebas diterima hanya bila ≥3 huruf dan bukan kata perintah/ya/tidak. Bukti:
+  `TestBotEnglishFlow`, `TestBotLanguageMenu`, seluruh tes lama disesuaikan (helper `start()`).

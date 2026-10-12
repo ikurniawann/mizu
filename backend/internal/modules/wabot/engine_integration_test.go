@@ -168,6 +168,17 @@ func (e *botEnv) say(text string) string {
 	return reply
 }
 
+// start runs the opening steps (language 1 = Indonesian, name = profile)
+// and returns the reply that follows (people question, or the outlet menu).
+func (e *botEnv) start() string {
+	e.t.Helper()
+	r := e.say("halo")
+	e.wants(r, "Pilih bahasa", "1. Bahasa Indonesia", "2. English")
+	r = e.say("1")
+	e.wants(r, "asisten booking", "nama")
+	return e.say("1")
+}
+
 func (e *botEnv) wants(reply string, parts ...string) {
 	e.t.Helper()
 	for _, p := range parts {
@@ -179,8 +190,8 @@ func (e *botEnv) wants(reply string, parts ...string) {
 
 func TestBotBooksTwoGuestsByMenu(t *testing.T) {
 	e := setupBot(t)
-	r := e.say("halo")
-	e.wants(r, "asisten booking", "orang") // greeting + people question (single outlet auto-picked)
+	r := e.start()
+	e.wants(r, "orang") // people question (single outlet auto-picked)
 	r = e.say("2")
 	e.wants(r, "Reflexology", "Rp150.000")
 	r = e.say("1")
@@ -234,7 +245,7 @@ func TestBotBooksTwoGuestsByMenu(t *testing.T) {
 // assigned to her straight away.
 func TestBotSingleGuestPicksTherapist(t *testing.T) {
 	e := setupBot(t)
-	e.say("halo")
+	e.start()
 	e.say("1")
 	e.say("1")
 	r := e.say("besok jam 2 siang") // free text: date + exact time, auto-picked
@@ -262,7 +273,7 @@ func TestBotSingleGuestPicksTherapist(t *testing.T) {
 
 func TestBotHandsOverToAdminAndStaysQuiet(t *testing.T) {
 	e := setupBot(t)
-	e.say("halo")
+	e.start()
 	r := e.say("mau bicara dengan admin")
 	e.wants(r, "admin")
 	var active bool
@@ -283,7 +294,7 @@ func TestBotHandsOverToAdminAndStaysQuiet(t *testing.T) {
 // Three misses in a row also hand over (separate test: one tx locks spa.outlets).
 func TestBotHandsOverAfterThreeMisses(t *testing.T) {
 	e := setupBot(t)
-	e.say("halo")
+	e.start()
 	for i := 0; i < 2; i++ {
 		r := e.say("xyzzy " + fmt.Sprint(i))
 		e.wants(r, "belum")
@@ -368,7 +379,7 @@ func menuKey(t *testing.T, reply, text string) string {
 // offers two waves and books the group all-or-nothing at two times.
 func TestBotStaggersGroupWhenNoCommonSlot(t *testing.T) {
 	e := setupBot(t)
-	e.say("halo")
+	e.start()
 	e.say("3")
 	e.say("1")
 	r := e.say("besok")
@@ -395,7 +406,7 @@ func TestBotWaitlistAndAlternatives(t *testing.T) {
 	small := e.addOutlet("10:00", "11:00", 1) // one 45-minute slot a day
 	// Guest 1 takes the only slot tomorrow.
 	g1 := e.newConv("6281255500201", "Tamu Satu")
-	r := g1.say("halo")
+	r := g1.start()
 	g1.say(menuKey(t, r, "Go Test B"+smallSuffix(e, small)))
 	g1.say("1")
 	g1.say("1")
@@ -408,7 +419,7 @@ func TestBotWaitlistAndAlternatives(t *testing.T) {
 
 	// Guest 2 finds tomorrow full: alternatives include the big outlet and the waitlist.
 	g2 := e.newConv("6281255500202", "Tamu Dua")
-	r = g2.say("halo")
+	r = g2.start()
 	g2.say(menuKey(t, r, "Go Test B"+smallSuffix(e, small)))
 	g2.say("1")
 	g2.say("1")
@@ -426,7 +437,7 @@ func TestBotWaitlistAndAlternatives(t *testing.T) {
 
 	// Guest 3 picks the other outlet the same day instead.
 	g3 := e.newConv("6281255500203", "Tamu Tiga")
-	r = g3.say("halo")
+	r = g3.start()
 	g3.say(menuKey(t, r, "Go Test B"+smallSuffix(e, small)))
 	g3.say("1")
 	g3.say("1")
@@ -509,8 +520,15 @@ func TestBotOffersMenusInteractively(t *testing.T) {
 	if err != nil || !handled {
 		t.Fatalf("handle: %v %v", handled, err)
 	}
-	if len(ms.sent) != 2 || len(ms.menus) != 1 || len(ms.menus[0]) != 3 || ms.menus[0][0].Key != "1" || ms.menus[0][2].Label != "3 orang" {
-		t.Fatalf("menus: sent=%d menus=%v", len(ms.sent), ms.menus)
+	// The language question is the first menu (two buttons).
+	if len(ms.sent) != 1 || len(ms.menus) != 1 || len(ms.menus[0]) != 2 || ms.menus[0][1].Label != "English" {
+		t.Fatalf("language menu: sent=%d menus=%v", len(ms.sent), ms.menus)
+	}
+	e.engine.Handle(e.ctx, e.tx, e.conv, "1", e.at, ms) // Indonesian → greeting + name (profile as option 1)
+	e.engine.Handle(e.ctx, e.tx, e.conv, "1", e.at, ms) // name → people menu
+	last := ms.menus[len(ms.menus)-1]
+	if len(last) != 3 || last[0].Key != "1" || last[2].Label != "3 orang" {
+		t.Fatalf("people menu: %v", last)
 	}
 }
 
@@ -520,7 +538,9 @@ func TestBotKeepsTreatmentsNamedBeforeOutlet(t *testing.T) {
 	e := setupBot(t)
 	second := e.addOutlet("10:00", "20:00", 2)
 	g := e.newConv("6281255500301", "Tamu Awal")
-	r := g.say("halo, mau reflexology buat 2 orang besok")
+	r := g.say("halo, mau reflexology buat 2 orang besok") // Indonesian detected: no language question
+	g.wants(r, "nama")
+	r = g.say("1")
 	g.wants(r, "Mau datang ke outlet mana?")
 	name := "Go Test B" + smallSuffix(e, second)
 	r = g.say("di " + name + " saja")
@@ -567,7 +587,7 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 	ai := &fakeAnswerer{}
 	e.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: e.sender, Extractor: ai, AppURL: "https://mizu.test"}, nil, func() time.Time { return fixedNow })
 	r := e.say("Kalau alamatnya dimana ya?")
-	e.wants(r, "📍", "Jl. Uji No. 7, Bandung", "google.com/maps", "buka 10.00–20.00", "Lanjut booking — Untuk berapa orang?")
+	e.wants(r, "📍", "Jl. Uji No. 7, Bandung", "google.com/maps", "buka 10.00–20.00", "Lanjut booking — Boleh tahu nama")
 	r = e.say("jam buka sampai jam berapa")
 	e.wants(r, "setiap hari 10.00–20.00 WIB")
 	r = e.say("harga reflexology berapa?")
@@ -586,6 +606,7 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 	r = e.say("terapisnya ada yang pria?") // a preference word alone is still a question
 	e.wants(r, "Jawaban AI untuk: terapisnya ada yang pria?")
 	// A booking-shaped question is not a FAQ: "bisa besok jam 3?" asks for a slot.
+	e.say("1") // name
 	e.say("2")
 	e.say("1")
 	r = e.say("bisa besok jam 3?")
@@ -606,7 +627,7 @@ func TestBotGroupCountsOnceAgainstCap(t *testing.T) {
 		}
 	}
 	pick := "Go Test B" + smallSuffix(e, big)
-	r := e.say("halo")
+	r := e.start()
 	e.say(menuKey(t, r, pick))
 	e.say("3")
 	e.say("1")
@@ -631,5 +652,47 @@ func TestBotGroupCountsOnceAgainstCap(t *testing.T) {
 	}
 	if !active {
 		t.Fatal("the cap must not hand the conversation over")
+	}
+}
+
+/* ── language ────────────────────────────────────────────────────────── */
+
+// An English first message skips the language question; prompts, menus,
+// dates and the summary follow in English, and "yes" books.
+func TestBotEnglishFlow(t *testing.T) {
+	e := setupBot(t)
+	r := e.say("Hi, I'd like to book a massage for 2 people tomorrow afternoon")
+	e.wants(r, "booking assistant", "May I have your name", "1. Use *Fajar Bot*")
+	r = e.say("1")
+	e.wants(r, "Choose a treatment", "Reply with *one number*")
+	r = e.say("1")
+	e.wants(r, "Times still available on *Friday, 9 Oct 2026*", "(afternoon)")
+	r = e.say("1")
+	e.wants(r, "Here's your booking summary", "2 people", "• Name: *Fajar Bot*", "Reply *yes* to book")
+	r = e.say("yes")
+	e.wants(r, "Booking confirmed ✅", "Booking codes:", "Schedule: Friday, 9 Oct 2026", "see you at Mizu")
+	r = e.say("where are you located?")
+	e.wants(r, "📍", "(open 10.00–20.00)")
+}
+
+// The language menu: 2 = English; an unclear reply after the menu means Indonesian.
+func TestBotLanguageMenu(t *testing.T) {
+	e := setupBot(t)
+	r := e.say("halo")
+	e.wants(r, "Pilih bahasa / choose a language")
+	r = e.say("2")
+	e.wants(r, "I'm Mizu Assistant", "May I have your name")
+	e2 := e.newConv("6281255500777", "Siti Aminah")
+	e2.say("...")
+	r = e2.say("ok")
+	e2.wants(r, "Boleh tahu nama Anda", "1. Pakai nama *Siti Aminah*")
+	r = e2.say("Nita")
+	e2.wants(r, "Untuk berapa orang")
+	var name string
+	if err := e.tx.QueryRow(e.ctx, `SELECT state->>'name' FROM crm.wa_bot_sessions WHERE conversation_id = $1::uuid`, e2.conv).Scan(&name); err != nil {
+		t.Fatal(err)
+	}
+	if name != "Nita" {
+		t.Fatalf("typed name = %q", name)
 	}
 }

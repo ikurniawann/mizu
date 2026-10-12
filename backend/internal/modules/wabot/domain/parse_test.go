@@ -111,8 +111,16 @@ func TestParseGenderAndMatch(t *testing.T) {
 
 func TestSessionNextStep(t *testing.T) {
 	s := NewSession()
+	if s.NextStep() != StepLang {
+		t.Fatal("language first")
+	}
+	s.Lang = LangID
+	if s.NextStep() != StepName {
+		t.Fatal("then the name")
+	}
+	s.Name = "Fajar"
 	if s.NextStep() != StepOutlet {
-		t.Fatal("outlet first")
+		t.Fatal("outlet next")
 	}
 	s.OutletID = "o"
 	s.People = 2
@@ -122,7 +130,7 @@ func TestSessionNextStep(t *testing.T) {
 	}
 	s.Persons = append(s.Persons, Person{VariantID: "b"})
 	s.Date, s.SlotISO = "2026-10-13", "2026-10-13T03:00:00Z"
-	if s.NextStep() != StepName {
+	if s.NextStep() != StepConfirm {
 		t.Fatal("groups skip the therapist step")
 	}
 	s.People, s.Persons = 1, s.Persons[:1]

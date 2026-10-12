@@ -131,7 +131,10 @@ func (store) session(ctx context.Context, q database.Querier, conversationID str
 		return nil, err
 	}
 	if s.Step == "" {
-		s.Step = domain.StepOutlet
+		s.Step = domain.StepLang
+	}
+	if s.Lang == "" && (s.Name != "" || s.OutletID != "") {
+		s.Lang = domain.LangID // sessions from before the language step
 	}
 	if s.Pref == "" {
 		s.Pref = "any"
@@ -186,4 +189,13 @@ func (store) conversationID(ctx context.Context, q database.Querier, phone strin
 		return ""
 	}
 	return id
+}
+
+// sessionLang is the conversation's chosen language ("id" when unknown).
+func (store) sessionLang(ctx context.Context, q database.Querier, conversationID string) domain.L {
+	var lang *string
+	if err := q.QueryRow(ctx, `SELECT state->>'lang' FROM crm.wa_bot_sessions WHERE conversation_id = $1::uuid`, conversationID).Scan(&lang); err != nil || lang == nil || *lang == "" {
+		return domain.LangID
+	}
+	return domain.L(*lang)
 }

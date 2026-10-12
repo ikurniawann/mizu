@@ -100,7 +100,7 @@ func (h *Handler) view(ctx context.Context, conversationID string) (*SessionView
 		v.Summary = append(v.Summary, "Treatment: "+p.Label+" — "+domain.Rupiah(p.Price))
 	}
 	if s.Date != "" {
-		line := "Tanggal: " + domain.LongDate(s.Date)
+		line := "Tanggal: " + domain.LongDate(domain.LangID, s.Date)
 		if s.SlotISO != "" {
 			if at, err := domain.ParseISO(s.SlotISO); err == nil {
 				line += " " + domain.Clock(at) + " WIB"
