@@ -666,4 +666,4 @@ func (s *Service) ProductionInHouse(ctx context.Context, p ReportParams) (*Row, 
 }
 
 var productionCSVHeader = []string{"No Produksi", "Produk Kode", "Produk Nama", "Output Type", "Status", "Qty Planned", "Qty Actual",
-	"HPP / Unit", "Total HPP", "Stall", "Created At", "Completed At"}
+	"HPP / Unit", "Total HPP", "Outlet", "Created At", "Completed At"}

@@ -50,18 +50,18 @@ export function StallAssignmentPicker({
   return (
     <div className="space-y-4">
       <div>
-        <FormFieldLabel required={required}>Stall default</FormFieldLabel>
+        <FormFieldLabel required={required}>Outlet default</FormFieldLabel>
         <p className="mt-1 text-xs text-muted-foreground">
-          Stall ini dipakai otomatis saat login. Transaksi kasir mengikuti stall aktif.
+          Outlet ini dipakai otomatis saat login. Transaksi kasir mengikuti outlet aktif.
         </p>
         <div className="mt-2">
           <Combobox
             options={stallOptions}
             value={defaultWarehouseId}
             onChange={setDefaultStall}
-            placeholder="Pilih stall default"
-            searchPlaceholder="Cari stall..."
-            emptyMessage="Tidak ada stall di branch ini"
+            placeholder="Pilih outlet default"
+            searchPlaceholder="Cari outlet..."
+            emptyMessage="Tidak ada outlet di branch ini"
             className={formComboboxClassName}
           />
         </div>
@@ -69,9 +69,9 @@ export function StallAssignmentPicker({
 
       <div className="flex items-start justify-between gap-4 rounded-lg border border-gray-200/70 bg-card px-4 py-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">Boleh pindah stall</p>
+          <p className="text-sm font-medium text-foreground">Boleh pindah outlet</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Jika aktif, karyawan bisa ganti stall di sidebar dan jualan di stall lain dalam
+            Jika aktif, karyawan bisa ganti outlet di sidebar dan jualan di outlet lain dalam
             branch yang sama.
           </p>
         </div>
@@ -87,7 +87,7 @@ export function StallAssignmentPicker({
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">Kasir pusat</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Boleh transaksi Semua Stall (katalog semua menu). Tetap butuh permission
+              Boleh transaksi Semua Outlet (katalog semua menu). Tetap butuh permission
               POS Kasir Pusat di role.
             </p>
           </div>

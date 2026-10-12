@@ -18,7 +18,7 @@ export function transactionExportFileName(filters: {
 
 function stallFilterLabel(report: TransactionReport) {
   const id = report.filters.warehouse_id;
-  if (!id) return "Semua stall";
+  if (!id) return "Semua outlet";
   const stall = report.stall_options.find((row) => row.id === id);
   return stall ? `${stall.name} (${stall.code})` : id;
 }
@@ -41,7 +41,7 @@ export function buildTransactionExportSheets(
       rows: [
         ["Laporan Transaksi POS"],
         ["Periode", `${report.filters.date_from} s/d ${report.filters.date_to}`],
-        ["Stall", stallFilterLabel(report)],
+        ["Outlet", stallFilterLabel(report)],
         [],
         ["Metrik", "Nilai"],
         ["Transaksi", report.summary.transactions],
@@ -54,9 +54,9 @@ export function buildTransactionExportSheets(
       ],
     },
     {
-      name: "Per Stall",
+      name: "Per Outlet",
       rows: [
-        ["Stall", "Transaksi", "Item Terjual", "Penjualan"],
+        ["Outlet", "Transaksi", "Item Terjual", "Penjualan"],
         ...report.per_stall.map((row) => [
           formatReportStallLabel(row),
           row.transactions,
@@ -90,7 +90,7 @@ export function buildTransactionExportSheets(
           "Order",
           "Checkout",
           "Waktu",
-          "Stall",
+          "Outlet",
           "Metode",
           "Subtotal",
           "Diskon",

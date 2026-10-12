@@ -140,13 +140,13 @@ func TestCancelChildlessCheckout(t *testing.T) {
 
 func TestCheckoutGuards(t *testing.T) {
 	e := setup(t)
-	if out := e.call(true, "POST", "/api/pos/checkouts", e.mixedCart(nil), 400); errorOf(out) != "Keranjang campur stall hanya untuk kasir pusat" {
+	if out := e.call(true, "POST", "/api/pos/checkouts", e.mixedCart(nil), 400); errorOf(out) != "Keranjang campur outlet hanya untuk kasir pusat" {
 		t.Fatalf("%v", out)
 	}
-	if out := e.callAll("POST", "/api/pos/checkouts", e.mixedCart(map[string]any{"promo_code": "HEMAT"}), 400); errorOf(out) != "Promo belum didukung untuk checkout multi-stall" {
+	if out := e.callAll("POST", "/api/pos/checkouts", e.mixedCart(map[string]any{"promo_code": "HEMAT"}), 400); errorOf(out) != "Promo belum didukung untuk checkout multi-outlet" {
 		t.Fatalf("%v", out)
 	}
-	if out := e.callAll("POST", "/api/pos/checkouts", e.mixedCart(map[string]any{"payment_method": "gift_card"}), 400); errorOf(out) != "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-stall" {
+	if out := e.callAll("POST", "/api/pos/checkouts", e.mixedCart(map[string]any{"payment_method": "gift_card"}), 400); errorOf(out) != "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-outlet" {
 		t.Fatalf("%v", out)
 	}
 	if out := e.callAll("POST", "/api/pos/checkouts", e.mixedCart(map[string]any{"amount_paid": 10}), 400); errorOf(out) != "Payment insufficient" {

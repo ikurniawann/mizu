@@ -149,7 +149,7 @@ export async function gatherFlashReportData(dateWib: string): Promise<FlashRepor
   const lastAt = jam(hourRows[0]?.last_at ?? null);
 
   const soldByStall = new Map(
-    stallRows.map((row) => [row.name || "Tanpa stall", row])
+    stallRows.map((row) => [row.name || "Tanpa outlet", row])
   );
   const stallNames = new Set<string>([
     ...allStallRows.map((row) => row.name),
@@ -231,7 +231,7 @@ export function buildFlashReportMessage(data: FlashReportData, dateWib: string):
     `No of Guest : ${data.guestCount} Pax`,
     `Average/Pax : ${rp(avgPerPax)}`,
     ``,
-    `*SALES BY STALL*`
+    `*SALES BY OUTLET*`
   );
   for (const stall of data.byStall) {
     lines.push(

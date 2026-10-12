@@ -93,7 +93,7 @@ export function formatOrderTypeLabel(orderType?: string | null) {
 export function formatSoldFromLabel(soldFrom?: string | null) {
   const value = key(soldFrom);
   if (value === "central") return "Kasir pusat";
-  if (value === "stall") return "Kasir stall";
+  if (value === "stall") return "Kasir outlet";
   return soldFrom?.trim() || "—";
 }
 

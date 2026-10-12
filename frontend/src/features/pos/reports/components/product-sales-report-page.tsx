@@ -72,10 +72,10 @@ export function ProductSalesReportPage() {
   const stallLabel = stallLocked
     ? stallOptions[0]
       ? `${stallOptions[0].name} (${stallOptions[0].code})`
-      : "Stall"
+      : "Outlet"
     : warehouseId
-      ? stallOptions.find((row) => row.id === warehouseId)?.name || "Stall"
-      : "Semua stall";
+      ? stallOptions.find((row) => row.id === warehouseId)?.name || "Outlet"
+      : "Semua outlet";
 
   return (
     <PageTransition>
@@ -83,7 +83,7 @@ export function ProductSalesReportPage() {
         <div className="print:hidden">
           <PurchasingPageHeader
             title="Laporan Penjualan Produk"
-            description="Ringkasan qty dan omzet produk POS berdasarkan rentang tanggal dan stall."
+            description="Ringkasan qty dan omzet produk POS berdasarkan rentang tanggal dan outlet."
             actions={
               <ReportExportActions
                 canExport={Boolean(data) && !error}
@@ -125,7 +125,7 @@ export function ProductSalesReportPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ps-stall">Stall</Label>
+              <Label htmlFor="ps-stall">Outlet</Label>
               <select
                 id="ps-stall"
                 value={warehouseId}
@@ -133,7 +133,7 @@ export function ProductSalesReportPage() {
                 onChange={(e) => setWarehouseId(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
               >
-                {!stallLocked ? <option value="">Semua stall</option> : null}
+                {!stallLocked ? <option value="">Semua outlet</option> : null}
                 {stallOptions.map((stall) => (
                   <option key={stall.id} value={stall.id}>
                     {stall.name} ({stall.code})
@@ -216,7 +216,7 @@ export function ProductSalesReportPage() {
                 <tr>
                   <th className="px-3 py-3 text-left font-semibold">Produk</th>
                   <th className="px-3 py-3 text-left font-semibold">SKU</th>
-                  <th className="px-3 py-3 text-left font-semibold">Stall</th>
+                  <th className="px-3 py-3 text-left font-semibold">Outlet</th>
                   <th className="px-3 py-3 text-right font-semibold">Qty</th>
                   <th className="px-3 py-3 text-right font-semibold">Orders</th>
                   <th className="px-3 py-3 text-right font-semibold">Omzet</th>

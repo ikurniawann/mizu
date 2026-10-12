@@ -53,7 +53,7 @@ export function UsersTable({
             <th className="px-4 py-3 text-left font-semibold">Department</th>
             <th className="px-4 py-3 text-left font-semibold">Status</th>
             <th className="px-4 py-3 text-left font-semibold">App Access</th>
-            {showAppActions ? <th className="px-4 py-3 text-left font-semibold">Stall</th> : null}
+            {showAppActions ? <th className="px-4 py-3 text-left font-semibold">Outlet</th> : null}
             <th className="px-4 py-3 text-left font-semibold">Contact</th>
             <th className="px-4 py-3 text-right font-semibold">Actions</th>
           </TableRow>

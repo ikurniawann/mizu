@@ -59,9 +59,9 @@ export function ConfirmStallSwitchDialog({
     >
       <DialogPanel size="xs" showCloseButton={!switching}>
         <DialogPanelHeader>
-          <DialogPanelTitle>Ganti stall</DialogPanelTitle>
+          <DialogPanelTitle>Ganti outlet</DialogPanelTitle>
           <DialogPanelDescription>
-            Keranjang akan dikosongkan karena stall diganti. Lanjut?
+            Keranjang akan dikosongkan karena outlet diganti. Lanjut?
           </DialogPanelDescription>
         </DialogPanelHeader>
         <DialogPanelBody />
@@ -82,7 +82,7 @@ export function ConfirmStallSwitchDialog({
             className="h-10 gap-2 rounded-lg"
           >
             {switching ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Ganti stall
+            Ganti outlet
           </Button>
         </DialogFooter>
       </DialogPanel>
@@ -97,7 +97,7 @@ async function postActiveStall(warehouseId: string | null): Promise<void> {
     body: JSON.stringify({ warehouse_id: warehouseId }),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? "Gagal mengganti stall");
+  if (!res.ok) throw new Error(json.error ?? "Gagal mengganti outlet");
 }
 
 function clearPosCartStorage(): void {
@@ -124,7 +124,7 @@ export function useConfirmAndSwitchStall() {
       window.location.reload();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Gagal mengganti stall"
+        error instanceof Error ? error.message : "Gagal mengganti outlet"
       );
       setSwitching(false);
     }

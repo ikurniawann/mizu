@@ -253,7 +253,7 @@ export async function createProduct(
       ? existingQuery.eq("branch_id", branchId)
       : existingQuery.is("branch_id", null);
     const { data: existing } = await existingQuery.maybeSingle();
-    if (existing) throw ApiError.badRequest("Kode produk sudah digunakan di stall ini");
+    if (existing) throw ApiError.badRequest("Kode produk sudah digunakan di outlet ini");
   }
 
   const { data, error } = await db

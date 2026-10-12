@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
     if (!mixedGuard.createCheckout) {
       return NextResponse.json(
-        { success: false, error: "Checkout multi-stall membutuhkan item dari minimal 2 stall" },
+        { success: false, error: "Checkout multi-outlet membutuhkan item dari minimal 2 outlet" },
         { status: 400 }
       );
     }

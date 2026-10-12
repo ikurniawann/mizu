@@ -108,7 +108,7 @@ export function CreateAccountDialog({ employee, onClose }: CreateAccountDialogPr
       requiresStallAssignment(form.role, scope.business_scope ?? null, true) &&
       !form.default_warehouse_id
     ) {
-      toast.error("Pilih stall default untuk scope branch");
+      toast.error("Pilih outlet default untuk scope branch");
       return;
     }
 

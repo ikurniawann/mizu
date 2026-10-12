@@ -45,7 +45,7 @@ describe("buildProductSalesExportSheets", () => {
     expect(produk.rows[0]).toEqual([
       "Produk",
       "SKU",
-      "Stall",
+      "Outlet",
       "Qty",
       "Orders",
       "Omzet",

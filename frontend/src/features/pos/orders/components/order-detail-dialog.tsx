@@ -129,7 +129,7 @@ function OrderDetail({
     <div className="space-y-4">
       {childOrders.length > 1 ? (
         <section className="rounded-lg border border-gray-200/70 bg-card">
-          <h3 className="border-b border-gray-200/70 px-3 py-2 text-sm font-semibold text-foreground">Nomor POS per stall</h3>
+          <h3 className="border-b border-gray-200/70 px-3 py-2 text-sm font-semibold text-foreground">Nomor POS per outlet</h3>
           <div className="space-y-2 p-3">
             {childOrders.map((child) => {
               const stall = (child as { stall_name?: string | null }).stall_name;

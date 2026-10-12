@@ -37,6 +37,7 @@ var rawMaterialHeader = xlsx.HeaderNormalizer(map[string]string{
 	"description":   "deskripsi",
 	"opening_stock": "opening_stock", "initial_stock": "opening_stock", "stok_awal": "opening_stock", "qty_onhand": "opening_stock",
 	"stall_code": "stall_code", "warehouse_code": "stall_code", "warehouse_kode": "stall_code", "gudang_kode": "stall_code",
+	"outlet_code": "stall_code", "kode_outlet": "stall_code",
 })
 
 // rawMaterialFields is RawMaterialSheetFields.

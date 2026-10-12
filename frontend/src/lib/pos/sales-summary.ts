@@ -85,7 +85,7 @@ export function aggregatePerStall(rows: SalesRow[]): StallSummary[] {
   return Array.from(byStall.entries())
     .map(([key, bucket]) => ({
       stall_code: key === "__none__" ? null : bucket[0].stall_code ?? null,
-      stall_name: bucket[0].stall_name ?? (key === "__none__" ? "Tanpa Stall" : key),
+      stall_name: bucket[0].stall_name ?? (key === "__none__" ? "Tanpa Outlet" : key),
       ...summarizeSales(bucket),
     }))
     .sort((a, b) => b.nett - a.nett);

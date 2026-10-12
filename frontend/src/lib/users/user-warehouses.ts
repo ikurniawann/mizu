@@ -96,7 +96,7 @@ export async function validateUserWarehouseIds(
 ): Promise<void> {
   if (warehouseIds.length === 0) return;
   if (!branchId) {
-    throw new Error("Branch must be selected before choosing stalls");
+    throw new Error("Branch must be selected before choosing outlets");
   }
 
   const { data, error } = await db
@@ -114,10 +114,10 @@ export async function validateUserWarehouseIds(
   for (const warehouseId of warehouseIds) {
     const rowBranchId = found.get(warehouseId);
     if (!rowBranchId) {
-      throw new Error("Stall not found or inactive");
+      throw new Error("Outlet not found or inactive");
     }
     if (rowBranchId !== branchId) {
-      throw new Error("Stall must belong to the same branch as the user scope");
+      throw new Error("Outlet must belong to the same branch as the user scope");
     }
   }
 }

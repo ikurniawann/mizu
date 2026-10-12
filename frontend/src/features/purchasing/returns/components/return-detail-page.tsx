@@ -364,7 +364,7 @@ export function ReturnDetailPage({
                         <th className="px-4 py-3 text-left font-semibold">
                           {config.isProduct ? "Produk" : "Bahan Baku"}
                         </th>
-                        <th className="px-4 py-3 text-left font-semibold">Stall</th>
+                        <th className="px-4 py-3 text-left font-semibold">Outlet</th>
                         <th className="px-4 py-3 text-right font-semibold">Batch</th>
                         <th className="px-4 py-3 text-right font-semibold">Kedaluwarsa</th>
                         <th className="px-4 py-3 text-right font-semibold">Qty</th>
@@ -503,7 +503,7 @@ export function ReturnDetailPage({
                     <div>
                       <p className="font-medium">Retur disetujui</p>
                       <p className="mt-1 text-emerald-700/90">
-                        Stok sudah dikurangi dari stall penerimaan. Qty retur pada penerimaan barang
+                        Stok sudah dikurangi dari outlet penerimaan. Qty retur pada penerimaan barang
                         sudah diperbarui.
                       </p>
                     </div>
@@ -520,7 +520,7 @@ export function ReturnDetailPage({
           <DialogPanelHeader>
             <DialogPanelTitle>Setujui Retur Pembelian?</DialogPanelTitle>
             <DialogPanelDescription>
-              Stok akan dikurangi dari stall penerimaan masing-masing item. Qty retur pada
+              Stok akan dikurangi dari outlet penerimaan masing-masing item. Qty retur pada
               penerimaan barang akan diperbarui.
             </DialogPanelDescription>
           </DialogPanelHeader>

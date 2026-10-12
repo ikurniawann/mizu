@@ -7,7 +7,7 @@ import { getApiUserScope, validateProductWarehouseScope } from "@/lib/api/scope"
 import { listProductInventoryForOpname } from "@/lib/inventory/product-stock-opname";
 import { parseSearchParams } from "@/lib/inventory/query-params";
 
-const previewSchema = z.object({ warehouse_id: z.string().uuid("Stall wajib dipilih") });
+const previewSchema = z.object({ warehouse_id: z.string().uuid("Outlet wajib dipilih") });
 
 export const GET = apiHandler(async (request: NextRequest) => {
   await requireIamMenuPrefix(IAM.itemsInventory);

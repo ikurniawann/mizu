@@ -158,7 +158,7 @@ export function ProductStockOpnameListPage() {
       <PurchasingListSection
         icon={ClipboardDocumentListIcon}
         title="Daftar Stok Opname Produk"
-        description="Sesi perhitungan stok fisik produk jadi per stall"
+        description="Sesi perhitungan stok fisik produk jadi per outlet"
         toolbar={
           <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
             <label className="relative flex-1 lg:w-80">
@@ -236,7 +236,7 @@ export function ProductStockOpnameListPage() {
             <thead className="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Nomor</th>
-                <th className="px-4 py-3 text-left font-semibold">Stall</th>
+                <th className="px-4 py-3 text-left font-semibold">Outlet</th>
                 <th className="px-4 py-3 text-left font-semibold">Tanggal</th>
                 <th className="px-4 py-3 text-right font-semibold">Baris</th>
                 <th className="px-4 py-3 text-right font-semibold">

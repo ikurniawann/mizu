@@ -185,6 +185,6 @@ describe("profileScopeLabel", () => {
   test("returns Indonesian labels", () => {
     expect(profileScopeLabel("system")).toBe("Default sistem");
     expect(profileScopeLabel("branch")).toBe("Default cabang");
-    expect(profileScopeLabel("stall")).toBe("Override stall");
+    expect(profileScopeLabel("stall")).toBe("Override outlet");
   });
 });

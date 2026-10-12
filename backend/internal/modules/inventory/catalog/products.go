@@ -222,7 +222,7 @@ func (h *handler) createProduct(w http.ResponseWriter, r *http.Request) error {
 	kategori := f.Str("kategori", validate.Rule{Optional: true}, validate.StrOpts{})
 	satuan := f.UUID("satuan_id", validate.Rule{Optional: true})
 	warehouse := f.Str("warehouse_id", validate.Rule{}, validate.StrOpts{Check: func(s string) (string, string, bool) {
-		return "invalid_format", "Stall wajib dipilih", validate.IsUUID(s)
+		return "invalid_format", "Outlet wajib dipilih", validate.IsUUID(s)
 	}})
 	hargaJual := coerceNum(f, "harga_jual", validate.Rule{}, validate.NumOpts{Min: validate.Bound(0)})
 	hargaModal := coerceNum(f, "harga_modal", validate.Rule{}, validate.NumOpts{Min: validate.Bound(0)})
@@ -259,7 +259,7 @@ func (h *handler) createProduct(w http.ResponseWriter, r *http.Request) error {
 	} else if dup, err := kit.QueryOne(ctx, h.env.DB, `SELECT id FROM products WHERE kode = `+a.Add(kode)+scoped+` LIMIT 1`, a.Values...); err != nil {
 		return err
 	} else if dup != nil {
-		return httpx.BadRequest("Kode produk sudah digunakan di stall ini")
+		return httpx.BadRequest("Kode produk sudah digunakan di outlet ini")
 	}
 	jual := 0.0
 	if hargaJual != nil {

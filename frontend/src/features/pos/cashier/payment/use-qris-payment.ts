@@ -107,7 +107,7 @@ export function useQrisPayment(input: UseQrisPaymentInput) {
       });
       if (isMixedCart) {
         if (!onPrepareMixedQrisCheckout) {
-          throw new Error("Checkout multi-stall membutuhkan persiapan QRIS");
+          throw new Error("Checkout multi-outlet membutuhkan persiapan QRIS");
         }
         if (!checkoutId) {
           const prepared = await onPrepareMixedQrisCheckout();

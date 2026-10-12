@@ -105,7 +105,7 @@ export function ProductStockOpnameDetailPage({
           <>
             Riwayat stok opname produk · {formatDate(detail.opname_date)}
             {detail.warehouse?.name ? (
-              <> · Stall: {detail.warehouse.name}</>
+              <> · Outlet: {detail.warehouse.name}</>
             ) : null}
           </>
         }

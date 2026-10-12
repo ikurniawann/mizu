@@ -243,7 +243,7 @@ func parseEmployeeBody(f *validate.Form, create bool) *employeeBody {
 	}
 	if domain.RequiresStallAssignment(roleOf(b.role), scope.BusinessScope, true) &&
 		domain.DefaultWarehouseID(b.defaultWarehouseID, b.warehouseIDs) == nil {
-		f.Fail("default_warehouse_id", "custom", "Stall default wajib untuk scope branch")
+		f.Fail("default_warehouse_id", "custom", "Outlet default wajib untuk scope branch")
 	}
 	return b
 }

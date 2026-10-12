@@ -132,7 +132,7 @@ func BuildFlashReportMessage(d FlashReportData, dateWib, brand string) string {
 	if d.OwnerCompTx > 0 {
 		lines = append(lines, "Owner Comp : "+rp(d.OwnerCompIdr)+" ("+validate.JSNumber(d.OwnerCompTx)+" Trx)")
 	}
-	lines = append(lines, "", "No of Guest : "+validate.JSNumber(d.GuestCount)+" Pax", "Average/Pax : "+rp(avgPerPax), "", "*SALES BY STALL*")
+	lines = append(lines, "", "No of Guest : "+validate.JSNumber(d.GuestCount)+" Pax", "Average/Pax : "+rp(avgPerPax), "", "*SALES BY OUTLET*")
 	for _, s := range d.ByStall {
 		if s.Pcs > 0 {
 			lines = append(lines, s.Name+" : "+rp(s.Revenue)+" ("+validate.JSNumber(s.Pcs)+" Pcs)")

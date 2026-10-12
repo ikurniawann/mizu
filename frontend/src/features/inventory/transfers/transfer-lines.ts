@@ -63,9 +63,9 @@ export function transferInputError(
   sourceId: string,
   destId: string,
 ): string | null {
-  if (!sourceId) return "Silakan pilih stall asal";
-  if (!destId) return "Silakan pilih stall tujuan";
-  if (sourceId === destId) return "Stall asal dan stall tujuan harus berbeda";
+  if (!sourceId) return "Silakan pilih outlet asal";
+  if (!destId) return "Silakan pilih outlet tujuan";
+  if (sourceId === destId) return "Outlet asal dan outlet tujuan harus berbeda";
   if (linesToTransfer(lines).length === 0)
     return "Isi qty transfer lebih dari nol untuk minimal satu bahan baku";
 

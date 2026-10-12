@@ -59,7 +59,7 @@ func (s *Service) reportStallFilter(ctx context.Context, userID, requestedID str
 		out := reportStalls{Options: stallOptions(stalls)}
 		if requested != nil {
 			if !slices.ContainsFunc(out.Options, func(o stallOption) bool { return o.ID == *requested }) {
-				return reportStalls{}, &jsError{msg: "Stall tidak valid atau di luar scope"}
+				return reportStalls{}, &jsError{msg: "Outlet tidak valid atau di luar scope"}
 			}
 			out.WarehouseIDs, out.Selected = []string{*requested}, requested
 		}
@@ -75,7 +75,7 @@ func (s *Service) reportStallFilter(ctx context.Context, userID, requestedID str
 		return reportStalls{WarehouseIDs: []string{}, Options: options, Locked: true}, nil
 	case requested != nil:
 		if !slices.ContainsFunc(options, func(o stallOption) bool { return o.ID == *requested }) {
-			return reportStalls{}, &jsError{msg: "Stall tidak sesuai assignment login"}
+			return reportStalls{}, &jsError{msg: "Outlet tidak sesuai assignment login"}
 		}
 		return reportStalls{WarehouseIDs: []string{*requested}, Options: options, Locked: len(options) == 1, Selected: requested}, nil
 	case len(options) == 1:

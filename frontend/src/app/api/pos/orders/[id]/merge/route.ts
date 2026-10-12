@@ -162,7 +162,7 @@ export async function POST(
       return Response.json(
         {
           success: false,
-          error: "Tidak bisa merge tagihan stall ke kasir pusat",
+          error: "Tidak bisa merge tagihan outlet ke kasir pusat",
         },
         { status: 400 }
       );

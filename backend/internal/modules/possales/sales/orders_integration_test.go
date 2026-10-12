@@ -91,7 +91,7 @@ func TestCreateOrderGuards(t *testing.T) {
 	e.f.loyalty.arkEnabled = true
 	mixed := e.cashOrder(nil)
 	mixed["items"] = append(mixed["items"].([]any), map[string]any{"product_id": e.fx.prodB, "quantity": 1, "unit_price": 15000})
-	if out := e.call(true, "POST", "/api/pos/orders", mixed, 400); errorOf(out) != "Keranjang campur stall hanya untuk kasir pusat" {
+	if out := e.call(true, "POST", "/api/pos/orders", mixed, 400); errorOf(out) != "Keranjang campur outlet hanya untuk kasir pusat" {
 		t.Fatalf("%v", out)
 	}
 	if out := e.call(true, "GET", "/api/pos/orders/not-a-uuid", nil, 500); errorOf(out) != "Unknown error" {

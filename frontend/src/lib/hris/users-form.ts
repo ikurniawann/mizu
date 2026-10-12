@@ -195,7 +195,7 @@ export function validateUserForm(
         return "Holding, company, and branch are required";
       }
       if (scope === "branch" && !form.default_warehouse_id) {
-        return "Pilih stall default untuk scope branch";
+        return "Pilih outlet default untuk scope branch";
       }
     }
   }

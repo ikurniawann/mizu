@@ -127,7 +127,7 @@ async function resolveRow(row: ImportRow, scope: UserScope | null, branchFilter:
   if (!stallCode) return "Required field missing: stall_code";
 
   const warehouseId = await resolveWarehouseIdByCode(ctx.db, stallCode, branchFilter, ctx.warehouseCache);
-  if (!warehouseId) return `Stall code not found: ${stallCode}`;
+  if (!warehouseId) return `Outlet code not found: ${stallCode}`;
 
   const warehouseScope = await validateProductWarehouseScope(warehouseId, scope);
   if ("error" in warehouseScope) return warehouseScope.error;

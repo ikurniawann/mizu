@@ -21,10 +21,10 @@ const line = (
 
 describe("transferInputError", () => {
   it("wajib asal & tujuan berbeda", () => {
-    expect(transferInputError([], "", "b")).toBe("Silakan pilih stall asal");
-    expect(transferInputError([], "a", "")).toBe("Silakan pilih stall tujuan");
+    expect(transferInputError([], "", "b")).toBe("Silakan pilih outlet asal");
+    expect(transferInputError([], "a", "")).toBe("Silakan pilih outlet tujuan");
     expect(transferInputError([], "a", "a")).toBe(
-      "Stall asal dan stall tujuan harus berbeda",
+      "Outlet asal dan outlet tujuan harus berbeda",
     );
   });
 

@@ -33,13 +33,13 @@ export function ensureCoreCharges(charges: BillingCharge[]): BillingCharge[] {
 }
 
 export function defaultProfileName(branchId: string, warehouseId: string) {
-  if (warehouseId) return "Billing Stall";
+  if (warehouseId) return "Billing Outlet";
   if (branchId) return "Billing Cabang";
   return "Default Sistem";
 }
 
 export function editingScopeLabel(branchId: string, warehouseId: string) {
-  if (warehouseId) return "Override stall";
+  if (warehouseId) return "Override outlet";
   if (branchId) return "Default cabang";
   return "Default sistem";
 }

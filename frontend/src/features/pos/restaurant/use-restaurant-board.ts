@@ -190,7 +190,7 @@ export function useRestaurantBoard(input: {
     const destOrders = table.active_orders || [];
     const sourceBill = { checkout_id: order.checkout_id ?? null, sold_from: order.sold_from ?? null };
     if (!canMergeIntoDestination(sourceBill, destOrders)) {
-      toast.error("Tidak bisa merge tagihan stall ke kasir pusat");
+      toast.error("Tidak bisa merge tagihan outlet ke kasir pusat");
       return;
     }
     const targetOrderId = destOrders.find((dest) => canAppendTransferItems(sourceBill, dest))?.id;

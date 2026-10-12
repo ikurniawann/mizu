@@ -78,7 +78,7 @@ func TestAssertAllModeSellStallAssigned(t *testing.T) {
 	if got := AssertAllModeSellStallAssigned("w-a", []string{"w-a", "w-b"}); got != "" {
 		t.Errorf("allowed stall rejected: %q", got)
 	}
-	if got := AssertAllModeSellStallAssigned("w-x", []string{"w-a", "w-b"}); got != "Stall aktif di luar penempatan Anda" {
+	if got := AssertAllModeSellStallAssigned("w-x", []string{"w-a", "w-b"}); got != "Outlet aktif di luar penempatan Anda" {
 		t.Errorf("outside stall message = %q", got)
 	}
 }
@@ -170,11 +170,11 @@ func TestResolvePosSellStall(t *testing.T) {
 		want     SellStallResult
 	}{
 		{"active stall cookie", StallOne, "w-a", []string{"w-a", "w-b"}, "", SellStallResult{WarehouseID: "w-a"}},
-		{"Semua Stall rejected", StallAll, "", []string{"w-a"}, "", SellStallResult{Reason: "all_stalls", Message: "Pilih satu stall aktif sebelum membuat transaksi POS"}},
+		{"Semua Stall rejected", StallAll, "", []string{"w-a"}, "", SellStallResult{Reason: "all_stalls", Message: "Pilih satu outlet aktif sebelum membuat transaksi POS"}},
 		{"sole assignment", StallUnset, "", []string{"w-only"}, "", SellStallResult{WarehouseID: "w-only"}},
 		{"default warehouse", StallUnset, "", []string{"w-1", "w-2"}, "w-1", SellStallResult{WarehouseID: "w-1"}},
-		{"multi assignment", StallUnset, "", []string{"w-a", "w-b"}, "", SellStallResult{Reason: "multiple_unselected", Message: "Pilih satu stall aktif sebelum membuat transaksi POS"}},
-		{"empty assignment", StallUnset, "", []string{}, "", SellStallResult{Reason: "no_stall", Message: "Tidak ada stall penempatan. Hubungi admin untuk assign stall"}},
+		{"multi assignment", StallUnset, "", []string{"w-a", "w-b"}, "", SellStallResult{Reason: "multiple_unselected", Message: "Pilih satu outlet aktif sebelum membuat transaksi POS"}},
+		{"empty assignment", StallUnset, "", []string{}, "", SellStallResult{Reason: "no_stall", Message: "Tidak ada outlet penempatan. Hubungi admin untuk assign outlet"}},
 		{"stall mode without id falls through", StallOne, "", []string{"w-a"}, "", SellStallResult{WarehouseID: "w-a"}},
 		{"duplicate assignment counts once", StallUnset, "", []string{"w-a", "w-a", ""}, "", SellStallResult{WarehouseID: "w-a"}},
 	}
@@ -193,10 +193,10 @@ func TestAssertProductWarehousesMatchStall(t *testing.T) {
 	if got := AssertProductWarehousesMatchStall([]string{"w-a", "w-a"}, "w-a"); got != "" {
 		t.Errorf("same stall rejected: %q", got)
 	}
-	if got := AssertProductWarehousesMatchStall([]string{"w-a", "w-b"}, "w-a"); got != "Keranjang berisi produk dari stall lain. Ganti stall atau kosongkan keranjang" {
+	if got := AssertProductWarehousesMatchStall([]string{"w-a", "w-b"}, "w-a"); got != "Keranjang berisi produk dari outlet lain. Ganti outlet atau kosongkan keranjang" {
 		t.Errorf("foreign stall message = %q", got)
 	}
-	if got := AssertProductWarehousesMatchStall([]string{""}, "w-a"); got != "Ada produk tanpa stall — tidak bisa digabung ke transaksi stall ini" {
+	if got := AssertProductWarehousesMatchStall([]string{""}, "w-a"); got != "Ada produk tanpa outlet — tidak bisa digabung ke transaksi outlet ini" {
 		t.Errorf("missing stall message = %q", got)
 	}
 }

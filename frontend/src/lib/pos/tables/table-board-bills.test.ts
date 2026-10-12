@@ -107,9 +107,9 @@ describe("listTableBoardBills", () => {
       tableId: "t5",
     });
     expect(tableBillSourceLabel(bills[0].soldFrom)).toBe("Kasir pusat");
-    expect(tableBillSourceLabel(bills[1].soldFrom)).toBe("Stall");
+    expect(tableBillSourceLabel(bills[1].soldFrom)).toBe("Outlet");
     expect(tableBillSourceLabel("central")).toBe("Kasir pusat");
-    expect(tableBillSourceLabel("stall")).toBe("Stall");
+    expect(tableBillSourceLabel("stall")).toBe("Outlet");
   });
 
   it("keeps a kitchen-completed unpaid checkout on the floor", () => {

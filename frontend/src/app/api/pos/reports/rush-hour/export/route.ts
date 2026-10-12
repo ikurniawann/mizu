@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
 
     const stallLabel = stallFilter.selectedWarehouseId
       ? stallFilter.stallOptions.find((s) => s.id === stallFilter.selectedWarehouseId)?.name ??
-        "Stall terpilih"
-      : "Semua stall";
+        "Outlet terpilih"
+      : "Semua outlet";
 
     const buffer = await buildRushHourXlsx(report, {
       companyName: await resolveBrandName(scope?.companyId),
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal export rush hour";
-    const known = /tanggal|stall/i.test(message);
+    const known = /tanggal|stall|outlet/i.test(message);
     console.error("[pos] rush-hour export:", error);
     return NextResponse.json(
       { success: false, error: known ? message : "Gagal export rush hour" },

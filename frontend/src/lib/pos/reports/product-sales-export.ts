@@ -12,7 +12,7 @@ export function productSalesExportFileName(filters: {
 
 function stallFilterLabel(report: ProductSalesReport) {
   const id = report.filters.warehouse_id;
-  if (!id) return "Semua stall";
+  if (!id) return "Semua outlet";
   const stall = report.stall_options.find((row) => row.id === id);
   return stall ? `${stall.name} (${stall.code})` : id;
 }
@@ -26,7 +26,7 @@ export function buildProductSalesExportSheets(
       rows: [
         ["Laporan Penjualan Produk"],
         ["Periode", `${report.filters.date_from} s/d ${report.filters.date_to}`],
-        ["Stall", stallFilterLabel(report)],
+        ["Outlet", stallFilterLabel(report)],
         [],
         ["Metrik", "Nilai"],
         ["Produk terjual", report.summary.products],
@@ -37,7 +37,7 @@ export function buildProductSalesExportSheets(
     {
       name: "Produk",
       rows: [
-        ["Produk", "SKU", "Stall", "Qty", "Orders", "Omzet"],
+        ["Produk", "SKU", "Outlet", "Qty", "Orders", "Omzet"],
         ...report.rows.map((row) => [
           row.product_name,
           row.product_sku || "—",

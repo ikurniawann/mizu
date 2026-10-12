@@ -41,7 +41,7 @@ export function StockCardPage() {
   const [dateTo, setDateTo] = useState("");
 
   const warehousesQuery = useStockWarehouses();
-  useErrorToast(warehousesQuery.error, "Gagal memuat daftar stall");
+  useErrorToast(warehousesQuery.error, "Gagal memuat daftar outlet");
   const stockCardQuery = useStockCard({
     item_type: itemType,
     item_id: selectedItem !== "all" ? selectedItem : undefined,
@@ -184,7 +184,7 @@ export function StockCardPage() {
               <p className="mt-1 text-xl font-bold text-foreground">{formatRupiah(selected.avg_cost)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Lokasi / Stall</p>
+              <p className="text-xs text-muted-foreground">Lokasi / Outlet</p>
               <p className="mt-1 text-sm font-semibold text-foreground">
                 {selected.warehouse_name || selected.lokasi_rak || "-"}
               </p>

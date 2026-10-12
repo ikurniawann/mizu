@@ -141,7 +141,7 @@ export async function resolvePosSellStallForUser(
     return {
       ok: false,
       reason: "no_stall",
-      message: "Stall aktif di luar penempatan Anda",
+      message: "Outlet aktif di luar penempatan Anda",
     };
   }
 
@@ -189,7 +189,7 @@ export async function resolvePosSellScopeForUser(
     return {
       mode: "blocked",
       reason: "no_stall",
-      message: "Stall aktif di luar penempatan Anda",
+      message: "Outlet aktif di luar penempatan Anda",
     };
   }
 

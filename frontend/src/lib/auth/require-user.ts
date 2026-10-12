@@ -136,7 +136,7 @@ export const getUser = cache(async (): Promise<{
 
   if (canSwitchStall) {
     const allowedIds = new Set(access.stalls.map((stall) => stall.id));
-    const fallbackName = homeStall?.name ?? (access.allAccess ? "Semua Stall" : null);
+    const fallbackName = homeStall?.name ?? (access.allAccess ? "Semua Outlet" : null);
     const fallbackId = homeStall?.warehouse_id ?? null;
 
     if (resolvedStall.mode === "stall" && allowedIds.has(resolvedStall.stall.id)) {
@@ -145,7 +145,7 @@ export const getUser = cache(async (): Promise<{
       active_stall_id = resolvedStall.stall.id;
     } else if (resolvedStall.mode === "all" && access.allAccess) {
       // "Semua Stall" hanya bila user memang punya akses bebas.
-      warehouse_name = "Semua Stall";
+      warehouse_name = "Semua Outlet";
       active_stall_id = null;
     } else {
       // Cookie kosong / tidak valid / di luar penempatan → ikut tempat user.

@@ -57,7 +57,7 @@ func TestCreateEmployeeSchema(t *testing.T) {
 		}},
 		{"branch scope needs a stall", `{` + validCore + `,"is_access_app":true,"password":"rahasia123","role":"pos","business_scope":"branch",
 			"holding_id":"11111111-1111-4111-8111-111111111111","company_id":"11111111-1111-4111-8111-111111111111","branch_id":"11111111-1111-4111-8111-111111111111"}`, []string{
-			"default_warehouse_id custom Stall default wajib untuk scope branch",
+			"default_warehouse_id custom Outlet default wajib untuk scope branch",
 		}},
 		{"approval items", `{` + validCore + `,"approval_permissions":[
 			{"module":"pos","workflow":"vendor_payment","approval_level":"checker","approval_limit":"-1"},

@@ -56,7 +56,7 @@ export function ReturnItemsTable({
               <th className="w-[88px] px-2 py-3 text-center font-semibold">Diretur</th>
             </>
           ) : (
-            <th className="w-[100px] px-2 py-3 text-center font-semibold">Stall</th>
+            <th className="w-[100px] px-2 py-3 text-center font-semibold">Outlet</th>
           )}
           <th className={`${variant === "create" ? "w-[96px]" : "w-[88px]"} px-2 py-3 text-center font-semibold`}>Tersedia</th>
           <th className="w-[112px] px-2 py-3 text-center font-semibold">

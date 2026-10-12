@@ -24,7 +24,7 @@ func (h *Handler) reportRoutes() []module.Route {
 	}
 }
 
-var knownRushHourError = regexp.MustCompile(`(?i)tanggal|stall`)
+var knownRushHourError = regexp.MustCompile(`(?i)tanggal|stall|outlet`)
 
 // rushHourStatus answers a range or stall error with 400 and its message,
 // anything else with 500 and fallback.

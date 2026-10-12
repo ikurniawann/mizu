@@ -215,7 +215,7 @@ export function AppAccessFormSection({
             <div className="space-y-3">
               {form.role === "super_admin" ? (
                 <p className="rounded-lg border border-amber-200/80 bg-amber-50/60 px-4 py-3 text-xs text-amber-800">
-                  Stall assignments are only saved when the role is changed from Super Admin.
+                  Outlet assignments are only saved when the role is changed from Super Admin.
                 </p>
               ) : null}
               <StallAssignmentPicker

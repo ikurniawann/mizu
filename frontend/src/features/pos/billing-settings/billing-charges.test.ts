@@ -39,7 +39,7 @@ describe("billing charges", () => {
   });
 
   it("state editor: tanpa profil pakai nama default scope", () => {
-    expect(editorStateFromProfile(null, { branchId: "b1", warehouseId: "w1" }).profileName).toBe("Billing Stall");
+    expect(editorStateFromProfile(null, { branchId: "b1", warehouseId: "w1" }).profileName).toBe("Billing Outlet");
     expect(editorStateFromProfile(profile({ id: "x", name: "Mall" }), { branchId: "", warehouseId: "" })).toMatchObject({
       profileId: "x",
       profileName: "Mall",

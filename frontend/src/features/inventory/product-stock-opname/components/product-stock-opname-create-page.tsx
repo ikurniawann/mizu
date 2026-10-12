@@ -213,7 +213,7 @@ function ProductStockOpnameEditor({
 
   const handleSaveDraft = async () => {
     if (!warehouseId) {
-      toast.error("Pilih stall terlebih dahulu");
+      toast.error("Pilih outlet terlebih dahulu");
       return;
     }
     if (!hasItems) {
@@ -265,7 +265,7 @@ function ProductStockOpnameEditor({
 
   const handleComplete = async () => {
     if (!warehouseId) {
-      toast.error("Pilih stall terlebih dahulu");
+      toast.error("Pilih outlet terlebih dahulu");
       return;
     }
     if (!hasItems) {
@@ -384,7 +384,7 @@ function ProductStockOpnameEditor({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="min-w-0 md:col-span-4">
               <Label className="text-xs">
-                Stall <span className="text-red-500">*</span>
+                Outlet <span className="text-red-500">*</span>
               </Label>
               <Combobox
                 options={warehouseOptions}
@@ -448,7 +448,7 @@ function ProductStockOpnameEditor({
                   ? "Memuat produk..."
                   : hasItems
                     ? "Masukkan qty fisik dari hasil perhitungan produk"
-                    : "Tidak ada produk aktif di stall ini"}
+                    : "Tidak ada produk aktif di outlet ini"}
               </p>
             </div>
           </div>

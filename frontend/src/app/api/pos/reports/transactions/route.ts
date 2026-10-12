@@ -245,7 +245,7 @@ export async function GET(request: NextRequest) {
       );
       perStall = stallRows.map((row) => ({
         stall_code: row.stall_code,
-        stall_name: row.stall_name ?? "Tanpa Stall",
+        stall_name: row.stall_name ?? "Tanpa Outlet",
         transactions: toNumber(row.transactions),
         quantity: Math.round(toNumber(row.quantity) * 100) / 100,
         sales: Math.round(toNumber(row.sales) * 100) / 100,

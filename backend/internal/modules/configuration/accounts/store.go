@@ -191,9 +191,9 @@ func deactivateApprovals(ctx context.Context, q database.Querier, userID, actorI
 }
 
 var (
-	errStallBranch    = errors.New("Branch must be selected before choosing stalls")
-	errStallMissing   = errors.New("Stall not found or inactive")
-	errStallOtherSide = errors.New("Stall must belong to the same branch as the user scope")
+	errStallBranch    = errors.New("Branch must be selected before choosing outlets")
+	errStallMissing   = errors.New("Outlet not found or inactive")
+	errStallOtherSide = errors.New("Outlet must belong to the same branch as the user scope")
 )
 
 // syncWarehouses is syncUserWarehouses: validate the stalls against the

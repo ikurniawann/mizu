@@ -296,7 +296,7 @@ export function calculateBillCharges(input: {
 }
 
 export function profileScopeLabel(scope: BillingProfile["scope"]) {
-  if (scope === "stall") return "Override stall";
+  if (scope === "stall") return "Override outlet";
   if (scope === "branch") return "Default cabang";
   return "Default sistem";
 }

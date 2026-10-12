@@ -1,17 +1,17 @@
 /** User-facing labels for configuration.warehouses (storage locations). */
 export const STALL_LABELS = {
-  singular: "Stall",
-  plural: "Stalls",
+  singular: "Outlet",
+  plural: "Outlets",
   defaultName: "Main Storage",
   defaultCode: "MAIN",
-  select: "Select stall",
-  selectPlaceholder: "Select stall...",
-  search: "Search stall...",
-  empty: "No stall found",
-  loading: "Loading stalls...",
-  destination: "Destination Stall",
-  allBranchTotal: "All Stalls (Branch Total)",
-  perLocation: "stall location",
+  select: "Select outlet",
+  selectPlaceholder: "Select outlet...",
+  search: "Search outlet...",
+  empty: "No outlet found",
+  loading: "Loading outlets...",
+  destination: "Destination Outlet",
+  allBranchTotal: "All Outlets (Branch Total)",
+  perLocation: "outlet location",
 } as const;
 
 export function isMainStorageCode(code: string): boolean {

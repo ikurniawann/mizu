@@ -10,7 +10,7 @@ describe("inventory-stock-moves", () => {
 
   it("isTransferRuleError mengenali galat bisnis transfer", () => {
     expect(isTransferRuleError("Insufficient stock. Available: 2")).toBe(true);
-    expect(isTransferRuleError("Source stall not found")).toBe(true);
+    expect(isTransferRuleError("Source outlet not found")).toBe(true);
     expect(isTransferRuleError("connection reset")).toBe(false);
   });
 });

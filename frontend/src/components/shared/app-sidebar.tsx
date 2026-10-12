@@ -516,7 +516,7 @@ function StallSwitcher({
       // Pilihan berbasis penempatan user (Main Storage = bebas semua stall).
       const res = await fetch("/api/auth/stall-options");
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to load stalls");
+      if (!res.ok) throw new Error(json.error ?? "Failed to load outlets");
       setAllAccess(json.data?.all_access !== false);
       setStalls(
         ((json.data?.stalls ?? []) as StallOption[]).map(({ id, name, code }) => ({
@@ -544,7 +544,7 @@ function StallSwitcher({
           triggerClassName ??
           "flex w-full min-w-0 items-center gap-1.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none"
         }
-        aria-label="Ganti stall"
+        aria-label="Ganti outlet"
       >
         {triggerClassName ? (
           children
@@ -565,7 +565,7 @@ function StallSwitcher({
         <div className="max-h-[min(24rem,calc(100vh-96px))] overflow-y-auto pr-0.5 [scrollbar-width:thin]">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="px-2 pb-1.5 pt-1 text-xs font-medium text-gray-400">
-            Stall
+            Outlet
           </DropdownMenuLabel>
           {allAccess && !hideAllStallsOption && (
             <DropdownMenuItem
@@ -577,14 +577,14 @@ function StallSwitcher({
                 <Store className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                Semua Stall
+                Semua Outlet
               </span>
               {activeStallId === null && <Check className="h-4 w-4 shrink-0 text-brand-text" />}
             </DropdownMenuItem>
           )}
           {hideAllStallsOption && (
             <p className="px-2 pb-1.5 text-[11px] leading-snug text-amber-700/90">
-              Di kasir/restaurant wajib pilih satu stall (bukan Semua Stall).
+              Di kasir/restaurant wajib pilih satu outlet (bukan Semua Outlet).
             </p>
           )}
           {stalls === null ? (
@@ -592,7 +592,7 @@ function StallSwitcher({
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-accent" />
             </div>
           ) : loadFailed ? (
-            <p className="px-2 py-2 text-xs text-gray-400">Gagal memuat daftar stall</p>
+            <p className="px-2 py-2 text-xs text-gray-400">Gagal memuat daftar outlet</p>
           ) : (
             stalls.map((stall) => (
               <DropdownMenuItem

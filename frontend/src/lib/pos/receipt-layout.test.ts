@@ -21,7 +21,7 @@ describe("groupCartItemsByStallName", () => {
     const groups = groupCartItemsByStallName([
       { name: "Item", warehouse_id: "w-a" },
     ]);
-    expect(groups[0]?.stallName).toBe("Stall");
+    expect(groups[0]?.stallName).toBe("Outlet");
   });
 
   it("keeps separate sections when names are missing but stall ids differ", () => {

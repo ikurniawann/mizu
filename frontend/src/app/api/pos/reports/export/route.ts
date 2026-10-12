@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
     }
     const data = json.data as { filters?: { warehouse_id?: string | null }; stall_options?: Array<{ id: string; name: string }> };
     const stallLabel = data.filters?.warehouse_id
-      ? data.stall_options?.find((s) => s.id === data.filters?.warehouse_id)?.name ?? "Stall terpilih"
-      : "Semua stall";
+      ? data.stall_options?.find((s) => s.id === data.filters?.warehouse_id)?.name ?? "Outlet terpilih"
+      : "Semua outlet";
 
     const scope = await getApiUserScope();
     const companyName = await resolveBrandName(scope?.companyId);

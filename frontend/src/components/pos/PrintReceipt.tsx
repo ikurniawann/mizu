@@ -171,7 +171,7 @@ export function buildReceiptEscPosLayout(
     lines.push({ text: `Customer: ${payload.customerName}`, align: "center" });
   }
   if (payload.stallName && (!showIdentity || payload.receiptShowStallName !== false)) {
-    lines.push({ text: `Stall: ${payload.stallName}`, align: "center" });
+    lines.push({ text: `Outlet: ${payload.stallName}`, align: "center" });
   }
   if (isPreviewBill) {
     lines.push({ text: "PRE-SETTLEMENT - UNPAID", align: "center" });
@@ -534,7 +534,7 @@ export function buildReceiptHtml(payload: ReceiptPayload, label: ThermalPrintLab
     <div class="center">${receiptDocumentLabel(payload)}</div>
     <div class="center">${new Date().toLocaleTimeString("id-ID")}</div>
     ${customerName ? `<div class="center">Customer: ${customerName}</div>` : ""}
-    ${stallName && (!showIdentity || payload.receiptShowStallName !== false) ? `<div class="center">Stall: ${stallName}</div>` : ""}
+    ${stallName && (!showIdentity || payload.receiptShowStallName !== false) ? `<div class="center">Outlet: ${stallName}</div>` : ""}
     ${isPreviewBill ? `<div class="center">PRE-SETTLEMENT · UNPAID</div>` : ""}
     <div class="divider"></div>
 

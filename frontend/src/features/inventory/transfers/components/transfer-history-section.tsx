@@ -52,8 +52,8 @@ export function TransferHistorySection() {
               <th className="px-3 py-3">Jenis</th>
               <th className="px-3 py-3">Bahan Baku</th>
               <th className="px-3 py-3 text-right">Qty</th>
-              <th className="px-3 py-3">Stall Asal</th>
-              <th className="px-3 py-3">Stall Tujuan</th>
+              <th className="px-3 py-3">Outlet Asal</th>
+              <th className="px-3 py-3">Outlet Tujuan</th>
               <th className="px-3 py-3">Dibuat Oleh</th>
             </tr>
           </thead>

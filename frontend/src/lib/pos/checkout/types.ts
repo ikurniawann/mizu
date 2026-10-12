@@ -7,13 +7,13 @@ export const CHECKOUT_CANCEL_HAS_CHILDREN_MESSAGE =
 export const CHECKOUT_CANCEL_PAID_MESSAGE = "Checkout sudah lunas";
 
 export const MIXED_STALL_FORBIDDEN_MESSAGE =
-  "Keranjang campur stall hanya untuk kasir pusat";
+  "Keranjang campur outlet hanya untuk kasir pusat";
 export const MISSING_PRODUCT_STALL_MESSAGE =
-  "Ada produk tanpa stall — tidak bisa dimasukkan ke keranjang";
+  "Ada produk tanpa outlet — tidak bisa dimasukkan ke keranjang";
 export const CHECKOUT_QRIS_MISSING_MESSAGE = "QRIS belum dibuat untuk checkout ini";
 export const CHECKOUT_QRIS_UNPAID_MESSAGE = "QRIS belum lunas";
 export const MULTI_STALL_REQUIRED_MESSAGE =
-  "Checkout multi-stall membutuhkan item dari minimal 2 stall";
+  "Checkout multi-outlet membutuhkan item dari minimal 2 outlet";
 
 export class MixedCheckoutError extends Error {
   status: number;

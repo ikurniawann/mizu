@@ -18,7 +18,7 @@ const REPORT_CARDS = [
     href: "/dashboard/purchasing/reports/stock-card",
     icon: ClipboardDocumentListIcon,
     title: "Stock Card",
-    description: "Kartu stok bahan baku & produk dengan filter periode, stall, dan item (saldo awal, mutasi, saldo akhir).",
+    description: "Kartu stok bahan baku & produk dengan filter periode, outlet, dan item (saldo awal, mutasi, saldo akhir).",
     accent: "text-violet-600",
     bg: "bg-violet-50",
   },

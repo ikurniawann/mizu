@@ -125,7 +125,7 @@ export const PRODUCT_IMPORT_COLUMNS = [
   { key: "nama", label: "Product Name", required: true },
   {
     key: "stall_code",
-    label: "Stall Code",
+    label: "Outlet Code",
     required: true,
     description: "Must match stall master (e.g. MAIN, STALL-01)",
   },

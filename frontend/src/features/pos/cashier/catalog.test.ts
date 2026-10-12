@@ -55,9 +55,9 @@ describe("catalog lists", () => {
         product({ id: "p4" }),
       ])
     ).toEqual([
-      { id: ALL_FILTER, label: "Semua stall" },
+      { id: ALL_FILTER, label: "Semua outlet" },
       { id: "w1", label: "Bar" },
-      { id: "w2", label: "Stall" },
+      { id: "w2", label: "Outlet" },
     ]);
   });
 

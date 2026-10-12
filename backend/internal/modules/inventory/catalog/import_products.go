@@ -35,6 +35,7 @@ var productHeader = xlsx.HeaderNormalizer(map[string]string{
 	"markup": "markup_persen", "markup_percent": "markup_persen",
 	"output_type": "production_output_type", "production_type": "production_output_type",
 	"stall": "stall_code", "stall_code": "stall_code", "warehouse": "stall_code", "warehouse_code": "stall_code",
+	"outlet": "stall_code", "outlet_code": "stall_code", "kode_outlet": "stall_code",
 })
 
 var spaceRun = regexp.MustCompile(`\s+`)
@@ -144,7 +145,7 @@ func (p *productImport) resolve(ctx context.Context, data map[string]string) (*p
 	}
 	warehouseID, err := p.h.warehouseByCode(ctx, stallCode, p.branchFilter, p.warehouses)
 	if err != nil || warehouseID == "" {
-		return nil, "Stall code not found: " + stallCode, err
+		return nil, "Outlet code not found: " + stallCode, err
 	}
 	wh, msg, err := kit.ValidateProductWarehouse(ctx, p.h.env.DB, warehouseID, p.scope)
 	if err != nil || msg != "" {

@@ -73,14 +73,14 @@ func (h *Handler) transactionReport(w http.ResponseWriter, r *http.Request) erro
 // stallLabel names the selected stall of an export, "Semua stall" for none.
 func stallLabel(selected *string, options []stallOption) string {
 	if selected == nil || *selected == "" {
-		return "Semua stall"
+		return "Semua outlet"
 	}
 	for _, o := range options {
 		if o.ID == *selected {
 			return o.Name
 		}
 	}
-	return "Stall terpilih"
+	return "Outlet terpilih"
 }
 
 /* ── Rush hour export ────────────────────────────────────────────────── */

@@ -37,7 +37,7 @@ export function ProductsTable({
         <tr>
           <th className="px-4 py-3 text-left font-semibold">Kode</th>
           <th className="px-4 py-3 text-left font-semibold">Nama Produk</th>
-          <th className="px-4 py-3 text-left font-semibold">Stall</th>
+          <th className="px-4 py-3 text-left font-semibold">Outlet</th>
           <th className="px-4 py-3 text-left font-semibold">Kategori</th>
           <th className="px-4 py-3 text-left font-semibold">Satuan</th>
           <th className="px-4 py-3 text-right font-semibold">HPP Saat Ini</th>

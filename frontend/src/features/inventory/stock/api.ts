@@ -51,7 +51,7 @@ export async function listStockWarehouses(): Promise<
   const res = await fetch("/api/purchasing/warehouses");
   const json = await res.json();
   if (!res.ok) {
-    throw new Error(json.error || json.message || "Gagal memuat data stall");
+    throw new Error(json.error || json.message || "Gagal memuat data outlet");
   }
   return Array.isArray(json.data) ? json.data : [];
 }

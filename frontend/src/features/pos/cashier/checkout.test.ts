@@ -143,7 +143,7 @@ describe("paymentBlocker", () => {
 
   it("offline multi-stall checkout needs a prepared checkout", () => {
     const offline = { ...base, mixedCart: true, isOnline: false };
-    expect(paymentBlocker(offline)).toBe("Checkout multi-stall membutuhkan koneksi");
+    expect(paymentBlocker(offline)).toBe("Checkout multi-outlet membutuhkan koneksi");
     expect(paymentBlocker({ ...offline, preparedCheckoutId: "c1" })).toBeNull();
   });
 });

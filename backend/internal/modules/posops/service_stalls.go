@@ -137,7 +137,7 @@ func (sc sellContext) input(mode string) domain.SellStallInput {
 	return domain.SellStallInput{ActiveMode: mode, ActiveStallID: sc.active.id(), AssignedIDs: sc.assigned, DefaultWarehouseID: def}
 }
 
-const outsideAssignment = "Stall aktif di luar penempatan Anda"
+const outsideAssignment = "Outlet aktif di luar penempatan Anda"
 
 // sellScope is resolvePosSellScopeForUser.
 func (s *Service) sellScope(ctx context.Context, c Caller) (domain.SellScope, error) {

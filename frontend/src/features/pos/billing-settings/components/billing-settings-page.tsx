@@ -48,7 +48,7 @@ export function BillingSettingsPage() {
       </label>
 
       <label className="space-y-1.5">
-        <span className="text-sm font-medium">Stall (opsional override)</span>
+        <span className="text-sm font-medium">Outlet (opsional override)</span>
         <div className={!branchId ? "pointer-events-none opacity-50" : undefined}>
           <Select
             value={warehouseId || "all"}
@@ -58,10 +58,10 @@ export function BillingSettingsPage() {
             }}
           >
             <SelectTrigger className="h-10 border-gray-200/80">
-              <SelectValue placeholder="Semua stall di cabang" />
+              <SelectValue placeholder="Semua outlet di cabang" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua stall di cabang</SelectItem>
+              <SelectItem value="all">Semua outlet di cabang</SelectItem>
               {warehouses.map((stall) => (
                 <SelectItem key={stall.id} value={stall.id}>
                   {stall.name}
@@ -83,7 +83,7 @@ export function BillingSettingsPage() {
         <div>
           <h1 className="text-xl font-bold text-foreground">Tax & Service</h1>
           <p className="text-sm text-muted-foreground">
-            Atur PPN dan service charge untuk kasir POS — per sistem, cabang, atau stall.
+            Atur PPN dan service charge untuk kasir POS — per sistem, cabang, atau outlet.
           </p>
         </div>
       </div>

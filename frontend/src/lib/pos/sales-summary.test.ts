@@ -80,9 +80,9 @@ describe("aggregatePerStall", () => {
     expect(hasil[0].stall_name).toBe("Noodles");
   });
 
-  it("order tanpa stall dikelompokkan sebagai 'Tanpa Stall', bukan hilang", () => {
+  it("order tanpa stall dikelompokkan sebagai 'Tanpa Outlet', bukan hilang", () => {
     const hasil = aggregatePerStall([row({ stall_code: null, stall_name: null })]);
-    expect(hasil[0].stall_name).toBe("Tanpa Stall");
+    expect(hasil[0].stall_name).toBe("Tanpa Outlet");
     expect(hasil[0].transactions).toBe(1);
   });
 });

@@ -66,7 +66,7 @@ describe("validateUserForm", () => {
       "Holding, company, and branch are required"
     );
     expect(validateUserForm(withAccess({ default_warehouse_id: "" }), create)).toBe(
-      "Pilih stall default untuk scope branch"
+      "Pilih outlet default untuk scope branch"
     );
   });
 

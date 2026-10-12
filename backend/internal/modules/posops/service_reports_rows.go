@@ -38,7 +38,7 @@ func newStallReportHead(r domain.ReportRange, f reportStalls) stallReportHead {
 func (h stallReportHead) stallFilterLabel() string {
 	id := h.Filters.WarehouseID
 	if id == nil || *id == "" {
-		return "Semua stall"
+		return "Semua outlet"
 	}
 	for _, o := range h.StallOptions {
 		if o.ID == *id {
@@ -265,7 +265,7 @@ func (s *Service) TransactionReport(ctx context.Context, userID, from, to, wareh
 	}
 	for _, st := range stalls {
 		out.PerStall = append(out.PerStall, StallSales{
-			StallCode: st.StallCode, StallName: orDefault(st.StallName, "Tanpa Stall"),
+			StallCode: st.StallCode, StallName: orDefault(st.StallName, "Tanpa Outlet"),
 			Transactions: numOrZero(st.Transactions), Quantity: round2Ptr(st.Quantity), Sales: round2Ptr(st.Sales),
 		})
 	}

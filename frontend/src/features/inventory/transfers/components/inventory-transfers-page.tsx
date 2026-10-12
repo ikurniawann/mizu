@@ -224,7 +224,7 @@ export function InventoryTransfersPage() {
       <PurchasingFormHeader
         backHref={RM_ROUTES.inventoryStock}
         title="Transfer Stok"
-        description="Pindahkan stok bahan baku antara Main Storage dan stall"
+        description="Pindahkan stok bahan baku antara Main Storage dan outlet"
         actions={
           canSubmit ? (
             <Button
@@ -272,7 +272,7 @@ export function InventoryTransfersPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="min-w-0 space-y-1.5 md:col-span-4">
               <Label className="text-xs">
-                Stall Asal <span className="text-red-500">*</span>
+                Outlet Asal <span className="text-red-500">*</span>
               </Label>
               <Combobox
                 value={sourceWarehouseId}
@@ -280,8 +280,8 @@ export function InventoryTransfersPage() {
                 options={sourceOptions}
                 placeholder={
                   warehousesQuery.isLoading
-                    ? "Memuat stall..."
-                    : "Pilih stall asal"
+                    ? "Memuat outlet..."
+                    : "Pilih outlet asal"
                 }
                 disabled={sourceDisabled}
                 className="w-full! h-9 border-gray-200/80 text-sm"
@@ -290,7 +290,7 @@ export function InventoryTransfersPage() {
 
             <div className="min-w-0 space-y-1.5 md:col-span-4">
               <Label className="text-xs">
-                Stall Tujuan <span className="text-red-500">*</span>
+                Outlet Tujuan <span className="text-red-500">*</span>
               </Label>
               <Combobox
                 value={destWarehouseId}
@@ -298,8 +298,8 @@ export function InventoryTransfersPage() {
                 options={destOptions}
                 placeholder={
                   warehousesQuery.isLoading
-                    ? "Memuat stall..."
-                    : "Pilih stall tujuan"
+                    ? "Memuat outlet..."
+                    : "Pilih outlet tujuan"
                 }
                 disabled={destDisabled}
                 className="w-full! h-9 border-gray-200/80 text-sm"
@@ -357,14 +357,14 @@ export function InventoryTransfersPage() {
               </h2>
               <p className="text-sm text-gray-500">
                 {!sourceWarehouseId
-                  ? "Pilih stall asal untuk memuat bahan baku"
+                  ? "Pilih outlet asal untuk memuat bahan baku"
                   : loading
                     ? "Memuat bahan baku..."
                     : hasItems
                       ? `Isi qty transfer (kosongkan untuk melewati)${
                           selectedSource ? ` — ${selectedSource.label}` : ""
                         }`
-                      : "Tidak ada bahan baku aktif di stall ini"}
+                      : "Tidak ada bahan baku aktif di outlet ini"}
               </p>
             </div>
             {hasItems && (
@@ -399,7 +399,7 @@ export function InventoryTransfersPage() {
                       colSpan={5}
                       className="px-3 py-10 text-center text-gray-400"
                     >
-                      Silakan pilih stall asal terlebih dahulu
+                      Silakan pilih outlet asal terlebih dahulu
                     </td>
                   </tr>
                 ) : loading ? (

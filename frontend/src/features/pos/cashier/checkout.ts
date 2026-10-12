@@ -337,7 +337,7 @@ export function paymentBlocker(input: {
       : MIXED_NFC_GIFT_UNSUPPORTED_MESSAGE;
   }
   if (input.mixedCart && !input.isOnline && !input.preparedCheckoutId) {
-    return "Checkout multi-stall membutuhkan koneksi";
+    return "Checkout multi-outlet membutuhkan koneksi";
   }
   return null;
 }

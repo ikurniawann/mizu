@@ -66,7 +66,7 @@ export async function resolveReportStallFilter(
     if (requested) {
       const allowed = stalls.some((row) => row.id === requested);
       if (!allowed) {
-        throw new Error("Stall tidak valid atau di luar scope");
+        throw new Error("Outlet tidak valid atau di luar scope");
       }
       return {
         warehouseIds: [requested],
@@ -103,7 +103,7 @@ export async function resolveReportStallFilter(
   if (requested) {
     const allowed = stallOptions.some((row) => row.id === requested);
     if (!allowed) {
-      throw new Error("Stall tidak sesuai assignment login");
+      throw new Error("Outlet tidak sesuai assignment login");
     }
     return {
       warehouseIds: [requested],

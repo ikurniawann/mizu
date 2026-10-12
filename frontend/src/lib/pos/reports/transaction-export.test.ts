@@ -78,7 +78,7 @@ describe("buildTransactionExportSheets", () => {
     const sheets = buildTransactionExportSheets(sample);
     expect(sheets.map((s) => s.name)).toEqual([
       "Ringkasan",
-      "Per Stall",
+      "Per Outlet",
       "Top Produk",
       "Harian",
       "Transaksi",

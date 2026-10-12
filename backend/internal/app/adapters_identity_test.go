@@ -71,11 +71,11 @@ func TestIdentityStallRoutes(t *testing.T) {
 		status int
 		want   string
 	}{
-		{"single placement", cashier, stall2, 403, `{"success":false,"error":"Akun ini tidak perlu mengganti stall"}`},
-		{"roamer to all", roamer, nil, 403, `{"success":false,"error":"Anda hanya dapat memilih stall penempatan Anda"}`},
-		{"roamer outside placements", roamer, outside, 403, `{"success":false,"error":"Stall di luar penempatan Anda"}`},
-		{"other branch", superAdmin, outside, 403, `{"success":false,"error":"Stall berada di luar branch Anda"}`},
-		{"inactive", superAdmin, closed, 404, `{"success":false,"error":"Stall not found or inactive"}`},
+		{"single placement", cashier, stall2, 403, `{"success":false,"error":"Akun ini tidak perlu mengganti outlet"}`},
+		{"roamer to all", roamer, nil, 403, `{"success":false,"error":"Anda hanya dapat memilih outlet penempatan Anda"}`},
+		{"roamer outside placements", roamer, outside, 403, `{"success":false,"error":"Outlet di luar penempatan Anda"}`},
+		{"other branch", superAdmin, outside, 403, `{"success":false,"error":"Outlet berada di luar branch Anda"}`},
+		{"inactive", superAdmin, closed, 404, `{"success":false,"error":"Outlet not found or inactive"}`},
 		{"not a uuid", superAdmin, "x", 400, `{"success":false,"error":"Validation failed","details":[{"code":"invalid_format","path":["warehouse_id"],"message":"Invalid UUID"}]}`},
 	} {
 		status, body, cookies := post(c.as, c.id)

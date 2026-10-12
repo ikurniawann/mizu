@@ -130,7 +130,7 @@ func (h *Handler) mergeUseCase(r *http.Request, user *auth.User) (*response, err
 		return nil, fail(400, "Bill tujuan "+target.Str("order_number")+" "+b+" — tidak bisa menerima gabungan")
 	}
 	if !domain.CanAppendTransferItems(family(source), family(target)) {
-		return nil, fail(400, "Tidak bisa merge tagihan stall ke kasir pusat")
+		return nil, fail(400, "Tidak bisa merge tagihan outlet ke kasir pusat")
 	}
 	if unpaid, err := hasUnpaidSplits(ctx, h.db, sourceID); err != nil {
 		return nil, err

@@ -70,7 +70,7 @@ describe("formatOrderTypeLabel", () => {
 describe("formatSoldFromLabel", () => {
   it("maps sold_from", () => {
     expect(formatSoldFromLabel("central")).toBe("Kasir pusat");
-    expect(formatSoldFromLabel("stall")).toBe("Kasir stall");
+    expect(formatSoldFromLabel("stall")).toBe("Kasir outlet");
   });
 });
 

@@ -35,10 +35,10 @@ export function stallFilterOptions(products: Product[]) {
   const byId = new Map<string, string>();
   for (const product of products) {
     if (!product.warehouse_id || byId.has(product.warehouse_id)) continue;
-    byId.set(product.warehouse_id, product.warehouse_name?.trim() || "Stall");
+    byId.set(product.warehouse_id, product.warehouse_name?.trim() || "Outlet");
   }
   return [
-    { id: ALL_FILTER, label: "Semua stall" },
+    { id: ALL_FILTER, label: "Semua outlet" },
     ...[...byId.entries()].map(([id, label]) => ({ id, label })),
   ];
 }

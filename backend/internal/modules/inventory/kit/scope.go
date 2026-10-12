@@ -70,9 +70,9 @@ func ValidateWarehouse(ctx context.Context, q database.Querier, warehouseID stri
 }
 
 var warehouseScopeErrors = map[WarehouseError]string{
-	WarehouseNotFound:       "Stall not found",
-	WarehouseInactive:       "Stall is inactive",
-	WarehouseBranchMismatch: "Stall is outside your branch scope",
+	WarehouseNotFound:       "Outlet not found",
+	WarehouseInactive:       "Outlet is inactive",
+	WarehouseBranchMismatch: "Outlet is outside your branch scope",
 }
 
 // ProductWarehouse is the business scope of a stall for product masters.
@@ -92,7 +92,7 @@ func ValidateProductWarehouse(ctx context.Context, q database.Querier, warehouse
 		return nil, "", err
 	}
 	if biz == nil {
-		return nil, "Stall not found or inactive", nil
+		return nil, "Outlet not found or inactive", nil
 	}
 	branchID := biz.Str("branch_id")
 	_, werr, err := ValidateWarehouse(ctx, q, warehouseID, s, &branchID)
@@ -103,7 +103,7 @@ func ValidateProductWarehouse(ctx context.Context, q database.Querier, warehouse
 		return nil, warehouseScopeErrors[werr], nil
 	}
 	if c := ps.WarehouseCompanyFilter(s); c != nil && biz.Str("company_id") != *c {
-		return nil, "Stall is outside your company scope", nil
+		return nil, "Outlet is outside your company scope", nil
 	}
 	return &ProductWarehouse{CompanyID: biz.Str("company_id"), BranchID: branchID, WarehouseID: warehouseID}, "", nil
 }

@@ -215,7 +215,7 @@ async function resolveReferences(
   let warehouseId: string | null = null;
   if (fields.warehouseCode) {
     warehouseId = await resolveWarehouseIdByCode(ctx.db, fields.warehouseCode, ctx.branchId, ctx.warehouseCache);
-    if (!warehouseId) return `Stall code "${fields.warehouseCode}" was not found for this branch`;
+    if (!warehouseId) return `Outlet code "${fields.warehouseCode}" was not found for this branch`;
   }
   return { satuanBesarId, satuanKecilId, warehouseId };
 }

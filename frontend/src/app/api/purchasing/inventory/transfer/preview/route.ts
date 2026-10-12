@@ -9,7 +9,7 @@ import { listWarehouseInventoryForOpname } from "@/lib/inventory/stock-opname";
 import { parseBodyOrThrow } from "@/lib/purchasing/pr-schemas";
 
 const querySchema = z.object({
-  warehouse_id: z.string().uuid("Source stall is required"),
+  warehouse_id: z.string().uuid("Source outlet is required"),
 });
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -21,7 +21,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   );
   const warehouseCheck = await validateWarehouseForReceivingScope(warehouseId, scope, null);
   if ("error" in warehouseCheck) {
-    throw ApiError.badRequest("Source stall is invalid or not allowed");
+    throw ApiError.badRequest("Source outlet is invalid or not allowed");
   }
   const lines = await listWarehouseInventoryForOpname(warehouseId);
   return NextResponse.json({ success: true, data: lines, total: lines.length });

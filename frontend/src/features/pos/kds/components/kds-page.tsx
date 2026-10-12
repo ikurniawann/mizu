@@ -181,9 +181,9 @@ function KdsPageContent() {
             value={warehouseId}
             onChange={(event) => setWarehouseId(event.target.value)}
             className="h-8 rounded-md border-0 bg-gray-800 px-2 text-xs font-medium text-gray-200 focus:outline-none focus:ring-1 focus:ring-white/20"
-            title="Filter stall"
+            title="Filter outlet"
           >
-            <option value="all">Semua stall</option>
+            <option value="all">Semua outlet</option>
             {stalls.map((stall) => (
               <option key={stall.id} value={stall.id}>
                 {stall.name}

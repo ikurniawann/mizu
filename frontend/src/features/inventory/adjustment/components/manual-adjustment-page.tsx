@@ -115,7 +115,7 @@ export function ManualAdjustmentPage() {
 
   const validateInputs = () => {
     if (!warehouseId) {
-      toast.error("Pilih stall terlebih dahulu");
+      toast.error("Pilih outlet terlebih dahulu");
       return false;
     }
 
@@ -219,7 +219,7 @@ export function ManualAdjustmentPage() {
       <PurchasingFormHeader
         backHref={RM_ROUTES.inventoryStock}
         title="Penyesuaian Stok"
-        description="Koreksi stok bahan baku secara manual per stall"
+        description="Koreksi stok bahan baku secara manual per outlet"
         actions={
           hasItems ? (
             <>
@@ -253,14 +253,14 @@ export function ManualAdjustmentPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="min-w-0 space-y-1.5 md:col-span-4">
               <Label className="text-xs">
-                Stall <span className="text-red-500">*</span>
+                Outlet <span className="text-red-500">*</span>
               </Label>
               <Combobox
                 value={warehouseId}
                 onChange={handleWarehouseChange}
                 options={warehouseOptions}
                 placeholder={
-                  warehousesQuery.isLoading ? "Memuat stall..." : "Pilih stall"
+                  warehousesQuery.isLoading ? "Memuat outlet..." : "Pilih outlet"
                 }
                 disabled={warehousesQuery.isLoading || submitting}
                 className="w-full! h-9 border-gray-200/80 text-sm"
@@ -327,7 +327,7 @@ export function ManualAdjustmentPage() {
               </h2>
               <p className="text-sm text-gray-500">
                 {!warehouseId
-                  ? "Pilih stall untuk memuat bahan baku"
+                  ? "Pilih outlet untuk memuat bahan baku"
                   : loading
                     ? "Memuat bahan baku..."
                     : hasItems
@@ -336,7 +336,7 @@ export function ManualAdjustmentPage() {
                             ? ` — ${selectedWarehouse.label}`
                             : ""
                         }`
-                      : "Tidak ada bahan baku aktif di stall ini"}
+                      : "Tidak ada bahan baku aktif di outlet ini"}
               </p>
             </div>
             {hasItems && (
@@ -372,7 +372,7 @@ export function ManualAdjustmentPage() {
                       colSpan={6}
                       className="px-3 py-10 text-center text-gray-400"
                     >
-                      Pilih stall terlebih dahulu
+                      Pilih outlet terlebih dahulu
                     </td>
                   </tr>
                 ) : loading ? (

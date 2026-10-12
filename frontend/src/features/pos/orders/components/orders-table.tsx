@@ -80,7 +80,7 @@ function OrderTableRow({
         <div>{isMixed ? row.checkoutNumber : order.order_number}</div>
         {isMixed && row.orders.length > 1 ? (
           <div className="mt-0.5 space-y-0.5 font-sans text-[11px] font-medium text-brand-text">
-            <div>Gabungan {row.orders.length} stall</div>
+            <div>Gabungan {row.orders.length} outlet</div>
             <div className="font-mono font-normal text-muted-foreground">
               {row.orders
                 .map((child) => child.order_number)

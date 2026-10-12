@@ -182,7 +182,7 @@ export function TransactionDetailBody({
             value={formatDateTime(detail?.ordered_at ?? row?.ordered_at)}
           />
           <DetailField
-            label="Stall"
+            label="Outlet"
             value={
               detail?.stall_name?.trim() ||
               detail?.stall_code?.trim() ||

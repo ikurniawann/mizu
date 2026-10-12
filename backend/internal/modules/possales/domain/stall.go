@@ -15,15 +15,15 @@ import (
 // Messages shared by the central-cashier and stall guards
 // (lib/pos/central-cashier.ts, checkout/types.ts, pos-sell-stall.ts).
 const (
-	MsgMixedSplitUnsupported        = "Split bill belum didukung untuk checkout multi-stall"
-	MsgMixedNfcGiftUnsupported      = "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-stall"
+	MsgMixedSplitUnsupported        = "Split bill belum didukung untuk checkout multi-outlet"
+	MsgMixedNfcGiftUnsupported      = "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-outlet"
 	MsgMixedArkUnsupported          = "Pembayaran ARK Coin belum didukung untuk tagihan checkout — gunakan tunai, kartu, atau QRIS"
-	MsgMixedPromoUnsupported        = "Promo belum didukung untuk checkout multi-stall"
-	MsgMixedLineDiscountUnsupported = "Diskon per item belum didukung untuk checkout multi-stall — pakai diskon transaksi"
-	MsgMixedStallForbidden          = "Keranjang campur stall hanya untuk kasir pusat"
-	MsgMissingProductStall          = "Ada produk tanpa stall — tidak bisa dimasukkan ke keranjang"
-	MsgMultiStallRequired           = "Checkout multi-stall membutuhkan item dari minimal 2 stall"
-	MsgStallOutsideAssignment       = "Stall aktif di luar penempatan Anda"
+	MsgMixedPromoUnsupported        = "Promo belum didukung untuk checkout multi-outlet"
+	MsgMixedLineDiscountUnsupported = "Diskon per item belum didukung untuk checkout multi-outlet — pakai diskon transaksi"
+	MsgMixedStallForbidden          = "Keranjang campur outlet hanya untuk kasir pusat"
+	MsgMissingProductStall          = "Ada produk tanpa outlet — tidak bisa dimasukkan ke keranjang"
+	MsgMultiStallRequired           = "Checkout multi-outlet membutuhkan item dari minimal 2 outlet"
+	MsgStallOutsideAssignment       = "Outlet aktif di luar penempatan Anda"
 	MsgContinueOpenBill             = "Lanjutkan open bill di meja ini"
 	MsgCheckoutQrisMissing          = "QRIS belum dibuat untuk checkout ini"
 	MsgCheckoutQrisUnpaid           = "QRIS belum lunas"
@@ -157,8 +157,8 @@ type SellStallResult struct {
 func (r SellStallResult) OK() bool { return r.WarehouseID != "" }
 
 const (
-	msgPickOneStall = "Pilih satu stall aktif sebelum membuat transaksi POS"
-	msgNoStall      = "Tidak ada stall penempatan. Hubungi admin untuk assign stall"
+	msgPickOneStall = "Pilih satu outlet aktif sebelum membuat transaksi POS"
+	msgNoStall      = "Tidak ada outlet penempatan. Hubungi admin untuk assign outlet"
 )
 
 // ResolvePosSellStall picks the single stall a cashier may sell from.
@@ -204,10 +204,10 @@ func ComputeStallAllAccess(role string, canSwitchStall, assignedMainStorage bool
 func AssertProductWarehousesMatchStall(productWarehouses []string, stallID string) string {
 	for _, wid := range productWarehouses {
 		if wid == "" {
-			return "Ada produk tanpa stall — tidak bisa digabung ke transaksi stall ini"
+			return "Ada produk tanpa outlet — tidak bisa digabung ke transaksi outlet ini"
 		}
 		if wid != stallID {
-			return "Keranjang berisi produk dari stall lain. Ganti stall atau kosongkan keranjang"
+			return "Keranjang berisi produk dari outlet lain. Ganti outlet atau kosongkan keranjang"
 		}
 	}
 	return ""

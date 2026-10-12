@@ -201,7 +201,7 @@ func (integrationsFlashSQL) Gather(ctx context.Context, q database.Querier, date
        FROM pos.pos_order_items oi
        JOIN pos.pos_orders o ON o.id = oi.order_id
        LEFT JOIN configuration.warehouses w ON w.id = o.warehouse_id
-      WHERE `+flashPaid+` GROUP BY w.name`, "Tanpa stall", start, end)
+      WHERE `+flashPaid+` GROUP BY w.name`, "Tanpa outlet", start, end)
 	if err != nil {
 		return d, err
 	}

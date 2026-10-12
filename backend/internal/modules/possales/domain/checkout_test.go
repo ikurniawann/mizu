@@ -36,10 +36,10 @@ func TestGuardMixedCheckoutCart(t *testing.T) {
 			t.Errorf("%s: got %+v, want %+v", c.name, got, c.want)
 		}
 	}
-	if MsgMixedSplitUnsupported != "Split bill belum didukung untuk checkout multi-stall" {
+	if MsgMixedSplitUnsupported != "Split bill belum didukung untuk checkout multi-outlet" {
 		t.Errorf("split message changed")
 	}
-	if MsgMixedNfcGiftUnsupported != "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-stall" {
+	if MsgMixedNfcGiftUnsupported != "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-outlet" {
 		t.Errorf("NFC/gift message changed")
 	}
 }

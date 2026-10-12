@@ -156,7 +156,7 @@ export function ProductStockTab() {
       <PurchasingListSection
         icon={Package}
         title="Daftar Stok Produk"
-        description="Tinjau kode produk, stall, kategori, qty tersedia, harga pokok, harga jual, nilai stok, dan status ketersediaan."
+        description="Tinjau kode produk, outlet, kategori, qty tersedia, harga pokok, harga jual, nilai stok, dan status ketersediaan."
         toolbar={
           <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
             <Combobox
@@ -225,7 +225,7 @@ export function ProductStockTab() {
                 <th className="px-4 py-3 text-left font-semibold">
                   Nama Produk
                 </th>
-                <th className="px-4 py-3 text-left font-semibold">Stall</th>
+                <th className="px-4 py-3 text-left font-semibold">Outlet</th>
                 <th className="px-4 py-3 text-left font-semibold">Kategori</th>
                 <th className="px-4 py-3 text-right font-semibold">Tersedia</th>
                 <th className="px-4 py-3 text-left font-semibold">Satuan</th>

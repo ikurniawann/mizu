@@ -58,7 +58,7 @@ describe("/api/purchasing/products", () => {
       })
     );
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("Kode produk sudah digunakan di stall ini");
+    expect((await res.json()).error).toBe("Kode produk sudah digunakan di outlet ini");
   });
 
   it("POST valid → 201, kode otomatis, tersinkron ke POS", async () => {

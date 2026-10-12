@@ -60,8 +60,8 @@ func (h handlers) Routes() []module.Route {
 		{Pattern: "GET /api/auth/logout", Handler: httpx.Handle(h.logoutGet)},
 		{Pattern: "POST /api/auth/change-password", Handler: h.handle("api/auth/change-password", errorBody{"Failed to change password"}, h.changePassword)},
 		{Pattern: "POST /api/auth/impersonate", Handler: h.handle("api/auth/impersonate", errorBody{"Failed to impersonate user"}, h.impersonate)},
-		{Pattern: "POST /api/auth/active-stall", Handler: h.handle("api/auth/active-stall", errorBody{"Failed to set active stall"}, h.activeStall)},
-		{Pattern: "GET /api/auth/stall-options", Handler: h.handle("api/auth/stall-options", errorBody{"Failed to load stall options"}, h.stallOptions)},
+		{Pattern: "POST /api/auth/active-stall", Handler: h.handle("api/auth/active-stall", errorBody{"Failed to set active outlet"}, h.activeStall)},
+		{Pattern: "GET /api/auth/stall-options", Handler: h.handle("api/auth/stall-options", errorBody{"Failed to load outlet options"}, h.stallOptions)},
 		{Pattern: "GET /api/auth/scope", Handler: h.handle("api/auth/scope", scopeFailure{Message: "Failed to fetch user scope"}, h.scope)},
 	}
 }

@@ -260,7 +260,7 @@ function StockOpnameEditor({ detail }: { detail?: StockOpnameDetail }) {
 
   const handleSaveDraft = async () => {
     if (!warehouseId) {
-      toast.error("Pilih stall terlebih dahulu");
+      toast.error("Pilih outlet terlebih dahulu");
       return;
     }
     if (!hasItems) {
@@ -312,7 +312,7 @@ function StockOpnameEditor({ detail }: { detail?: StockOpnameDetail }) {
 
   const handleComplete = async () => {
     if (!warehouseId) {
-      toast.error("Pilih stall terlebih dahulu");
+      toast.error("Pilih outlet terlebih dahulu");
       return;
     }
     if (!hasItems) {
@@ -400,7 +400,7 @@ function StockOpnameEditor({ detail }: { detail?: StockOpnameDetail }) {
       <PurchasingFormHeader
         backHref={RM_ROUTES.inventoryOpname}
         title={isContinue ? "Lanjutkan Stok Opname" : "Buat Stok Opname"}
-        description="Pilih stall, masukkan qty fisik, lalu simpan sebagai draf atau selesaikan opname"
+        description="Pilih outlet, masukkan qty fisik, lalu simpan sebagai draf atau selesaikan opname"
         actions={
           hasItems ? (
             <OpnameDesktopActions
@@ -425,14 +425,14 @@ function StockOpnameEditor({ detail }: { detail?: StockOpnameDetail }) {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="min-w-0 space-y-1.5 md:col-span-4">
               <Label className="text-xs">
-                Stall <span className="text-red-500">*</span>
+                Outlet <span className="text-red-500">*</span>
               </Label>
               <Combobox
                 value={warehouseId}
                 onChange={handleWarehouseChange}
                 options={warehouseOptions}
                 placeholder={
-                  warehousesQuery.isLoading ? "Memuat stall..." : "Pilih stall"
+                  warehousesQuery.isLoading ? "Memuat outlet..." : "Pilih outlet"
                 }
                 disabled={warehousesQuery.isLoading || isBusy || isContinue}
                 className="w-full! h-9 border-gray-200/80 text-sm"
@@ -477,7 +477,7 @@ function StockOpnameEditor({ detail }: { detail?: StockOpnameDetail }) {
                 {hasItems
                   ? linesWithSmallUnit > 0
                     ? `Berlaku untuk ${linesWithSmallUnit} bahan yang punya konversi satuan; bahan lain tetap satuan dasarnya. Masih bisa diubah per item.`
-                    : "Tidak ada bahan dengan konversi satuan di stall ini."
+                    : "Tidak ada bahan dengan konversi satuan di outlet ini."
                   : "Pilih sebelum mulai menghitung; bisa diubah per item nanti."}
               </p>
             </div>
@@ -500,8 +500,8 @@ function StockOpnameEditor({ detail }: { detail?: StockOpnameDetail }) {
                   {isPreviewLoading
                     ? "Memuat bahan baku..."
                     : hasItems
-                      ? "Masukkan qty fisik dari hasil perhitungan stall"
-                      : "Tidak ada bahan baku aktif di cabang stall ini"}
+                      ? "Masukkan qty fisik dari hasil perhitungan outlet"
+                      : "Tidak ada bahan baku aktif di cabang outlet ini"}
                 </p>
               </div>
             </div>
@@ -515,7 +515,7 @@ function StockOpnameEditor({ detail }: { detail?: StockOpnameDetail }) {
                 searchPlaceholder="Cari bahan baku..."
                 busy={isBusy}
                 loading={isPreviewLoading}
-                emptyText="Pilih stall untuk memuat bahan baku"
+                emptyText="Pilih outlet untuk memuat bahan baku"
                 onQtyChange={handleLineChange}
                 onFillSystem={handleFillSystemLine}
               />

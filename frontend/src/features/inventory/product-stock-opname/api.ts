@@ -133,7 +133,7 @@ export async function listProductStockOpnameWarehouses(): Promise<
   const res = await fetch("/api/purchasing/warehouses");
   const json = await res.json();
   if (!res.ok) {
-    throw new Error(json.message || "Failed to load stalls");
+    throw new Error(json.message || "Failed to load outlets");
   }
   return Array.isArray(json.data) ? json.data : [];
 }

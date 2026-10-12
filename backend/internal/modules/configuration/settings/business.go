@@ -240,7 +240,7 @@ func deleteBusinessEntity(ctx context.Context, q database.Querier, typ, id strin
 		err := q.QueryRow(ctx, `SELECT is_default, branch_id::text FROM configuration.warehouses WHERE id = $1`, id).
 			Scan(&isDefault, &branchID)
 		if database.IsNoRows(err) {
-			return errors.New("Stall tidak ditemukan")
+			return errors.New("Outlet tidak ditemukan")
 		}
 		if err != nil {
 			return err
@@ -252,7 +252,7 @@ func deleteBusinessEntity(ctx context.Context, q database.Querier, typ, id strin
 				return err
 			}
 			if n, _ := strconv.Atoi(count); n <= 1 {
-				return errors.New("Main Storage tidak dapat dihapus. Setiap cabang wajib memiliki minimal 1 stall.")
+				return errors.New("Main Storage tidak dapat dihapus. Setiap cabang wajib memiliki minimal 1 outlet.")
 			}
 		}
 	}

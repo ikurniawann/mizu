@@ -40,7 +40,7 @@ func TestReports(t *testing.T) {
 	r := h.call("GET", "/api/pos/reports/rush-hour?date_from=2031-05-09&date_to=2031-05-01", nil, 400)
 	jsonEq(t, r.body, `{"success":false,"error":"Tanggal dari tidak boleh melebihi tanggal sampai"}`)
 	r = h.call("GET", "/api/pos/reports/rush-hour?"+month+"&warehouse_id=00000000-0000-4000-8000-000000000001", nil, 400)
-	jsonEq(t, r.body, `{"success":false,"error":"Stall tidak valid atau di luar scope"}`)
+	jsonEq(t, r.body, `{"success":false,"error":"Outlet tidak valid atau di luar scope"}`)
 	r = h.call("GET", "/api/pos/reports/voids?date_from=2031-05-09&date_to=2031-05-01", nil, 500)
 	jsonEq(t, r.body, `{"success":false,"error":"Tanggal dari tidak boleh melebihi tanggal sampai"}`)
 

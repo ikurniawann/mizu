@@ -132,7 +132,7 @@ export function VoidReportPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="void-stall">Stall</Label>
+              <Label htmlFor="void-stall">Outlet</Label>
               <select
                 id="void-stall"
                 value={warehouseId}
@@ -140,7 +140,7 @@ export function VoidReportPage() {
                 onChange={(e) => setWarehouseId(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
               >
-                {!stallLocked ? <option value="">Semua stall</option> : null}
+                {!stallLocked ? <option value="">Semua outlet</option> : null}
                 {stallOptions.map((stall) => (
                   <option key={stall.id} value={stall.id}>
                     {stall.name} ({stall.code})

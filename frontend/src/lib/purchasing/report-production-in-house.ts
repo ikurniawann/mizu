@@ -166,7 +166,7 @@ export function productionInHouseCsvRows(orders: ProductionOrderReportRow[]) {
       "Qty Actual",
       "HPP / Unit",
       "Total HPP",
-      "Stall",
+      "Outlet",
       "Created At",
       "Completed At",
     ],

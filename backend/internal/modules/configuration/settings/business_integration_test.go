@@ -94,12 +94,12 @@ func TestBusinessTree(t *testing.T) {
 	}
 
 	del := func(path string) resp { return e.do(&admin, "DELETE", path, nil) }
-	expect(t, del("/api/settings/business/warehouse/"+holdingID), 400, `{"success":false,"error":"Stall tidak ditemukan"}`)
+	expect(t, del("/api/settings/business/warehouse/"+holdingID), 400, `{"success":false,"error":"Outlet tidak ditemukan"}`)
 	expect(t, del("/api/settings/business/warehouse/"+stallID), 200, "")
 	e.exec(`DELETE FROM configuration.warehouses WHERE branch_id = $1 AND NOT is_default`, branchID)
 	mainID := e.text(`SELECT id::text FROM configuration.warehouses WHERE branch_id = $1`, branchID)
 	expect(t, del("/api/settings/business/warehouse/"+mainID), 400,
-		`{"success":false,"error":"Main Storage tidak dapat dihapus. Setiap cabang wajib memiliki minimal 1 stall."}`)
+		`{"success":false,"error":"Main Storage tidak dapat dihapus. Setiap cabang wajib memiliki minimal 1 outlet."}`)
 	expect(t, del("/api/settings/business/holding/"+holdingID), 200, "")
 	if got := e.text(`SELECT count(*)::text FROM configuration.companies WHERE id = $1`, companyID); got != "0" {
 		t.Fatal("holding delete cascades")

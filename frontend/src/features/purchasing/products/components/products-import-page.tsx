@@ -103,10 +103,10 @@ export function ProductsImportPage() {
                 <p className="font-medium text-gray-900">Sebelum mengimpor</p>
                 <ul className="mt-2 list-disc space-y-1 pl-4">
                   <li>Ekspor dari daftar produk, ubah kolom, lalu impor ulang file yang sama.</li>
-                  <li>Kode yang sudah ada diperbarui per stall; kode kosong membuat produk baru.</li>
+                  <li>Kode yang sudah ada diperbarui per outlet; kode kosong membuat produk baru.</li>
                   <li>Format yang didukung: CSV dan Excel (.xlsx).</li>
                   <li>
-                    Kolom wajib: nama produk (<strong>nama</strong>), kode stall (
+                    Kolom wajib: nama produk (<strong>nama</strong>), kode outlet (
                     <strong>stall_code</strong>), dan kode satuan (<strong>satuan_kode</strong>).
                   </li>
                 </ul>

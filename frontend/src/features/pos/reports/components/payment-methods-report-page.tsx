@@ -123,7 +123,7 @@ export function PaymentMethodsReportPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pay-stall">Stall</Label>
+              <Label htmlFor="pay-stall">Outlet</Label>
               <select
                 id="pay-stall"
                 value={warehouseId}
@@ -131,7 +131,7 @@ export function PaymentMethodsReportPage() {
                 onChange={(e) => setWarehouseId(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
               >
-                {!stallLocked ? <option value="">Semua stall</option> : null}
+                {!stallLocked ? <option value="">Semua outlet</option> : null}
                 {stallOptions.map((stall) => (
                   <option key={stall.id} value={stall.id}>
                     {stall.name} ({stall.code})

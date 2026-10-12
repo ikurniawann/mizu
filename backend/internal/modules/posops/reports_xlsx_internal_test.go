@@ -21,7 +21,7 @@ func TestTransactionLabels(t *testing.T) {
 		{paymentStatusLabel(nil, sp("pending")), "Belum lunas"},
 		{paymentStatusLabel(nil, nil), "—"},
 		{soldFromLabel(sp("central")), "Kasir pusat"},
-		{soldFromLabel(sp("stall")), "Kasir stall"},
+		{soldFromLabel(sp("stall")), "Kasir outlet"},
 		{soldFromLabel(sp(" web ")), "web"},
 		{soldFromLabel(nil), "—"},
 		{reportStallLabel(sp("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"), sp("FNB")), "FNB"},
@@ -56,11 +56,11 @@ func TestProductSalesSheets(t *testing.T) {
 	if len(sheets) != 2 || sheets[0].Name != "Ringkasan" || sheets[1].Name != "Produk" {
 		t.Fatalf("sheets = %v", sheets)
 	}
-	if !slices.Equal(sheets[1].Rows[0], []any{"Produk", "SKU", "Stall", "Qty", "Orders", "Omzet"}) ||
+	if !slices.Equal(sheets[1].Rows[0], []any{"Produk", "SKU", "Outlet", "Qty", "Orders", "Omzet"}) ||
 		!slices.Equal(sheets[1].Rows[1], []any{"Es Teh", "ET-01", "F&B", 4.0, 3.0, 120000.0}) {
 		t.Fatalf("produk = %v", sheets[1].Rows)
 	}
-	if !slices.Equal(sheets[0].Rows[2], []any{"Stall", "Semua stall"}) {
+	if !slices.Equal(sheets[0].Rows[2], []any{"Outlet", "Semua outlet"}) {
 		t.Fatalf("stall row = %v", sheets[0].Rows[2])
 	}
 }
@@ -86,12 +86,12 @@ func TestTransactionSheets(t *testing.T) {
 	for _, s := range sheets {
 		names = append(names, s.Name)
 	}
-	if !slices.Equal(names, []string{"Ringkasan", "Per Stall", "Top Produk", "Harian", "Transaksi"}) {
+	if !slices.Equal(names, []string{"Ringkasan", "Per Outlet", "Top Produk", "Harian", "Transaksi"}) {
 		t.Fatalf("names = %v", names)
 	}
 	detail := sheets[4].Rows
 	if detail[0][0] != "Order" || detail[1][0] != "POS-20260829-0001" || detail[1][2] != at || detail[1][4] != "QRIS" ||
-		detail[1][8] != 27000.0 || detail[1][11] != "Lunas" || detail[1][12] != "Kasir stall" {
+		detail[1][8] != 27000.0 || detail[1][11] != "Lunas" || detail[1][12] != "Kasir outlet" {
 		t.Fatalf("detail = %v", detail)
 	}
 }
@@ -136,8 +136,8 @@ func TestExportHelpers(t *testing.T) {
 		{exportFileName("voids", "2026-09-01", "2026-09-05"), "void_2026-09-01_2026-09-05.xlsx"},
 		{rupiahText(1234567.4), "Rp 1.234.567"},
 		{stallLabel(sp("w1"), []stallOption{{ID: "w1", Name: "Sate"}}), "Sate"},
-		{stallLabel(sp("w2"), []stallOption{{ID: "w1", Name: "Sate"}}), "Stall terpilih"},
-		{stallLabel(nil, nil), "Semua stall"},
+		{stallLabel(sp("w2"), []stallOption{{ID: "w1", Name: "Sate"}}), "Outlet terpilih"},
+		{stallLabel(nil, nil), "Semua outlet"},
 	} {
 		if c.got != c.want {
 			t.Errorf("got %q, want %q", c.got, c.want)

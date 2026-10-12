@@ -116,7 +116,7 @@ export function useCatalogActions(deps: {
       );
     }
     if (missing.length > 0) {
-      toast.error(`Produk tidak tersedia di stall: ${missing.slice(0, 3).join(", ")}`);
+      toast.error(`Produk tidak tersedia di outlet: ${missing.slice(0, 3).join(", ")}`);
     }
     if (added === 0 && skipped.length === 0 && missing.length === 0) {
       toast.error("Tidak ada produk yang bisa ditambahkan");

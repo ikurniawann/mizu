@@ -46,8 +46,8 @@ export const stockAdjustmentSchema = z.object({
 
 export const stockTransferSchema = z.object({
   transfer_kind: z.enum(["main_to_stall", "stall_to_stall", "stall_to_main"]),
-  source_warehouse_id: z.string().uuid("Source stall is required"),
-  dest_warehouse_id: z.string().uuid("Destination stall is required"),
+  source_warehouse_id: z.string().uuid("Source outlet is required"),
+  dest_warehouse_id: z.string().uuid("Destination outlet is required"),
   raw_material_id: z.string().uuid("Raw material is required"),
   qty: z.number().positive("Quantity must be greater than zero"),
   notes: z.string().optional(),
@@ -256,12 +256,12 @@ export async function transferRawMaterialStock(
   await requireWarehouseInScope(
     input.source_warehouse_id,
     scope,
-    "Source stall is invalid or not allowed"
+    "Source outlet is invalid or not allowed"
   );
   await requireWarehouseInScope(
     input.dest_warehouse_id,
     scope,
-    "Destination stall is invalid or not allowed"
+    "Destination outlet is invalid or not allowed"
   );
   const material = await loadMaterialInScope(
     db,

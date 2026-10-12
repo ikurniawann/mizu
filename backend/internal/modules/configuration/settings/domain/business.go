@@ -44,7 +44,7 @@ func SlugCode(name string) string {
 // (count+1)th stall.
 func NextWarehouse(count int) (name, code string) {
 	n := count + 1
-	return fmt.Sprintf("Stall %d", n), fmt.Sprintf("STALL-%02d", n)
+	return fmt.Sprintf("Outlet %d", n), fmt.Sprintf("STALL-%02d", n)
 }
 
 /* ── Warehouse order (lib/configuration/sort-warehouses.ts) ───────────── */

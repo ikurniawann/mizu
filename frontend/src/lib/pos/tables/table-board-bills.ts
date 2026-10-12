@@ -156,8 +156,8 @@ export function listTableBoardBills(input: {
 
 export function tableBillSourceLabel(
   soldFrom: "central" | "stall"
-): "Kasir pusat" | "Stall" {
-  return soldFrom === "central" ? "Kasir pusat" : "Stall";
+): "Kasir pusat" | "Outlet" {
+  return soldFrom === "central" ? "Kasir pusat" : "Outlet";
 }
 
 /** Cashier must load a checkout as one bill — never a single child order. */

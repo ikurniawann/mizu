@@ -100,7 +100,7 @@ describe("resolveAddCatalogItem", () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.message).toContain("satu stall");
+      expect(result.message).toContain("satu outlet");
     }
   });
 });
@@ -134,10 +134,10 @@ describe("mixed cart payment UI", () => {
       })
     ).toEqual({ payment_method: "cash", amount_paid: 30000 });
     expect(MIXED_SPLIT_UNSUPPORTED_MESSAGE).toBe(
-      "Split bill belum didukung untuk checkout multi-stall"
+      "Split bill belum didukung untuk checkout multi-outlet"
     );
     expect(MIXED_NFC_GIFT_UNSUPPORTED_MESSAGE).toBe(
-      "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-stall"
+      "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-outlet"
     );
   });
 
@@ -437,7 +437,7 @@ describe("assertAllModeSellStallAssigned", () => {
     const result = assertAllModeSellStallAssigned("w-x", ["w-a", "w-b"]);
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.message).toBe("Stall aktif di luar penempatan Anda");
+      expect(result.message).toBe("Outlet aktif di luar penempatan Anda");
     }
   });
 });

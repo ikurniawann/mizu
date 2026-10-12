@@ -12,7 +12,7 @@ export function groupCartItemsByStallName<
   const indexByKey = new Map<string, number>();
   for (const item of items) {
     const stallName =
-      item.warehouse_name?.trim() || item.stallName?.trim() || "Stall";
+      item.warehouse_name?.trim() || item.stallName?.trim() || "Outlet";
     const key = item.warehouse_id || stallName;
     const existing = indexByKey.get(key);
     if (existing != null) {

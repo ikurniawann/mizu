@@ -22,11 +22,11 @@ export function CashierStallGate({ reason }: { reason: string }) {
   const skipOverlay = canUseCentralCashier && isAllStallMode(reason);
 
   const title = isNoStall
-    ? "Tidak ada stall penempatan"
-    : "Pilih stall aktif untuk berjualan";
+    ? "Tidak ada outlet penempatan"
+    : "Pilih outlet aktif untuk berjualan";
   const hint = isNoStall
-    ? "Hubungi admin untuk assign stall ke akun Anda."
-    : "Mode Semua Stall tidak diizinkan di kasir. Pilih satu stall di bawah untuk mulai berjualan.";
+    ? "Hubungi admin untuk assign outlet ke akun Anda."
+    : "Mode Semua Outlet tidak diizinkan di kasir. Pilih satu outlet di bawah untuk mulai berjualan.";
 
   const [stalls, setStalls] = useState<StallOption[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -45,7 +45,7 @@ export function CashierStallGate({ reason }: { reason: string }) {
         const res = await fetch("/api/auth/stall-options");
         const json = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(json.error ?? "Gagal memuat daftar stall");
+          throw new Error(json.error ?? "Gagal memuat daftar outlet");
         }
         if (cancelled) return;
         setStalls(
@@ -58,7 +58,7 @@ export function CashierStallGate({ reason }: { reason: string }) {
       } catch (error) {
         if (cancelled) return;
         setLoadFailed(true);
-        setLoadError(error instanceof Error ? error.message : "Gagal memuat daftar stall");
+        setLoadError(error instanceof Error ? error.message : "Gagal memuat daftar outlet");
         setStalls([]);
       }
     }
@@ -89,15 +89,15 @@ export function CashierStallGate({ reason }: { reason: string }) {
             {stalls === null ? (
               <div className="flex items-center justify-center gap-2 py-4 text-amber-900/80">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Memuat stall…</span>
+                <span>Memuat outlet…</span>
               </div>
             ) : loadFailed ? (
               <p className="rounded-lg border border-amber-200/80 bg-white/60 px-3 py-2 text-center text-xs text-amber-900/90">
-                {loadError ?? "Gagal memuat daftar stall"}. Ganti lewat switcher stall di sidebar.
+                {loadError ?? "Gagal memuat daftar outlet"}. Ganti lewat switcher outlet di sidebar.
               </p>
             ) : stalls.length === 0 ? (
               <p className="rounded-lg border border-amber-200/80 bg-white/60 px-3 py-2 text-center text-xs text-amber-900/90">
-                Tidak ada stall yang bisa dipilih. Hubungi admin.
+                Tidak ada outlet yang bisa dipilih. Hubungi admin.
               </p>
             ) : (
               <ul className="max-h-56 space-y-2 overflow-y-auto pr-0.5 [scrollbar-width:thin]">

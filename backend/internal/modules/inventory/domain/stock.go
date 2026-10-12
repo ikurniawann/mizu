@@ -286,18 +286,18 @@ func ValidateTransferWarehouses(kind string, source, dest TransferWarehouse) str
 			return "Source must be Main Storage"
 		}
 		if !ds {
-			return "Destination must be a stall"
+			return "Destination must be an outlet"
 		}
 	case "stall_to_stall":
 		if !ss {
-			return "Source must be a stall"
+			return "Source must be an outlet"
 		}
 		if !ds {
-			return "Destination must be a stall"
+			return "Destination must be an outlet"
 		}
 	case "stall_to_main":
 		if !ss {
-			return "Source must be a stall"
+			return "Source must be an outlet"
 		}
 		if !dm {
 			return "Destination must be Main Storage"

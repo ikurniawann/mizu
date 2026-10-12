@@ -97,7 +97,7 @@ export async function listProductWarehouses(): Promise<ProductWarehouseOption[]>
     error?: string;
   };
   if (!res.ok) {
-    throw new Error(json.error || json.message || "Failed to load stalls");
+    throw new Error(json.error || json.message || "Failed to load outlets");
   }
   return json.data ?? [];
 }

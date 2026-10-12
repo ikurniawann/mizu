@@ -114,7 +114,7 @@ export function ProductManualAdjustmentPage() {
 
   const validateInputs = () => {
     if (!warehouseId) {
-      toast.error("Pilih stall terlebih dahulu");
+      toast.error("Pilih outlet terlebih dahulu");
       return false;
     }
 
@@ -209,7 +209,7 @@ export function ProductManualAdjustmentPage() {
       <PurchasingFormHeader
         backHref={PRODUCT_ROUTES.inventoryStock}
         title="Penyesuaian Stok Produk"
-        description="Koreksi stok produk jadi secara manual per stall"
+        description="Koreksi stok produk jadi secara manual per outlet"
         actions={
           hasItems ? (
             <>
@@ -250,7 +250,7 @@ export function ProductManualAdjustmentPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="min-w-0 md:col-span-4">
               <Label className="text-xs">
-                Stall <span className="text-red-500">*</span>
+                Outlet <span className="text-red-500">*</span>
               </Label>
               <Combobox
                 options={warehouseOptions}
@@ -332,12 +332,12 @@ export function ProductManualAdjustmentPage() {
               </h2>
               <p className="text-sm text-gray-500">
                 {!warehouseId
-                  ? "Pilih stall untuk memuat produk"
+                  ? "Pilih outlet untuk memuat produk"
                   : loading
                     ? "Memuat daftar produk..."
                     : hasItems
                       ? "Isi stok baru untuk produk yang perlu dikoreksi"
-                      : "Tidak ada produk aktif di stall ini"}
+                      : "Tidak ada produk aktif di outlet ini"}
               </p>
             </div>
             {hasItems && (
@@ -381,7 +381,7 @@ export function ProductManualAdjustmentPage() {
                       colSpan={6}
                       className="px-4 py-10 text-center text-gray-400"
                     >
-                      Pilih stall terlebih dahulu
+                      Pilih outlet terlebih dahulu
                     </td>
                   </tr>
                 ) : loading ? (
@@ -402,7 +402,7 @@ export function ProductManualAdjustmentPage() {
                     >
                       {hasItems
                         ? "Data tidak ditemukan"
-                        : "Tidak ada produk aktif untuk stall ini"}
+                        : "Tidak ada produk aktif untuk outlet ini"}
                     </td>
                   </tr>
                 ) : (

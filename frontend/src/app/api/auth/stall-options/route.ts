@@ -51,8 +51,8 @@ export async function GET() {
     });
   } catch (error) {
     if (error instanceof ApiError) return error.toResponse();
-    const message = error instanceof Error ? error.message : "Failed to load stall options";
-    console.error("[api/auth/stall-options] failed:", error);
+    const message = error instanceof Error ? error.message : "Failed to load outlet options";
+    console.error("[api/auth/outlet-options] failed:", error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

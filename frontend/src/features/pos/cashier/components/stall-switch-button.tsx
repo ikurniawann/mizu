@@ -80,7 +80,7 @@ export function StallSwitchButton() {
     }
     try {
       if (posCartHasItems(localStorage.getItem(POS_CART_STORAGE_KEY))) {
-        toast.error("Kosongkan atau selesaikan keranjang sebelum pindah stall");
+        toast.error("Kosongkan atau selesaikan keranjang sebelum pindah outlet");
         return;
       }
     } catch {
@@ -95,13 +95,13 @@ export function StallSwitchButton() {
         body: JSON.stringify({ warehouse_id: stall?.id ?? null }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error ?? "Gagal pindah stall");
-      toast.success(`Pindah ke ${stall?.name ?? "Semua Stall"} — memuat ulang…`);
+      if (!res.ok) throw new Error(json.error ?? "Gagal pindah outlet");
+      toast.success(`Pindah ke ${stall?.name ?? "Semua Outlet"} — memuat ulang…`);
       // Reload penuh, bukan invalidate query: katalog produk, billing, dan
       // gate stall semuanya diputuskan server per-request dari cookie.
       window.location.reload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Gagal pindah stall");
+      toast.error(error instanceof Error ? error.message : "Gagal pindah outlet");
       setSwitchingId(null);
     }
   }
@@ -116,16 +116,16 @@ export function StallSwitchButton() {
       >
         <Store className="mr-2 h-4 w-4" />
         <span className="max-w-40 truncate">
-          {active ? active.name : allAccess ? "Semua Stall" : "Pilih Stall"}
+          {active ? active.name : allAccess ? "Semua Outlet" : "Pilih Outlet"}
         </span>
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogPanel size="sm">
           <DialogPanelHeader>
-            <DialogPanelTitle>Pindah Stall</DialogPanelTitle>
+            <DialogPanelTitle>Pindah Outlet</DialogPanelTitle>
             <DialogPanelDescription>
-              Kasir akan berpindah ke katalog & penjualan stall yang dipilih.
+              Kasir akan berpindah ke katalog & penjualan outlet yang dipilih.
             </DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody>
@@ -150,9 +150,9 @@ export function StallSwitchButton() {
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-foreground">Semua Stall</span>
+                      <span className="block truncate text-sm font-medium text-foreground">Semua Outlet</span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        Katalog gabungan — 1 transaksi boleh lintas stall
+                        Katalog gabungan — 1 transaksi boleh lintas outlet
                       </span>
                     </span>
                     {active === null ? (

@@ -4441,7 +4441,7 @@ exports[`createMixedCheckout (karakterisasi) > open bill meja tanpa checkout lam
 exports[`createMixedCheckout (karakterisasi) > satu stall tanpa meja ditolak sebelum DB 1`] = `
 {
   "error": {
-    "message": "Checkout multi-stall membutuhkan item dari minimal 2 stall",
+    "message": "Checkout multi-outlet membutuhkan item dari minimal 2 outlet",
     "name": "MixedCheckoutError",
     "status": 400,
   },
@@ -4468,7 +4468,7 @@ exports[`createMixedCheckout (karakterisasi) > validasi: promo, diskon baris, NF
 [
   {
     "error": {
-      "message": "Promo belum didukung untuk checkout multi-stall",
+      "message": "Promo belum didukung untuk checkout multi-outlet",
       "name": "MixedCheckoutError",
       "status": 400,
     },
@@ -4476,7 +4476,7 @@ exports[`createMixedCheckout (karakterisasi) > validasi: promo, diskon baris, NF
   },
   {
     "error": {
-      "message": "Diskon per item belum didukung untuk checkout multi-stall — pakai diskon transaksi",
+      "message": "Diskon per item belum didukung untuk checkout multi-outlet — pakai diskon transaksi",
       "name": "MixedCheckoutError",
       "status": 400,
     },
@@ -4484,7 +4484,7 @@ exports[`createMixedCheckout (karakterisasi) > validasi: promo, diskon baris, NF
   },
   {
     "error": {
-      "message": "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-stall",
+      "message": "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-outlet",
       "name": "MixedCheckoutError",
       "status": 400,
     },
@@ -4508,7 +4508,7 @@ exports[`createMixedCheckout (karakterisasi) > validasi: promo, diskon baris, NF
   },
   {
     "error": {
-      "message": "Ada produk tanpa stall — tidak bisa dimasukkan ke keranjang",
+      "message": "Ada produk tanpa outlet — tidak bisa dimasukkan ke keranjang",
       "name": "MixedCheckoutError",
       "status": 400,
     },

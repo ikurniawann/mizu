@@ -28,15 +28,15 @@ export function shouldCreateCheckout(stallIds: string[]): boolean {
 }
 
 export const MIXED_SPLIT_UNSUPPORTED_MESSAGE =
-  "Split bill belum didukung untuk checkout multi-stall";
+  "Split bill belum didukung untuk checkout multi-outlet";
 export const MIXED_NFC_GIFT_UNSUPPORTED_MESSAGE =
-  "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-stall";
+  "Pembayaran NFC Tab / Gift Card belum didukung untuk checkout multi-outlet";
 export const MIXED_ARK_UNSUPPORTED_MESSAGE =
   "Pembayaran ARK Coin belum didukung untuk tagihan checkout — gunakan tunai, kartu, atau QRIS";
 export const MIXED_PROMO_UNSUPPORTED_MESSAGE =
-  "Promo belum didukung untuk checkout multi-stall";
+  "Promo belum didukung untuk checkout multi-outlet";
 export const MIXED_LINE_DISCOUNT_UNSUPPORTED_MESSAGE =
-  "Diskon per item belum didukung untuk checkout multi-stall — pakai diskon transaksi";
+  "Diskon per item belum didukung untuk checkout multi-outlet — pakai diskon transaksi";
 export const HYDRATED_CHECKOUT_CART_LOCKED_MESSAGE =
   "Tagihan tersimpan — bayar tagihan ini, jangan tambah item baru";
 
@@ -258,7 +258,7 @@ export function canAddItemToSingleStallCart(
     if (options?.centralAllMode) {
       return {
         ok: false,
-        message: "Ada produk tanpa stall — tidak bisa dimasukkan ke keranjang",
+        message: "Ada produk tanpa outlet — tidak bisa dimasukkan ke keranjang",
       };
     }
     return { ok: true };
@@ -270,7 +270,7 @@ export function canAddItemToSingleStallCart(
   return {
     ok: false,
     message:
-      "Keranjang hanya boleh dari satu stall. Kosongkan keranjang atau ganti filter stall",
+      "Keranjang hanya boleh dari satu outlet. Kosongkan keranjang atau ganti filter outlet",
   };
 }
 
@@ -300,7 +300,7 @@ export function assertAllModeSellStallAssigned(
   }
   return {
     ok: false,
-    message: "Stall aktif di luar penempatan Anda",
+    message: "Outlet aktif di luar penempatan Anda",
   };
 }
 

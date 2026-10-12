@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: { ...meta, ...report } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal memuat laporan rush hour";
-    const known = /tanggal|stall/i.test(message);
+    const known = /tanggal|stall|outlet/i.test(message);
     console.error("[pos] rush-hour report:", error);
     return NextResponse.json(
       { success: false, error: known ? message : "Gagal memuat laporan rush hour" },

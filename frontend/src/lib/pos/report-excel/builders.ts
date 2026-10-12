@@ -17,7 +17,7 @@ import {
 export const REPORT_EXPORTS = {
   profit: { label: "Profit", description: "Omzet, HPP, laba kotor per produk/kategori/station/kasir/tanggal" },
   "revenue-composition": { label: "Revenue Composition", description: "Komposisi pendapatan Food vs Beverage per kategori & harian" },
-  transactions: { label: "Transaksi", description: "Daftar transaksi, rekap per stall, produk terlaris, harian" },
+  transactions: { label: "Transaksi", description: "Daftar transaksi, rekap per outlet, produk terlaris, harian" },
   "rush-hour": { label: "Rush Hour", description: "Kepadatan per jam & hari, heatmap hari × jam" },
   voids: { label: "Void", description: "Transaksi dibatalkan beserta alasan, kasir, supervisor, dan itemnya" },
   "product-sales": { label: "Product Sales", description: "Penjualan per produk: qty, omzet, jumlah order" },
@@ -33,7 +33,7 @@ export interface ExportMeta { companyName: string; stallLabel: string; generated
 
 const titleLines = (report: { filters: { date_from: string; date_to: string } }, meta: ExportMeta) => [
   `Periode: ${formatPeriodLabel(report.filters.date_from, report.filters.date_to)}`,
-  `Stall: ${meta.stallLabel}`,
+  `Outlet: ${meta.stallLabel}`,
   printedLine(meta.generatedAt),
 ];
 
@@ -111,8 +111,8 @@ export async function buildTransactionsWorkbook(r: TransactionReport, meta: Expo
     ["Diskon", round0(r.summary.discount), "rp"], ["Pajak", round0(r.summary.tax), "rp"], ["Service", round0(r.summary.service), "rp"],
     ["Nett (dibayar pelanggan)", round0(r.summary.nett), "rp"], ["ARK Coin terpakai", round0(r.summary.total_ark_used), "num"],
   ]);
-  row = addSectionTitle(ws, row, "Per Stall");
-  row = addTable(ws, row, [{ header: "Stall", width: 28 }, { header: "Kode", width: 12 }, { header: "Transaksi", fmt: "num", width: 12 }, { header: "Qty", fmt: "qty", width: 10 }, { header: "Penjualan (Rp)", fmt: "rp", width: 18 }],
+  row = addSectionTitle(ws, row, "Per Outlet");
+  row = addTable(ws, row, [{ header: "Outlet", width: 28 }, { header: "Kode", width: 12 }, { header: "Transaksi", fmt: "num", width: 12 }, { header: "Qty", fmt: "qty", width: 10 }, { header: "Penjualan (Rp)", fmt: "rp", width: 18 }],
     r.per_stall.map((s) => [s.stall_name, s.stall_code ?? "", s.transactions, round2(s.quantity), round0(s.sales)]));
   row = addSectionTitle(ws, row, "Produk Terlaris");
   addTable(ws, row, [{ header: "Produk", width: 36 }, { header: "Qty", fmt: "qty", width: 10 }, { header: "Omzet (Rp)", fmt: "rp", width: 18 }],
@@ -127,7 +127,7 @@ export async function buildTransactionsWorkbook(r: TransactionReport, meta: Expo
   const ts = addTitleBlock(t, `Daftar Transaksi — ${formatPeriodLabel(r.filters.date_from, r.filters.date_to)}`, [`${r.rows.length} transaksi`]);
   addTable(t, ts, [
     { header: "No", fmt: "num", width: 6 }, { header: "Waktu (WIB)", width: 20 }, { header: "No. Order", width: 20 }, { header: "Checkout", width: 16 },
-    { header: "Stall", width: 22 }, { header: "Metode Bayar", width: 16 }, { header: "Subtotal (Rp)", fmt: "rp", width: 16 }, { header: "Diskon (Rp)", fmt: "rp", width: 14 },
+    { header: "Outlet", width: 22 }, { header: "Metode Bayar", width: 16 }, { header: "Subtotal (Rp)", fmt: "rp", width: 16 }, { header: "Diskon (Rp)", fmt: "rp", width: 14 },
     { header: "Pajak (Rp)", fmt: "rp", width: 14 }, { header: "Service (Rp)", fmt: "rp", width: 14 }, { header: "Total (Rp)", fmt: "rp", width: 16 }, { header: "ARK Coin", fmt: "num", width: 12 },
     { header: "Status", width: 12 }, { header: "Comp", width: 16 },
   ], r.rows.map((x, i) => [
@@ -184,7 +184,7 @@ export async function buildVoidsWorkbook(r: VoidReport, meta: ExportMeta): Promi
   row = addKeyValues(ws, row, [["Jumlah void", r.summary.voids, "num"], ["Nilai void", round0(r.summary.amount), "rp"]]);
   addTable(ws, row, [
     { header: "No", fmt: "num", width: 6 }, { header: "No. Order", width: 20 }, { header: "Checkout", width: 16 }, { header: "Dipesan (WIB)", width: 20 }, { header: "Di-void (WIB)", width: 20 },
-    { header: "Alasan", width: 34 }, { header: "Kasir", width: 18 }, { header: "Supervisor", width: 18 }, { header: "Stall", width: 20 }, { header: "Metode Bayar", width: 16 }, { header: "Total (Rp)", fmt: "rp", width: 16 },
+    { header: "Alasan", width: 34 }, { header: "Kasir", width: 18 }, { header: "Supervisor", width: 18 }, { header: "Outlet", width: 20 }, { header: "Metode Bayar", width: 16 }, { header: "Total (Rp)", fmt: "rp", width: 16 },
   ], r.rows.map((x, i) => [
     i + 1, x.order_number ?? "", x.checkout_number ?? "", wibDateTime(x.ordered_at), wibDateTime(x.voided_at), x.void_reason ?? "", x.created_by_name, x.voided_by_name,
     x.stall_name ?? "", x.payment_method_name || x.payment_method || "", round0(x.total_amount),
@@ -205,7 +205,7 @@ export async function buildProductSalesWorkbook(r: ProductSalesReport, meta: Exp
   row = addKeyValues(ws, row, [["Jumlah produk", r.summary.products, "num"], ["Qty terjual", round2(r.summary.quantity), "qty"], ["Total omzet", round0(r.summary.revenue), "rp"]]);
   const total = r.summary.revenue || 0;
   addTable(ws, row, [
-    { header: "Rank", fmt: "num", width: 7 }, { header: "SKU", width: 20 }, { header: "Produk", width: 36 }, { header: "Stall", width: 22 },
+    { header: "Rank", fmt: "num", width: 7 }, { header: "SKU", width: 20 }, { header: "Produk", width: 36 }, { header: "Outlet", width: 22 },
     { header: "Qty", fmt: "qty", width: 10 }, { header: "Omzet (Rp)", fmt: "rp", width: 18 }, { header: "Jumlah order", fmt: "num", width: 13 }, { header: "Kontribusi omzet", fmt: "pct", width: 16 },
   ], r.rows.map((x, i) => [i + 1, x.product_sku ?? "", x.product_name, x.stall_name ?? "", round2(x.quantity), round0(x.revenue), x.order_count, total > 0 ? round2((x.revenue / total) * 100) : 0]),
     { totals: ["TOTAL", "", "", "", round2(r.summary.quantity), round0(r.summary.revenue), "", 100], freezeHeader: true });

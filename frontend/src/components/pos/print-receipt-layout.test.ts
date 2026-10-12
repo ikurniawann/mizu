@@ -115,7 +115,7 @@ describe("buildReceiptLines — struk customer", () => {
 
   it("menampilkan stall asal di header bila ada", () => {
     const lines = buildReceiptLines(basePayload({ stallName: "Hikiniku Bar" }), "CUSTOMER");
-    expect(lines.some((l) => l.includes("Stall: Hikiniku Bar"))).toBe(true);
+    expect(lines.some((l) => l.includes("Outlet: Hikiniku Bar"))).toBe(true);
   });
 
   it("copy dapur tetap tanpa harga & tanpa blok total", () => {
@@ -127,7 +127,7 @@ describe("buildReceiptLines — struk customer", () => {
     expect(lines.some((l) => l.includes("25.000") || l.includes("50.000"))).toBe(false);
     expect(lines.some((l) => l.startsWith("Subtotal"))).toBe(false);
     // Stall tetap tampil — dapur perlu tahu asal order
-    expect(lines.some((l) => l.includes("Stall: Hikiniku Bar"))).toBe(true);
+    expect(lines.some((l) => l.includes("Outlet: Hikiniku Bar"))).toBe(true);
   });
 });
 
@@ -158,7 +158,7 @@ describe("buildReceiptLines — transaksi lintas stall (mode Semua Stall)", () =
       "CUSTOMER"
     );
     expect(lines.some((l) => l.includes("[Hikiniku Bar]"))).toBe(false);
-    expect(lines.some((l) => l.includes("Stall: Hikiniku Bar"))).toBe(true);
+    expect(lines.some((l) => l.includes("Outlet: Hikiniku Bar"))).toBe(true);
   });
 
   it("copy dapur juga memuat stall per item — CO lintas stall terbaca", () => {

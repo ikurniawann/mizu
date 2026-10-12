@@ -21,9 +21,9 @@ export type PosSellStallResult =
     };
 
 const MESSAGES = {
-  all_stalls: "Pilih satu stall aktif sebelum membuat transaksi POS",
-  no_stall: "Tidak ada stall penempatan. Hubungi admin untuk assign stall",
-  multiple_unselected: "Pilih satu stall aktif sebelum membuat transaksi POS",
+  all_stalls: "Pilih satu outlet aktif sebelum membuat transaksi POS",
+  no_stall: "Tidak ada outlet penempatan. Hubungi admin untuk assign outlet",
+  multiple_unselected: "Pilih satu outlet aktif sebelum membuat transaksi POS",
 } as const;
 
 export function resolvePosSellStall(input: PosSellStallInput): PosSellStallResult {
@@ -107,13 +107,13 @@ export function assertProductWarehousesMatchStall(
     if (!wid) {
       return {
         ok: false,
-        message: "Ada produk tanpa stall — tidak bisa digabung ke transaksi stall ini",
+        message: "Ada produk tanpa outlet — tidak bisa digabung ke transaksi outlet ini",
       };
     }
     if (wid !== stallId) {
       return {
         ok: false,
-        message: "Keranjang berisi produk dari stall lain. Ganti stall atau kosongkan keranjang",
+        message: "Keranjang berisi produk dari outlet lain. Ganti outlet atau kosongkan keranjang",
       };
     }
   }

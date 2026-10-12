@@ -282,9 +282,9 @@ export async function resolveDefaultWarehouseId(
 }
 
 const WAREHOUSE_SCOPE_ERRORS: Record<WarehouseReceivingScopeError, string> = {
-  not_found: "Stall not found",
-  inactive: "Stall is inactive",
-  branch_mismatch: "Stall is outside your branch scope",
+  not_found: "Outlet not found",
+  inactive: "Outlet is inactive",
+  branch_mismatch: "Outlet is outside your branch scope",
 };
 
 /** Validate stall for product master (mandatory warehouse_id). */
@@ -295,7 +295,7 @@ export async function validateProductWarehouseScope(
   { company_id: string; branch_id: string; warehouse_id: string } | { error: string }
 > {
   const business = await resolveBusinessScopeFromWarehouse(warehouseId);
-  if (!business) return { error: "Stall not found or inactive" };
+  if (!business) return { error: "Outlet not found or inactive" };
 
   const warehouseCheck = await validateWarehouseForReceivingScope(
     warehouseId,
@@ -308,7 +308,7 @@ export async function validateProductWarehouseScope(
 
   if (scope && !scope.isUnscoped && scope.businessScope === "company") {
     if (scope.companyId && business.company_id !== scope.companyId) {
-      return { error: "Stall is outside your company scope" };
+      return { error: "Outlet is outside your company scope" };
     }
   }
 

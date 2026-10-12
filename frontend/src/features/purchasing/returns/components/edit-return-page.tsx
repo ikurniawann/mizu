@@ -293,7 +293,7 @@ export function EditReturnPage({
       <PurchasingFormHeader
         backHref={config.detailRoute(returnId)}
         title={`Ubah ${existingReturn.return_number}`}
-        description="Perbarui detail retur sebelum disetujui. Stok dikurangi dari stall penerimaan saat disetujui."
+        description="Perbarui detail retur sebelum disetujui. Stok dikurangi dari outlet penerimaan saat disetujui."
       />
 
       <form id="purchase-return-edit-form" onSubmit={handleSubmit} className="space-y-6">
@@ -446,7 +446,7 @@ export function EditReturnPage({
                   <div className="flex items-start gap-2">
                     <RotateCcw className="mt-0.5 h-4 w-4 shrink-0" />
                     <p>
-                      Saat disetujui, stok akan dikurangi dari stall yang sama dengan tempat barang
+                      Saat disetujui, stok akan dikurangi dari outlet yang sama dengan tempat barang
                       diterima pada saat posting QC GRN.
                     </p>
                   </div>

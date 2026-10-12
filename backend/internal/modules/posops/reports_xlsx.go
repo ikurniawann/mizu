@@ -51,7 +51,7 @@ func soldFromLabel(soldFrom *string) string {
 	case "central":
 		return "Kasir pusat"
 	case "stall":
-		return "Kasir stall"
+		return "Kasir outlet"
 	}
 	if s := domain.TrimJS(orDefault(soldFrom, "")); s != "" {
 		return s
@@ -109,7 +109,7 @@ func periodRow(f reportFilters) []any { return []any{"Periode", f.DateFrom + " s
 
 // productSalesSheets is buildProductSalesExportSheets.
 func productSalesSheets(r *ProductSalesReport) []xlsx.SheetSpec {
-	rows := [][]any{{"Produk", "SKU", "Stall", "Qty", "Orders", "Omzet"}}
+	rows := [][]any{{"Produk", "SKU", "Outlet", "Qty", "Orders", "Omzet"}}
 	for _, x := range r.Rows {
 		rows = append(rows, []any{x.ProductName, orDefault(nonEmptyPtr(x.ProductSku), "—"),
 			reportStallLabel(x.StallName, x.StallCode), x.Quantity, x.OrderCount, x.Revenue})
@@ -118,7 +118,7 @@ func productSalesSheets(r *ProductSalesReport) []xlsx.SheetSpec {
 		xlsx.SheetSpec{Name: "Ringkasan", Rows: [][]any{
 			{"Laporan Penjualan Produk"},
 			periodRow(r.Filters),
-			{"Stall", r.stallFilterLabel()},
+			{"Outlet", r.stallFilterLabel()},
 			{},
 			{"Metrik", "Nilai"},
 			{"Produk terjual", r.Summary.Products},
@@ -133,7 +133,7 @@ func productSalesSheets(r *ProductSalesReport) []xlsx.SheetSpec {
 // time as a date cell, like the Date ExcelJS receives.
 func transactionSheets(r *TransactionReport) []xlsx.SheetSpec {
 	s := r.Summary
-	perStall := [][]any{{"Stall", "Transaksi", "Item Terjual", "Penjualan"}}
+	perStall := [][]any{{"Outlet", "Transaksi", "Item Terjual", "Penjualan"}}
 	for _, x := range r.PerStall {
 		perStall = append(perStall, []any{reportStallLabel(&x.StallName, x.StallCode), x.Transactions, x.Quantity, x.Sales})
 	}
@@ -145,7 +145,7 @@ func transactionSheets(r *TransactionReport) []xlsx.SheetSpec {
 	for _, x := range r.Daily {
 		daily = append(daily, []any{x.Date, x.Transactions, x.Nett})
 	}
-	detail := [][]any{{"Order", "Checkout", "Waktu", "Stall", "Metode", "Subtotal", "Diskon", "Pajak", "Total",
+	detail := [][]any{{"Order", "Checkout", "Waktu", "Outlet", "Metode", "Subtotal", "Diskon", "Pajak", "Total",
 		"Service", "ARK", "Pembayaran", "Asal", "Comp"}}
 	for _, x := range r.Rows {
 		var at any = ""
@@ -161,7 +161,7 @@ func transactionSheets(r *TransactionReport) []xlsx.SheetSpec {
 		xlsx.SheetSpec{Name: "Ringkasan", Rows: [][]any{
 			{"Laporan Transaksi POS"},
 			periodRow(r.Filters),
-			{"Stall", r.stallFilterLabel()},
+			{"Outlet", r.stallFilterLabel()},
 			{},
 			{"Metrik", "Nilai"},
 			{"Transaksi", s.Transactions},
@@ -172,7 +172,7 @@ func transactionSheets(r *TransactionReport) []xlsx.SheetSpec {
 			{"Nett", s.Nett},
 			{"ARK terpakai", s.TotalArkUsed},
 		}},
-		xlsx.SheetSpec{Name: "Per Stall", Rows: perStall},
+		xlsx.SheetSpec{Name: "Per Outlet", Rows: perStall},
 		xlsx.SheetSpec{Name: "Top Produk", Rows: top},
 		xlsx.SheetSpec{Name: "Harian", Rows: daily},
 		xlsx.SheetSpec{Name: "Transaksi", Rows: detail},
@@ -254,13 +254,13 @@ func titleMerges(cols int, rows ...int) []xlsx.Merge {
 func rushHourSheets(rep domain.RushHourReport, m rushHourMeta) []xlsx.SheetSpec {
 	s := rep.Summary
 	rg := hourRangeContribution(rep, m.rangeFrom, m.rangeTo)
-	sub := "Periode: " + m.period + " · Stall: " + m.stall
+	sub := "Periode: " + m.period + " · Outlet: " + m.stall
 	peakLabel := func(l *string) string { return orDefault(l, "—") }
 
 	ringkasan := [][]any{
 		{m.company + " — Report Rush Hour"},
 		{"Periode: " + m.period},
-		{"Stall: " + m.stall},
+		{"Outlet: " + m.stall},
 		{printedLine(m.generatedAt)},
 		{},
 		{"TOTAL KESELURUHAN"},
@@ -374,7 +374,7 @@ func wibDateTime(t *time.Time) string {
 }
 
 func titleLines(f reportFilters, m exportMeta) []string {
-	return []string{"Periode: " + periodLabel(f.DateFrom, f.DateTo), "Stall: " + m.stall, printedLine(m.generatedAt)}
+	return []string{"Periode: " + periodLabel(f.DateFrom, f.DateTo), "Outlet: " + m.stall, printedLine(m.generatedAt)}
 }
 
 // sheetTitle is "<name> — <period>".
@@ -596,12 +596,12 @@ func transactionsWorkbook(r transactionsJSON, m exportMeta) *xlsx.Report {
 		{Label: "Service", Value: round0(s.Service), Fmt: xlsx.FmtRp}, {Label: "Nett (dibayar pelanggan)", Value: round0(s.Nett), Fmt: xlsx.FmtRp},
 		{Label: "ARK Coin terpakai", Value: round0(s.TotalArkUsed), Fmt: xlsx.FmtNum},
 	})
-	row = ws.SectionTitle(row, "Per Stall")
+	row = ws.SectionTitle(row, "Per Outlet")
 	stalls := make([][]any, len(r.PerStall))
 	for i, x := range r.PerStall {
 		stalls[i] = []any{x.StallName, orDefault(x.StallCode, ""), x.Transactions, round2(x.Quantity), round0(x.Sales)}
 	}
-	row = ws.Table(row, []xlsx.Col{{Header: "Stall", Width: 28}, {Header: "Kode", Width: 12}, {Header: "Transaksi", Fmt: xlsx.FmtNum, Width: 12},
+	row = ws.Table(row, []xlsx.Col{{Header: "Outlet", Width: 28}, {Header: "Kode", Width: 12}, {Header: "Transaksi", Fmt: xlsx.FmtNum, Width: 12},
 		{Header: "Qty", Fmt: xlsx.FmtQty, Width: 10}, {Header: "Penjualan (Rp)", Fmt: xlsx.FmtRp, Width: 18}}, stalls, xlsx.TableOpts{})
 	row = ws.SectionTitle(row, "Produk Terlaris")
 	top := make([][]any, len(r.TopProducts))
@@ -642,7 +642,7 @@ func transactionsWorkbook(r transactionsJSON, m exportMeta) *xlsx.Report {
 	}
 	t.Table(ts, []xlsx.Col{
 		{Header: "No", Fmt: xlsx.FmtNum, Width: 6}, {Header: "Waktu (WIB)", Width: 20}, {Header: "No. Order", Width: 20}, {Header: "Checkout", Width: 16},
-		{Header: "Stall", Width: 22}, {Header: "Metode Bayar", Width: 16}, {Header: "Subtotal (Rp)", Fmt: xlsx.FmtRp, Width: 16}, {Header: "Diskon (Rp)", Fmt: xlsx.FmtRp, Width: 14},
+		{Header: "Outlet", Width: 22}, {Header: "Metode Bayar", Width: 16}, {Header: "Subtotal (Rp)", Fmt: xlsx.FmtRp, Width: 16}, {Header: "Diskon (Rp)", Fmt: xlsx.FmtRp, Width: 14},
 		{Header: "Pajak (Rp)", Fmt: xlsx.FmtRp, Width: 14}, {Header: "Service (Rp)", Fmt: xlsx.FmtRp, Width: 14}, {Header: "Total (Rp)", Fmt: xlsx.FmtRp, Width: 16}, {Header: "ARK Coin", Fmt: xlsx.FmtNum, Width: 12},
 		{Header: "Status", Width: 12}, {Header: "Comp", Width: 16},
 	}, rows, xlsx.TableOpts{Totals: []any{"TOTAL", "", "", "", "", "", round0(totals[0]), round0(totals[1]), round0(totals[2]),
@@ -779,7 +779,7 @@ func voidsWorkbook(r voidsJSON, m exportMeta) *xlsx.Report {
 	ws.Table(row, []xlsx.Col{
 		{Header: "No", Fmt: xlsx.FmtNum, Width: 6}, {Header: "No. Order", Width: 20}, {Header: "Checkout", Width: 16}, {Header: "Dipesan (WIB)", Width: 20},
 		{Header: "Di-void (WIB)", Width: 20}, {Header: "Alasan", Width: 34}, {Header: "Kasir", Width: 18}, {Header: "Supervisor", Width: 18},
-		{Header: "Stall", Width: 20}, {Header: "Metode Bayar", Width: 16}, {Header: "Total (Rp)", Fmt: xlsx.FmtRp, Width: 16},
+		{Header: "Outlet", Width: 20}, {Header: "Metode Bayar", Width: 16}, {Header: "Total (Rp)", Fmt: xlsx.FmtRp, Width: 16},
 	}, rows, xlsx.TableOpts{Totals: []any{"TOTAL", "", "", "", "", "", "", "", "", "", round0(total)}, FreezeHeader: true})
 
 	it := wb.Sheet("Item Void")
@@ -810,7 +810,7 @@ func productSalesWorkbook(r ProductSalesReport, m exportMeta) *xlsx.Report {
 			round0(x.Revenue), x.OrderCount, share}
 	}
 	ws.Table(row, []xlsx.Col{
-		{Header: "Rank", Fmt: xlsx.FmtNum, Width: 7}, {Header: "SKU", Width: 20}, {Header: "Produk", Width: 36}, {Header: "Stall", Width: 22},
+		{Header: "Rank", Fmt: xlsx.FmtNum, Width: 7}, {Header: "SKU", Width: 20}, {Header: "Produk", Width: 36}, {Header: "Outlet", Width: 22},
 		{Header: "Qty", Fmt: xlsx.FmtQty, Width: 10}, {Header: "Omzet (Rp)", Fmt: xlsx.FmtRp, Width: 18}, {Header: "Jumlah order", Fmt: xlsx.FmtNum, Width: 13},
 		{Header: "Kontribusi omzet", Fmt: xlsx.FmtPct, Width: 16},
 	}, rows, xlsx.TableOpts{Totals: []any{"TOTAL", "", "", "", round2(s.Quantity), round0(s.Revenue), "", 100}, FreezeHeader: true})

@@ -181,7 +181,7 @@ func TestImportProducts(t *testing.T) {
 		t.Fatalf("import: %d %s", rec.Code, rec.Body)
 	}
 	e.jsonIs(out, `{"success":true,"imported":1,"updated":1,"skipped":4,"errors":[
-		{"row":5,"message":"Stall code not found: NOPE"},
+		{"row":5,"message":"Outlet code not found: NOPE"},
 		{"row":6,"message":"Unit code not found: ZZ"},
 		{"row":7,"message":"Category code not found: badcat"},
 		{"row":8,"message":"Required field missing: stall_code"}]}`)

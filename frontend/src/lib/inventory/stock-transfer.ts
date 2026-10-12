@@ -85,14 +85,14 @@ export function validateTransferWarehouses(
   switch (kind) {
     case "main_to_stall":
       if (!sourceIsMain) return "Source must be Main Storage";
-      if (!destIsStall) return "Destination must be a stall";
+      if (!destIsStall) return "Destination must be an outlet";
       break;
     case "stall_to_stall":
-      if (!sourceIsStall) return "Source must be a stall";
-      if (!destIsStall) return "Destination must be a stall";
+      if (!sourceIsStall) return "Source must be an outlet";
+      if (!destIsStall) return "Destination must be an outlet";
       break;
     case "stall_to_main":
-      if (!sourceIsStall) return "Source must be a stall";
+      if (!sourceIsStall) return "Source must be an outlet";
       if (!destIsMain) return "Destination must be Main Storage";
       break;
   }
@@ -152,8 +152,8 @@ export async function executeStockTransfer(
   const source = await fetchWarehouseInfo(params.sourceWarehouseId);
   const dest = await fetchWarehouseInfo(params.destWarehouseId);
 
-  if (!source) throw new Error("Source stall not found");
-  if (!dest) throw new Error("Destination stall not found");
+  if (!source) throw new Error("Source outlet not found");
+  if (!dest) throw new Error("Destination outlet not found");
 
   const validationError = validateTransferWarehouses(params.kind, source, dest);
   if (validationError) throw new Error(validationError);
@@ -168,7 +168,7 @@ export async function executeStockTransfer(
 
   if (sourceInvError) throw sourceInvError;
   if (!sourceInv) {
-    throw new Error("Raw material is not available at the source stall");
+    throw new Error("Raw material is not available at the source outlet");
   }
 
   const sourceQtyBefore = toQty(sourceInv.qty_available);

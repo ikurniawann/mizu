@@ -172,7 +172,7 @@ export function ReceiptSettingsCard() {
                 value={scope}
                 onChange={(e) => setScope(e.target.value)}
               >
-                <option value={GLOBAL_SCOPE}>Global (semua stall)</option>
+                <option value={GLOBAL_SCOPE}>Global (semua outlet)</option>
                 {stalls.map((stall) => (
                   <option key={stall.id} value={stall.id}>
                     {stall.name}
@@ -181,7 +181,7 @@ export function ReceiptSettingsCard() {
               </select>
               {scope !== GLOBAL_SCOPE && (
                 <p className="mt-1 text-[11px] text-gray-400">
-                  Stall tanpa konfigurasi memakai konfigurasi Global.
+                  Outlet tanpa konfigurasi memakai konfigurasi Global.
                 </p>
               )}
             </div>
@@ -219,7 +219,7 @@ export function ReceiptSettingsCard() {
                 checked={showStallName}
                 onChange={(e) => edit({ showStallName: e.target.checked })}
               />
-              Cetak baris &quot;Stall: …&quot; di struk customer
+              Cetak baris &quot;Outlet: …&quot; di struk customer
             </label>
             <div className="flex justify-end">
               <Button onClick={handleSave} disabled={saving}>

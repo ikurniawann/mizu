@@ -139,10 +139,10 @@ describe("receipt header/footer dari konfigurasi (EPIC-040)", () => {
       stallName: "Yakitori Stall",
       receiptShowStallName: false,
     };
-    expect(buildReceiptLines(withStall, "CUSTOMER")).not.toContain("Stall: Yakitori Stall");
-    expect(buildReceiptLines(withStall, "KITCHEN")).toContain("Stall: Yakitori Stall");
+    expect(buildReceiptLines(withStall, "CUSTOMER")).not.toContain("Outlet: Yakitori Stall");
+    expect(buildReceiptLines(withStall, "KITCHEN")).toContain("Outlet: Yakitori Stall");
     const shown: ReceiptPayload = { ...withStall, receiptShowStallName: true };
-    expect(buildReceiptLines(shown, "CUSTOMER")).toContain("Stall: Yakitori Stall");
+    expect(buildReceiptLines(shown, "CUSTOMER")).toContain("Outlet: Yakitori Stall");
   });
 });
 

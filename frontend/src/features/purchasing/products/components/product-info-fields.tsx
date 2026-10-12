@@ -58,7 +58,7 @@ export function ProductInfoFields({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="warehouse_id" className="text-xs">
-            Stall <span className="text-red-500">*</span>
+            Outlet <span className="text-red-500">*</span>
           </Label>
           <Combobox
             options={stallOptions}

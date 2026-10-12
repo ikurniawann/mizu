@@ -270,7 +270,7 @@ func (h *handler) productOpnamePreview(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 	f := kit.FromRequest(r)
-	warehouse := f.Str("warehouse_id", validate.Rule{}, uuidMsg("Stall wajib dipilih"))
+	warehouse := f.Str("warehouse_id", validate.Rule{}, uuidMsg("Outlet wajib dipilih"))
 	if err := f.FlattenErr("Validasi gagal"); err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func (h *handler) createProductOpname(w http.ResponseWriter, r *http.Request) er
 	if err != nil {
 		return err
 	}
-	in, err := parseOpnameCreate(r, "Stall wajib dipilih")
+	in, err := parseOpnameCreate(r, "Outlet wajib dipilih")
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func (h *handler) createProductOpname(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 	if len(lines) == 0 {
-		return httpx.BadRequest("No active products found for this stall")
+		return httpx.BadRequest("No active products found for this outlet")
 	}
 	companyID, branchID := ws.CompanyID, ws.BranchID
 	if c := ps.EffectiveCompanyID(scope); c != nil {

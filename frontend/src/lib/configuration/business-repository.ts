@@ -57,7 +57,7 @@ async function nextWarehouseCode(branchId: string): Promise<{ name: string; code
     [branchId]
   );
   const n = Number(row?.count ?? 0) + 1;
-  return { name: `Stall ${n}`, code: `STALL-${String(n).padStart(2, "0")}` };
+  return { name: `Outlet ${n}`, code: `STALL-${String(n).padStart(2, "0")}` };
 }
 
 export async function fetchBusinessTree(): Promise<BusinessTree> {
@@ -236,14 +236,14 @@ export async function deleteBusinessEntity(type: BusinessEntityType, id: string)
       `SELECT is_default, branch_id FROM configuration.warehouses WHERE id = $1`,
       [id]
     );
-    if (!wh) throw new Error("Stall tidak ditemukan");
+    if (!wh) throw new Error("Outlet tidak ditemukan");
     if (wh.is_default) {
       const count = await queryOne<{ count: string }>(
         `SELECT COUNT(*)::text AS count FROM configuration.warehouses WHERE branch_id = $1`,
         [wh.branch_id]
       );
       if (Number(count?.count ?? 0) <= 1) {
-        throw new Error("Main Storage tidak dapat dihapus. Setiap cabang wajib memiliki minimal 1 stall.");
+        throw new Error("Main Storage tidak dapat dihapus. Setiap cabang wajib memiliki minimal 1 outlet.");
       }
     }
   }

@@ -52,7 +52,7 @@ export async function buildRushHourXlsx(
   const ringkasan: unknown[][] = [
     [`${meta.companyName} — Report Rush Hour`],
     [`Periode: ${meta.periodLabel}`],
-    [`Stall: ${meta.stallLabel}`],
+    [`Outlet: ${meta.stallLabel}`],
     [printed],
     [],
     ["TOTAL KESELURUHAN"],
@@ -105,7 +105,7 @@ export async function buildRushHourXlsx(
     total > 0 ? Math.round((part / total) * 1000) / 10 : 0;
   const perJam: unknown[][] = [
     [`${meta.companyName} — Rush Hour per Jam`],
-    [`Periode: ${meta.periodLabel} · Stall: ${meta.stallLabel}`],
+    [`Periode: ${meta.periodLabel} · Outlet: ${meta.stallLabel}`],
     [],
     headerJam,
     ...report.hourly.map((row) => [
@@ -137,7 +137,7 @@ export async function buildRushHourXlsx(
   /* ---------------- Sheet 3: Per Hari ---------------- */
   const perHari: unknown[][] = [
     [`${meta.companyName} — Rush Hour per Hari`],
-    [`Periode: ${meta.periodLabel} · Stall: ${meta.stallLabel}`],
+    [`Periode: ${meta.periodLabel} · Outlet: ${meta.stallLabel}`],
     [],
     ["Hari", "Transaksi", "Omzet (Rp)"],
     ...report.weekdays.map((day) => [day.label, day.transactions, rupiah(day.revenue)]),
@@ -160,7 +160,7 @@ export async function buildRushHourXlsx(
   ]);
   const heatmap: unknown[][] = [
     [`${meta.companyName} — Heatmap Transaksi (hari × jam)`],
-    [`Periode: ${meta.periodLabel} · Stall: ${meta.stallLabel}`],
+    [`Periode: ${meta.periodLabel} · Outlet: ${meta.stallLabel}`],
     [],
     heatHeader,
     ...heatRows,

@@ -121,7 +121,7 @@ func TestBusinessHelpers(t *testing.T) {
 			t.Errorf("SlugCode(%q) = %q, want %q", in, got, want)
 		}
 	}
-	if name, code := NextWarehouse(0); name != "Stall 1" || code != "STALL-01" {
+	if name, code := NextWarehouse(0); name != "Outlet 1" || code != "STALL-01" {
 		t.Fatal(name, code)
 	}
 	if _, code := NextWarehouse(120); code != "STALL-121" {

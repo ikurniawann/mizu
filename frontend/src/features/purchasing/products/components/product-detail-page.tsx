@@ -192,7 +192,7 @@ export function ProductDetailPage() {
           </CardHeader>
           <CardContent className="grid gap-4 p-4 sm:grid-cols-2 md:grid-cols-4">
             <div>
-              <p className="text-xs font-medium text-gray-500">Stall</p>
+              <p className="text-xs font-medium text-gray-500">Outlet</p>
               <p className="font-medium text-gray-900">
                 {product.warehouse_name || product.warehouse_code || "-"}
               </p>

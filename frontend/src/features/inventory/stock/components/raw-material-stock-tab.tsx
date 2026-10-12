@@ -99,7 +99,7 @@ export function RawMaterialStockTab() {
 
   const warehouseOptions = useMemo(
     () => [
-      { value: "all", label: "Semua Stall (Total Cabang)" },
+      { value: "all", label: "Semua Outlet (Total Cabang)" },
       ...warehouses.map((w) => ({
         value: w.id,
         label: w.name,
@@ -110,8 +110,8 @@ export function RawMaterialStockTab() {
   );
 
   const selectedWarehouseLabel = useMemo(() => {
-    if (warehouseFilter === "all") return "Semua Stall (Total Cabang)";
-    return warehouses.find((w) => w.id === warehouseFilter)?.name || "Stall";
+    if (warehouseFilter === "all") return "Semua Outlet (Total Cabang)";
+    return warehouses.find((w) => w.id === warehouseFilter)?.name || "Outlet";
   }, [warehouseFilter, warehouses]);
 
   const listQuery = useRawMaterialStock({
@@ -226,11 +226,11 @@ export function RawMaterialStockTab() {
                 setPage(1);
               }}
               placeholder={
-                loadingWarehouses ? "Memuat stall..." : "Semua Stall"
+                loadingWarehouses ? "Memuat outlet..." : "Semua Outlet"
               }
-              searchPlaceholder="Cari stall..."
+              searchPlaceholder="Cari outlet..."
               emptyMessage={
-                loadingWarehouses ? "Memuat..." : "Stall tidak ditemukan"
+                loadingWarehouses ? "Memuat..." : "Outlet tidak ditemukan"
               }
               disabled={loadingWarehouses}
               className="h-10 w-full lg:w-52"
@@ -240,12 +240,12 @@ export function RawMaterialStockTab() {
       >
         {warehouseFilter === "all" ? (
           <p className="border-b border-gray-200/70 px-5 py-2 text-xs text-gray-500">
-            Menampilkan total stok dari seluruh stall di cabang Anda (bukan per
+            Menampilkan total stok dari seluruh outlet di cabang Anda (bukan per
             lokasi).
           </p>
         ) : (
           <p className="border-b border-gray-200/70 px-5 py-2 text-xs text-gray-500">
-            Menampilkan stok per lokasi stall:{" "}
+            Menampilkan stok per lokasi outlet:{" "}
             <span className="font-medium text-gray-700">
               {selectedWarehouseLabel}
             </span>

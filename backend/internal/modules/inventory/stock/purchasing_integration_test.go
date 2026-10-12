@@ -147,7 +147,7 @@ func TestTransfers(t *testing.T) {
 	body["qty"] = 100
 	e.Fail("POST", "/api/purchasing/inventory/transfer", body, http.StatusBadRequest, "Insufficient stock. Available: 15")
 	body["qty"], body["transfer_kind"] = 1, "stall_to_main"
-	e.Fail("POST", "/api/purchasing/inventory/transfer", body, http.StatusBadRequest, "Source must be a stall")
+	e.Fail("POST", "/api/purchasing/inventory/transfer", body, http.StatusBadRequest, "Source must be an outlet")
 	body["qty"] = 0
 	e.Fail("POST", "/api/purchasing/inventory/transfer", body, http.StatusBadRequest, "Quantity must be greater than zero")
 

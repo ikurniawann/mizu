@@ -391,11 +391,11 @@ func (h *handler) transferPreview(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 	f := kit.NewQueryForm(r.URL.Query())
-	warehouse := f.Str("warehouse_id", validate.Rule{}, uuidMsg("Source stall is required"))
+	warehouse := f.Str("warehouse_id", validate.Rule{}, uuidMsg("Source outlet is required"))
 	if err := kit.FirstIssueErr(f.Form); err != nil {
 		return err
 	}
-	if _, err := h.requireWarehouseInScope(r.Context(), *warehouse, scope, "Source stall is invalid or not allowed"); err != nil {
+	if _, err := h.requireWarehouseInScope(r.Context(), *warehouse, scope, "Source outlet is invalid or not allowed"); err != nil {
 		return err
 	}
 	return h.writePreview(w, r, *warehouse)
@@ -449,10 +449,10 @@ func (h *handler) executeTransfer(ctx context.Context, q database.Querier, rawMa
 		return res, err
 	}
 	if source == nil {
-		return res, transferRuleError("Source stall not found")
+		return res, transferRuleError("Source outlet not found")
 	}
 	if dest == nil {
-		return res, transferRuleError("Destination stall not found")
+		return res, transferRuleError("Destination outlet not found")
 	}
 	if msg := domain.ValidateTransferWarehouses(kind,
 		domain.TransferWarehouse{ID: source.ID, Code: source.Code, BranchID: source.BranchID},
@@ -465,7 +465,7 @@ func (h *handler) executeTransfer(ctx context.Context, q database.Querier, rawMa
 		return res, err
 	}
 	if src == nil {
-		return res, transferRuleError("Raw material is not available at the source stall")
+		return res, transferRuleError("Raw material is not available at the source outlet")
 	}
 	srcBefore := src.Num("qty_available")
 	if srcBefore < qty {
@@ -555,8 +555,8 @@ func (h *handler) transfer(w http.ResponseWriter, r *http.Request) error {
 	}
 	f := validate.New(validate.ReadBody(r))
 	kind := kit.Enum(f, "transfer_kind", validate.Rule{}, []string{"main_to_stall", "stall_to_stall", "stall_to_main"}, "")
-	sourceID := f.Str("source_warehouse_id", validate.Rule{}, uuidMsg("Source stall is required"))
-	destID := f.Str("dest_warehouse_id", validate.Rule{}, uuidMsg("Destination stall is required"))
+	sourceID := f.Str("source_warehouse_id", validate.Rule{}, uuidMsg("Source outlet is required"))
+	destID := f.Str("dest_warehouse_id", validate.Rule{}, uuidMsg("Destination outlet is required"))
 	rawMaterialID := f.Str("raw_material_id", validate.Rule{}, uuidMsg("Raw material is required"))
 	qty := kit.NumCheck(f, "qty", validate.Rule{}, kit.Positive("Quantity must be greater than zero"))
 	notes := f.Str("notes", validate.Rule{Optional: true}, validate.StrOpts{})
@@ -568,10 +568,10 @@ func (h *handler) transfer(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if _, err := h.requireWarehouseInScope(ctx, *sourceID, scope, "Source stall is invalid or not allowed"); err != nil {
+	if _, err := h.requireWarehouseInScope(ctx, *sourceID, scope, "Source outlet is invalid or not allowed"); err != nil {
 		return err
 	}
-	if _, err := h.requireWarehouseInScope(ctx, *destID, scope, "Destination stall is invalid or not allowed"); err != nil {
+	if _, err := h.requireWarehouseInScope(ctx, *destID, scope, "Destination outlet is invalid or not allowed"); err != nil {
 		return err
 	}
 	material, err := h.materialInScope(ctx, scope, *rawMaterialID, "Raw material is not available for your branch")

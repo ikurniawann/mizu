@@ -110,10 +110,10 @@ export function TransactionReportPage() {
   const stallLabel = stallLocked
     ? stallOptions[0]
       ? `${stallOptions[0].name} (${stallOptions[0].code})`
-      : "Stall"
+      : "Outlet"
     : warehouseId
-      ? stallOptions.find((row) => row.id === warehouseId)?.name || "Stall"
-      : "Semua stall";
+      ? stallOptions.find((row) => row.id === warehouseId)?.name || "Outlet"
+      : "Semua outlet";
 
   async function openItemDetail(row: TransactionReportRow) {
     setSelectedRow(row);
@@ -184,7 +184,7 @@ export function TransactionReportPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="tx-stall">Stall</Label>
+              <Label htmlFor="tx-stall">Outlet</Label>
               <select
                 id="tx-stall"
                 value={warehouseId}
@@ -192,7 +192,7 @@ export function TransactionReportPage() {
                 onChange={(e) => setWarehouseId(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
               >
-                {!stallLocked ? <option value="">Semua stall</option> : null}
+                {!stallLocked ? <option value="">Semua outlet</option> : null}
                 {stallOptions.map((stall) => (
                   <option key={stall.id} value={stall.id}>
                     {stall.name} ({stall.code})
@@ -328,14 +328,14 @@ export function TransactionReportPage() {
         {/* Rekap per stall — jawaban langsung 'laporan transaksi per stall' */}
         <PurchasingListSection
           icon={Store}
-          title="Rekap per Stall"
-          description="Berbasis item: order lintas stall menyumbang ke tiap stall sesuai itemnya (nilai setelah diskon item, sebelum diskon/pajak transaksi)"
+          title="Rekap per Outlet"
+          description="Berbasis item: order lintas outlet menyumbang ke tiap outlet sesuai itemnya (nilai setelah diskon item, sebelum diskon/pajak transaksi)"
         >
           <div className="overflow-x-auto px-4">
             <table className="min-w-full text-sm">
               <thead className="border-b border-gray-200/70 bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="px-3 py-3 text-left font-semibold">Stall</th>
+                  <th className="px-3 py-3 text-left font-semibold">Outlet</th>
                   <th className="px-3 py-3 text-right font-semibold">Transaksi</th>
                   <th className="px-3 py-3 text-right font-semibold">Item Terjual</th>
                   <th className="px-3 py-3 text-right font-semibold">Penjualan</th>
@@ -376,7 +376,7 @@ export function TransactionReportPage() {
                 <tr>
                   <th className="px-3 py-3 text-left font-semibold">Order</th>
                   <th className="px-3 py-3 text-left font-semibold">Waktu</th>
-                  <th className="px-3 py-3 text-left font-semibold">Stall</th>
+                  <th className="px-3 py-3 text-left font-semibold">Outlet</th>
                   <th className="px-3 py-3 text-left font-semibold">Pembayaran</th>
                   <th className="px-3 py-3 text-left font-semibold">Metode</th>
                   <th className="px-3 py-3 text-right font-semibold">Total</th>

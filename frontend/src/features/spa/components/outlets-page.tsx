@@ -48,7 +48,7 @@ export function SpaOutletsPage() {
       <PageHeader
         kicker={SPA_KICKER}
         title="Outlet Spa"
-        description="Setiap cabang aktif dapat dijadikan outlet spa. Stall POS menentukan gudang/kasir tempat produk treatment dijual; Sinkron produk POS membuat atau memperbarui produk untuk semua varian aktif."
+        description="Setiap cabang aktif dapat dijadikan outlet spa. Outlet POS menentukan gudang/kasir tempat produk treatment dijual; Sinkron produk POS membuat atau memperbarui produk untuk semua varian aktif."
       />
       <Card className="py-0">
         {outlets.isLoading ? (
@@ -64,7 +64,7 @@ export function SpaOutletsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Cabang</TableHead>
-                <TableHead>Stall POS</TableHead>
+                <TableHead>Outlet POS</TableHead>
                 <TableHead className="hidden md:table-cell">Jam buka</TableHead>
                 <TableHead className="hidden md:table-cell">Booking publik</TableHead>
                 <TableHead>Status</TableHead>
@@ -110,7 +110,7 @@ export function SpaOutletsPage() {
                           size="sm"
                           variant="ghost"
                           disabled={sync.isPending || !o.warehouse_id}
-                          title={o.warehouse_id ? undefined : "Pilih stall POS dulu"}
+                          title={o.warehouse_id ? undefined : "Pilih outlet POS dulu"}
                           onClick={() => runSync(o)}
                         >
                           <RefreshCw className={sync.isPending && sync.variables === o.branch_id ? "animate-spin" : undefined} /> Sinkron
@@ -142,7 +142,7 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
 
   const submit = () => {
     const slotMinutes = Number(slot);
-    if (!warehouseId) return setError("Pilih stall POS (gudang) untuk outlet ini.");
+    if (!warehouseId) return setError("Pilih outlet POS (gudang) untuk outlet ini.");
     if (parseClock(open) === null || parseClock(close) === null) return setError("Jam buka/tutup tidak valid.");
     if (open === close) return setError("Jam buka dan tutup tidak boleh sama.");
     if (!Number.isInteger(slotMinutes) || slotMinutes < 5 || slotMinutes > 240) return setError("Slot harus 5–240 menit.");
@@ -179,9 +179,9 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
             <DialogPanelDescription>Jam dalam WIB. Jam tutup lebih awal dari jam buka berarti tutup lewat tengah malam.</DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Stall POS (gudang)" className="sm:col-span-2">
+            <Field label="Outlet POS (gudang)" className="sm:col-span-2">
               <select className={SELECT} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required>
-                <option value="">{outlet.warehouses.length ? "Pilih stall…" : "Cabang ini belum punya gudang"}</option>
+                <option value="">{outlet.warehouses.length ? "Pilih outlet…" : "Cabang ini belum punya gudang"}</option>
                 {outlet.warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}

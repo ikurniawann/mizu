@@ -116,7 +116,7 @@ export const createUserEmployeeSchema = employeeCoreSchema
       ctx.addIssue({
         code: "custom",
         path: ["default_warehouse_id"],
-        message: "Stall default wajib untuk scope branch",
+        message: "Outlet default wajib untuk scope branch",
       });
     }
   });
@@ -183,7 +183,7 @@ export const updateUserEmployeeSchema = employeeCoreSchema
       ctx.addIssue({
         code: "custom",
         path: ["default_warehouse_id"],
-        message: "Stall default wajib untuk scope branch",
+        message: "Outlet default wajib untuk scope branch",
       });
     }
   });

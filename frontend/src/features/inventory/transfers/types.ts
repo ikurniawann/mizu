@@ -43,7 +43,7 @@ export type StockTransferListParams = {
 };
 
 export const STOCK_TRANSFER_KIND_LABELS: Record<StockTransferKind, string> = {
-  main_to_stall: "Main Storage → Stall",
-  stall_to_stall: "Stall → Stall",
-  stall_to_main: "Stall → Main Storage",
+  main_to_stall: "Main Storage → Outlet",
+  stall_to_stall: "Outlet → Outlet",
+  stall_to_main: "Outlet → Main Storage",
 };

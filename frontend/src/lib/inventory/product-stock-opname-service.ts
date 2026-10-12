@@ -129,7 +129,7 @@ export async function createProductStockOpname(opts: {
   if ("error" in warehouseScope) throw ApiError.badRequest(warehouseScope.error);
 
   const rows = await listProductInventoryForOpname(scope, input.warehouse_id);
-  if (rows.length === 0) throw ApiError.badRequest("No active products found for this stall");
+  if (rows.length === 0) throw ApiError.badRequest("No active products found for this outlet");
 
   const { companyId, branchId } = resolveOpnameScopeIds(scope);
   const db = await createServerPgClient();

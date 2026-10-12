@@ -110,7 +110,7 @@ func TestProductSalesAndTransactionReports(t *testing.T) {
 	r := h.call("GET", "/api/pos/reports/product-sales?date_from=2031-05-09&date_to=2031-05-01", nil, 500)
 	jsonEq(t, r.body, `{"success":false,"error":"Tanggal dari tidak boleh melebihi tanggal sampai"}`)
 	r = h.call("GET", "/api/pos/reports/transactions?"+month+"&warehouse_id=00000000-0000-4000-8000-000000000001", nil, 500)
-	jsonEq(t, r.body, `{"success":false,"error":"Stall tidak valid atau di luar scope"}`)
+	jsonEq(t, r.body, `{"success":false,"error":"Outlet tidak valid atau di luar scope"}`)
 
 	// Product sales: Kopi on the stall, Nasi without a product.
 	r = h.call("GET", "/api/pos/reports/product-sales?"+month, nil, 200)
@@ -166,27 +166,27 @@ func TestProductSalesAndTransactionReports(t *testing.T) {
 	m := sheet("Ringkasan")
 	cells(t, m, 0, "Laporan Penjualan Produk")
 	cells(t, m, 1, "Periode", "2031-05-01 s/d 2031-05-31")
-	cells(t, m, 2, "Stall", "Semua stall")
+	cells(t, m, 2, "Outlet", "Semua outlet")
 	cells(t, m, 4, "Metrik", "Nilai")
 	cells(t, m, 7, "Total omzet", "55000")
 	m = sheet("Produk")
-	cells(t, m, 0, "Produk", "SKU", "Stall", "Qty", "Orders", "Omzet")
+	cells(t, m, 0, "Produk", "SKU", "Outlet", "Qty", "Orders", "Omzet")
 	cells(t, m, 1, "Kopi", kode, "Stall GT", "2", "1", "30000")
 	cells(t, m, 2, "Nasi", "GT", "—", "1", "1", "25000")
 
 	names, sheet = h.workbook(h.download("/api/pos/reports/transactions?"+month+"&format=xlsx&warehouse_id="+stall, 200),
 		"transaksi-pos-2031-05-01_2031-05-31.xlsx", true)
-	if !slices.Equal(names, []string{"Ringkasan", "Per Stall", "Top Produk", "Harian", "Transaksi"}) {
+	if !slices.Equal(names, []string{"Ringkasan", "Per Outlet", "Top Produk", "Harian", "Transaksi"}) {
 		t.Fatalf("sheets = %v", names)
 	}
-	cells(t, sheet("Ringkasan"), 2, "Stall", "Stall GT (STALL-GT"+strings.TrimPrefix(kode, "GT-")+")")
+	cells(t, sheet("Ringkasan"), 2, "Outlet", "Stall GT (STALL-GT"+strings.TrimPrefix(kode, "GT-")+")")
 	m = sheet("Transaksi")
-	cells(t, m, 0, "Order", "Checkout", "Waktu", "Stall", "Metode", "Subtotal", "Diskon", "Pajak", "Total",
+	cells(t, m, 0, "Order", "Checkout", "Waktu", "Outlet", "Metode", "Subtotal", "Diskon", "Pajak", "Total",
 		"Service", "ARK", "Pembayaran", "Asal", "Comp")
 	if len(m) != 2 || !strings.HasPrefix(m[1][2], "2031-05-04T03:15:00") {
 		t.Fatalf("transaksi = %q", m)
 	}
-	cells(t, m, 1, m[1][0], "", m[1][2], "Stall GT", "Tunai", "30000", "0", "0", "30000", "0", "0", "Lunas", "Kasir stall", "")
+	cells(t, m, 1, m[1][0], "", m[1][2], "Stall GT", "Tunai", "30000", "0", "0", "30000", "0", "0", "Lunas", "Kasir outlet", "")
 }
 
 func TestReportExport(t *testing.T) {
@@ -205,9 +205,9 @@ func TestReportExport(t *testing.T) {
 	// A report error keeps the status and message of the report's own route.
 	badStall := "&warehouse_id=00000000-0000-4000-8000-000000000001"
 	r = h.call("GET", "/api/pos/reports/export?report=transactions"+month+badStall, nil, 500)
-	jsonEq(t, r.body, `{"success":false,"error":"Stall tidak valid atau di luar scope"}`)
+	jsonEq(t, r.body, `{"success":false,"error":"Outlet tidak valid atau di luar scope"}`)
 	r = h.call("GET", "/api/pos/reports/export?report=rush-hour"+month+badStall, nil, 400)
-	jsonEq(t, r.body, `{"success":false,"error":"Stall tidak valid atau di luar scope"}`)
+	jsonEq(t, r.body, `{"success":false,"error":"Outlet tidak valid atau di luar scope"}`)
 
 	for _, c := range []struct{ key, file string }{
 		{"profit", "profit"}, {"revenue-composition", "revenue-composition"}, {"transactions", "transaksi"},
@@ -223,7 +223,7 @@ func TestReportExport(t *testing.T) {
 			m := sheet("Ringkasan")
 			cells(t, m, 0, brand+" — Laporan Profit")
 			cells(t, m, 1, "Periode: 1 Mei 2031 s.d. 31 Mei 2031")
-			cells(t, m, 2, "Stall: Semua stall")
+			cells(t, m, 2, "Outlet: Semua outlet")
 			if !strings.HasPrefix(m[3][0], "Dicetak: ") || !strings.HasSuffix(m[3][0], " WIB") {
 				t.Fatalf("printed line = %q", m[3][0])
 			}
@@ -246,7 +246,7 @@ func TestReportExport(t *testing.T) {
 			m := sheet("Ringkasan")
 			cells(t, m, 5, "Jumlah transaksi", "2")
 			cells(t, m, 7, "Diskon", "5000")
-			cells(t, m, 13, "Per Stall")
+			cells(t, m, 13, "Per Outlet")
 			cells(t, m, 15, "Stall GT", "STALL-GT"+strings.TrimPrefix(kode, "GT-"), "1", "2", "30000")
 			m = sheet("Transaksi")
 			cells(t, m, 1, "2 transaksi")
@@ -279,7 +279,7 @@ func TestReportExport(t *testing.T) {
 			cells(t, sheet("Item Void"), 3, m[9][1], "Teh", "GT", "1", "12000", "12000")
 		case "product-sales":
 			m := sheet("Product Sales")
-			cells(t, m, 9, "Rank", "SKU", "Produk", "Stall", "Qty", "Omzet (Rp)", "Jumlah order", "Kontribusi omzet")
+			cells(t, m, 9, "Rank", "SKU", "Produk", "Outlet", "Qty", "Omzet (Rp)", "Jumlah order", "Kontribusi omzet")
 			cells(t, m, 10, "1", kode, "Kopi", "Stall GT", "2", "30000", "1", "54.55")
 			cells(t, m, 12, "TOTAL", "", "", "", "3", "55000", "", "100")
 		case "payment-methods":
@@ -297,7 +297,7 @@ func TestReportExport(t *testing.T) {
 	// A stall filter names the stall.
 	_, sheet := h.workbook(h.download("/api/pos/reports/export?report=voids"+month+"&warehouse_id="+stall, 200),
 		"void_2031-05-01_2031-05-31.xlsx", true)
-	cells(t, sheet("Void"), 2, "Stall: Stall GT")
+	cells(t, sheet("Void"), 2, "Outlet: Stall GT")
 }
 
 func TestRushHourExport(t *testing.T) {
@@ -309,7 +309,7 @@ func TestRushHourExport(t *testing.T) {
 	r := h.call("GET", "/api/pos/reports/rush-hour/export?date_from=2031-05-09&date_to=2031-05-01", nil, 400)
 	jsonEq(t, r.body, `{"success":false,"error":"Tanggal dari tidak boleh melebihi tanggal sampai"}`)
 	r = h.call("GET", "/api/pos/reports/rush-hour/export?"+month+"&warehouse_id=00000000-0000-4000-8000-000000000001", nil, 400)
-	jsonEq(t, r.body, `{"success":false,"error":"Stall tidak valid atau di luar scope"}`)
+	jsonEq(t, r.body, `{"success":false,"error":"Outlet tidak valid atau di luar scope"}`)
 
 	rec := h.download("/api/pos/reports/rush-hour/export?"+month+"&range_from=10&range_to=12", 200)
 	names, sheet := h.workbook(rec, "rush-hour-2031-05-01_2031-05-31.xlsx", false)
@@ -319,7 +319,7 @@ func TestRushHourExport(t *testing.T) {
 	m := sheet("Ringkasan")
 	cells(t, m, 0, brand+" — Report Rush Hour")
 	cells(t, m, 1, "Periode: 2031-05-01 s.d. 2031-05-31")
-	cells(t, m, 2, "Stall: Semua stall")
+	cells(t, m, 2, "Outlet: Semua outlet")
 	cells(t, m, 5, "TOTAL KESELURUHAN")
 	cells(t, m, 6, "Jumlah transaksi", "2")
 	cells(t, m, 7, "Omzet (Rp)", "55000")
@@ -335,7 +335,7 @@ func TestRushHourExport(t *testing.T) {
 	cells(t, m, 19, "Quantity / item terjual", "2", "3", "66.7")
 	cells(t, m, 20, "Jumlah transaksi", "1", "2", "50")
 	m = sheet("Per Jam")
-	cells(t, m, 1, "Periode: 2031-05-01 s.d. 2031-05-31 · Stall: Semua stall")
+	cells(t, m, 1, "Periode: 2031-05-01 s.d. 2031-05-31 · Outlet: Semua outlet")
 	cells(t, m, 3, "Jam", "Transaksi", "Omzet (Rp)", "Item Terjual", "Rata-rata Bill (Rp)", "% Omzet", "% Item")
 	cells(t, m, 14, "10:00", "1", "30000", "2", "30000", "54.5", "66.7")
 	cells(t, m, 28, "TOTAL", "2", "55000", "3", "27500", "100", "100")

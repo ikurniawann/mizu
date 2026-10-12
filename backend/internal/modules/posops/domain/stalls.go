@@ -38,9 +38,9 @@ type SellStall struct {
 }
 
 var sellStallMessages = map[string]string{
-	"all_stalls":          "Pilih satu stall aktif sebelum membuat transaksi POS",
-	"no_stall":            "Tidak ada stall penempatan. Hubungi admin untuk assign stall",
-	"multiple_unselected": "Pilih satu stall aktif sebelum membuat transaksi POS",
+	"all_stalls":          "Pilih satu outlet aktif sebelum membuat transaksi POS",
+	"no_stall":            "Tidak ada outlet penempatan. Hubungi admin untuk assign outlet",
+	"multiple_unselected": "Pilih satu outlet aktif sebelum membuat transaksi POS",
 }
 
 func blockedStall(reason string) SellStall {

@@ -8,7 +8,7 @@ export function RawMaterialStockPage() {
     <div className="space-y-6">
       <PurchasingPageHeader
         title="Stok Bahan Baku"
-        description="Pantau saldo bahan baku dan nilai stok. Filter berdasarkan stall untuk melihat stok per lokasi penyimpanan."
+        description="Pantau saldo bahan baku dan nilai stok. Filter berdasarkan outlet untuk melihat stok per lokasi penyimpanan."
       />
       <RawMaterialStockTab />
     </div>

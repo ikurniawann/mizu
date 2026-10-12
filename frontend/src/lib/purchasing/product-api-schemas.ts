@@ -8,7 +8,7 @@ export const productCreateSchema = z.object({
   deskripsi: z.string().optional(),
   kategori: z.string().optional(),
   satuan_id: z.string().uuid().optional(),
-  warehouse_id: z.string().uuid("Stall wajib dipilih"),
+  warehouse_id: z.string().uuid("Outlet wajib dipilih"),
   harga_jual: z.coerce.number().min(0).default(0),
   harga_modal: z.coerce.number().min(0).optional(),
   markup_persen: z.coerce.number().optional(),

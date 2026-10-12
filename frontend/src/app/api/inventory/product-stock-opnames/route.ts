@@ -10,7 +10,7 @@ import {
 } from "@/lib/inventory/product-stock-opname-service";
 import { parseSearchParams } from "@/lib/inventory/query-params";
 
-const createSchema = opnameCreateSchema("Stall wajib dipilih");
+const createSchema = opnameCreateSchema("Outlet wajib dipilih");
 
 export const GET = apiHandler(async (request: NextRequest) => {
   await requireIamMenuPrefix(IAM.itemsInventory);

@@ -445,23 +445,23 @@ func (s *Service) SetActiveStall(ctx context.Context, user *auth.User, warehouse
 		return nil, err
 	}
 	if !domain.CanSwitchStall(user.Role, access) {
-		return nil, httpx.Forbidden("Akun ini tidak perlu mengganti stall")
+		return nil, httpx.Forbidden("Akun ini tidak perlu mengganti outlet")
 	}
 	if warehouseID == nil {
 		if !access.AllAccess {
-			return nil, httpx.Forbidden("Anda hanya dapat memilih stall penempatan Anda")
+			return nil, httpx.Forbidden("Anda hanya dapat memilih outlet penempatan Anda")
 		}
 		return &ActiveStallChoice{CookieValue: stall.All}, nil
 	}
 	if !access.AllAccess && !access.HasStall(*warehouseID) {
-		return nil, httpx.Forbidden("Stall di luar penempatan Anda")
+		return nil, httpx.Forbidden("Outlet di luar penempatan Anda")
 	}
 	chosen, err := s.findActiveStall(ctx, *warehouseID)
 	if err != nil {
 		return nil, err
 	}
 	if chosen == nil {
-		return nil, httpx.NotFound("Stall not found or inactive")
+		return nil, httpx.NotFound("Outlet not found or inactive")
 	}
 	// The stall must sit in the caller's branch when they have one.
 	if sc.BranchID != nil && *sc.BranchID != "" {
@@ -470,7 +470,7 @@ func (s *Service) SetActiveStall(ctx context.Context, user *auth.User, warehouse
 			return nil, err
 		}
 		if found && (branch == nil || *branch != *sc.BranchID) {
-			return nil, httpx.Forbidden("Stall berada di luar branch Anda")
+			return nil, httpx.Forbidden("Outlet berada di luar branch Anda")
 		}
 	}
 	return &ActiveStallChoice{CookieValue: chosen.ID, Stall: viewOf(*chosen)}, nil
