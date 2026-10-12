@@ -567,3 +567,38 @@ export interface PublicLookup {
   /** Izin sekali pakai (15 menit) untuk mengubah booking ini. */
   grant: string;
 }
+
+/** EPIC-053 Fase 3 — daftar tunggu: tamu yang ingin dikabari saat jam kosong. */
+export type WaitlistStatus = "open" | "notified" | "booked" | "cancelled" | "expired";
+
+export type WaitlistEntry = {
+  id: string;
+  branch_id: string;
+  branch_name: string;
+  customer_name: string;
+  customer_phone: string;
+  conversation_id: string | null;
+  visit_date: string;
+  period: "" | "pagi" | "siang" | "sore" | "malam";
+  people: number;
+  variant_ids: string[];
+  variant_labels: string[];
+  source: "whatsapp" | "front_office" | "public";
+  status: WaitlistStatus;
+  note: string;
+  notified_at: string | null;
+  resolved_at: string | null;
+  created_at: string;
+};
+
+export type WaitlistListParams = { branch_id?: string; status?: WaitlistStatus | ""; from?: string; to?: string };
+
+export type WaitlistCreateInput = {
+  branch_id: string;
+  customer_name: string;
+  customer_phone: string;
+  visit_date: string;
+  period?: WaitlistEntry["period"];
+  people?: number;
+  note?: string;
+};

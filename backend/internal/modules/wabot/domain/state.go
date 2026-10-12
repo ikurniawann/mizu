@@ -44,12 +44,14 @@ type VariantOpt struct {
 // Label is "Balinese Massage · 60 menit".
 func (v VariantOpt) Label() string { return v.Treatment + " · " + v.Variant }
 
-// Person is one guest's chosen variant.
+// Person is one guest's chosen variant. SlotISO is set only when the group
+// is staggered (this guest starts at a different time than the first).
 type Person struct {
 	VariantID   string  `json:"variant_id"`
 	Label       string  `json:"label"`
 	DurationMin int     `json:"duration_min"`
 	Price       float64 `json:"price"`
+	SlotISO     string  `json:"slot_iso,omitempty"`
 }
 
 // MenuOption is one numbered choice the bot last offered; Value carries
@@ -60,7 +62,8 @@ type MenuOption struct {
 	Value string `json:"value"`
 }
 
-// BookingRef is a booking the bot created in this conversation.
+// BookingRef is a booking the bot created in this conversation. When is the
+// start clock ("15.00"), shown when guests are staggered.
 type BookingRef struct {
 	Code      string `json:"code"`
 	Token     string `json:"token"`
@@ -68,6 +71,7 @@ type BookingRef struct {
 	PayURL    string `json:"pay_url,omitempty"`
 	Customer  string `json:"customer"`
 	Paid      bool   `json:"paid,omitempty"`
+	When      string `json:"when,omitempty"`
 }
 
 // OutletOpt is an outlet open for online booking.
@@ -103,6 +107,10 @@ type Session struct {
 	Misses        int          `json:"misses,omitempty"`
 	OnlinePay     bool         `json:"online_pay,omitempty"`
 	Greeted       bool         `json:"greeted,omitempty"`
+	// WaitlistID is the guest's open waitlist entry; FromWaitlist marks a
+	// session the watcher refilled after telling the guest a slot is free.
+	WaitlistID   string `json:"waitlist_id,omitempty"`
+	FromWaitlist bool   `json:"from_waitlist,omitempty"`
 }
 
 // NewSession starts at the outlet step.
@@ -110,8 +118,34 @@ func NewSession() *Session { return &Session{Step: StepOutlet, Pref: "any"} }
 
 // ResetBooking keeps what identifies the guest and starts a new booking.
 func (s *Session) ResetBooking() {
-	name := s.Name
-	*s = Session{Step: StepOutlet, Pref: "any", Name: name, Greeted: true}
+	name, wl := s.Name, s.WaitlistID
+	*s = Session{Step: StepOutlet, Pref: "any", Name: name, Greeted: true, WaitlistID: wl}
+}
+
+// Staggered reports whether some guest starts at another time than the first.
+func (s *Session) Staggered() bool {
+	for _, p := range s.Persons {
+		if p.SlotISO != "" && p.SlotISO != s.SlotISO {
+			return true
+		}
+	}
+	return false
+}
+
+// SlotOf is guest i's start (their own, else the common one).
+func (s *Session) SlotOf(i int) string {
+	if i < len(s.Persons) && s.Persons[i].SlotISO != "" {
+		return s.Persons[i].SlotISO
+	}
+	return s.SlotISO
+}
+
+// ClearSlot forgets the chosen time(s).
+func (s *Session) ClearSlot() {
+	s.SlotISO = ""
+	for i := range s.Persons {
+		s.Persons[i].SlotISO = ""
+	}
 }
 
 // SetMenu remembers the numbered options the bot just offered.

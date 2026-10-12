@@ -1,4 +1,4 @@
-import type { AvailabilityParams, BookingListParams, CommissionReportParams } from "./types";
+import type { AvailabilityParams, BookingListParams, CommissionReportParams, WaitlistListParams } from "./types";
 
 export const spaKeys = {
   all: ["spa"] as const,
@@ -18,6 +18,8 @@ export const spaKeys = {
   bookings: (params: BookingListParams) => ["spa", "bookings", "list", params] as const,
   booking: (id: string) => ["spa", "bookings", "detail", id] as const,
   availability: (params: AvailabilityParams) => ["spa", "availability", params] as const,
+  waitlistAll: () => ["spa", "waitlist"] as const,
+  waitlist: (params: WaitlistListParams) => ["spa", "waitlist", params] as const,
   boardAll: () => ["spa", "board"] as const,
   board: (branchId: string, date: string) => ["spa", "board", branchId, date] as const,
   commissionRules: () => ["spa", "commission-rules"] as const,

@@ -1904,27 +1904,54 @@ type PublicBookingInput = publicBookingInput
 // PublicBook records an online booking, unassigned, for the front office.
 func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*PublicBookingResult, error) {
 	now := s.clock()
+	if err := publicBookingChecks(&in, now, s.onlinePaymentReady()); err != nil {
+		return nil, err
+	}
+	var token string
+	err := s.tx(ctx, func(q Q) error {
+		result, err := s.publicBookIn(ctx, q, in, now)
+		if err != nil {
+			return err
+		}
+		token = result.AccessToken
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.PublicBooking(ctx, token)
+}
+
+// publicBookingChecks validates one public booking request before the
+// transaction (time window, phone, payment method, default source).
+func publicBookingChecks(in *publicBookingInput, now time.Time, onlineReady bool) error {
 	if !in.ScheduledAt.After(now) {
-		return nil, httpx.BadRequest("Pilih waktu yang belum lewat")
+		return httpx.BadRequest("Pilih waktu yang belum lewat")
 	}
 	if in.ScheduledAt.After(now.AddDate(0, 0, 60)) {
-		return nil, httpx.BadRequest("Booking online maksimal 60 hari ke depan")
+		return httpx.BadRequest("Booking online maksimal 60 hari ke depan")
 	}
-	phone := domain.NormalizePhone(in.CustomerPhone)
-	if phone == "" {
-		return nil, httpx.BadRequest("Nomor HP tidak valid")
+	if domain.NormalizePhone(in.CustomerPhone) == "" {
+		return httpx.BadRequest("Nomor HP tidak valid")
 	}
 	if in.PaymentMethod == "" {
 		in.PaymentMethod = PaymentAtOutlet
 	}
-	if in.PaymentMethod == PaymentOnline && !s.onlinePaymentReady() {
-		return nil, httpx.BadRequest("Pembayaran online belum tersedia. Pilih bayar di outlet.")
+	if in.PaymentMethod == PaymentOnline && !onlineReady {
+		return httpx.BadRequest("Pembayaran online belum tersedia. Pilih bayar di outlet.")
 	}
 	if in.Source == "" {
 		in.Source = "public"
 	}
+	return nil
+}
+
+// publicBookIn creates one public booking inside q (also used per guest by
+// PublicBookGroup, so a group is all-or-nothing).
+func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, now time.Time) (*PublicBookingResult, error) {
+	phone := domain.NormalizePhone(in.CustomerPhone)
 	var result *PublicBookingResult
-	err := s.tx(ctx, func(q Q) error {
+	err := func() error {
 		o, err := s.publicOutlet(ctx, q, in.BranchID)
 		if err != nil {
 			return err
@@ -1978,6 +2005,10 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 		if err := s.st.event(ctx, q, id, nil, "create", nil, ptr(domain.BookingUnassigned), "", "Booking online"); err != nil {
 			return err
 		}
+		// A booking fulfils the guest's waitlist wish for that outlet and day.
+		if err := s.resolveWaitlistIn(ctx, q, o.BranchID, phone, domain.WIBDate(in.ScheduledAt)); err != nil {
+			return err
+		}
 		result = &PublicBookingResult{BookingCode: code, BranchID: o.BranchID, ScheduledAt: jsTime(in.ScheduledAt), BranchName: o.BranchName, Items: []PublicItem{}}
 		result.Status = domain.BookingUnassigned
 		result.PaymentStatus = domain.PaymentUnpaid
@@ -2019,11 +2050,11 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 			return err
 		}
 		return nil
-	})
+	}()
 	if err != nil {
 		return nil, err
 	}
-	return s.PublicBooking(ctx, result.AccessToken)
+	return result, nil
 }
 
 /* ── POS events ──────────────────────────────────────────────────────── */

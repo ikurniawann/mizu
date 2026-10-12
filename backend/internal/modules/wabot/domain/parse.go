@@ -23,6 +23,8 @@ const (
 	IntentStatus   Intent = "status" // asks about an existing booking
 	IntentGreeting Intent = "greeting"
 	IntentHelp     Intent = "help"
+	IntentOutlet   Intent = "outlet"   // wants another outlet
+	IntentWaitlist Intent = "waitlist" // wants to be told when a slot frees up
 )
 
 // Normalize lower-cases and squeezes whitespace.
@@ -32,12 +34,14 @@ func Normalize(text string) string {
 }
 
 var (
-	yesWords      = []string{"ya", "iya", "yes", "ok", "oke", "okay", "betul", "benar", "setuju", "sip", "siap", "boleh", "lanjut", "gas", "y", "yup", "yoi", "bener"}
+	yesWords      = []string{"ya", "iya", "yes", "ok", "oke", "okay", "betul", "benar", "setuju", "sip", "siap", "boleh", "lanjut", "gas", "y", "yup", "yoi", "bener", "ambil", "mau", "jadi"}
 	noWords       = []string{"tidak", "ga", "gak", "nggak", "enggak", "engga", "no", "jangan", "batal", "bukan", "n", "tdk"}
 	restartWords  = []string{"batal", "batalkan", "ulang", "mulai ulang", "mulai lagi", "booking baru", "reset", "dari awal", "ganti semua"}
 	statusWords   = []string{"status", "cek booking", "booking saya", "kode booking", "qr"}
 	greetingWords = []string{"halo", "hallo", "hai", "hi", "hello", "selamat pagi", "selamat siang", "selamat sore", "selamat malam", "assalamualaikum", "permisi", "min", "kak", "mau booking", "booking", "mau pesan", "pesan tempat", "reservasi"}
 	helpWords     = []string{"menu", "bantuan", "help", "pilihan"}
+	outletWords   = []string{"ganti outlet", "outlet lain", "pindah outlet", "cek outlet lain", "outlet satunya"}
+	waitlistWords = []string{"daftar tunggu", "waiting list", "waitlist", "masuk daftar tunggu", "kabari", "kabarin", "tunggu saja", "daftar tunggu saja"}
 )
 
 // DetectIntent reads a whole short reply; handoverKeywords come from settings.
@@ -60,6 +64,16 @@ func DetectIntent(text string, handoverKeywords []string) Intent {
 	for _, w := range statusWords {
 		if n == w || strings.HasPrefix(n, w+" ") {
 			return IntentStatus
+		}
+	}
+	for _, w := range outletWords {
+		if n == w || strings.HasPrefix(n, w+" ") || strings.HasSuffix(n, " "+w) {
+			return IntentOutlet
+		}
+	}
+	for _, w := range waitlistWords {
+		if n == w || strings.HasPrefix(n, w+" ") || strings.HasSuffix(n, " "+w) {
+			return IntentWaitlist
 		}
 	}
 	for _, w := range helpWords {

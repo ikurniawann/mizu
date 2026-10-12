@@ -116,6 +116,9 @@ func (h *Handler) Routes() []module.Route {
 		staff("GET "+p+"/availability", iam.SpaBookings, h.availability),
 		staff("GET "+p+"/board", iam.SpaBookings, h.board),
 		staff("GET "+p+"/booking-funnel", iam.SpaBookings, h.bookingFunnel),
+		staff("GET "+p+"/waitlist", iam.SpaBookings, h.listWaitlist),
+		staff("POST "+p+"/waitlist", iam.SpaBookings, h.createWaitlist),
+		staff("POST "+p+"/waitlist/{id}/status", iam.SpaBookings, h.waitlistStatus),
 
 		staff("GET "+p+"/commission-rules", iam.SpaCommissions, h.listRules),
 		staff("POST "+p+"/commission-rules", iam.SpaCommissions, h.createRule),

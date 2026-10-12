@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { publicSpaApi, spaApi } from "./api";
 import { spaKeys } from "./query-keys";
-import type { AvailabilityParams, BookingListParams, CommissionReportParams } from "./types";
+import type { AvailabilityParams, BookingListParams, CommissionReportParams, WaitlistListParams } from "./types";
 
 export const useSpaOutlets = () =>
   useQuery({ queryKey: spaKeys.outlets(), queryFn: spaApi.outlets, staleTime: 60_000 });
@@ -37,6 +37,9 @@ export const useSpaAssists = (params: { branch_id?: string; from?: string; to?: 
 
 export const useSpaOutletPics = (branchId?: string) =>
   useQuery({ queryKey: spaKeys.outletPics(branchId), queryFn: () => spaApi.outletPics(branchId) });
+
+export const useSpaWaitlist = (params: WaitlistListParams) =>
+  useQuery({ queryKey: spaKeys.waitlist(params), queryFn: () => spaApi.waitlist(params) });
 
 export const useSpaBookings = (params: BookingListParams) =>
   useQuery({

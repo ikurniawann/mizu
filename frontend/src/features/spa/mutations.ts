@@ -10,6 +10,7 @@ import type {
   BookingItemInput,
   BookingUpdateInput,
   CommissionRuleInput,
+  WaitlistCreateInput,
   ItemActionInput,
   OutletInput,
   PriceInput,
@@ -259,3 +260,21 @@ export const useMyAssignmentAction = () => {
 
 export const useCreatePublicBooking = () =>
   useMutation({ mutationFn: (input: PublicBookingInput) => publicSpaApi.createBooking(input) });
+
+/** Daftar tunggu: FO menutup/membuka entri atau mencatat tamu baru. */
+export const useSetWaitlistStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "open" | "booked" | "cancelled" }) =>
+      spaApi.setWaitlistStatus(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: spaKeys.waitlistAll() }),
+  });
+};
+
+export const useCreateWaitlist = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: WaitlistCreateInput) => spaApi.createWaitlist(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: spaKeys.waitlistAll() }),
+  });
+};

@@ -36,6 +36,10 @@ type Handler struct {
 // New mounts the module on the shared pool.
 func New(deps module.Deps, ports Ports) module.Module {
 	engine := NewEngine(ports, deps.Log, deps.Now)
+	if ports.Spa != nil && ports.Sender != nil {
+		// Waitlist watcher: tells waiting guests when a slot frees up.
+		go engine.WatchWaitlist(context.Background(), deps.DB, WaitlistEvery)
+	}
 	h := &Handler{engine: engine, db: deps.DB, auth: deps.Auth, now: deps.Now}
 	if h.now == nil {
 		h.now = time.Now

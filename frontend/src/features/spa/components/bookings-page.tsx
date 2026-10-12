@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { Hourglass } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -64,6 +66,14 @@ export function SpaBookingsPage() {
         kicker="Laporan"
         title="Booking History"
         description="Booking treatment semua outlet. Status layanan dan status pembayaran ditampilkan terpisah — selesai belum tentu lunas."
+        actions={
+          <Link
+            href="/dashboard/spa/waitlist"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          >
+            <Hourglass className="size-4" /> Daftar tunggu
+          </Link>
+        }
       />
 
       <BookingFunnelCard />

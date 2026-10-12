@@ -19,3 +19,4 @@ export { SpaCommissionsPage } from "./components/commissions-page";
 export { SpaOutletsPage } from "./components/outlets-page";
 export { MySpaPage } from "./components/my-spa-page";
 export { SpaRushHourPage } from "./components/rush-hour-page";
+export { SpaWaitlistPage } from "./components/waitlist-page";

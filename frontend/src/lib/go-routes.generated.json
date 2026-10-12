@@ -6315,6 +6315,21 @@
     "path": "/api/spa/treatments/{id}/prices"
   },
   {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/waitlist"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/waitlist"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/waitlist/{id}/status"
+  },
+  {
     "module": "pos-sales",
     "method": "POST",
     "path": "/api/table-order/orders"

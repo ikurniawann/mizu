@@ -67,17 +67,57 @@ func AskTime(date string, options []MenuOption, requested string) string {
 	return head + ":\n" + NumberedMenu(options) + "\n\nBalas dengan *nomor* jamnya."
 }
 
-func NoSlotsToday(date string, alternatives []MenuOption, outletAlt string) string {
-	msg := "Maaf, pada *" + LongDate(date) + "* jadwal sudah penuh 🙏"
-	if len(alternatives) > 0 {
-		msg += "\n\nHari terdekat yang masih tersedia:\n" + NumberedMenu(alternatives) + "\n\nBalas *nomor* harinya, atau tulis tanggal lain."
-	} else {
-		msg += "\n\nCoba tulis tanggal lain ya."
+// NoSlots offers what is left when the day is full: nearby days, another
+// outlet the same day, and the waitlist (menu values carry the choice).
+func NoSlots(date string, options []MenuOption, people int) string {
+	msg := "Maaf, pada *" + LongDate(date) + "* jadwal sudah penuh"
+	if people > 1 {
+		msg += " untuk " + strconv.Itoa(people) + " orang sekaligus"
 	}
-	if outletAlt != "" {
-		msg += "\n\nAtau ketik *ganti outlet* untuk cek " + outletAlt + " di hari yang sama."
+	msg += " 🙏"
+	if len(options) > 0 {
+		msg += "\n\nYang bisa saya tawarkan:\n" + NumberedMenu(options) + "\n\nBalas *nomor* pilihannya, atau tulis tanggal lain."
+	} else {
+		msg += "\n\nCoba tulis tanggal lain ya, atau ketik *daftar tunggu* supaya saya kabari begitu ada jam kosong."
 	}
 	return msg
+}
+
+// AskTimeStaggered: no slot fits every guest at once, but guests can start
+// one after another.
+func AskTimeStaggered(date string, people int, options []MenuOption) string {
+	return "Pada *" + LongDate(date) + "* tidak ada jam untuk " + strconv.Itoa(people) + " orang *sekaligus*, tapi bisa bergantian:\n" +
+		NumberedMenu(options) + "\n\nBalas *nomor* pilihannya, atau tulis tanggal lain. Ketik *daftar tunggu* kalau ingin dikabari saat ada jam untuk semua sekaligus."
+}
+
+func WaitlistJoined(outlet, date string, people int, period string) string {
+	when := LongDate(date)
+	if period != "" {
+		when += " (" + period + ")"
+	}
+	msg := "Siap, Anda masuk daftar tunggu *" + outlet + "* untuk *" + when + "*"
+	if people > 1 {
+		msg += ", " + strconv.Itoa(people) + " orang"
+	}
+	return msg + " ✅\n\nBegitu ada jam kosong saya kabari di chat ini. Sementara itu, tulis tanggal lain kalau mau coba hari lain, atau ketik *batal daftar tunggu* untuk membatalkan."
+}
+
+// WaitlistAvailable is what the watcher sends when a slot frees up.
+func WaitlistAvailable(name, outlet, date string, clocks []string) string {
+	greet := "Kabar baik"
+	if strings.TrimSpace(name) != "" {
+		greet += ", " + strings.TrimSpace(name)
+	}
+	return greet + "! Di *" + outlet + "* pada *" + LongDate(date) + "* sekarang ada jam kosong: " + strings.Join(clocks, ", ") +
+		" WIB.\n\nBalas *ambil* untuk lanjut booking (pilihan treatment sudah saya simpan), atau *batal* kalau tidak jadi."
+}
+
+func WaitlistCancelled() string {
+	return "Baik, daftar tunggunya saya batalkan. Ketik *booking* kapan saja kalau mau mencoba lagi 🙏"
+}
+
+func WaitlistNeedsDate() string {
+	return "Untuk daftar tunggu, sebutkan dulu tanggalnya ya (mis. *Sabtu* atau *15 Okt*)."
 }
 
 func AskTherapist(options []MenuOption, pref string) string {
@@ -100,11 +140,19 @@ func Summary(s *Session) string {
 	var b strings.Builder
 	b.WriteString("Berikut ringkasan bookingnya:\n")
 	b.WriteString("• Outlet: *" + s.OutletName + "*\n")
-	b.WriteString("• Jadwal: *" + LongDate(s.Date) + "*, jam *" + clockOfISO(s.SlotISO) + "* WIB\n")
+	if s.Staggered() {
+		b.WriteString("• Jadwal: *" + LongDate(s.Date) + "*, bergantian\n")
+	} else {
+		b.WriteString("• Jadwal: *" + LongDate(s.Date) + "*, jam *" + clockOfISO(s.SlotISO) + "* WIB\n")
+	}
 	if s.People > 1 {
 		b.WriteString("• " + strconv.Itoa(s.People) + " orang:\n")
 		for i, p := range s.Persons {
-			b.WriteString("   " + strconv.Itoa(i+1) + ". " + p.Label + " — " + Rupiah(p.Price) + "\n")
+			line := "   " + strconv.Itoa(i+1) + ". " + p.Label + " — " + Rupiah(p.Price)
+			if s.Staggered() {
+				line += " (jam " + clockOfISO(s.SlotOf(i)) + ")"
+			}
+			b.WriteString(line + "\n")
 		}
 	} else if len(s.Persons) > 0 {
 		b.WriteString("• Treatment: *" + s.Persons[0].Label + "* — " + Rupiah(s.Persons[0].Price) + "\n")
@@ -139,10 +187,18 @@ func Confirmed(s *Session, botName string) string {
 	} else {
 		b.WriteString("Booking berhasil ✅ Kode booking:\n")
 		for _, bk := range s.Bookings {
-			b.WriteString("• *" + bk.Code + "* — " + bk.Customer + "\n")
+			line := "• *" + bk.Code + "* — " + bk.Customer
+			if s.Staggered() && bk.When != "" {
+				line += ", jam " + bk.When
+			}
+			b.WriteString(line + "\n")
 		}
 	}
-	b.WriteString("Outlet: " + s.OutletName + "\nJadwal: " + LongDate(s.Date) + ", " + clockOfISO(s.SlotISO) + " WIB\n")
+	if s.Staggered() {
+		b.WriteString("Outlet: " + s.OutletName + "\nJadwal: " + LongDate(s.Date) + " (bergantian, lihat jam tiap tamu)\n")
+	} else {
+		b.WriteString("Outlet: " + s.OutletName + "\nJadwal: " + LongDate(s.Date) + ", " + clockOfISO(s.SlotISO) + " WIB\n")
+	}
 	if s.PayMethod == "online" {
 		b.WriteString("\nSilakan bayar lewat link berikut (berlaku 2 jam):\n")
 		for _, bk := range s.Bookings {

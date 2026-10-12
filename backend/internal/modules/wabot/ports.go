@@ -26,6 +26,12 @@ type Spa interface {
 	Booking(ctx context.Context, token string) (*spa.PublicBookingResult, error)
 	// OnlinePayment reports whether Xendit payment links can be made.
 	OnlinePayment() bool
+	// Fase 3: groups all-or-nothing and the waitlist.
+	BookGroup(ctx context.Context, in spa.PublicGroupInput) ([]*spa.PublicBookingResult, error)
+	JoinWaitlist(ctx context.Context, in spa.WaitlistInput) (*spa.WaitlistEntry, error)
+	CancelWaitlist(ctx context.Context, id string) error
+	OpenWaitlist(ctx context.Context) ([]spa.WaitlistEntry, error)
+	MarkWaitlistNotified(ctx context.Context, id string) error
 }
 
 // Sender delivers one bot reply to the customer and logs it on the

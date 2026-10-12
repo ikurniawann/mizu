@@ -72,7 +72,10 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
 - [x] T-538 Tes: unit (parser, state machine) + integrasi (percakapan penuh di DB uji dengan LLM palsu).
 
 ### Fase 3 — Grup & solusi saat penuh
-- [ ] T-539 Booking grup (setelah fitur grup di-commit), alternatif jam/outlet/hari, daftar tunggu.
+- [x] T-539a Booking grup *all-or-nothing* (`spa.PublicBookGroup`: satu transaksi, gagal satu = batal semua) dan **bergantian**: bila tak ada jam untuk N orang sekaligus, bot menawarkan dua gelombang ("10.00 (2 orang) & 11.00 (1 orang)"); tiap tamu punya jam sendiri di ringkasan & kode booking.
+- [x] T-539b Alternatif saat penuh: 3 hari terdekat (dengan jumlah jam), **outlet lain di hari yang sama** (dicek sungguhan, paket dicocokkan ulang ke katalog outlet itu), perintah *ganti outlet*.
+- [x] T-539c **Daftar tunggu** `spa.booking_waitlist`: bot menawarkan saat penuh (atau ketik *daftar tunggu*); pengawas tiap 10 menit mengecek ulang dan mengabari lewat WA sekali ("Kabar baik… balas *ambil*"), sesi diisi ulang sehingga *ambil* langsung ke pilihan jam; booking apa pun (bot/web) menutup entri otomatis. Backoffice: Spa → Booking History → **Daftar tunggu** (`/dashboard/spa/waitlist`, hak `spa.bookings`): daftar, catat tamu manual, tandai jadi booking/batal. Rute `GET/POST /api/spa/waitlist`, `POST /api/spa/waitlist/{id}/status`.
+- [ ] T-539d Tautan ke tabel `spa.booking_groups` (satu tagihan POS) — menunggu fitur grup FO di-commit; bot sekarang membuat N booking terpisah bernama "Nama (1)…(N)".
 
 ### Fase 4 — Meta Cloud API
 - [ ] T-540 Tombol/list interaktif, template pesan, pengingat H-1, jendela 24 jam.
@@ -123,4 +126,12 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   `b9086954`: prefix `/api/wa-bot` harus didaftarkan di `GO_BACKEND_PREFIXES`, kalau tidak Next
   membalas 404). Simulasi penuh di mizu.reddie.id: 9 giliran, balasan 157–511 ms, booking
   MZ-261012-KNBH/LR22 (uji; dibatalkan). `bot_enabled` dinyalakan untuk demo.
-
+- 2026-10-13 — Fase 3 selesai (T-539a–c). Keputusan: grup lewat chat tetap N booking terpisah (belum
+  ditautkan ke `spa.booking_groups` yang masih uncommitted di sesi lain); gelombang kedua dimulai
+  setelah treatment terlama gelombang pertama selesai (tanpa tumpang tindih terapis); daftar tunggu
+  satu entri aktif per nomor+outlet+tanggal (ulang = perbarui); pengawas hanya mengabari entri yang
+  punya percakapan WA (entri FO ditangani staf) dan menutup otomatis yang tanggalnya lewat.
+  Bukti: `go test ./internal/modules/wabot/...` (5 tes lama + `TestBotStaggersGroupWhenNoCommonSlot`,
+  `TestBotWaitlistAndAlternatives`: penuh → opsi hari/outlet lain/daftar tunggu → pembatalan → pengawas
+  mengabari → *ambil* → booking → entri `booked`), tes spa publik tetap lulus; frontend tsc/eslint/vitest
+  (`waitlist-page.test.tsx`). Migrasi `20261013000000_spa_booking_waitlist.sql`.

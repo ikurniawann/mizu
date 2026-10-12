@@ -96,6 +96,8 @@ type turn struct {
 	justBooked bool
 	// failure is a refusal (full slot, taken therapist) shown before the next prompt.
 	failure string
+	// stagger holds two-wave seatings found while listing the day's slots.
+	stagger []staggerOption
 }
 
 func (t *turn) run(ctx context.Context, text string) []string {
@@ -113,6 +115,11 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		t.handedOver = "customer"
 		return []string{domain.Handover(t.settings.Name)}
 	case domain.IntentRestart:
+		if strings.Contains(domain.Normalize(text), "daftar tunggu") && s.WaitlistID != "" {
+			t.cancelWaitlist(ctx)
+			s.WaitlistID = ""
+			return []string{domain.WaitlistCancelled()}
+		}
 		s.ResetBooking()
 		return append(out, t.prompt(ctx)...)
 	case domain.IntentStatus:
@@ -120,6 +127,27 @@ func (t *turn) run(ctx context.Context, text string) []string {
 	case domain.IntentHelp:
 		greet()
 		return append(out, t.prompt(ctx)...)
+	case domain.IntentOutlet:
+		greet()
+		t.switchOutlet()
+		return append(out, t.prompt(ctx)...)
+	case domain.IntentWaitlist:
+		greet()
+		n := domain.Normalize(text)
+		if strings.Contains(n, "batal") && s.WaitlistID != "" {
+			t.cancelWaitlist(ctx)
+			return append(out, domain.WaitlistCancelled())
+		}
+		if s.OutletID == "" || s.Date == "" {
+			return append(out, domain.WaitlistNeedsDate())
+		}
+		return append(out, t.joinWaitlist(ctx, s.Date))
+	}
+	if s.FromWaitlist && (intent == domain.IntentNo || intent == domain.IntentRestart) {
+		t.cancelWaitlist(ctx)
+		s.ResetBooking()
+		s.WaitlistID = ""
+		return append(out, domain.WaitlistCancelled())
 	}
 	if s.NextStep() == domain.StepDone {
 		n := domain.Normalize(text)
@@ -286,7 +314,7 @@ func (t *turn) apply(ctx context.Context, x *Extraction) bool {
 			if len(s.Persons) > s.People {
 				s.Persons = s.Persons[:s.People]
 			}
-			s.SlotISO = ""
+			s.ClearSlot()
 		}
 		applied = true
 	}
@@ -316,18 +344,20 @@ func (t *turn) apply(ctx context.Context, x *Extraction) bool {
 				persons = persons[:s.People]
 			}
 			s.Persons = persons
-			s.SlotISO = ""
+			s.ClearSlot()
 			applied = true
 		}
 	}
 	if x.Date != "" && x.Date != s.Date {
 		if _, err := time.ParseInLocation("2006-01-02", x.Date, domain.WIB); err == nil {
-			s.Date, s.SlotISO = x.Date, ""
+			s.Date = x.Date
+			s.ClearSlot()
 			applied = true
 		}
 	}
 	if x.Time != "" {
-		s.WantedTime, s.SlotISO = x.Time, ""
+		s.WantedTime = x.Time
+		s.ClearSlot()
 		applied = true
 	}
 	if x.Period != "" {
@@ -340,7 +370,7 @@ func (t *turn) apply(ctx context.Context, x *Extraction) bool {
 			// Choosing a gender while picking a therapist keeps the slot (the
 			// list is re-filtered); earlier it changes which slots are free.
 			if s.MenuStep != domain.StepTherapist {
-				s.SlotISO = ""
+				s.ClearSlot()
 			}
 		}
 		applied = true
@@ -435,14 +465,27 @@ func (t *turn) applyMenu(ctx context.Context, nums []int) bool {
 		if o == nil {
 			return false
 		}
-		s.Date, s.SlotISO = o.Value, ""
-		return true
+		return t.applyDateChoice(ctx, o.Value)
 	case domain.StepTime:
 		o := pick(nums[0])
 		if o == nil {
 			return false
 		}
-		s.SlotISO, s.WantedTime, s.TherapistID, s.TherapistName = o.Value, "", "", ""
+		s.ClearSlot()
+		s.WantedTime, s.TherapistID, s.TherapistName = "", "", ""
+		if isos, ok := strings.CutPrefix(o.Value, "stagger:"); ok {
+			parts := strings.Split(isos, ",")
+			for i := range s.Persons {
+				if i < len(parts) {
+					s.Persons[i].SlotISO = parts[i]
+				}
+			}
+			if len(parts) > 0 {
+				s.SlotISO = parts[0]
+			}
+			return true
+		}
+		s.SlotISO = o.Value
 		return true
 	case domain.StepTherapist:
 		o := pick(nums[0])
@@ -501,17 +544,85 @@ func (t *turn) setOutlet(ctx context.Context, o domain.OutletOpt) {
 }
 
 func (t *turn) loadCatalog(ctx context.Context) {
-	list, err := t.e.ports.Spa.Treatments(ctx, t.sess.OutletID)
+	catalog, err := t.e.catalogFor(ctx, t.sess.OutletID)
 	if err != nil {
 		t.e.log.Error("[wabot] treatment", "error", err)
 		return
 	}
-	t.sess.Catalog = nil
+	t.sess.Catalog = catalog
+}
+
+// catalogFor lists an outlet's bookable variants.
+func (e *Engine) catalogFor(ctx context.Context, outletID string) ([]domain.VariantOpt, error) {
+	list, err := e.ports.Spa.Treatments(ctx, outletID)
+	if err != nil {
+		return nil, err
+	}
+	var out []domain.VariantOpt
 	for _, tr := range list {
 		for _, v := range tr.Variants {
-			t.sess.Catalog = append(t.sess.Catalog, domain.VariantOpt{VariantID: v.ID, Treatment: tr.Name, Variant: v.Name, Category: tr.Category, DurationMin: v.DurationMin, Price: v.PriceIDR})
+			out = append(out, domain.VariantOpt{VariantID: v.ID, Treatment: tr.Name, Variant: v.Name, Category: tr.Category, DurationMin: v.DurationMin, Price: v.PriceIDR})
 		}
 	}
+	return out, nil
+}
+
+// switchOutlet forgets the outlet but keeps the party size and date; the
+// treatments are re-matched against the new outlet's catalog.
+func (t *turn) switchOutlet() {
+	s := t.sess
+	s.OutletID, s.OutletName, s.Catalog = "", "", nil
+	s.ClearSlot()
+	s.TherapistID, s.TherapistName = "", ""
+	s.ClearMenu()
+}
+
+// applyDateChoice reads a date-menu value: a plain date, "outlet:<id>:<date>"
+// (another outlet the same day) or "waitlist:<date>".
+func (t *turn) applyDateChoice(ctx context.Context, value string) bool {
+	s := t.sess
+	if date, ok := strings.CutPrefix(value, "waitlist:"); ok {
+		s.Date = date
+		t.failure = t.joinWaitlist(ctx, date)
+		return true
+	}
+	if rest, ok := strings.CutPrefix(value, "outlet:"); ok {
+		id, date, found := strings.Cut(rest, ":")
+		if !found {
+			return false
+		}
+		for _, o := range s.Outlets {
+			if o.ID == id {
+				persons := s.Persons
+				t.setOutlet(ctx, o)
+				s.Persons = t.rematch(persons)
+				s.Date = date
+				s.ClearSlot()
+				return true
+			}
+		}
+		return false
+	}
+	s.Date = value
+	s.ClearSlot()
+	return true
+}
+
+// rematch keeps guests whose variant exists in the (new) catalog.
+func (t *turn) rematch(persons []domain.Person) []domain.Person {
+	var out []domain.Person
+	for _, p := range persons {
+		for _, v := range t.sess.Catalog {
+			if v.VariantID == p.VariantID {
+				out = append(out, personOf(v))
+				break
+			}
+		}
+	}
+	if len(out) != len(persons) {
+		return nil
+	}
+	return out
 }
 
 // slots lists the day's free starts (every guest needs a free therapist).
@@ -534,7 +645,7 @@ func (t *turn) slots(ctx context.Context, date string) ([]domain.Slot, error) {
 	}
 	// A group needs People free therapists at once: check the nearest candidates only.
 	sort.SliceStable(out, func(i, j int) bool { return t.distance(out[i].At) < t.distance(out[j].At) })
-	var ok []domain.Slot
+	var ok, checked []domain.Slot
 	for i, sl := range out {
 		if i >= 10 {
 			break
@@ -543,13 +654,72 @@ func (t *turn) slots(ctx context.Context, date string) ([]domain.Slot, error) {
 		if err != nil {
 			return nil, err
 		}
+		sl.Free = len(free)
+		checked = append(checked, sl)
 		if len(free) >= s.People {
-			sl.Free = len(free)
 			ok = append(ok, sl)
 		}
 	}
 	sort.Slice(ok, func(i, j int) bool { return ok[i].At.Before(ok[j].At) })
+	if len(ok) == 0 && date == s.Date {
+		t.stagger = staggerOptions(checked, s.People, s.TotalDuration())
+	}
 	return ok, nil
+}
+
+// staggerOption is a way to seat a group in two waves: Firsts guests at
+// First, the rest at Second (after the longest treatment has ended).
+type staggerOption struct {
+	First, Second domain.Slot
+	Firsts        int
+}
+
+// staggerOptions finds up to three two-wave seatings from the checked
+// slots (each with its free-therapist count).
+func staggerOptions(slots []domain.Slot, people, durationMin int) []staggerOption {
+	if people < 2 {
+		return nil
+	}
+	byTime := append([]domain.Slot(nil), slots...)
+	sort.Slice(byTime, func(i, j int) bool { return byTime[i].At.Before(byTime[j].At) })
+	var out []staggerOption
+	for _, a := range byTime {
+		if a.Free == 0 {
+			continue
+		}
+		firsts := a.Free
+		if firsts > people-1 {
+			firsts = people - 1
+		}
+		for _, b := range byTime {
+			if b.At.Before(a.At.Add(time.Duration(durationMin)*time.Minute)) || b.Free < people-firsts {
+				continue
+			}
+			out = append(out, staggerOption{First: a, Second: b, Firsts: firsts})
+			break
+		}
+		if len(out) >= 3 {
+			break
+		}
+	}
+	return out
+}
+
+// value is the time-menu value: one ISO start per guest, in order.
+func (o staggerOption) value(people int) string {
+	parts := make([]string, people)
+	for i := range parts {
+		if i < o.Firsts {
+			parts[i] = o.First.ISO
+		} else {
+			parts[i] = o.Second.ISO
+		}
+	}
+	return "stagger:" + strings.Join(parts, ",")
+}
+
+func (o staggerOption) label(people int) string {
+	return domain.Clock(o.First.At) + " (" + strconv.Itoa(o.Firsts) + " orang) & " + domain.Clock(o.Second.At) + " (" + strconv.Itoa(people-o.Firsts) + " orang)"
 }
 
 // distance ranks a slot by closeness to what the guest asked for.
@@ -678,6 +848,14 @@ func (t *turn) promptTime(ctx context.Context) (string, bool) {
 		return "Maaf, jadwal sedang tidak bisa dicek. Coba lagi sebentar, atau ketik *admin*.", false
 	}
 	if len(slots) == 0 {
+		if len(t.stagger) > 0 {
+			opts := make([]domain.MenuOption, len(t.stagger))
+			for i, o := range t.stagger {
+				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: o.label(s.People), Value: o.value(s.People)}
+			}
+			s.SetMenu(domain.StepTime, opts)
+			return domain.AskTimeStaggered(s.Date, s.People, opts), false
+		}
 		return t.noSlots(ctx), false
 	}
 	if s.WantedTime != "" {
@@ -720,37 +898,123 @@ func (t *turn) promptTime(ctx context.Context) (string, bool) {
 	return domain.AskTime(s.Date, opts, requested), false
 }
 
-// noSlots looks for the next days with room and another outlet.
+// noSlots offers the next days with room, the other outlets the same day
+// and the waitlist.
 func (t *turn) noSlots(ctx context.Context) string {
 	s := t.sess
 	day, _ := time.ParseInLocation("2006-01-02", s.Date, domain.WIB)
-	var alt []domain.MenuOption
-	for i := 1; i <= 7 && len(alt) < 3; i++ {
+	var opts []domain.MenuOption
+	add := func(label, value string) {
+		opts = append(opts, domain.MenuOption{Key: strconv.Itoa(len(opts) + 1), Label: label, Value: value})
+	}
+	days := 0
+	for i := 1; i <= 7 && days < 3; i++ {
 		d := day.AddDate(0, 0, i).Format("2006-01-02")
 		slots, err := t.slots(ctx, d)
 		if err != nil {
 			break
 		}
 		if len(slots) > 0 {
-			alt = append(alt, domain.MenuOption{Key: strconv.Itoa(len(alt) + 1), Label: domain.LongDate(d) + " (" + strconv.Itoa(len(slots)) + " jam tersedia)", Value: d})
+			add(domain.LongDate(d)+" ("+strconv.Itoa(len(slots))+" jam tersedia)", d)
+			days++
 		}
 	}
-	other := ""
+	if len(s.Outlets) == 0 {
+		t.loadOutlets(ctx)
+	}
 	for _, o := range s.Outlets {
-		if o.ID != s.OutletID {
-			other = o.Name
+		if o.ID == s.OutletID {
+			continue
+		}
+		n := t.e.countSlots(ctx, o.ID, s.Date, s.FirstVariantIDs(), s.Pref, s.People, t.at)
+		if n > 0 {
+			add(o.Name+", hari yang sama ("+strconv.Itoa(n)+" jam tersedia)", "outlet:"+o.ID+":"+s.Date)
+		}
+	}
+	if s.WaitlistID == "" {
+		add("Masuk daftar tunggu "+domain.LongDate(s.Date)+" — saya kabari begitu ada jam kosong", "waitlist:"+s.Date)
+	}
+	s.SetMenu(domain.StepDate, opts)
+	return domain.NoSlots(s.Date, opts, s.People)
+}
+
+// countSlots is how many starts an outlet has on a day for a party (the
+// first ten nearest are checked for groups, like slots()).
+func (e *Engine) countSlots(ctx context.Context, outletID, date string, variantIDs []string, pref string, people int, after time.Time) int {
+	raw, err := e.ports.Spa.Slots(ctx, outletID, date, variantIDs, pref)
+	if err != nil {
+		return 0
+	}
+	n := 0
+	for i, r := range raw {
+		at := time.Time(r.StartsAt)
+		if !at.After(after) {
+			continue
+		}
+		if people <= 1 {
+			n++
+			continue
+		}
+		if i >= 10 {
 			break
 		}
+		free, err := e.ports.Spa.Therapists(ctx, outletID, at, variantIDs, pref)
+		if err == nil && len(free) >= people {
+			n++
+		}
 	}
-	s.SetMenu(domain.StepDate, alt)
-	return domain.NoSlotsToday(s.Date, alt, other)
+	return n
+}
+
+// joinWaitlist records the wish for date and tells the guest.
+func (t *turn) joinWaitlist(ctx context.Context, date string) string {
+	s := t.sess
+	ids := make([]string, 0, len(s.Persons))
+	labels := make([]string, 0, len(s.Persons))
+	for _, p := range s.Persons {
+		ids = append(ids, p.VariantID)
+		labels = append(labels, p.Label)
+	}
+	people := s.People
+	if people == 0 {
+		people = 1
+	}
+	name := s.Name
+	if name == "" && looksLikeName(t.conv.DisplayName) {
+		name = t.conv.DisplayName
+	}
+	e, err := t.e.ports.Spa.JoinWaitlist(ctx, spa.WaitlistInput{
+		BranchID: s.OutletID, CustomerName: name, CustomerPhone: t.conv.Phone, ConversationID: t.conv.ID,
+		VisitDate: date, Period: s.Period, People: people, VariantIDs: ids, VariantLabels: labels, Source: "whatsapp",
+	})
+	if err != nil {
+		t.e.log.Warn("[wabot] daftar tunggu gagal", "error", err)
+		return "Maaf, daftar tunggu sedang tidak bisa dicatat. Coba lagi sebentar, atau ketik *admin*."
+	}
+	s.WaitlistID = e.ID
+	// The draft stays (outlet, guests, treatments); only the day is open again.
+	s.Date, s.Period = "", ""
+	s.ClearSlot()
+	s.ClearMenu()
+	return domain.WaitlistJoined(s.OutletName, date, people, e.Period)
+}
+
+func (t *turn) cancelWaitlist(ctx context.Context) {
+	s := t.sess
+	if s.WaitlistID == "" {
+		return
+	}
+	if err := t.e.ports.Spa.CancelWaitlist(ctx, s.WaitlistID); err != nil {
+		t.e.log.Warn("[wabot] batal daftar tunggu gagal", "error", err)
+	}
+	s.WaitlistID, s.FromWaitlist = "", false
 }
 
 func (t *turn) promptTherapist(ctx context.Context) (string, bool) {
 	s := t.sess
 	at, err := domain.ParseISO(s.SlotISO)
 	if err != nil {
-		s.SlotISO = ""
+		s.ClearSlot()
 		return "", true
 	}
 	list, err := t.e.ports.Spa.Therapists(ctx, s.OutletID, at, s.FirstVariantIDs(), s.Pref)
@@ -782,37 +1046,60 @@ func (t *turn) promptTherapist(ctx context.Context) (string, bool) {
 
 /* ── actions ─────────────────────────────────────────────────────────── */
 
-// createBookings makes one booking per guest at the chosen slot.
+// createBookings books the guest, or the whole group in one go (all or
+// nothing, each guest at their own start when staggered).
 func (t *turn) createBookings(ctx context.Context) {
 	s := t.sess
 	at, err := domain.ParseISO(s.SlotISO)
 	if err != nil {
-		s.SlotISO = ""
+		s.ClearSlot()
 		return
 	}
-	var made []domain.BookingRef
-	for i, p := range s.Persons {
+	notes := "Booking lewat chat WhatsApp (" + t.settings.Name + ")"
+	if len(s.Persons) == 1 {
 		in := spa.PublicBookingInput{
 			BranchID: s.OutletID, ScheduledAt: at, CustomerName: s.Name, CustomerPhone: t.conv.Phone,
-			TherapistGenderPref: s.Pref, Notes: "Booking lewat chat WhatsApp (" + t.settings.Name + ")",
-			VariantIDs: []string{p.VariantID}, PaymentMethod: "outlet", Source: "whatsapp",
-		}
-		if i == 0 && s.TherapistID != "" {
-			in.TherapistID = s.TherapistID
-		}
-		if s.People > 1 {
-			in.CustomerName = s.Name + " (" + strconv.Itoa(i+1) + ")"
+			TherapistGenderPref: s.Pref, Notes: notes, VariantIDs: []string{s.Persons[0].VariantID},
+			PaymentMethod: "outlet", Source: "whatsapp", TherapistID: s.TherapistID,
 		}
 		res, err := t.e.ports.Spa.Book(ctx, in)
 		if err != nil {
-			t.bookingFailed(err, made)
+			t.bookingFailed(err, nil)
 			return
 		}
-		made = append(made, domain.BookingRef{Code: res.BookingCode, Token: res.AccessToken, Customer: in.CustomerName,
-			StatusURL: strings.TrimRight(t.e.ports.AppURL, "/") + "/booking/spa/status/" + res.AccessToken})
+		s.Bookings = []domain.BookingRef{t.refOf(res, in.CustomerName, at)}
+		t.justBooked = true
+		return
 	}
-	s.Bookings = made
+	in := spa.PublicGroupInput{
+		BranchID: s.OutletID, CustomerName: s.Name, CustomerPhone: t.conv.Phone, TherapistGenderPref: s.Pref,
+		Notes: notes, PaymentMethod: "outlet", Source: "whatsapp",
+	}
+	starts := make([]time.Time, len(s.Persons))
+	for i, p := range s.Persons {
+		starts[i] = at
+		if p.SlotISO != "" {
+			if own, err := domain.ParseISO(p.SlotISO); err == nil {
+				starts[i] = own
+			}
+		}
+		in.Guests = append(in.Guests, spa.PublicGuest{VariantIDs: []string{p.VariantID}, ScheduledAt: starts[i]})
+	}
+	results, err := t.e.ports.Spa.BookGroup(ctx, in)
+	if err != nil {
+		t.bookingFailed(err, nil)
+		return
+	}
+	s.Bookings = s.Bookings[:0]
+	for i, res := range results {
+		s.Bookings = append(s.Bookings, t.refOf(res, s.Name+" ("+strconv.Itoa(i+1)+")", starts[i]))
+	}
 	t.justBooked = true
+}
+
+func (t *turn) refOf(res *spa.PublicBookingResult, customer string, at time.Time) domain.BookingRef {
+	return domain.BookingRef{Code: res.BookingCode, Token: res.AccessToken, Customer: customer, When: domain.Clock(at),
+		StatusURL: strings.TrimRight(t.e.ports.AppURL, "/") + "/booking/spa/status/" + res.AccessToken}
 }
 
 // bookingFailed turns a refused booking into the next prompt.
@@ -829,7 +1116,7 @@ func (t *turn) bookingFailed(err error, made []domain.BookingRef) {
 	case strings.Contains(msg, "Terapis pilihanmu"):
 		s.TherapistID, s.TherapistName = "", ""
 	case strings.Contains(msg, "penuh") || strings.Contains(msg, "lewat"):
-		s.SlotISO = ""
+		s.ClearSlot()
 	case strings.Contains(msg, "terlalu banyak"):
 		t.handedOver = "limit"
 	}

@@ -47,6 +47,21 @@ func (a txSpa) Booking(ctx context.Context, token string) (*spa.PublicBookingRes
 	return a.svc.PublicBooking(ctx, token)
 }
 func (a txSpa) OnlinePayment() bool { return false }
+func (a txSpa) BookGroup(ctx context.Context, in spa.PublicGroupInput) ([]*spa.PublicBookingResult, error) {
+	return a.svc.PublicBookGroup(ctx, in)
+}
+func (a txSpa) JoinWaitlist(ctx context.Context, in spa.WaitlistInput) (*spa.WaitlistEntry, error) {
+	return a.svc.JoinWaitlist(ctx, in)
+}
+func (a txSpa) CancelWaitlist(ctx context.Context, id string) error {
+	return a.svc.CancelWaitlist(ctx, id)
+}
+func (a txSpa) OpenWaitlist(ctx context.Context) ([]spa.WaitlistEntry, error) {
+	return a.svc.OpenWaitlist(ctx)
+}
+func (a txSpa) MarkWaitlistNotified(ctx context.Context, id string) error {
+	return a.svc.MarkWaitlistNotified(ctx, id)
+}
 
 type memSender struct{ sent []string }
 
@@ -282,4 +297,188 @@ func TestBotDisabledDoesNothing(t *testing.T) {
 	if err != nil || handled || len(e.sender.sent) != 0 {
 		t.Fatalf("disabled bot: handled=%v err=%v sent=%v", handled, err, e.sender.sent)
 	}
+}
+
+/* ── Fase 3: groups, alternatives, waitlist ─────────────────────────── */
+
+// newConv starts another customer chatting with the same bot.
+func (e *botEnv) newConv(phone, name string) *botEnv {
+	e.t.Helper()
+	var conv string
+	if err := e.tx.QueryRow(e.ctx, `INSERT INTO crm.wa_conversations (phone, external_id, display_name, last_message_at)
+	  VALUES ($1::text, $1::text, $2, $3) RETURNING id::text`, phone, name, fixedNow).Scan(&conv); err != nil {
+		e.t.Fatal(err)
+	}
+	c := *e
+	c.conv, c.phone, c.sender = conv, phone, &memSender{}
+	c.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: c.sender, AppURL: "https://mizu.test"}, nil, func() time.Time { return fixedNow })
+	return &c
+}
+
+// addOutlet configures a second public outlet (its own branch) with the
+// given hours and number of female therapists; returns its branch id.
+func (e *botEnv) addOutlet(open, close string, therapists int) string {
+	e.t.Helper()
+	deps := testutil.Deps(e.t, func() time.Time { return fixedNow })
+	admin := testutil.CreateStaff(e.t, testutil.StaffOptions{Menus: map[string][]string{"spa.outlets": nil, "spa.therapists": nil}})
+	org := testutil.CreateOrg(e.t, e.tx)
+	mux := testutil.Mux(spa.NewOn(deps, e.tx, app.SpaPorts()))
+	call := func(method, path string, body any, status int) {
+		e.t.Helper()
+		rec, _ := testutil.Do(e.t, mux, testutil.AsStaff(testutil.Request(method, path, body), admin))
+		if rec.Code != status {
+			e.t.Fatalf("%s %s: status %d, want %d: %s", method, path, rec.Code, status, rec.Body.String())
+		}
+	}
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, org.BranchID).Scan(&warehouse); err != nil {
+		e.t.Fatal(err)
+	}
+	call("PUT", "/api/spa/outlets/"+org.BranchID, map[string]any{"warehouse_id": warehouse, "open_time": open, "close_time": close, "slot_minutes": 30}, http.StatusOK)
+	for i := 0; i < therapists; i++ {
+		var emp string
+		if err := e.tx.QueryRow(e.ctx, `INSERT INTO hris.employees (full_name, nip, email, phone, join_date)
+		  VALUES ('Terapis Kecil '||$1, 'BOTK-'||$1, 'botk-'||$1||'@test.local', '0812', CURRENT_DATE) RETURNING id::text`, testutil.RandomHex(4)).Scan(&emp); err != nil {
+			e.t.Fatal(err)
+		}
+		call("POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": org.BranchID, "gender": "female"}, http.StatusCreated)
+	}
+	return org.BranchID
+}
+
+// menuKey finds the number of the option whose label contains text.
+func menuKey(t *testing.T, reply, text string) string {
+	t.Helper()
+	for _, line := range strings.Split(reply, "\n") {
+		if strings.Contains(line, text) {
+			if m := regexp.MustCompile(`^(\d+)\. `).FindStringSubmatch(line); m != nil {
+				return m[1]
+			}
+		}
+	}
+	t.Fatalf("no menu line with %q:\n%s", text, reply)
+	return ""
+}
+
+// Three guests, two therapists: no slot fits all at once, so the bot
+// offers two waves and books the group all-or-nothing at two times.
+func TestBotStaggersGroupWhenNoCommonSlot(t *testing.T) {
+	e := setupBot(t)
+	e.say("halo")
+	e.say("3")
+	e.say("1")
+	r := e.say("besok")
+	e.wants(r, "bergantian", "10.00 (2 orang) & 11.00 (1 orang)")
+	r = e.say("1")
+	e.wants(r, "bergantian", "(jam 10.00)", "(jam 11.00)", "Rp450.000")
+	r = e.say("ya")
+	e.wants(r, "Kode booking", "jam 10.00", "jam 11.00")
+	var at10, at11 int
+	if err := e.tx.QueryRow(e.ctx, `SELECT count(*) FILTER (WHERE scheduled_at = '2026-10-09T03:00:00Z'), count(*) FILTER (WHERE scheduled_at = '2026-10-09T04:00:00Z')
+	  FROM spa.bookings WHERE customer_phone = $1 AND source = 'whatsapp'`, e.local()).Scan(&at10, &at11); err != nil {
+		t.Fatal(err)
+	}
+	if at10 != 2 || at11 != 1 {
+		t.Fatalf("staggered bookings: 10.00=%d 11.00=%d", at10, at11)
+	}
+}
+
+// A full day offers the next days, the other outlet the same day and the
+// waitlist; when a booking is cancelled the watcher tells the waiting guest,
+// who then books with "ambil".
+func TestBotWaitlistAndAlternatives(t *testing.T) {
+	e := setupBot(t)
+	small := e.addOutlet("10:00", "11:00", 1) // one 45-minute slot a day
+	// Guest 1 takes the only slot tomorrow.
+	g1 := e.newConv("6281255500201", "Tamu Satu")
+	r := g1.say("halo")
+	g1.say(menuKey(t, r, "Go Test B"+smallSuffix(e, small)))
+	g1.say("1")
+	g1.say("1")
+	r = g1.say("besok")
+	g1.wants(r, "1. 10.00")
+	g1.say("1")
+	g1.say("0")
+	r = g1.say("ya")
+	g1.wants(r, "Kode booking")
+
+	// Guest 2 finds tomorrow full: alternatives include the big outlet and the waitlist.
+	g2 := e.newConv("6281255500202", "Tamu Dua")
+	r = g2.say("halo")
+	g2.say(menuKey(t, r, "Go Test B"+smallSuffix(e, small)))
+	g2.say("1")
+	g2.say("1")
+	r = g2.say("besok")
+	g2.wants(r, "jadwal sudah penuh", "hari yang sama", "daftar tunggu", "Sabtu, 10 Okt 2026")
+	r = g2.say(menuKey(t, r, "daftar tunggu"))
+	g2.wants(r, "masuk daftar tunggu", "Jumat, 9 Okt 2026")
+	var status string
+	if err := e.tx.QueryRow(e.ctx, `SELECT status FROM spa.booking_waitlist WHERE customer_phone = $1`, g2.local()).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "open" {
+		t.Fatalf("waitlist status = %s", status)
+	}
+
+	// Guest 3 picks the other outlet the same day instead.
+	g3 := e.newConv("6281255500203", "Tamu Tiga")
+	r = g3.say("halo")
+	g3.say(menuKey(t, r, "Go Test B"+smallSuffix(e, small)))
+	g3.say("1")
+	g3.say("1")
+	r = g3.say("besok")
+	r = g3.say(menuKey(t, r, "hari yang sama"))
+	g3.wants(r, "Jam yang masih tersedia pada *Jumat, 9 Okt 2026*", "10.00")
+	var outlet string
+	if err := e.tx.QueryRow(e.ctx, `SELECT state->>'outlet_id' FROM crm.wa_bot_sessions WHERE conversation_id = $1::uuid`, g3.conv).Scan(&outlet); err != nil {
+		t.Fatal(err)
+	}
+	if outlet != e.branch {
+		t.Fatalf("outlet switch: session outlet %s, want %s", outlet, e.branch)
+	}
+
+	// Nothing to tell yet; then guest 1 cancels and the watcher notifies guest 2.
+	watcher := e.newConv("6281255500299", "Pengawas")
+	if n, err := watcher.engine.NotifyWaitlist(e.ctx, e.tx); err != nil || n != 0 {
+		t.Fatalf("notify before cancel: n=%d err=%v", n, err)
+	}
+	if _, err := e.tx.Exec(e.ctx, `UPDATE spa.bookings SET status = 'cancelled', cancelled_at = now() WHERE customer_phone = $1`, g1.local()); err != nil {
+		t.Fatal(err)
+	}
+	watcher.sender.sent = nil
+	n, err := watcher.engine.NotifyWaitlist(e.ctx, e.tx)
+	if err != nil || n != 1 || len(watcher.sender.sent) != 1 {
+		t.Fatalf("notify after cancel: n=%d err=%v sent=%v", n, err, watcher.sender.sent)
+	}
+	if msg := watcher.sender.sent[0]; !strings.Contains(msg, "Kabar baik, Tamu Dua") || !strings.Contains(msg, "10.00") {
+		t.Fatalf("waitlist message: %s", msg)
+	}
+	if err := e.tx.QueryRow(e.ctx, `SELECT status FROM spa.booking_waitlist WHERE customer_phone = $1`, g2.local()).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "notified" {
+		t.Fatalf("waitlist status after notify = %s", status)
+	}
+	// Guest 2 takes it: the draft is prefilled, only the time is asked.
+	r = g2.say("ambil")
+	g2.wants(r, "Jam yang masih tersedia pada *Jumat, 9 Okt 2026*", "1. 10.00")
+	g2.say("1")
+	g2.say("0")
+	r = g2.say("ya")
+	g2.wants(r, "Kode booking")
+	if err := e.tx.QueryRow(e.ctx, `SELECT status FROM spa.booking_waitlist WHERE customer_phone = $1`, g2.local()).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "booked" {
+		t.Fatalf("waitlist status after booking = %s", status)
+	}
+}
+
+// smallSuffix returns the branch name tail so menuKey can tell outlets apart.
+func smallSuffix(e *botEnv, branchID string) string {
+	var name string
+	if err := e.tx.QueryRow(e.ctx, `SELECT name FROM configuration.branches WHERE id = $1`, branchID).Scan(&name); err != nil {
+		e.t.Fatal(err)
+	}
+	return strings.TrimPrefix(name, "Go Test B")
 }

@@ -13,6 +13,9 @@ import type {
   BookingCreateInput,
   BookingItemInput,
   BookingListParams,
+  WaitlistCreateInput,
+  WaitlistEntry,
+  WaitlistListParams,
   BookingSummary,
   BookingUpdateInput,
   CheckoutResult,
@@ -158,6 +161,12 @@ export const spaApi = {
     remove<unknown>(withQuery(`${BASE}/outlet-pics`, input)),
 
   // Booking
+  // Daftar tunggu (EPIC-053 Fase 3)
+  waitlist: (params: WaitlistListParams) => call<WaitlistEntry[]>(withQuery(`${BASE}/waitlist`, params)),
+  createWaitlist: (input: WaitlistCreateInput) => send<WaitlistEntry>(`${BASE}/waitlist`, input),
+  setWaitlistStatus: (id: string, status: "open" | "booked" | "cancelled") =>
+    send<WaitlistEntry>(`${BASE}/waitlist/${enc(id)}/status`, { status }),
+
   bookings: (params: BookingListParams) =>
     callPage<BookingSummary>(withQuery(`${BASE}/bookings`, params as Record<string, QueryValue>)),
   booking: (id: string) => call<Booking>(`${BASE}/bookings/${enc(id)}`),

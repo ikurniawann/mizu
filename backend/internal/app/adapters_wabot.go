@@ -77,6 +77,21 @@ func (a waBotSpa) Booking(ctx context.Context, token string) (*spa.PublicBooking
 	return a.svc.PublicBooking(ctx, token)
 }
 func (a waBotSpa) OnlinePayment() bool { return a.svc.OnlinePaymentReady() }
+func (a waBotSpa) BookGroup(ctx context.Context, in spa.PublicGroupInput) ([]*spa.PublicBookingResult, error) {
+	return a.svc.PublicBookGroup(ctx, in)
+}
+func (a waBotSpa) JoinWaitlist(ctx context.Context, in spa.WaitlistInput) (*spa.WaitlistEntry, error) {
+	return a.svc.JoinWaitlist(ctx, in)
+}
+func (a waBotSpa) CancelWaitlist(ctx context.Context, id string) error {
+	return a.svc.CancelWaitlist(ctx, id)
+}
+func (a waBotSpa) OpenWaitlist(ctx context.Context) ([]spa.WaitlistEntry, error) {
+	return a.svc.OpenWaitlist(ctx)
+}
+func (a waBotSpa) MarkWaitlistNotified(ctx context.Context, id string) error {
+	return a.svc.MarkWaitlistNotified(ctx, id)
+}
 
 /* ── WhatsApp ────────────────────────────────────────────────────────── */
 
