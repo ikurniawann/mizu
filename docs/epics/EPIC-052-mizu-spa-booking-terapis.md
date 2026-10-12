@@ -321,3 +321,9 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   "Per tanggal" & "Jadwal 14 hari", kartu per booking (bukan per treatment), banner + tanda "Baru" untuk booking yang
   ditugaskan < 24 jam, ringkasan 3 angka komisi. Tes integrasi diperluas di alur utama spa. Deploy `mizu:therapist-1`,
   `mizu-api:therapist-1`. Booking uji MZ-261012-TCLB dibatalkan.
+- 2026-10-12 — Istilah Stall → Outlet di semua teks UI & pesan (kode/field/cookie/kode gudang tetap; impor menerima
+  "Outlet Code"; klasifikasi galat rush hour mengenali "outlet"). Kalender Absensi: shift Mizu bernama Shift Pagi/Siang
+  (data live diganti nama, shift NüHabit lama "(lama)" & nonaktif; backup hris-shifts-before-rename), terapis melihat
+  "Spa · n treatment" di hari ber-booking. Foto contoh di Lokasi/outlet/Suasana/Tentang/Treatment (lib/photos.ts).
+  Halaman /booking/spa/ubah: ubah jadwal dengan kode booking + nomor WA sampai 1 jam sebelum (juga yang sudah dibayar
+  online, selama belum dibuka di kasir); batal tetap 24 jam. Deploy `mizu:ubah-1`, `mizu-api:ubah-1`.
