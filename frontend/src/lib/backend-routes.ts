@@ -74,6 +74,8 @@ export const GO_BACKEND_PREFIXES: readonly string[] = [
   "/api/site",
   // spa (Mizu): booking, therapists, commissions
   "/api/spa",
+  // wabot (Mizu): WhatsApp booking bot — inbox session, bot on/off, simulator
+  "/api/wa-bot",
 ];
 
 /**
