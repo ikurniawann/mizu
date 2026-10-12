@@ -155,7 +155,7 @@ func (store) deleteSession(ctx context.Context, q database.Querier, conversation
 // recordBotMessage logs a bot reply the simulator did not send.
 func (store) recordBotMessage(ctx context.Context, q database.Querier, conversationID, phone, text string, at time.Time) error {
 	_, err := q.Exec(ctx, `INSERT INTO crm.wa_messages (conversation_id, direction, message_type, channel, external_id, phone, body, status, provider, created_at)
-	  VALUES ($1::uuid, 'out', 'bot', 'whatsapp', $2, $2, $3, 'sent', 'simulasi', $4)`, conversationID, phone, text, at)
+	  VALUES ($1::uuid, 'out', 'bot', 'whatsapp', $2::text, $3::text, $4::text, 'sent', 'simulasi', $5)`, conversationID, phone, phone, text, at)
 	if err != nil {
 		return err
 	}
