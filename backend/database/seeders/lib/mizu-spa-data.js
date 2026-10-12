@@ -103,8 +103,9 @@ const COMMISSION_RULES = [
 
 // Shift kerja spa (hris.shifts) dan pola libur mingguan terapis.
 const SHIFTS = [
-  { key: "pagi", name: "Spa Pagi", start: "09:00", end: "17:00" },
-  { key: "siang", name: "Spa Siang", start: "13:00", end: "22:00" },
+  // Nama shift kerja biasa; "Spa" hanya untuk jadwal treatment. `legacy` = nama lama.
+  { key: "pagi", name: "Shift Pagi", legacy: "Spa Pagi", start: "09:00", end: "17:00" },
+  { key: "siang", name: "Shift Siang", legacy: "Spa Siang", start: "13:00", end: "22:00" },
 ];
 
 // nip suffix, name, gender, outlet, role (therapist|frontdesk|manager), shift, day off (1=Senin..7), login email

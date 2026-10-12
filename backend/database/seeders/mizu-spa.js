@@ -9,7 +9,7 @@
  *   - spa.treatments + treatment_variants       : 12 treatment, varian durasi & harga
  *   - spa.variant_outlet_prices                 : harga premium Setiabudi
  *   - spa.commission_rules                      : default 10%, refleksi 12%, signature nominal, dll
- *   - hris.departments/positions/shifts         : Spa Operations, Terapis, shift Spa Pagi/Siang
+ *   - hris.departments/positions/shifts         : Spa Operations, Terapis, Shift Pagi/Siang
  *   - hris.employees + employee_shifts          : 17 terapis, 3 resepsionis, 3 manajer (pola libur mingguan)
  *   - login demo: fo.westhoff@ / fo.signature@ (Resepsionis Spa), ayu@ / euis@ / wulan@ (Terapis Spa);
  *     login demo lama fo.dago@ / fo.riau@ / fo.setiabudi@ dinonaktifkan
@@ -172,7 +172,12 @@ async function seedHr(c) {
   }
   const shifts = {};
   for (const [i, s] of D.SHIFTS.entries()) {
-    let r = await c.query(`SELECT id FROM hris.shifts WHERE name = $1 LIMIT 1`, [s.name]);
+    // Cocokkan nama + jam (database salinan NüHabit punya "Shift Pagi" lain, 08:00–16:00),
+    // juga nama lama "Spa …" agar seeder ulang tidak membuat shift kembar.
+    let r = await c.query(
+      `SELECT id FROM hris.shifts WHERE name = ANY($1::text[]) AND start_time = $2::time AND end_time = $3::time
+       ORDER BY (name = $4) DESC LIMIT 1`, [[s.name, s.legacy].filter(Boolean), s.start, s.end, s.name]);
+    if (r.rowCount) await c.query(`UPDATE hris.shifts SET name = $2 WHERE id = $1 AND name <> $2`, [r.rows[0].id, s.name]);
     if (!r.rowCount) {
       r = await c.query(
         `INSERT INTO hris.shifts (name, start_time, end_time, break_minutes, late_tolerance_minutes, is_overnight, is_active, sort_order)

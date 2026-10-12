@@ -2,6 +2,7 @@
 
 import { CalendarDaysIcon } from "@heroicons/react/24/outline";
 import { AttendanceCalendar } from "@/components/hris/AttendanceCalendar";
+import { TherapistAttendanceDay, TherapistAttendanceLegend } from "@/features/spa/components/therapist-attendance-day";
 import { useEssMe } from "../queries";
 import { EssClockPanel } from "./ess-clock-panel";
 import { EssLoading, EssNotLinked } from "./ess-states";
@@ -43,7 +44,8 @@ export function EssAbsensiPage() {
         </div>
       </div>
 
-      <AttendanceCalendar employeeId="me" />
+      {/* Terapis spa: hari dengan jadwal treatment ditandai "Spa" (shift tetap shift). */}
+      <AttendanceCalendar employeeId="me" DayExtra={TherapistAttendanceDay} legendExtra={<TherapistAttendanceLegend />} />
     </div>
   );
 }

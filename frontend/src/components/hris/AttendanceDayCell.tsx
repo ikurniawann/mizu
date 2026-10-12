@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { HolidayRow } from "@/lib/hris/holidays";
 import { shiftClock } from "@/lib/hris/attendance-calendar";
 import { formatTime } from "@/lib/format";
@@ -13,6 +14,8 @@ interface AttendanceDayCellProps {
   scheduledShift: CalendarScheduleRow | null;
   isDayOff: boolean;
   holidays: HolidayRow[];
+  /** Isi tambahan di bawah sel (mis. jadwal treatment terapis spa). */
+  extra?: ReactNode;
   onClick: () => void;
 }
 
@@ -25,6 +28,7 @@ export function AttendanceDayCell({
   scheduledShift,
   isDayOff,
   holidays,
+  extra,
   onClick,
 }: AttendanceDayCellProps) {
   const isLate = attendance?.is_late ?? false;
@@ -128,6 +132,7 @@ export function AttendanceDayCell({
           </p>
         </div>
       )}
+      {extra}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
@@ -33,7 +33,16 @@ function thisMonth() {
  * `employeeId="me"` untuk karyawan yang login (ESS). Setelah clock-in/out,
  * invalidasi `attendanceQueryKeys.calendarAll()` untuk memuat ulang.
  */
-export function AttendanceCalendar({ employeeId }: { employeeId?: string }) {
+export function AttendanceCalendar({
+  employeeId,
+  DayExtra,
+  legendExtra,
+}: {
+  employeeId?: string;
+  /** Isi tambahan per tanggal (dirender di tiap sel; `start`/`end` = bulan tampil). */
+  DayExtra?: ComponentType<{ date: string; start: string; end: string }>;
+  legendExtra?: ReactNode;
+}) {
   const [{ year, monthIndex }, setMonth] = useState(thisMonth);
   // Popup detail hari (terutama mobile: di layar kecil detail sel disembunyikan)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -142,6 +151,7 @@ export function AttendanceCalendar({ employeeId }: { employeeId?: string }) {
                     scheduledShift={info.scheduledShift}
                     isDayOff={info.isDayOff}
                     holidays={info.holidays}
+                    extra={DayExtra ? <DayExtra date={date} start={start} end={end} /> : undefined}
                     onClick={() => setSelectedDate(date)}
                   />
                 );
@@ -173,6 +183,7 @@ export function AttendanceCalendar({ employeeId }: { employeeId?: string }) {
               </span>
             </>
           )}
+          {legendExtra}
           <span className="ml-auto hidden text-gray-300 sm:inline">Waktu dalam WIB</span>
         </div>
         <p className="mt-2 text-[11px] text-gray-400 sm:hidden">
