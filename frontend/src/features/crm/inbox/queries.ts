@@ -7,8 +7,10 @@ import {
   fetchConversationInsight,
   fetchConversations,
   fetchGatewayDown,
+  fetchBotSession,
   fetchReplyTemplates,
   postConversationAction,
+  setBotActive,
   type ConversationAction,
   type ConversationList,
   type InboxFilters,
@@ -25,6 +27,7 @@ export const inboxQueryKeys = {
   templates: ["crm", "inbox", "templates"] as const,
   gateway: ["crm", "inbox", "gateway"] as const,
   insight: (id: string) => ["crm", "inbox", "insight", id] as const,
+  bot: (id: string) => ["crm", "inbox", "bot", id] as const,
 };
 
 export const useConversations = (filters: InboxFilters) =>
@@ -94,5 +97,28 @@ export function useAnalyzeConversation(conversationId: string) {
   return useMutation({
     mutationFn: () => analyzeConversation(conversationId),
     onSuccess: ({ insight }) => queryClient.setQueryData(inboxQueryKeys.insight(conversationId), insight),
+  });
+}
+
+/** EPIC-053 — sesi bot ikut di-polling bersama thread. */
+export const useBotSession = (conversationId: string | null) =>
+  useQuery({
+    queryKey: inboxQueryKeys.bot(conversationId ?? ""),
+    queryFn: () => fetchBotSession(conversationId as string),
+    enabled: Boolean(conversationId),
+    refetchInterval: INBOX_POLL_MS,
+  });
+
+export function useSetBotActive(conversationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (active: boolean) => setBotActive(conversationId, active),
+    onSuccess: (session) => {
+      queryClient.setQueryData(inboxQueryKeys.bot(conversationId), session);
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: inboxQueryKeys.detail(conversationId) }),
+        queryClient.invalidateQueries({ queryKey: inboxQueryKeys.lists() }),
+      ]);
+    },
   });
 }

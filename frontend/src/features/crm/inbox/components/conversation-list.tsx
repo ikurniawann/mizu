@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, Loader2, MessageCircle, Search } from "lucide-react";
+import { Bot, Camera, Loader2, MessageCircle, Search } from "lucide-react";
 import type { InboxFilters } from "../api";
 import type { InboxConversation } from "../types";
 import { STATUS_LABELS, STATUS_STYLES } from "../types";
@@ -116,6 +116,11 @@ export function ConversationList({
                 <span className={`rounded-full border px-1.5 py-px text-[10px] font-medium ${STATUS_STYLES[conversation.status]}`}>
                   {STATUS_LABELS[conversation.status]}
                 </span>
+                {conversation.bot_active && (
+                  <span className="inline-flex items-center gap-0.5 rounded-full border border-teal-200 bg-teal-50 px-1.5 py-px text-[10px] font-medium text-teal-700">
+                    <Bot className="size-2.5" /> Bot
+                  </span>
+                )}
                 {conversation.is_complaint && (
                   <span className="rounded-full border border-orange-200 bg-orange-50 px-1.5 py-px text-[10px] font-medium text-orange-700">
                     Komplain

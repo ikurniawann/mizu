@@ -1,0 +1,113 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"nuhabit/backend/internal/modules/crm/inbox"
+	inboxdomain "nuhabit/backend/internal/modules/crm/inbox/domain"
+	"nuhabit/backend/internal/modules/spa"
+	"nuhabit/backend/internal/modules/wabot"
+	"nuhabit/backend/internal/platform/database"
+	"nuhabit/backend/internal/platform/module"
+)
+
+// wabot adapters: the spa's public booking service, WhatsApp sending and
+// logging through the inbox gateway, and the OpenAI extractor.
+
+func waBotPorts(d module.Deps) wabot.Ports {
+	return wabot.Ports{
+		Spa:       waBotSpa{svc: spa.NewService(d.DB, SpaPorts(), d)},
+		Sender:    waBotSender{gw: crmInboxGateway(d)},
+		Recorder:  waBotRecorder{gw: crmInboxGateway(d)},
+		Extractor: wabot.OpenAIExtractor{Getenv: os.Getenv},
+		AppURL:    strings.TrimRight(firstNonEmptyStr(os.Getenv("NEXT_PUBLIC_APP_URL"), os.Getenv("NEXT_PUBLIC_BASE_URL")), "/"),
+	}
+}
+
+var (
+	waBotOnce   sync.Once
+	waBotShared *wabot.Engine
+)
+
+// waBotEngine is the one engine the webhook uses (built lazily, shared).
+func waBotEngine(d module.Deps) waBotWebhook {
+	waBotOnce.Do(func() { waBotShared = wabot.NewEngine(waBotPorts(d), d.Log, d.Now) })
+	return waBotWebhook{engine: waBotShared}
+}
+
+type waBotWebhook struct{ engine *wabot.Engine }
+
+func (w waBotWebhook) Handle(ctx context.Context, db database.DB, conversationID, phone string, body *string, at time.Time) (bool, error) {
+	if body == nil {
+		return false, nil
+	}
+	return w.engine.Handle(ctx, db, conversationID, *body, at, nil)
+}
+
+/* ── spa ─────────────────────────────────────────────────────────────── */
+
+type waBotSpa struct{ svc *spa.Service }
+
+var _ wabot.Spa = waBotSpa{}
+
+func (a waBotSpa) Outlets(ctx context.Context) ([]spa.PublicOutlet, error) {
+	return a.svc.PublicOutlets(ctx)
+}
+func (a waBotSpa) Treatments(ctx context.Context, branchID string) ([]spa.PublicTreatment, error) {
+	return a.svc.PublicTreatments(ctx, branchID)
+}
+func (a waBotSpa) Slots(ctx context.Context, branchID, date string, variantIDs []string, pref string) ([]spa.PublicSlot, error) {
+	return a.svc.PublicSlots(ctx, branchID, date, variantIDs, pref)
+}
+func (a waBotSpa) Therapists(ctx context.Context, branchID string, startsAt time.Time, variantIDs []string, pref string) ([]spa.PublicTherapist, error) {
+	return a.svc.PublicTherapists(ctx, branchID, startsAt, variantIDs, pref)
+}
+func (a waBotSpa) Book(ctx context.Context, in spa.PublicBookingInput) (*spa.PublicBookingResult, error) {
+	return a.svc.PublicBook(ctx, in)
+}
+func (a waBotSpa) Pay(ctx context.Context, token string) (*spa.PublicPayment, error) {
+	return a.svc.PublicPay(ctx, token)
+}
+func (a waBotSpa) Booking(ctx context.Context, token string) (*spa.PublicBookingResult, error) {
+	return a.svc.PublicBooking(ctx, token)
+}
+func (a waBotSpa) OnlinePayment() bool { return a.svc.OnlinePaymentReady() }
+
+/* ── WhatsApp ────────────────────────────────────────────────────────── */
+
+type waBotSender struct{ gw inbox.Gateway }
+
+func (s waBotSender) Send(ctx context.Context, db database.DB, phone, conversationID, text string) error {
+	res := s.gw.SendText(ctx, db, phone, text, "bot", "", conversationID)
+	if !res.Success {
+		return errors.New(firstNonEmptyStr(res.Reason, "pengiriman WhatsApp gagal"))
+	}
+	return nil
+}
+
+type waBotRecorder struct{ gw inbox.Gateway }
+
+// RecordInbound stores a simulated customer message like the gateway would.
+func (r waBotRecorder) RecordInbound(ctx context.Context, db database.DB, phone, pushName, text string, at time.Time) (string, error) {
+	id := "sim-" + at.UTC().Format("20060102150405.000000000")
+	var name *string
+	if strings.TrimSpace(pushName) != "" {
+		name = &pushName
+	}
+	_, conversationID, err := r.gw.Record(ctx, db, inboxdomain.Inbound{
+		Channel: "whatsapp", ExternalID: phone, Phone: &phone, Direction: "in", Body: &text,
+		ProviderMessageID: &id, PushName: name, SentAt: &at,
+	})
+	if err != nil {
+		return "", err
+	}
+	if conversationID == "" {
+		return "", errors.New("percakapan simulasi tidak tercatat")
+	}
+	return conversationID, nil
+}

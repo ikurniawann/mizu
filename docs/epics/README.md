@@ -54,6 +54,8 @@ deploying-dev · ready-for-qa · blocked · done).
 | [EPIC-049](./EPIC-049-integrasi-gobiz-gofood.md) | Integrasi GoBiz / GoFood — Order Masuk POS & KDS | ready-for-qa | 2026-09-12 |
 | [EPIC-050](./EPIC-050-crm-advance-zoho-salesforce.md) | CRM Advance — Menuju Setara Zoho / Salesforce (Account, Tasks, Scoring, Workflow, Forecast, Report Builder; Email ditunda) | on-progress | 2026-09-13 |
 | [EPIC-051](./EPIC-051-tagihan-member.md) | Tagihan Member — Cicilan Order Member (POS → Operasional → Tagihan) | ready-for-qa | 2026-10-01 |
+| [EPIC-052](./EPIC-052-mizu-spa-booking-terapis.md) | Mizu Spa — Booking, Terapis, dan Komisi (Fase 1) (`MODULE-SPA`) | ready-for-qa | 2026-10-08 |
+| [EPIC-053](./EPIC-053-wa-booking-bot.md) | Chatbot Booking WhatsApp — booking & bayar lewat chat, serah ke admin (`MODULE-WABOT`) | on-progress | 2026-10-12 |
 
 Aturan:
 - Epic + registry ini adalah sumber kebenaran status pekerjaan (canonical).

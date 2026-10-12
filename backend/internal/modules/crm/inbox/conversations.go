@@ -57,7 +57,7 @@ func (h *handler) listConversations(w http.ResponseWriter, r *http.Request) erro
             v.status, v.assigned_user_id, v.unread_count,
             v.last_message_at, v.last_message_preview,
             v.is_complaint, v.category, v.priority, v.sla_response_breached,
-            v.awaiting_since,
+            v.awaiting_since, v.bot_active,
             c.id AS customer_id, c.name AS customer_name,
             c.membership_tier, c.member_type,
             u.full_name AS assigned_name
@@ -97,6 +97,7 @@ func (h *handler) conversationDetail(w http.ResponseWriter, r *http.Request) err
             v.is_complaint, v.category, v.priority,
             v.awaiting_since, v.first_response_seconds, v.resolution_seconds,
             v.sla_response_breached, v.escalated_at, v.csat_score,
+            v.bot_active, v.bot_handover_at, v.bot_handover_reason,
             u.full_name AS assigned_name
        FROM crm.wa_conversations v
        LEFT JOIN configuration.users u ON u.id = v.assigned_user_id
@@ -355,11 +356,15 @@ func (h *handler) reply(ctx context.Context, c conversationRef, message, agentID
 	if err := onAgentReply(ctx, h.db, c.id, h.now()); err != nil {
 		return nil, err
 	}
+	// An agent's reply takes the conversation from the booking bot (EPIC-053).
 	_, err := h.db.Exec(ctx, `UPDATE crm.wa_conversations
         SET last_message_at = now(),
             last_message_preview = $2,
             status = CASE WHEN status IN ('open','resolved') THEN 'in_progress' ELSE status END,
-            assigned_user_id = COALESCE(assigned_user_id, $3)
+            assigned_user_id = COALESCE(assigned_user_id, $3),
+            bot_handover_at = CASE WHEN bot_active THEN now() ELSE bot_handover_at END,
+            bot_handover_reason = CASE WHEN bot_active THEN 'agent' ELSE bot_handover_reason END,
+            bot_active = false
       WHERE id = $1`, c.id, domain.MessagePreview(&message, nil), agentID)
 	return data, err
 }

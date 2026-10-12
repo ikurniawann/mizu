@@ -1,6 +1,7 @@
 import type { CsCategory, CsPriority } from "@/lib/crm/cs-rules";
 import { parseCrmResponse } from "../http";
 import type {
+  BotSession,
   ConversationStatus,
   InboxConversation,
   InboxMessage,
@@ -140,4 +141,23 @@ export async function analyzeConversation(
     throw new Error(json.data?.error || json.error || "Gagal meringkas percakapan");
   }
   return { insight: json.data.insight ?? null, empty: json.data.status === "empty" };
+}
+
+/** EPIC-053 — sesi bot booking percakapan ini; 404 = belum ada sesi. */
+export async function fetchBotSession(conversationId: string): Promise<BotSession | null> {
+  const response = await fetch(`/api/wa-bot/conversations/${conversationId}`, { cache: "no-store" });
+  if (response.status === 404) return null;
+  const json = await parseCrmResponse<{ data: BotSession }>(response, "Gagal memuat status bot");
+  return json.data;
+}
+
+/** Hidupkan/matikan bot untuk satu percakapan (agent ambil alih atau serahkan kembali). */
+export async function setBotActive(conversationId: string, active: boolean): Promise<BotSession> {
+  const response = await fetch(`/api/wa-bot/conversations/${conversationId}/bot`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ active }),
+  });
+  const json = await parseCrmResponse<{ data: BotSession }>(response, "Gagal mengubah status bot");
+  return json.data;
 }

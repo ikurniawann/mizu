@@ -972,7 +972,7 @@ func (store) boardItem(ctx context.Context, q Q, itemID string) (*BoardItem, err
 func (store) openPublicBookings(ctx context.Context, q Q, phone string, now time.Time) (int, error) {
 	var n int
 	err := q.QueryRow(ctx, `SELECT count(*) FROM spa.bookings
-	  WHERE source = 'public' AND customer_phone = $1 AND scheduled_at > $2 AND status IN ('unassigned', 'assigned')`,
+	  WHERE source IN ('public', 'whatsapp') AND customer_phone = $1 AND scheduled_at > $2 AND status IN ('unassigned', 'assigned')`,
 		phone, now).Scan(&n)
 	return n, err
 }
@@ -1000,7 +1000,7 @@ func (store) publicToken(ctx context.Context, q Q, bookingID string) (string, er
 
 func (store) publicBookingID(ctx context.Context, q Q, token string) (string, error) {
 	var id string
-	err := q.QueryRow(ctx, `SELECT id::text FROM spa.bookings WHERE public_token = $1::uuid AND source = 'public'`, token).Scan(&id)
+	err := q.QueryRow(ctx, `SELECT id::text FROM spa.bookings WHERE public_token = $1::uuid AND source IN ('public', 'whatsapp')`, token).Scan(&id)
 	if database.IsNoRows(err) {
 		return "", httpx.NotFound("Booking tidak ditemukan")
 	}
@@ -1056,7 +1056,7 @@ func (store) publicBookingByToken(ctx context.Context, q Q, token string, now ti
 	  FROM spa.bookings b JOIN configuration.branches br ON br.id = b.branch_id
 	  LEFT JOIN spa.therapists t ON t.id = b.therapist_id
 	  LEFT JOIN hris.employees e ON e.id = t.employee_id
-	 WHERE b.public_token = $1::uuid AND b.source = 'public'`, token, now).Scan(
+	 WHERE b.public_token = $1::uuid AND b.source IN ('public', 'whatsapp')`, token, now).Scan(
 		&bookingID, &result.BranchID, &result.BookingCode, &at, &result.BranchName, &result.BranchPhone, &result.GenderPref,
 		&result.Status, &result.PaymentStatus, &result.CanManage, &result.CanReschedule, &therapistName, &result.PaymentMethod,
 		&result.InvoiceURL, &result.PaidOnline, &result.MockPayment)

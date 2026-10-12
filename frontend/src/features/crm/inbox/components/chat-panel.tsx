@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Bot,
   CheckCircle2,
   ChevronDown,
   Loader2,
@@ -70,7 +71,11 @@ export function ChatPanel({
             <span className={`rounded-full border px-2 py-0.5 font-medium ${STATUS_STYLES[conversation.status]}`}>
               {STATUS_LABELS[conversation.status]}
             </span>
-            {conversation.assigned_name ? (
+            {conversation.bot_active ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 font-medium text-teal-700">
+                <Bot className="size-3" /> Dijawab bot
+              </span>
+            ) : conversation.assigned_name ? (
               <span>Ditangani {conversation.assigned_name}</span>
             ) : (
               <span className="text-amber-600">Belum ada yang menangani</span>
@@ -135,6 +140,7 @@ export function ChatPanel({
       <div className="flex-1 space-y-2 overflow-y-auto bg-slate-50 p-4">
         {withDateSeparators(messages).map(({ message, dateLabel }) => {
           const outbound = message.direction === "out";
+          const fromBot = outbound && message.message_type === "bot";
 
           return (
             <div key={message.id}>
@@ -144,9 +150,11 @@ export function ChatPanel({
               <div className={`flex ${outbound ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
-                    outbound
-                      ? "rounded-br-sm bg-violet-600 text-white"
-                      : "rounded-bl-sm border border-slate-200 bg-white text-slate-800"
+                    fromBot
+                      ? "rounded-br-sm bg-teal-600 text-white"
+                      : outbound
+                        ? "rounded-br-sm bg-violet-600 text-white"
+                        : "rounded-bl-sm border border-slate-200 bg-white text-slate-800"
                   }`}
                 >
                   {message.body ? (
@@ -156,10 +164,15 @@ export function ChatPanel({
                   )}
                   <div
                     className={`mt-1 flex items-center gap-1.5 text-[10px] ${
-                      outbound ? "text-violet-200" : "text-slate-400"
+                      fromBot ? "text-teal-100" : outbound ? "text-violet-200" : "text-slate-400"
                     }`}
                   >
                     {formatTime(message.created_at)}
+                    {fromBot && (
+                      <span className="inline-flex items-center gap-0.5">
+                        · <Bot className="size-2.5" /> bot
+                      </span>
+                    )}
                     {outbound && message.sent_by_name && <span>· {message.sent_by_name}</span>}
                     {outbound && message.wa_from_me && (
                       <span className="inline-flex items-center gap-0.5">

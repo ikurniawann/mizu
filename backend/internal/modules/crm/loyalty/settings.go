@@ -17,6 +17,8 @@ var editableKeys = []string{
 	"ark_coin_enabled", "xp_enabled", "topup_bonus_percent", "profile_completion_free_xp",
 	"cs_sla_response_minutes", "cs_sla_resolution_minutes", "cs_business_hours_start", "cs_business_hours_end",
 	"cs_auto_reply_enabled", "cs_auto_reply_text", "cs_csat_enabled", "cs_csat_text",
+	// WhatsApp booking bot (EPIC-053)
+	"bot_enabled", "bot_name", "bot_greeting", "bot_handover_keywords",
 }
 
 // orderedJSON is a JSON object whose keys keep the row order.
@@ -106,6 +108,10 @@ func settingsUpdate(f *validate.Form) map[string]any {
 	text("cs_auto_reply_text")
 	boolean("cs_csat_enabled")
 	text("cs_csat_text")
+	boolean("bot_enabled")
+	text("bot_name")
+	text("bot_greeting")
+	text("bot_handover_keywords")
 	// The object refine counts the parsed keys (unknown keys are stripped).
 	if f.Valid() && len(out) == 0 {
 		f.Fail(nil, "custom", "Minimal satu setting harus diisi")

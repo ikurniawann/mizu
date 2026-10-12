@@ -1893,7 +1893,13 @@ type publicBookingInput struct {
 	TherapistID string
 	// PaymentMethod is outlet (default) or online.
 	PaymentMethod string
+	// Source is public (website, default) or whatsapp (chatbot).
+	Source string
 }
+
+// PublicBookingInput is the self-service booking request for other
+// contexts (the WhatsApp bot).
+type PublicBookingInput = publicBookingInput
 
 // PublicBook records an online booking, unassigned, for the front office.
 func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*PublicBookingResult, error) {
@@ -1913,6 +1919,9 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 	}
 	if in.PaymentMethod == PaymentOnline && !s.onlinePaymentReady() {
 		return nil, httpx.BadRequest("Pembayaran online belum tersedia. Pilih bayar di outlet.")
+	}
+	if in.Source == "" {
+		in.Source = "public"
 	}
 	var result *PublicBookingResult
 	err := s.tx(ctx, func(q Q) error {
@@ -1959,7 +1968,7 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 		code := domain.BookingCode(now)
 		id, err := s.st.insertBooking(ctx, q, newBooking{
 			Code: code, CompanyID: o.CompanyID, BranchID: o.BranchID, WarehouseID: o.WarehouseID,
-			BookingType: "reservation", Source: "public", CustomerID: &customerID, CustomerName: in.CustomerName,
+			BookingType: "reservation", Source: in.Source, CustomerID: &customerID, CustomerName: in.CustomerName,
 			CustomerPhone: phone, TherapistGenderPref: in.TherapistGenderPref, Notes: in.Notes, ScheduledAt: in.ScheduledAt,
 			EndsAt: in.ScheduledAt.Add(time.Duration(total) * time.Minute),
 		})

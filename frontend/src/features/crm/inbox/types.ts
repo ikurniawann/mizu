@@ -23,6 +23,10 @@ export type InboxConversation = {
   sla_response_breached?: boolean;
   escalated_at?: string | null;
   csat_score?: number | null;
+  /** EPIC-053 — bot booking menjawab percakapan ini (false = agent/CS). */
+  bot_active?: boolean;
+  bot_handover_at?: string | null;
+  bot_handover_reason?: string | null;
   assigned_user_id: string | null;
   assigned_name: string | null;
   unread_count: number;
@@ -98,4 +102,48 @@ export type InternalNote = {
   body: string;
   created_at: string;
   author_name: string | null;
+};
+
+/** EPIC-053 — booking yang dibuat bot di percakapan ini. */
+export type BotBookingRef = {
+  code: string;
+  token: string;
+  status_url: string;
+  pay_url?: string;
+  customer: string;
+  paid: boolean;
+};
+
+/** Status sesi bot booking (GET /api/wa-bot/conversations/{id}). */
+export type BotSession = {
+  active: boolean;
+  handover_at: string | null;
+  handover_reason: string | null;
+  step: string;
+  summary: string[];
+  bookings: BotBookingRef[];
+  last_bot_at: string | null;
+  last_latency_ms: number | null;
+};
+
+export const BOT_STEP_LABELS: Record<string, string> = {
+  outlet: "Memilih outlet",
+  people: "Menanyakan jumlah orang",
+  treatment: "Memilih treatment",
+  date: "Menanyakan tanggal",
+  time: "Memilih jam",
+  therapist: "Memilih terapis",
+  name: "Menanyakan nama",
+  confirm: "Menunggu konfirmasi",
+  payment: "Memilih pembayaran",
+  done: "Booking selesai",
+};
+
+export const BOT_HANDOVER_LABELS: Record<string, string> = {
+  customer: "Customer minta admin",
+  lost: "Bot tidak paham 3x",
+  agent: "Agent membalas",
+  limit: "Batas booking tercapai",
+  no_outlet: "Tidak ada outlet aktif",
+  no_catalog: "Tidak ada treatment",
 };

@@ -23,6 +23,10 @@ export async function getCrmSettings(): Promise<CrmSettings> {
     cs_auto_reply_text: String(d.cs_auto_reply_text ?? ""),
     cs_csat_enabled: d.cs_csat_enabled !== false,
     cs_csat_text: String(d.cs_csat_text ?? ""),
+    bot_enabled: d.bot_enabled === true,
+    bot_name: String(d.bot_name ?? "Mizu Assistant"),
+    bot_greeting: String(d.bot_greeting ?? ""),
+    bot_handover_keywords: String(d.bot_handover_keywords ?? "admin, cs, manusia, operator"),
   };
 }
 

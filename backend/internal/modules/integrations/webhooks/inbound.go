@@ -142,6 +142,16 @@ func (h *Handler) receive(r *http.Request, m domain.GatewayInbound) (recorded bo
 	if err != nil {
 		return true, err
 	}
+	// The booking bot answers first; a bot-owned conversation gets no CS auto-reply.
+	if h.ports.Bot != nil && m.Channel == "whatsapp" && m.Phone != nil && m.Body != nil && m.MediaType == nil {
+		handled, err := h.ports.Bot.Handle(ctx, h.db, conversationID, *m.Phone, m.Body, at)
+		if err != nil {
+			h.log.ErrorContext(ctx, "[wa-bot] Gagal memproses pesan", "error", err)
+		}
+		if handled {
+			return true, nil
+		}
+	}
 	if reply != nil && *reply != "" && m.Channel == "whatsapp" && m.Phone != nil {
 		h.ports.Inbox.AutoReply(ctx, h.db, *m.Phone, conversationID, *reply)
 	}

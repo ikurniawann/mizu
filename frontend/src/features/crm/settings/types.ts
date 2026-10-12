@@ -13,6 +13,11 @@ export type CrmSettings = {
   cs_auto_reply_text: string;
   cs_csat_enabled: boolean;
   cs_csat_text: string;
+  /** Chatbot booking WhatsApp (EPIC-053). */
+  bot_enabled: boolean;
+  bot_name: string;
+  bot_greeting: string;
+  bot_handover_keywords: string;
 };
 
 export type CrmTierConfig = {

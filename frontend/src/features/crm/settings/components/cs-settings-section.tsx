@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, Headset, Loader2, MessageSquareReply, Save, Star, Timer } from "lucide-react";
+import { Bot, Clock, Headset, Loader2, MessageSquareReply, Save, Star, Timer } from "lucide-react";
 import type { CrmSettings } from "../types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,10 @@ type Draft = {
   cs_auto_reply_text: string;
   cs_csat_enabled: boolean;
   cs_csat_text: string;
+  bot_enabled: boolean;
+  bot_name: string;
+  bot_greeting: string;
+  bot_handover_keywords: string;
 };
 
 function toDraft(settings: CrmSettings | undefined): Draft {
@@ -30,6 +34,10 @@ function toDraft(settings: CrmSettings | undefined): Draft {
     cs_auto_reply_text: settings?.cs_auto_reply_text ?? "",
     cs_csat_enabled: settings?.cs_csat_enabled ?? true,
     cs_csat_text: settings?.cs_csat_text ?? "",
+    bot_enabled: settings?.bot_enabled ?? false,
+    bot_name: settings?.bot_name ?? "Mizu Assistant",
+    bot_greeting: settings?.bot_greeting ?? "",
+    bot_handover_keywords: settings?.bot_handover_keywords ?? "admin, cs, manusia, operator",
   };
 }
 
@@ -68,6 +76,10 @@ export function CsSettingsSection({
       cs_auto_reply_text: draft.cs_auto_reply_text.trim() || undefined,
       cs_csat_enabled: draft.cs_csat_enabled,
       cs_csat_text: draft.cs_csat_text.trim() || undefined,
+      bot_enabled: draft.bot_enabled,
+      bot_name: draft.bot_name.trim() || "Mizu Assistant",
+      bot_greeting: draft.bot_greeting.trim() || undefined,
+      bot_handover_keywords: draft.bot_handover_keywords.trim() || undefined,
     });
   }
 
@@ -234,6 +246,67 @@ export function CsSettingsSection({
           <p className="text-xs text-muted-foreground">
             Customer membalas angka 1–5; skornya masuk ke laporan CS.
           </p>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-gray-200/70 bg-muted/40 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <Label className="flex items-center gap-2 text-sm text-foreground">
+              <Bot className="h-4 w-4 text-muted-foreground" />
+              Chatbot booking WhatsApp
+            </Label>
+            <Switch
+              checked={draft.bot_enabled}
+              onCheckedChange={(checked) => setDraft((current) => ({ ...current, bot_enabled: checked }))}
+              disabled={disabled}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Bot menjawab chat masuk: memandu pilih outlet, jumlah orang, treatment, jam (dicek ke jadwal
+            asli), terapis, lalu membuat booking dan menawarkan pembayaran. Agent bisa mengambil alih kapan
+            saja dari inbox; bot otomatis diam begitu agent membalas.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="bot-name" className="text-xs text-muted-foreground">
+                Nama bot
+              </Label>
+              <Input
+                id="bot-name"
+                value={draft.bot_name}
+                onChange={(event) => setDraft((current) => ({ ...current, bot_name: event.target.value }))}
+                disabled={disabled || !draft.bot_enabled}
+                className={inputClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bot-keywords" className="text-xs text-muted-foreground">
+                Kata kunci minta admin (pisahkan koma)
+              </Label>
+              <Input
+                id="bot-keywords"
+                value={draft.bot_handover_keywords}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, bot_handover_keywords: event.target.value }))
+                }
+                disabled={disabled || !draft.bot_enabled}
+                className={inputClass}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bot-greeting" className="text-xs text-muted-foreground">
+              Sapaan pembuka
+            </Label>
+            <textarea
+              id="bot-greeting"
+              rows={2}
+              value={draft.bot_greeting}
+              onChange={(event) => setDraft((current) => ({ ...current, bot_greeting: event.target.value }))}
+              disabled={disabled || !draft.bot_enabled}
+              placeholder="Halo! Saya asisten booking Mizu. Saya bantu pilih outlet, treatment dan jamnya ya 🙏"
+              className={`w-full resize-y rounded-lg px-3 py-2 text-sm ${inputClass} h-auto min-h-[72px]`}
+            />
+          </div>
         </div>
 
         <div className="flex justify-end">

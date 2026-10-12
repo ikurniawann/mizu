@@ -159,6 +159,9 @@ func (s *Service) onlinePaymentReady() bool {
 	return s.ports.Payments != nil && s.ports.Payments.Configured()
 }
 
+// OnlinePaymentReady reports whether guests can pay online (other contexts).
+func (s *Service) OnlinePaymentReady() bool { return s.onlinePaymentReady() }
+
 // appOrigin is the public site the invoice sends the guest back to.
 func appOrigin() string {
 	origin := strings.TrimSpace(os.Getenv("NEXT_PUBLIC_APP_URL"))
@@ -208,7 +211,7 @@ func (s *Service) PublicPay(ctx context.Context, token string) (*PublicPayment, 
 	var reuse *PublicPayment
 	err := s.tx(ctx, func(q Q) error {
 		var err error
-		b, err = s.st.payRow(ctx, q, `public_token = $1::uuid AND source = 'public'`, token)
+		b, err = s.st.payRow(ctx, q, `public_token = $1::uuid AND source IN ('public', 'whatsapp')`, token)
 		if err != nil {
 			return err
 		}
@@ -372,7 +375,7 @@ func (s *Service) PublicMockPay(ctx context.Context, token string) (*PublicBooki
 	var invoiceID *string
 	var amount *float64
 	err := s.db.QueryRow(ctx, `SELECT id::text, xendit_invoice_id, invoice_amount_idr::float8 FROM spa.bookings
-	  WHERE public_token = $1::uuid AND source = 'public'`, token).Scan(&id, &invoiceID, &amount)
+	  WHERE public_token = $1::uuid AND source IN ('public', 'whatsapp')`, token).Scan(&id, &invoiceID, &amount)
 	if database.IsNoRows(err) {
 		return nil, httpx.NotFound("Booking tidak ditemukan")
 	}

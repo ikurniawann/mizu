@@ -6655,6 +6655,21 @@
     "path": "/api/users/{id}/reset-password"
   },
   {
+    "module": "wabot",
+    "method": "GET",
+    "path": "/api/wa-bot/conversations/{id}"
+  },
+  {
+    "module": "wabot",
+    "method": "POST",
+    "path": "/api/wa-bot/conversations/{id}/bot"
+  },
+  {
+    "module": "wabot",
+    "method": "POST",
+    "path": "/api/wa-bot/simulate"
+  },
+  {
     "module": "integrations",
     "method": "POST",
     "path": "/api/wa/inbound"

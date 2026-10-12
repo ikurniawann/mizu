@@ -93,6 +93,14 @@ type Ports struct {
 	Payments Payments
 	Inbox    Inbox
 	Partners Partners
+	// Bot answers WhatsApp customers (EPIC-053); nil = no bot.
+	Bot Bot
+}
+
+// Bot is the WhatsApp booking chatbot. Handle returns true when the bot
+// answered (the CS auto-reply then stays silent).
+type Bot interface {
+	Handle(ctx context.Context, db database.DB, conversationID string, phone string, body *string, at time.Time) (handled bool, err error)
 }
 
 // Handler serves the webhook routes.

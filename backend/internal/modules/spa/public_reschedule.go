@@ -61,7 +61,7 @@ func (s *Service) PublicFindBooking(ctx context.Context, code, phone string) (*P
 	err := s.tx(ctx, func(q Q) error {
 		var id string
 		err := q.QueryRow(ctx, `SELECT id::text, public_token::text FROM spa.bookings
-		  WHERE booking_code = $1 AND customer_phone = $2 AND source = 'public'`, code, phone).Scan(&id, &token)
+		  WHERE booking_code = $1 AND customer_phone = $2 AND source IN ('public', 'whatsapp')`, code, phone).Scan(&id, &token)
 		if database.IsNoRows(err) {
 			return notFound
 		}

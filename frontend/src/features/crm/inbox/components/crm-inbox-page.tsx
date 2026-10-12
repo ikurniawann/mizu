@@ -19,6 +19,7 @@ import { ChatPanel } from "./chat-panel";
 import { ConversationList } from "./conversation-list";
 import { MemberContextPanel } from "./member-context-panel";
 import { ComplaintPanel } from "./complaint-panel";
+import { BotPanel } from "./bot-panel";
 
 /**
  * EPIC-012 Fase C — Inbox WhatsApp CS: daftar percakapan, thread chat, dan
@@ -126,6 +127,7 @@ export function CrmInboxPage() {
         <div className="hidden min-h-0 overflow-y-auto border-l border-slate-200 bg-white lg:block">
           {detail ? (
             <>
+              {detail.conversation.channel === "whatsapp" && <BotPanel conversation={detail.conversation} />}
               <MemberContextPanel member={detail.member} />
               <ComplaintPanel
                 conversation={detail.conversation}

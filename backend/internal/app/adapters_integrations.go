@@ -45,6 +45,7 @@ func integrationsWebhookPorts(d module.Deps) webhooks.Ports {
 		Payments: integrationsPayments{deps: d},
 		Inbox:    integrationsInbox{gw: crmInboxGateway(d)},
 		Partners: integrationsPartners{events: partners.NewEvents(crm.NewEngine(d, crmPosReads{}))},
+		Bot:      waBotEngine(d),
 	}
 }
 
