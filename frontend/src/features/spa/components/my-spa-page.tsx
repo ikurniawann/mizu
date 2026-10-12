@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BellRing, CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Hourglass, Loader2, PlayCircle, StickyNote, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +72,19 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
   const pending = dayBookings.flatMap((b) => b.items).filter((i) => i.status === "assigned" || i.status === "in_treatment").length;
   const lines = commissions.data ?? [];
   const monthLabel = MONTH_NAME[Number(month.slice(5, 7)) - 1] ?? "";
+
+  // /dashboard/me/spa#komisi (dari Beranda Karyawan): buka & tampilkan rincian komisi.
+  const komisi = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const reveal = () => {
+      if (window.location.hash !== "#komisi" || !komisi.current) return;
+      komisi.current.open = true;
+      komisi.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    reveal();
+    window.addEventListener("hashchange", reveal);
+    return () => window.removeEventListener("hashchange", reveal);
+  }, []);
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
@@ -199,7 +212,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
         </ScheduleState>
       )}
 
-      <details className="group rounded-card bg-card px-5 py-4 shadow-card">
+      <details ref={komisi} id="komisi" className="group scroll-mt-24 rounded-card bg-card px-5 py-4 shadow-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
           <span className="text-sm font-semibold">Rincian komisi cair {monthLabel}</span>
           <span className="flex items-center gap-2">

@@ -9,6 +9,8 @@ import {
   ArrowRightIcon,
   BriefcaseIcon,
   ChevronRightIcon,
+  SparklesIcon,
+  WalletIcon,
 } from "@heroicons/react/24/outline";
 import { requestStatusBadge } from "@/lib/hris/ess-view";
 import type { EssBeranda, EssRecentRequest } from "../types";
@@ -206,11 +208,18 @@ export function KpiSummaryCard({ kpi }: { kpi: NonNullable<EssBeranda["kpi"]> })
   );
 }
 
-export function QuickActions() {
+/** `therapist`: tambah pintasan Tugas Terapis & Komisi (akun terapis spa). */
+export function QuickActions({ therapist = false }: { therapist?: boolean }) {
   return (
     <div>
       <h2 className="mb-3 text-sm font-semibold text-gray-500">Aksi Cepat</h2>
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+      <div className={therapist ? "grid grid-cols-4 gap-3 lg:grid-cols-8" : "grid grid-cols-3 gap-3 sm:grid-cols-6"}>
+        {therapist && (
+          <>
+            <QuickAction href="/dashboard/me/spa" label="Tugas Terapis" icon={<SparklesIcon className="h-6 w-6" />} />
+            <QuickAction href="/dashboard/me/spa#komisi" label="Komisi" icon={<WalletIcon className="h-6 w-6" />} />
+          </>
+        )}
         <QuickAction href="/dashboard/me/absensi" label="Absensi" icon={<ClockIcon className="h-6 w-6" />} />
         <QuickAction href="/dashboard/me/cuti" label="Ajukan Cuti" icon={<CalendarDaysIcon className="h-6 w-6" />} />
         <QuickAction href="/dashboard/me/lembur" label="Lembur" icon={<ClockIcon className="h-6 w-6" />} />

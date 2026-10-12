@@ -10,6 +10,8 @@ import { Loader2 } from "lucide-react";
 import { formatRupiah } from "@/lib/format";
 import { greeting, initials, tenure } from "@/lib/hris/ess-view";
 import { monthName, monthYearLabel } from "@/lib/hris/month-label";
+import { TherapistBerandaCard } from "@/features/spa/components/therapist-beranda-card";
+import { useSpaMe } from "@/features/spa/queries";
 import { useEssBeranda } from "../queries";
 import { EssClockPanel } from "./ess-clock-panel";
 import {
@@ -29,6 +31,8 @@ import {
  */
 export function EssBerandaPage() {
   const { data, isLoading } = useEssBeranda();
+  const spaMe = useSpaMe();
+  const isTherapist = !!spaMe.data?.therapist?.is_active;
 
   if (isLoading) {
     return (
@@ -106,6 +110,9 @@ export function EssBerandaPage() {
         <EssClockPanel />
       </div>
 
+      {/* ── Terapis spa: booking berikutnya & komisi (hanya akun terapis) ── */}
+      <TherapistBerandaCard />
+
       {/* ── Ringkasan cepat ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
@@ -163,7 +170,7 @@ export function EssBerandaPage() {
 
       {kpi && <KpiSummaryCard kpi={kpi} />}
 
-      <QuickActions />
+      <QuickActions therapist={isTherapist} />
     </div>
   );
 }
