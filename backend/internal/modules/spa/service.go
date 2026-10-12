@@ -1599,6 +1599,9 @@ func (s *Service) report(ctx context.Context, start, end time.Time, branchID, th
 // MaxPublicOpenBookings caps a phone's open future online bookings.
 const MaxPublicOpenBookings = 3
 
+// tooManyOpenBookings is the per-phone cap message (the bot keys on "terlalu banyak").
+const tooManyOpenBookings = "Nomor ini sudah memiliki terlalu banyak booking aktif. Batalkan booking yang tidak jadi lewat link status, atau hubungi outlet."
+
 // PublicOutlets lists outlets open for online booking.
 func (s *Service) PublicOutlets(ctx context.Context) ([]PublicOutlet, error) {
 	list, err := s.st.publicOutlets(ctx, s.db)
@@ -1895,6 +1898,8 @@ type publicBookingInput struct {
 	PaymentMethod string
 	// Source is public (website, default) or whatsapp (chatbot).
 	Source string
+	// skipCap: the group path checked the per-phone cap once for the whole party.
+	skipCap bool
 }
 
 // PublicBookingInput is the self-service booking request for other
@@ -1943,6 +1948,9 @@ func publicBookingChecks(in *publicBookingInput, now time.Time, onlineReady bool
 	if in.Source == "" {
 		in.Source = "public"
 	}
+	if in.TherapistGenderPref == "" {
+		in.TherapistGenderPref = "any"
+	}
 	return nil
 }
 
@@ -1959,12 +1967,14 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 		if err := s.st.lockPublicBookingBranch(ctx, q, in.BranchID); err != nil {
 			return err
 		}
-		open, err := s.st.openPublicBookings(ctx, q, phone, now)
-		if err != nil {
-			return err
-		}
-		if open >= MaxPublicOpenBookings {
-			return httpx.TooManyRequests("Nomor ini sudah memiliki terlalu banyak booking aktif. Hubungi outlet untuk bantuan.")
+		if !in.skipCap {
+			open, err := s.st.openPublicBookings(ctx, q, phone, now)
+			if err != nil {
+				return err
+			}
+			if open >= MaxPublicOpenBookings {
+				return httpx.TooManyRequests(tooManyOpenBookings)
+			}
 		}
 		reqs := make([]itemRequest, len(in.VariantIDs))
 		for i, v := range in.VariantIDs {

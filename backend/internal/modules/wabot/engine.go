@@ -1325,12 +1325,14 @@ func (t *turn) bookingFailed(err error, made []domain.BookingRef) {
 	t.e.log.Warn("[wabot] booking ditolak", "error", err)
 	s.Bookings = made
 	switch {
+	case strings.Contains(msg, "terlalu banyak"):
+		// Not a handover: the guest can free a slot (cancel via the status
+		// link) or ask for an admin; the bot keeps answering.
+		msg += " Ketik *status* untuk melihat booking terakhir Anda, atau *admin* untuk dibantu tim Mizu."
 	case strings.Contains(msg, "Terapis pilihanmu"):
 		s.TherapistID, s.TherapistName = "", ""
 	case strings.Contains(msg, "penuh") || strings.Contains(msg, "lewat"):
 		s.ClearSlot()
-	case strings.Contains(msg, "terlalu banyak"):
-		t.handedOver = "limit"
 	}
 	t.failure = msg
 }

@@ -163,3 +163,10 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   paham". Kini kelas pertanyaan dideteksi (`DetectQuestion`), dijawab dari `PublicOutlet` (alamat, kota, telp,
   jam) dan katalog; pertanyaan bebas ke OpenAI dengan prompt "hanya dari FAKTA, kalau tidak ada jawab
   TIDAK_TAHU". Bukti: `TestDetectQuestion`, `TestBotAnswersQuestionsFromSystemData`, `TestParseTimeDaytimeDefault`.
+- 2026-10-13 — Dari uji WA pemilik (grup 3 orang ditolak "terlalu banyak booking aktif" lalu bot diam):
+  (1) batas 3 booking aktif per nomor kini menghitung satu rombongan sebagai satu kunjungan;
+  (2) mencapai batas tidak lagi menyerahkan percakapan ke admin — bot menjelaskan dan tetap menjawab
+  (percakapan pemilik diaktifkan kembali manual); (3) bug spa: daftar terapis kosong publik tidak
+  mengurangi booking yang belum ditugaskan sehingga jam yang sudah terisi masih ditawarkan — diperbaiki
+  (`freeTherapists` kini memotong `unassignedOverlaps`, selaras `publicCapacity`); (4) preferensi terapis
+  kosong = "any". Bukti: `TestBotGroupCountsOnceAgainstCap`.

@@ -153,7 +153,16 @@ func (s *Service) freeTherapists(ctx context.Context, q Q, branchID string, iv d
 		}
 		free = append(free, t)
 	}
-	return free, nil
+	// Bookings still waiting for a therapist reserve capacity (as in
+	// publicCapacity): that many of the free therapists are spoken for.
+	reserved, err := s.st.unassignedOverlaps(ctx, q, branchID, iv.Start, iv.End)
+	if err != nil {
+		return nil, err
+	}
+	if reserved >= len(free) {
+		return []Therapist{}, nil
+	}
+	return free[:len(free)-reserved], nil
 }
 
 func (s *Service) onlinePaymentReady() bool {

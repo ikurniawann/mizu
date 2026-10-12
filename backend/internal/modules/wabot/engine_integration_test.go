@@ -589,3 +589,45 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 	r = e.say("bisa besok jam 3?")
 	e.wants(r, "ringkasan")
 }
+
+// A party of three counts once against the per-phone cap (two earlier
+// bookings + a group of three is fine); hitting the cap keeps the bot
+// answering instead of handing over.
+func TestBotGroupCountsOnceAgainstCap(t *testing.T) {
+	e := setupBot(t)
+	big := e.addOutlet("10:00", "20:00", 3)
+	for _, at := range []string{"2026-10-09T03:00:00Z", "2026-10-09T09:00:00Z"} {
+		when, _ := time.Parse(time.RFC3339, at)
+		if _, err := e.spa.Book(e.ctx, spa.PublicBookingInput{BranchID: big, ScheduledAt: when, CustomerName: "Fajar Bot", CustomerPhone: e.phone,
+			VariantIDs: []string{e.variant}, Source: "whatsapp"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pick := "Go Test B" + smallSuffix(e, big)
+	r := e.say("halo")
+	e.say(menuKey(t, r, pick))
+	e.say("3")
+	e.say("1")
+	r = e.say("besok")
+	e.wants(r, "Jam yang masih tersedia")
+	e.say("1")
+	r = e.say("ya")
+	e.wants(r, "Kode booking")
+	// Five bookings are now open: another visit is refused but the bot stays on.
+	r = e.say("booking baru")
+	e.say(menuKey(t, r, pick))
+	e.say("1")
+	e.say("1")
+	e.say("besok")
+	e.say("8")
+	e.say("0")
+	r = e.say("ya")
+	e.wants(r, "terlalu banyak booking aktif", "Ketik *status*")
+	var active bool
+	if err := e.tx.QueryRow(e.ctx, `SELECT bot_active FROM crm.wa_conversations WHERE id = $1::uuid`, e.conv).Scan(&active); err != nil {
+		t.Fatal(err)
+	}
+	if !active {
+		t.Fatal("the cap must not hand the conversation over")
+	}
+}

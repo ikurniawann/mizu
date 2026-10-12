@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"nuhabit/backend/internal/modules/spa/domain"
 	"nuhabit/backend/internal/platform/httpx"
 )
 
@@ -56,7 +57,16 @@ func (s *Service) PublicBookGroup(ctx context.Context, in PublicGroupInput) ([]*
 	tokens := make([]string, 0, len(inputs))
 	err := s.tx(ctx, func(q Q) error {
 		tokens = tokens[:0]
+		// The party counts once against the per-phone cap (one visit).
+		open, err := s.st.openPublicBookings(ctx, q, domain.NormalizePhone(in.CustomerPhone), now)
+		if err != nil {
+			return err
+		}
+		if open >= MaxPublicOpenBookings {
+			return httpx.TooManyRequests(tooManyOpenBookings)
+		}
 		for i := range inputs {
+			inputs[i].skipCap = true
 			res, err := s.publicBookIn(ctx, q, inputs[i], now)
 			if err != nil {
 				var he *httpx.Error
