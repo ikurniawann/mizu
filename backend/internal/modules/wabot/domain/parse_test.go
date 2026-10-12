@@ -169,3 +169,16 @@ func TestIntentWithCommandPrefix(t *testing.T) {
 		t.Fatal("command prefix must be ignored")
 	}
 }
+
+func TestMatchNameScoresDistinctiveWords(t *testing.T) {
+	labels := []string{"Reflexology · 45 menit", "Balinese Massage · 60 menit", "Balinese Massage · 90 menit", "Pijat Tradisional Jawa · 60 menit", "Thai Massage · 60 menit", "Thai Massage · 90 menit"}
+	cases := map[string]int{
+		"thai massage 60 menit dua-duanya": 4, "yang thai 90": 5, "mau reflexology": 0, "balinese": 1,
+		"saya mau pijat buat saya sama istri": -1, "massage": -1, "pijat tradisional": 3, "jawa 60": 3,
+	}
+	for q, want := range cases {
+		if got := MatchName(q, labels); got != want {
+			t.Fatalf("MatchName(%q) = %d, want %d", q, got, want)
+		}
+	}
+}

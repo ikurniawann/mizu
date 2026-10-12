@@ -149,3 +149,10 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   gateway Baileys tetap tersedia berdampingan. Bukti: `TestMetaMenusAndTemplates`, `TestWaMeta`,
   `TestBotOffersMenusInteractively`. Kunci OpenAI (pemahaman kalimat bebas) diaktifkan pemilik 2026-10-13
   lewat `openai_api_key`.
+- 2026-10-13 — Penyetelan AI dari uji live dengan kunci OpenAI nyata (gpt-4o-mini, 1,5–3,4 dtk/pesan):
+  AI dipanggil untuk kalimat panjang meski parser lokal membaca sebagian dan hanya mengisi field kosong;
+  tebakan tanpa isyarat (outlet/tanggal/jam/jumlah orang yang tak disebut) dibuang; daftar outlet dimuat
+  sebelum pesan pertama dibaca; treatment yang disebut sebelum outlet disimpan; pencocokan nama memberi
+  skor kata khas dan mengabaikan kata umum ("massage", "pijat", "menit") — "thai massage 60 menit" →
+  Thai 60, "pijat buat istri" tidak lagi memilih Pijat Tradisional. Bukti: `TestSanitizeAIDropsUnmentionedFields`,
+  `TestMatchNameScoresDistinctiveWords`, `TestBotKeepsTreatmentsNamedBeforeOutlet`.

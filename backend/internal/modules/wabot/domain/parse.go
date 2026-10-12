@@ -344,7 +344,7 @@ func MatchName(query string, labels []string) int {
 	shared := sharedWords(labels)
 	distinctive := false
 	for _, w := range words {
-		if !shared[w] {
+		if !shared[w] && !genericWords[w] {
 			distinctive = true
 			break
 		}
@@ -366,17 +366,38 @@ func MatchName(query string, labels []string) int {
 	if best >= 0 {
 		return best
 	}
-	// Fallback: a distinctive word of the label (4+ letters, not shared by
-	// every label) appearing in the query: "signature" → "Mizu Signature",
-	// "balinese" → "Balinese Massage · 60 menit".
+	// Fallback: score each label by the query words it contains, ignoring
+	// generic words ("massage", "pijat", "menit"); "thai massage 60 menit"
+	// → "Thai Massage · 60 menit" (thai + 60) over "· 90 menit" (thai).
+	bestScore := 0
 	for i, l := range labels {
-		for _, w := range strings.Fields(Normalize(l)) {
-			if len(w) >= 4 && !shared[w] && containsWord(q, w) {
-				return i
+		ll := Normalize(l)
+		score := 0
+		for _, w := range words {
+			if genericWords[w] || shared[w] || (len(w) < 4 && !isDigits(w)) {
+				continue
+			}
+			if containsWord(ll, w) {
+				score++
 			}
 		}
+		if score > bestScore || (score == bestScore && score > 0 && len(ll) < bestLen) {
+			best, bestScore, bestLen = i, score, len(ll)
+		}
 	}
-	return -1
+	return best
+}
+
+// genericWords carry no choice on their own.
+var genericWords = map[string]bool{"massage": true, "pijat": true, "menit": true, "jam": true, "treatment": true, "paket": true, "mizu": true, "outlet": true, "spa": true, "yang": true, "mau": true, "saja": true, "aja": true}
+
+func isDigits(w string) bool {
+	for _, r := range w {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return w != ""
 }
 
 // sharedWords are words every label contains ("mizu", "massage").
