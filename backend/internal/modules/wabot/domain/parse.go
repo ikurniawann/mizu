@@ -489,3 +489,19 @@ func parseISO(iso string) (time.Time, error) { return time.Parse(time.RFC3339Nan
 
 // ParseISO is parseISO for other packages.
 func ParseISO(iso string) (time.Time, error) { return parseISO(iso) }
+
+// StripWords removes the words of name from text (case-insensitive), so a
+// matched outlet name cannot also match a treatment.
+func StripWords(text, name string) string {
+	drop := map[string]bool{}
+	for _, w := range strings.Fields(Normalize(name)) {
+		drop[w] = true
+	}
+	var keep []string
+	for _, w := range strings.Fields(Normalize(text)) {
+		if !drop[strings.Trim(w, ".,!?")] {
+			keep = append(keep, w)
+		}
+	}
+	return strings.Join(keep, " ")
+}

@@ -45,3 +45,13 @@ func TestMatchNameDistinctiveWord(t *testing.T) {
 		t.Fatal("cues")
 	}
 }
+
+func TestStripWords(t *testing.T) {
+	if got := domain.StripWords("mau pijat di yang Signature ya", "Mizu Signature"); got != "mau pijat di yang ya" {
+		t.Fatalf("StripWords = %q", got)
+	}
+	labels := []string{"Mizu Signature Ritual · 150 menit", "Thai Massage · 60 menit"}
+	if i := domain.MatchName(domain.StripWords("di yang signature ya", "Mizu Signature"), labels); i != -1 {
+		t.Fatalf("outlet word must not pick the Signature Ritual treatment: %d", i)
+	}
+}

@@ -237,8 +237,11 @@ func (t *turn) localExtract(ctx context.Context, text string) Extraction {
 	if len(s.Outlets) == 0 {
 		t.loadOutlets(ctx) // outlet names are needed to read "di signature" (and for the AI's context)
 	}
+	treatmentText := text
 	if i := domain.MatchName(text, outletNames(s.Outlets)); i >= 0 {
 		x.Outlet = s.Outlets[i].Name
+		// "di Signature" names the outlet, not the "Signature Ritual" treatment.
+		treatmentText = domain.StripWords(text, s.Outlets[i].Name)
 	}
 	x.People = domain.ParsePeople(text)
 	vocab := s.Catalog
@@ -248,7 +251,7 @@ func (t *turn) localExtract(ctx context.Context, text string) Extraction {
 		vocab, _ = t.e.catalogFor(ctx, s.Outlets[0].ID)
 	}
 	if len(vocab) > 0 {
-		if i := domain.MatchName(text, catalogLabels(vocab)); i >= 0 {
+		if i := domain.MatchName(treatmentText, catalogLabels(vocab)); i >= 0 {
 			x.Treatments = []string{vocab[i].Label()}
 		}
 	}
