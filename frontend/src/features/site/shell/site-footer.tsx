@@ -89,6 +89,11 @@ export function SiteFooter({ branches, social }: { branches: BranchSummary[]; so
                 Booking treatment
               </Link>
             </li>
+            <li>
+              <Link href="/booking/spa/ubah" className="text-body hover:text-foreground">
+                Ubah jadwal booking
+              </Link>
+            </li>
             {SECONDARY_NAV.map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="text-body hover:text-foreground">

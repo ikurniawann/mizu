@@ -382,6 +382,8 @@ type PublicBookingResult struct {
 	Status        string       `json:"status"`
 	PaymentStatus string       `json:"payment_status"`
 	CanManage     bool         `json:"can_manage"`
+	// CanReschedule: the guest may still move the visit (until 1 hour before).
+	CanReschedule bool `json:"can_reschedule"`
 	Items         []PublicItem `json:"items"`
 	TotalIDR      float64      `json:"total_idr"`
 	// TherapistName is the assigned therapist's short public name.

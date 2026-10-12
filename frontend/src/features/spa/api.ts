@@ -33,6 +33,7 @@ import type {
   MyScheduleItem,
   MySummary,
   PublicOutlet,
+  PublicLookup,
   PublicPayment,
   PublicSlot,
   PublicTherapist,
@@ -218,6 +219,8 @@ export const publicSpaApi = {
   pay: (token: string) => send<PublicPayment>(`${PUBLIC_BASE}/bookings/${enc(token)}/pay`, {}),
   mockPay: (token: string) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}/mock-pay`, {}),
   createBooking: (input: PublicBookingInput) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings`, input),
+  findBooking: (bookingCode: string, phone: string) =>
+    send<PublicLookup>(`${PUBLIC_BASE}/bookings/find`, { booking_code: bookingCode, phone }),
   changeCode: (token: string) => send<{ phone_hint: string }>(`${PUBLIC_BASE}/bookings/${enc(token)}/change-code`, {}),
   verifyCode: (token: string, code: string) => send<{ grant: string }>(`${PUBLIC_BASE}/bookings/${enc(token)}/verify-code`, { code }),
   changeBooking: (token: string, grant: string, action: "cancel" | "reschedule", scheduledAt?: string) =>

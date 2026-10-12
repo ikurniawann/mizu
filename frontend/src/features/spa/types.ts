@@ -557,4 +557,13 @@ export interface PublicBookingResult {
   paid_online?: boolean;
   mock_payment?: boolean;
   online_payment?: boolean;
+  /** Tamu masih bisa mengubah jadwal (sampai 1 jam sebelum kunjungan). */
+  can_reschedule?: boolean;
+}
+
+/** POST /api/public/spa/bookings/find: kode booking + nomor WA cocok. */
+export interface PublicLookup {
+  access_token: string;
+  /** Izin sekali pakai (15 menit) untuk mengubah booking ini. */
+  grant: string;
 }

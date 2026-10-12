@@ -1735,7 +1735,7 @@ func (s *Service) PublicSlots(ctx context.Context, branchID, date string, varian
 
 func (s *Service) PublicBooking(ctx context.Context, token string) (*PublicBookingResult, error) {
 	s.syncOnlinePayment(ctx, token)
-	result, err := s.st.publicBookingByToken(ctx, s.db, token)
+	result, err := s.st.publicBookingByToken(ctx, s.db, token, s.clock())
 	if result != nil {
 		result.OnlinePayment = s.onlinePaymentReady()
 	}
@@ -1757,8 +1757,8 @@ func (s *Service) PublicChangeBooking(ctx context.Context, token, grant, action 
 		return nil, httpx.BadRequest("Aksi tidak valid")
 	}
 	now := s.clock()
-	if action == "reschedule" && (newAt.Before(now.Add(24*time.Hour)) || newAt.After(now.AddDate(0, 0, 30))) {
-		return nil, httpx.BadRequest("Pilih jam antara 24 jam dan 30 hari dari sekarang")
+	if action == "reschedule" && (newAt.Before(now.Add(PublicRescheduleCutoff)) || newAt.After(now.AddDate(0, 0, 30))) {
+		return nil, httpx.BadRequest("Pilih jam baru minimal 1 jam dari sekarang dan maksimal 30 hari ke depan")
 	}
 	digest := sha256.Sum256([]byte(grant))
 	grantHash := hex.EncodeToString(digest[:])
@@ -1774,8 +1774,12 @@ func (s *Service) PublicChangeBooking(ctx context.Context, token, grant, action 
 		if b == nil {
 			return httpx.NotFound("Booking tidak ditemukan")
 		}
-		if b.ScheduledAt.Sub(now) < 24*time.Hour || (b.Status != domain.BookingUnassigned && b.Status != domain.BookingAssigned) || b.PaymentStatus != domain.PaymentUnpaid || b.PosOrderID != nil {
-			return httpx.Conflict("Perubahan mandiri hanya tersedia sampai 24 jam sebelum kunjungan untuk booking yang belum dibayar")
+		if action == "reschedule" {
+			if why := rescheduleBlocked(b, now); why != "" {
+				return httpx.Conflict(why)
+			}
+		} else if b.ScheduledAt.Sub(now) < PublicCancelCutoff || (b.Status != domain.BookingUnassigned && b.Status != domain.BookingAssigned) || b.PaymentStatus != domain.PaymentUnpaid || b.PosOrderID != nil {
+			return httpx.Conflict("Pembatalan mandiri hanya tersedia sampai 24 jam sebelum kunjungan untuk booking yang belum dibayar")
 		}
 		if err := s.st.lockPublicBookingBranch(ctx, q, b.BranchID); err != nil {
 			return err
