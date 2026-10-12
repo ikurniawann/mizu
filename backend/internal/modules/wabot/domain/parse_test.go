@@ -145,3 +145,27 @@ func TestSessionNextStep(t *testing.T) {
 		t.Fatal("rupiah")
 	}
 }
+
+func TestMenuNumbersWithWords(t *testing.T) {
+	cases := map[string][]int{
+		"Pilih 8": {8}, "nomor 2": {2}, "No. 3": {3}, "yang 1 ya": {1}, "8 saja": {8}, "1, 3": {1, 3},
+		"opsi 2 dong": {2}, "saya pilih nomor 4": {4}, "pilih 1 dan 2": nil, "8 orang": nil, "besok": nil,
+	}
+	for in, want := range cases {
+		got := MenuNumbers(in)
+		if len(got) != len(want) {
+			t.Fatalf("MenuNumbers(%q) = %v, want %v", in, got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("MenuNumbers(%q) = %v, want %v", in, got, want)
+			}
+		}
+	}
+}
+
+func TestIntentWithCommandPrefix(t *testing.T) {
+	if DetectIntent("/status", nil) != IntentStatus || DetectIntent("!menu", nil) != IntentHelp || DetectIntent("/admin", []string{"admin"}) != IntentAdmin {
+		t.Fatal("command prefix must be ignored")
+	}
+}

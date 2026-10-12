@@ -143,7 +143,7 @@ func (store) saveSession(ctx context.Context, q database.Querier, conversationID
 	  ON CONFLICT (conversation_id) DO UPDATE SET phone = EXCLUDED.phone, step = EXCLUDED.step, state = EXCLUDED.state,
 	    misses = EXCLUDED.misses, last_customer_at = EXCLUDED.last_customer_at, last_bot_at = EXCLUDED.last_bot_at,
 	    last_latency_ms = EXCLUDED.last_latency_ms, updated_at = now()`,
-		conversationID, phone, s.Step, raw, s.Misses, customerAt, botAt, int(latency/time.Millisecond))
+		conversationID, phone, s.NextStep(), raw, s.Misses, customerAt, botAt, int(latency/time.Millisecond))
 	return err
 }
 

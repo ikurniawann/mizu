@@ -27,7 +27,8 @@ const (
 
 // Normalize lower-cases and squeezes whitespace.
 func Normalize(text string) string {
-	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(text))), " ")
+	// "/status" and "!menu": people type bot commands with a prefix.
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimLeft(strings.TrimSpace(text), "/!."))), " ")
 }
 
 var (
@@ -91,9 +92,16 @@ func isWord(n string, words []string) bool {
 
 var numberList = regexp.MustCompile(`^\s*(\d{1,2})(\s*[,/ ]\s*\d{1,2})*\s*$`)
 
+// menuPrefix strips "pilih 8", "nomor 8", "no. 8", "yang 8", "opsi 8", "8 ya",
+// "8 saja", "8 aja", "8 dong" down to the numbers.
+var menuPrefix = regexp.MustCompile(`^(?:saya\s+)?(?:pilih|pilihan|nomor|nomer|no\.?|yang|opsi|ambil|mau|yg)\s+(?:nomor\s+|no\.?\s+|yang\s+)?`)
+var menuSuffix = regexp.MustCompile(`\s+(?:ya|yaa|saja|aja|dong|deh|kak|min|pls|please|tolong)+\s*$`)
+
 // MenuNumbers reads "2" or "1, 3" (several guests) as menu keys; nil when
 // the reply is not just numbers.
 func MenuNumbers(text string) []int {
+	text = Normalize(text)
+	text = menuSuffix.ReplaceAllString(menuPrefix.ReplaceAllString(text, ""), "")
 	if !numberList.MatchString(text) {
 		return nil
 	}
