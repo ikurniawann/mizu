@@ -50,7 +50,8 @@ Keluarkan JSON dengan kunci (kosongkan "" / 0 / false / [] bila tidak disebut):
 - payment: "outlet"/"online" HANYA bila STEP = payment
 - name: nama pelanggan HANYA bila STEP = name
 - want_admin: true bila minta bicara dengan admin/manusia/CS
-- off_topic: true bila pesan tidak ada hubungannya dengan booking spa`
+- off_topic: true bila pesan tidak ada hubungannya dengan booking spa
+ATURAN: isi sebuah field HANYA bila pelanggan menyebutnya secara eksplisit di PESAN ini; jangan menebak outlet, tanggal, jam, atau jumlah orang dari konteks. "saya dan istri" = 2 orang; "berdua" = 2; "sendiri" = 1.`
 
 // Extract runs one completion; errors fall back to menu mode.
 func (o OpenAIExtractor) Extract(ctx context.Context, q database.Querier, text string, ec ExtractContext) (*Extraction, error) {

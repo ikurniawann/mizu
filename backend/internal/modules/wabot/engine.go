@@ -183,9 +183,11 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		applied = t.applyMenu(ctx, nums)
 	} else {
 		ext := t.localExtract(text)
-		if !ext.useful() && t.e.ports.Extractor != nil {
+		// The AI reads what the local parser missed: always for a message
+		// it could not read, and for free-form sentences it read only partly.
+		if t.e.ports.Extractor != nil && (!ext.useful() || domain.FreeForm(text)) {
 			if ai := t.extract(ctx, text); ai != nil {
-				ext = *ai
+				ext = mergeExtraction(ext, sanitizeAI(text, *ai))
 			}
 		}
 		if ext.WantAdmin {
@@ -293,12 +295,75 @@ func (t *turn) extract(ctx context.Context, text string) *Extraction {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
+	started := time.Now()
 	x, err := t.e.ports.Extractor.Extract(ctx, t.db, text, ec)
 	if err != nil {
 		t.e.log.Warn("[wabot] ekstraksi AI gagal, lanjut mode menu", "error", err)
 		return nil
 	}
+	t.e.log.Info("[wabot] ekstraksi AI", "ms", time.Since(started).Milliseconds(), "outlet", x.Outlet, "people", x.People,
+		"treatments", x.Treatments, "date", x.Date, "time", x.Time, "period", x.Period, "confirm", x.Confirm, "admin", x.WantAdmin)
 	return x
+}
+
+// sanitizeAI drops AI fields the message gives no cue for (a model may
+// guess an outlet, a date or a party size that was never said).
+func sanitizeAI(text string, x Extraction) Extraction {
+	if x.Outlet != "" && domain.MatchName(text, []string{x.Outlet}) < 0 {
+		x.Outlet = ""
+	}
+	if x.Date != "" && !domain.MentionsDate(text) {
+		x.Date = ""
+	}
+	if (x.Time != "" || x.Period != "") && !domain.MentionsTime(text) {
+		x.Time, x.Period = "", ""
+	}
+	if x.People > 0 && !domain.MentionsPeople(text) {
+		x.People = 0
+	}
+	return x
+}
+
+// mergeExtraction keeps the local reading and fills its gaps from the AI.
+func mergeExtraction(local, ai Extraction) Extraction {
+	out := local
+	if out.Outlet == "" {
+		out.Outlet = ai.Outlet
+	}
+	if out.People == 0 {
+		out.People = ai.People
+	}
+	if len(out.Treatments) == 0 {
+		out.Treatments = ai.Treatments
+	}
+	if out.Date == "" {
+		out.Date = ai.Date
+	}
+	if out.Time == "" {
+		out.Time = ai.Time
+	}
+	if out.Period == "" {
+		out.Period = ai.Period
+	}
+	if out.Therapist == "" {
+		out.Therapist = ai.Therapist
+	}
+	if out.GenderPref == "" {
+		out.GenderPref = ai.GenderPref
+	}
+	out.SystemPick = out.SystemPick || ai.SystemPick
+	if out.Confirm == "" {
+		out.Confirm = ai.Confirm
+	}
+	if out.Payment == "" {
+		out.Payment = ai.Payment
+	}
+	if out.Name == "" {
+		out.Name = ai.Name
+	}
+	out.WantAdmin = out.WantAdmin || ai.WantAdmin
+	out.OffTopic = out.OffTopic || ai.OffTopic
+	return out
 }
 
 // apply writes an extraction into the session; false when nothing fit.

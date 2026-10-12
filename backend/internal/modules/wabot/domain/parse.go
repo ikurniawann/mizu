@@ -341,10 +341,18 @@ func MatchName(query string, labels []string) int {
 		return -1
 	}
 	words := strings.Fields(q)
+	shared := sharedWords(labels)
+	distinctive := false
+	for _, w := range words {
+		if !shared[w] {
+			distinctive = true
+			break
+		}
+	}
 	best, bestLen := -1, 1<<30
 	for i, l := range labels {
 		ll := Normalize(l)
-		ok := true
+		ok := distinctive // "mizu" alone must not pick the first outlet
 		for _, w := range words {
 			if !strings.Contains(ll, w) {
 				ok = false
@@ -358,14 +366,101 @@ func MatchName(query string, labels []string) int {
 	if best >= 0 {
 		return best
 	}
-	// Fallback: the label whose first word appears in the query ("balinese").
+	// Fallback: a distinctive word of the label (4+ letters, not shared by
+	// every label) appearing in the query: "signature" → "Mizu Signature",
+	// "balinese" → "Balinese Massage · 60 menit".
 	for i, l := range labels {
-		first := strings.Fields(Normalize(l))
-		if len(first) > 0 && len(first[0]) >= 4 && strings.Contains(q, first[0]) {
-			return i
+		for _, w := range strings.Fields(Normalize(l)) {
+			if len(w) >= 4 && !shared[w] && containsWord(q, w) {
+				return i
+			}
 		}
 	}
 	return -1
+}
+
+// sharedWords are words every label contains ("mizu", "massage").
+func sharedWords(labels []string) map[string]bool {
+	count := map[string]int{}
+	for _, l := range labels {
+		seen := map[string]bool{}
+		for _, w := range strings.Fields(Normalize(l)) {
+			if !seen[w] {
+				seen[w] = true
+				count[w]++
+			}
+		}
+	}
+	out := map[string]bool{}
+	for w, n := range count {
+		if len(labels) > 1 && n == len(labels) {
+			out[w] = true
+		}
+	}
+	return out
+}
+
+func containsWord(text, w string) bool {
+	for _, t := range strings.FieldsFunc(text, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }) {
+		if t == w {
+			return true
+		}
+	}
+	return false
+}
+
+/* ── cues: what the message actually talks about (guards for AI output) ── */
+
+var dateCues = []string{"hari ini", "sekarang", "besok", "lusa", "senin", "selasa", "rabu", "kamis", "jumat", "jum'at", "sabtu", "minggu", "ahad", "tanggal", "tgl", "minggu depan", "pekan", "weekend", "akhir pekan"}
+var peopleCues = []string{"orang", "org", "pax", "sendiri", "berdua", "bertiga", "berempat", "istri", "suami", "pasangan", "teman", "temen", "anak", "ibu", "ayah", "keluarga", "kami", "kita", "rombongan"}
+var timeCues = []string{"jam", "pukul", "pagi", "siang", "sore", "malam", "pkl"}
+
+// MentionsDate reports a date cue (a day name, relative day, "tanggal",
+// a month name or a numeric date) in text.
+func MentionsDate(text string) bool {
+	n := Normalize(text)
+	for _, c := range dateCues {
+		if containsWord(n, c) || strings.Contains(n, c) {
+			return true
+		}
+	}
+	for m := range monthNames {
+		if containsWord(n, m) {
+			return true
+		}
+	}
+	return dateCueNumeric.MatchString(n)
+}
+
+var dateCueNumeric = regexp.MustCompile(`\b\d{1,2}[/-]\d{1,2}\b`)
+
+// MentionsPeople reports a party-size cue (a count word, "orang", a companion).
+func MentionsPeople(text string) bool {
+	n := Normalize(text)
+	for _, c := range peopleCues {
+		if containsWord(n, c) {
+			return true
+		}
+	}
+	return peopleDigits.MatchString(n)
+}
+
+// MentionsTime reports a clock/period cue ("sorean", "pagian" count).
+func MentionsTime(text string) bool {
+	for _, w := range strings.FieldsFunc(Normalize(text), func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }) {
+		for _, c := range timeCues {
+			if strings.HasPrefix(w, c) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// FreeForm is a sentence worth asking the AI about even when the local
+// parser read part of it: five or more words and not a bare menu answer.
+func FreeForm(text string) bool {
+	return len(strings.Fields(Normalize(text))) >= 5 && MenuNumbers(text) == nil
 }
 
 // parseISO reads the API's ISO instant ("2026-10-13T03:00:00.000Z").
