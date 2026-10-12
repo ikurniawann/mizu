@@ -125,6 +125,8 @@ func (h *Handler) Routes() []module.Route {
 
 		self("GET "+p+"/me", h.me),
 		self("GET "+p+"/me/assignments", h.myAssignments),
+		self("GET "+p+"/me/schedule", h.mySchedule),
+		self("GET "+p+"/me/summary", h.mySummary),
 		self("PATCH "+p+"/me/assignments/{itemId}", h.myAction),
 		self("GET "+p+"/me/commissions", h.myCommissions),
 
@@ -1108,6 +1110,42 @@ func (h *Handler) myAction(w http.ResponseWriter, r *http.Request, u *auth.User)
 }
 
 var monthPattern = regexp.MustCompile(`^\d{4}-\d{2}$`)
+
+func (h *Handler) mySchedule(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	from, err := queryDate(r, "from", false)
+	if err != nil {
+		return err
+	}
+	if from == "" {
+		from = domain.WIBDate(h.svc.clock())
+	}
+	days := 14
+	if raw := r.URL.Query().Get("days"); raw != "" {
+		if days, err = strconv.Atoi(raw); err != nil {
+			return httpx.BadRequest("Jumlah hari tidak valid")
+		}
+	}
+	list, err := h.svc.MySchedule(r.Context(), u.ID, from, days)
+	if err != nil {
+		return err
+	}
+	return ok(w, list)
+}
+
+func (h *Handler) mySummary(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	month := strings.TrimSpace(r.URL.Query().Get("month"))
+	if month == "" {
+		month = h.svc.clock().In(domain.WIB).Format("2006-01")
+	}
+	if !monthPattern.MatchString(month) {
+		return httpx.BadRequest("Bulan tidak valid (YYYY-MM)")
+	}
+	sum, err := h.svc.MySummary(r.Context(), u.ID, month)
+	if err != nil {
+		return err
+	}
+	return ok(w, sum)
+}
 
 func (h *Handler) myCommissions(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	month := strings.TrimSpace(r.URL.Query().Get("month"))

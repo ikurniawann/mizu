@@ -30,6 +30,8 @@ import type {
   PriceInput,
   PublicBookingInput,
   PublicBookingResult,
+  MyScheduleItem,
+  MySummary,
   PublicOutlet,
   PublicPayment,
   PublicSlot,
@@ -189,6 +191,8 @@ export const spaApi = {
   // Self-service terapis
   me: () => call<MeResponse>(`${BASE}/me`),
   myAssignments: (date: string) => call<BoardItem[]>(withQuery(`${BASE}/me/assignments`, { date })),
+  mySchedule: (from: string, days: number) => call<MyScheduleItem[]>(withQuery(`${BASE}/me/schedule`, { from, days })),
+  mySummary: (month: string) => call<MySummary>(withQuery(`${BASE}/me/summary`, { month })),
   myAssignmentAction: (itemId: string, action: "start" | "complete") =>
     send<BoardItem>(`${BASE}/me/assignments/${enc(itemId)}`, { action }, "PATCH"),
   myCommissions: async (month: string) =>

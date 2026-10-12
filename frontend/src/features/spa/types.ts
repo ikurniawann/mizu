@@ -376,6 +376,29 @@ export interface BoardTherapist {
   items: BoardItem[];
 }
 
+/** Satu treatment di jadwal terapis (GET /api/spa/me/schedule). */
+export interface MyScheduleItem extends BoardItem {
+  branch_name: string;
+  payment_status: PaymentStatus;
+  /** commission_idr masih perkiraan (treatment belum selesai). */
+  commission_estimated: boolean;
+  /** Catatan tamu pada booking (keluhan, area fokus). */
+  notes: string;
+  /** Kapan booking terakhir ditugaskan ke terapis ini. */
+  assigned_at: string | null;
+}
+
+/** Ringkasan komisi bulan berjalan untuk terapis (GET /api/spa/me/summary). */
+export interface MySummary {
+  month: string;
+  earned_idr: number;
+  earned_count: number;
+  pending_idr: number;
+  pending_count: number;
+  upcoming_idr: number;
+  upcoming_count: number;
+}
+
 export interface Board {
   date: string;
   branch_id: string;

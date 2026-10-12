@@ -91,6 +91,24 @@ export const useMyCommissions = (month: string, enabled = true) =>
     enabled: enabled && !!month,
   });
 
+/** Jadwal terapis beberapa hari ke depan (booking yang ditugaskan ke dirinya). */
+export const useMySchedule = (from: string, days: number, enabled = true) =>
+  useQuery({
+    queryKey: spaKeys.mySchedule(from, days),
+    queryFn: () => spaApi.mySchedule(from, days),
+    enabled: enabled && !!from,
+    refetchInterval: 60_000,
+  });
+
+/** Komisi bulan ini: cair, menunggu pembayaran, perkiraan dari jadwal. */
+export const useMySummary = (month: string, enabled = true) =>
+  useQuery({
+    queryKey: spaKeys.mySummary(month),
+    queryFn: () => spaApi.mySummary(month),
+    enabled: enabled && !!month,
+    refetchInterval: 60_000,
+  });
+
 export const usePublicSpaOutlets = () =>
   useQuery({ queryKey: spaKeys.publicOutlets(), queryFn: publicSpaApi.outlets, staleTime: 5 * 60_000 });
 

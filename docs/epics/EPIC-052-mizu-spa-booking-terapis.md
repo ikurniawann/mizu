@@ -314,3 +314,10 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   - Tes: integrasi `TestPublicTherapistChoiceAndOnlinePayment` + seluruh tes spa hijau di DB uji (salinan live,
     `mizu-devdb`); 5383 tes frontend hijau. Backup `mizu-before-payment-20261012-050524.dump`. Deploy `mizu:pay-3`,
     `mizu-api:pay-1`. Booking uji MZ-261012-5VEN (simulasi) dibatalkan & di-void.
+- 2026-10-12 — Halaman terapis (Area Karyawan → Tugas Terapis): `GET /api/spa/me/schedule?from&days` (≤31 hari,
+  booking yang ditugaskan ke terapis + catatan tamu + `assigned_at` + komisi per treatment: beku bila selesai, selain
+  itu perkiraan dari aturan komisi aktif) dan `GET /api/spa/me/summary?month` (cair = sama dengan rincian komisi;
+  menunggu pembayaran = selesai tapi booking belum lunas; perkiraan = treatment terjadwal bulan itu). UI: tab
+  "Per tanggal" & "Jadwal 14 hari", kartu per booking (bukan per treatment), banner + tanda "Baru" untuk booking yang
+  ditugaskan < 24 jam, ringkasan 3 angka komisi. Tes integrasi diperluas di alur utama spa. Deploy `mizu:therapist-1`,
+  `mizu-api:therapist-1`. Booking uji MZ-261012-TCLB dibatalkan.

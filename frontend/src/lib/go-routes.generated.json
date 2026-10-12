@@ -6201,6 +6201,16 @@
   },
   {
     "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/schedule"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/summary"
+  },
+  {
+    "module": "spa",
     "method": "DELETE",
     "path": "/api/spa/outlet-pics"
   },

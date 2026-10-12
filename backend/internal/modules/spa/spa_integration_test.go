@@ -354,6 +354,44 @@ func TestSpaBookingFlow(t *testing.T) {
 		t.Fatalf("my report = %v", myRep)
 	}
 
+	// The therapist's own schedule and commission summary: one completed &
+	// paid (b1), one completed but unpaid (b5), one still upcoming (b4).
+	b4 := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
+		"branch_id": branch, "booking_type": "reservation", "customer_name": "Gita", "notes": "Fokus bahu",
+		"scheduled_at": "2026-10-09T03:00:00.000Z", "items": []any{map[string]any{"variant_id": v90, "therapist_id": tA}},
+	}, http.StatusCreated)
+	b5 := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
+		"branch_id": branch, "booking_type": "walk_in", "customer_name": "Hana",
+		"scheduled_at": "2026-10-08T06:00:00.000Z", "items": []any{map[string]any{"variant_id": v60, "therapist_id": tA}},
+	}, http.StatusCreated)
+	b5Item := items(b5)[0]["id"].(string)
+	e.data(&therapistUser, "PATCH", "/api/spa/me/assignments/"+b5Item, map[string]any{"action": "start"}, http.StatusOK)
+	e.data(&therapistUser, "PATCH", "/api/spa/me/assignments/"+b5Item, map[string]any{"action": "complete"}, http.StatusOK)
+	schedule := e.list(&therapistUser, "/api/spa/me/schedule?from=2026-10-08&days=7")
+	byCode := map[string]map[string]any{}
+	for _, raw := range schedule {
+		row := raw.(map[string]any)
+		byCode[row["booking_code"].(string)] = row
+	}
+	if len(schedule) != 3 {
+		t.Fatalf("my schedule = %v", schedule)
+	}
+	if up := byCode[b4["booking_code"].(string)]; up["commission_idr"] != float64(50000) || up["commission_estimated"] != true ||
+		up["notes"] != "Fokus bahu" || up["assigned_at"] == nil {
+		t.Fatalf("upcoming entry = %v", up)
+	}
+	if paid := byCode[b1["booking_code"].(string)]; paid["commission_idr"] != float64(22000) || paid["commission_estimated"] != false {
+		t.Fatalf("completed entry = %v", paid)
+	}
+	sum := e.data(&therapistUser, "GET", "/api/spa/me/summary?month=2026-10", nil, http.StatusOK)
+	if sum["earned_idr"] != float64(22000) || sum["earned_count"] != float64(1) ||
+		sum["pending_idr"] != float64(22000) || sum["pending_count"] != float64(1) ||
+		sum["upcoming_idr"] != float64(50000) || sum["upcoming_count"] != float64(1) {
+		t.Fatalf("my summary = %v", sum)
+	}
+	e.call(&therapistUser, "GET", "/api/spa/me/schedule?from=2026-10-08&days=40", nil, http.StatusBadRequest)
+	e.call(admin, "GET", "/api/spa/me/summary", nil, http.StatusForbidden)
+
 	// Listing with filters.
 	listOut := e.call(admin, "GET", "/api/spa/bookings?branch_id="+branch+"&from=2026-10-08&to=2026-10-08&payment_status=paid", nil, http.StatusOK)
 	if rows, _ := listOut["data"].([]any); len(rows) != 1 {

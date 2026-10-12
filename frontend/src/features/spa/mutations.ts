@@ -239,8 +239,8 @@ export const useMyAssignmentAction = () => {
     mutationFn: ({ itemId, action }: { itemId: string; action: "start" | "complete" }) =>
       spaApi.myAssignmentAction(itemId, action),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: spaKeys.myAssignmentsAll() });
-      void qc.invalidateQueries({ queryKey: ["spa", "me", "commissions"] });
+      // Tugas, jadwal, komisi dan ringkasan terapis semuanya di bawah ["spa", "me"].
+      void qc.invalidateQueries({ queryKey: ["spa", "me"] });
     },
   });
 };
