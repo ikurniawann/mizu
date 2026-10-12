@@ -271,6 +271,11 @@ func ParseTime(text string) string {
 			if h < 11 {
 				h += 12
 			}
+		case "":
+			// "jam 3" at a spa open by day means 15.00; "jam 9" stays morning.
+			if h >= 1 && h <= 7 {
+				h += 12
+			}
 		}
 		if h > 23 || mi > 59 {
 			continue
@@ -504,4 +509,68 @@ func StripWords(text, name string) string {
 		}
 	}
 	return strings.Join(keep, " ")
+}
+
+/* ── questions (FAQ) ─────────────────────────────────────────────────── */
+
+// QuestionKind is what a customer asks about instead of booking.
+type QuestionKind string
+
+const (
+	QuestionNone       QuestionKind = ""
+	QuestionAddress    QuestionKind = "address"
+	QuestionHours      QuestionKind = "hours"
+	QuestionPrice      QuestionKind = "price"
+	QuestionPayment    QuestionKind = "payment"
+	QuestionReschedule QuestionKind = "reschedule"
+	QuestionOther      QuestionKind = "other"
+)
+
+var (
+	addressWords    = []string{"alamat", "lokasi", "dimana", "di mana", "letak", "maps", "map", "arah", "jalan apa", "daerah mana", "deket mana", "dekat mana"}
+	hoursWords      = []string{"jam buka", "buka jam", "jam tutup", "tutup jam", "jam operasional", "jam berapa buka", "buka sampai", "masih buka", "buka hari", "buka tiap"}
+	priceWords      = []string{"harga", "berapa harga", "tarif", "biaya", "price", "pricelist", "daftar harga", "berapaan", "harganya", "promo", "diskon"}
+	paymentWords    = []string{"cara bayar", "bayar pakai", "bayar pake", "bisa bayar", "pembayaran", "qris", "transfer", "kartu kredit", "debit", "bayar dulu", "dp dulu", "bayar di tempat", "cash"}
+	rescheduleWords = []string{"ubah jadwal", "ganti jadwal", "reschedule", "batalin", "batalkan booking", "cancel", "pindah jam", "geser jam", "telat", "terlambat", "refund"}
+	questionWords   = []string{"apa", "apakah", "bagaimana", "gimana", "berapa", "kapan", "kenapa", "mengapa", "bisa", "boleh", "ada", "siapa", "yang mana", "punya"}
+)
+
+// DetectQuestion classifies an information question. Booking-shaped
+// messages are not questions: "bisa besok jam 3?" asks for a slot, which the
+// caller checks with its extraction before trusting QuestionOther.
+func DetectQuestion(text string) QuestionKind {
+	n := Normalize(strings.TrimRight(strings.TrimSpace(text), "?!. "))
+	if n == "" {
+		return QuestionNone
+	}
+	has := func(words []string) bool {
+		for _, w := range words {
+			if strings.Contains(n, w) {
+				return true
+			}
+		}
+		return false
+	}
+	switch {
+	case has(addressWords):
+		return QuestionAddress
+	case has(hoursWords):
+		return QuestionHours
+	case has(paymentWords):
+		return QuestionPayment
+	case has(rescheduleWords):
+		return QuestionReschedule
+	case has(priceWords):
+		return QuestionPrice
+	}
+	if strings.Contains(text, "?") {
+		return QuestionOther
+	}
+	first := strings.Fields(n)
+	for _, w := range questionWords {
+		if first[0] == w || (len(first) > 1 && first[1] == w && (first[0] == "kak" || first[0] == "min" || first[0] == "halo")) {
+			return QuestionOther
+		}
+	}
+	return QuestionNone
 }

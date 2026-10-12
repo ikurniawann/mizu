@@ -309,3 +309,95 @@ func ReminderNotice(kind, name, code, outlet, date, clock string, items []string
 	b.WriteString("\nStatus, QR & ubah jadwal (sampai 1 jam sebelum):\n" + statusURL + "\n\nSampai jumpa di Mizu 🌿")
 	return b.String()
 }
+
+/* ── FAQ answers (from system data only) ────────────────────────────── */
+
+// AnswerAddress lists the outlets' addresses (one when chosen).
+func AnswerAddress(outlets []OutletOpt, chosen string) string {
+	var b strings.Builder
+	for _, o := range outlets {
+		if chosen != "" && o.ID != chosen {
+			continue
+		}
+		b.WriteString("📍 *" + o.Name + "*")
+		if o.Address != "" {
+			b.WriteString(": " + o.Address)
+			if o.City != "" {
+				b.WriteString(", " + o.City)
+			}
+		} else {
+			b.WriteString(": alamat belum tercantum, tanya *admin* ya")
+		}
+		b.WriteString(" (buka " + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + ")")
+		if o.Address != "" {
+			b.WriteString("\nMaps: https://www.google.com/maps/search/?api=1&query=" + mapsQuery(o))
+		}
+		if o.Phone != "" {
+			b.WriteString("\nTelp: " + o.Phone)
+		}
+		b.WriteString("\n")
+	}
+	return strings.TrimSpace(b.String())
+}
+
+func mapsQuery(o OutletOpt) string {
+	q := o.Name + " " + o.Address
+	if o.City != "" {
+		q += " " + o.City
+	}
+	return strings.ReplaceAll(strings.Join(strings.Fields(q), "+"), "&", "%26")
+}
+
+// AnswerHours lists opening hours.
+func AnswerHours(outlets []OutletOpt, chosen string) string {
+	var lines []string
+	for _, o := range outlets {
+		if chosen != "" && o.ID != chosen {
+			continue
+		}
+		lines = append(lines, "🕒 *"+o.Name+"*: setiap hari "+hhmm(o.OpenTime)+"–"+hhmm(o.CloseTime)+" WIB")
+	}
+	return strings.Join(lines, "\n") + "\nBooking lewat chat ini bisa untuk 60 hari ke depan."
+}
+
+// AnswerPrices lists the catalog with prices (up to 15 rows).
+func AnswerPrices(outlet string, catalog []VariantOpt) string {
+	if len(catalog) == 0 {
+		return "Daftar harga belum tersedia untuk outlet itu, tanya *admin* ya."
+	}
+	var b strings.Builder
+	b.WriteString("Daftar harga *" + outlet + "*:\n")
+	for i, v := range catalog {
+		if i >= 15 {
+			b.WriteString("… dan lainnya\n")
+			break
+		}
+		b.WriteString("• " + v.Label() + " — " + Rupiah(v.Price) + "\n")
+	}
+	return strings.TrimSpace(b.String())
+}
+
+func AnswerPayment(online bool) string {
+	if online {
+		return "Pembayaran bisa *di outlet setelah treatment* (tunai/QRIS/kartu) atau *online sekarang* lewat link (VA, QRIS, e-wallet, kartu). Pilihannya ditawarkan setelah booking dibuat."
+	}
+	return "Pembayaran dilakukan *di outlet setelah treatment* (tunai/QRIS/kartu). Tidak perlu DP."
+}
+
+func AnswerReschedule() string {
+	return "Jadwal bisa diubah atau dibatalkan sendiri lewat link status booking (ada di pesan konfirmasi) sampai *1 jam sebelum* kunjungan. Kalau sudah lewat batas itu, ketik *admin* dan tim Mizu bantu."
+}
+
+func AnswerUnknown() string {
+	return "Untuk pertanyaan itu saya belum punya jawabannya 🙏 Ketik *admin* supaya tim Mizu membalas di chat ini, atau lanjutkan booking."
+}
+
+// ContinuePrompt prefixes the pending booking question after an answer.
+func ContinuePrompt(prompt string) string { return "Lanjut booking — " + prompt }
+
+func hhmm(clock string) string {
+	if len(clock) >= 5 {
+		return strings.Replace(clock[:5], ":", ".", 1)
+	}
+	return clock
+}

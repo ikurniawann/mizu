@@ -80,6 +80,9 @@ type OutletOpt struct {
 	Name      string `json:"name"`
 	OpenTime  string `json:"open_time"`
 	CloseTime string `json:"close_time"`
+	Address   string `json:"address,omitempty"`
+	City      string `json:"city,omitempty"`
+	Phone     string `json:"phone,omitempty"`
 }
 
 // Session is the state stored per conversation (crm.wa_bot_sessions.state).

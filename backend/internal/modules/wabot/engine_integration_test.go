@@ -534,3 +534,58 @@ func TestBotKeepsTreatmentsNamedBeforeOutlet(t *testing.T) {
 		t.Fatalf("outlet from text: %s want %s", outlet, second)
 	}
 }
+
+/* ── FAQ ─────────────────────────────────────────────────────────────── */
+
+type fakeAnswerer struct {
+	fakeExtractor
+	facts string
+}
+
+type fakeExtractor struct{}
+
+func (fakeExtractor) Extract(context.Context, database.Querier, string, wabot.ExtractContext) (*wabot.Extraction, error) {
+	return &wabot.Extraction{}, nil
+}
+
+func (f *fakeAnswerer) Answer(_ context.Context, _ database.Querier, question, facts string) (string, error) {
+	f.facts = facts
+	if strings.Contains(question, "parkir") {
+		return "", nil // not in the facts
+	}
+	return "Jawaban AI untuk: " + question, nil
+}
+
+// Address, hours and price questions are answered from system data and the
+// pending booking question follows; unknown questions go to the AI with the
+// facts, and "ask admin" when it does not know.
+func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
+	e := setupBot(t)
+	if _, err := e.tx.Exec(e.ctx, `UPDATE configuration.branches SET address = 'Jl. Uji No. 7', city = 'Bandung' WHERE id = $1`, e.branch); err != nil {
+		t.Fatal(err)
+	}
+	ai := &fakeAnswerer{}
+	e.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: e.sender, Extractor: ai, AppURL: "https://mizu.test"}, nil, func() time.Time { return fixedNow })
+	r := e.say("Kalau alamatnya dimana ya?")
+	e.wants(r, "📍", "Jl. Uji No. 7, Bandung", "google.com/maps", "buka 10.00–20.00", "Lanjut booking — Untuk berapa orang?")
+	r = e.say("jam buka sampai jam berapa")
+	e.wants(r, "setiap hari 10.00–20.00 WIB")
+	r = e.say("harga reflexology berapa?")
+	e.wants(r, "Daftar harga", "Reflexology · 45 menit — Rp150.000")
+	r = e.say("bisa bayar pakai qris?")
+	e.wants(r, "di outlet setelah treatment")
+	r = e.say("kalau mau ubah jadwal gimana")
+	e.wants(r, "1 jam sebelum")
+	r = e.say("ada ruang keluarga ga?")
+	e.wants(r, "Jawaban AI untuk: ada ruang keluarga ga?")
+	if !strings.Contains(ai.facts, "Jl. Uji No. 7") || !strings.Contains(ai.facts, "Reflexology") || !strings.Contains(ai.facts, "KEBIJAKAN") {
+		t.Fatalf("facts given to the AI: %s", ai.facts)
+	}
+	r = e.say("parkirnya luas?")
+	e.wants(r, "belum punya jawabannya", "*admin*")
+	// A booking-shaped question is not a FAQ: "bisa besok jam 3?" asks for a slot.
+	e.say("2")
+	e.say("1")
+	r = e.say("bisa besok jam 3?")
+	e.wants(r, "ringkasan")
+}

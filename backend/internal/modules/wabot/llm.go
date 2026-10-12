@@ -154,3 +154,67 @@ func truncate(s string, n int) string {
 	}
 	return s[:n]
 }
+
+const answerPrompt = `Kamu asisten WhatsApp spa Mizu. Jawab pertanyaan pelanggan dalam bahasa Indonesia yang ramah dan singkat (maksimal 3 kalimat, boleh emoji seperlunya), HANYA berdasarkan FAKTA di bawah. Jangan mengarang harga, jam, alamat, promo, atau kebijakan. Jika jawabannya tidak ada di FAKTA, balas persis: TIDAK_TAHU`
+
+var _ Answerer = OpenAIExtractor{}
+
+// Answer runs one short completion grounded on facts; "" when the model
+// does not know (or on any error, so the bot falls back to "ask admin").
+func (o OpenAIExtractor) Answer(ctx context.Context, q database.Querier, question, facts string) (string, error) {
+	stored, err := appSettings(ctx, q, "openai_api_key", "openai_base_url", "openai_model")
+	if err != nil {
+		return "", err
+	}
+	apiKey := strings.TrimSpace(firstSet(stored["openai_api_key"], o.Getenv("OPENAI_API_KEY")))
+	if apiKey == "" {
+		return "", errors.New("API key OpenAI belum tersedia")
+	}
+	model := strings.TrimPrefix(firstSet(stored["openai_model"], "gpt-4o-mini"), "openai:")
+	baseURL := strings.TrimSuffix(firstSet(stored["openai_base_url"], "https://api.openai.com/v1"), "/")
+	client := o.Client
+	if client == nil {
+		client = safehttp.FromEnv(o.Getenv).Client(0)
+	}
+	body := map[string]any{
+		"model": model, "temperature": 0.2, "max_tokens": 220,
+		"messages": []map[string]string{
+			{"role": "system", "content": answerPrompt},
+			{"role": "user", "content": "FAKTA:\n" + facts + "\n\nPERTANYAAN: " + strings.TrimSpace(question)},
+		},
+	}
+	if strings.HasPrefix(model, "gpt-5") {
+		delete(body, "temperature")
+	}
+	raw, _ := json.Marshal(body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/chat/completions", bytes.NewReader(raw))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	payload, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return "", fmt.Errorf("OpenAI HTTP %d: %s", res.StatusCode, truncate(string(payload), 200))
+	}
+	var out struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(payload, &out); err != nil || len(out.Choices) == 0 {
+		return "", errors.New("jawaban OpenAI kosong")
+	}
+	answer := strings.TrimSpace(out.Choices[0].Message.Content)
+	if answer == "" || strings.Contains(strings.ToUpper(answer), "TIDAK_TAHU") {
+		return "", nil
+	}
+	return answer, nil
+}

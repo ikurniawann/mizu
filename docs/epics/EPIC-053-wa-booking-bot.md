@@ -80,6 +80,9 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
 ### Notifikasi ke customer (disepakati 2026-10-13, sebelum Fase 4)
 - [x] T-542 Konfirmasi WA saat pembayaran online lunas (event outbox `spa.booking.paid_online` → pelanggan `wabot.customer-paid-notice`) dan pengingat kunjungan H-1 & ±2 jam sebelum (pengawas bot tiap 10 menit, jendela 22–26 jam & 90–150 menit). Hanya booking `source` website/chat; dedup lewat `configuration.wa_notif_log` (`spa_paid`, `spa_remind_h1`, `spa_remind_2h`); saklar `bot_notify_customer` di Pengaturan CRM (bawaan aktif).
 
+### Tanya-jawab (disepakati 2026-10-13, dari uji WA pemilik)
+- [x] T-543 Pertanyaan alamat/lokasi (+ link Maps), jam buka, daftar harga, cara bayar, ubah jadwal dijawab dari data sistem tanpa mengubah draf booking, lalu pertanyaan booking yang tertunda diulang ("Lanjut booking — …"). Pertanyaan lain dijawab AI hanya dari FAKTA sistem (outlet, katalog, kebijakan); bila tidak tahu → arahkan ke *admin*. "jam 3" tanpa keterangan = 15.00.
+
 ### Fase 4 — Meta Cloud API
 - [x] T-540 Meta Cloud API: webhook `GET/POST /api/wa/meta` (hub.challenge + HMAC app secret; balasan tombol/daftar `k:<n>` dibaca sebagai angka menu), kredensial & provider dari `configuration.app_settings` (Settings → WhatsApp Gateway → **Meta Cloud API**, cek nomor via Graph), menu bot sebagai **tombol/daftar interaktif** (≤3 tombol, ≤10 baris, selebihnya teks), notifikasi lunas/pengingat memakai **template** di luar jendela 24 jam (`meta_wa_reminder_template`, `meta_wa_paid_template`). Runbook: `docs/crm/RUNBOOK-META-CLOUD-API.md`. *Menunggu pemilik:* WABA + nomor + token + template disetujui.
 
@@ -156,3 +159,7 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   skor kata khas dan mengabaikan kata umum ("massage", "pijat", "menit") — "thai massage 60 menit" →
   Thai 60, "pijat buat istri" tidak lagi memilih Pijat Tradisional. Bukti: `TestSanitizeAIDropsUnmentionedFields`,
   `TestMatchNameScoresDistinctiveWords`, `TestBotKeepsTreatmentsNamedBeforeOutlet`.
+- 2026-10-13 — T-543 tanya-jawab: pemilik bertanya "alamat mizu 1.0 dimana?" lewat WA dan bot menjawab "belum
+  paham". Kini kelas pertanyaan dideteksi (`DetectQuestion`), dijawab dari `PublicOutlet` (alamat, kota, telp,
+  jam) dan katalog; pertanyaan bebas ke OpenAI dengan prompt "hanya dari FAKTA, kalau tidak ada jawab
+  TIDAK_TAHU". Bukti: `TestDetectQuestion`, `TestBotAnswersQuestionsFromSystemData`, `TestParseTimeDaytimeDefault`.

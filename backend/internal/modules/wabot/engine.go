@@ -178,6 +178,17 @@ func (t *turn) run(ctx context.Context, text string) []string {
 	if intent == domain.IntentGreeting && len(strings.Fields(text)) <= 3 {
 		return append(out, t.prompt(ctx)...)
 	}
+	// Questions (address, hours, prices, …) are answered from system data
+	// without touching the draft; the pending booking question follows.
+	if kind := domain.DetectQuestion(text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).useful()) {
+		if answer := t.answer(ctx, kind, text); answer != "" {
+			prompts := t.prompt(ctx)
+			if len(prompts) > 0 {
+				prompts[0] = domain.ContinuePrompt(prompts[0])
+			}
+			return append(append(out, answer), prompts...)
+		}
+	}
 	applied := false
 	if nums := domain.MenuNumbers(text); nums != nil && len(s.Menu) > 0 {
 		applied = t.applyMenu(ctx, nums)
@@ -316,6 +327,100 @@ func (t *turn) extract(ctx context.Context, text string) *Extraction {
 	t.e.log.Info("[wabot] ekstraksi AI", "ms", time.Since(started).Milliseconds(), "outlet", x.Outlet, "people", x.People,
 		"treatments", x.Treatments, "date", x.Date, "time", x.Time, "period", x.Period, "confirm", x.Confirm, "admin", x.WantAdmin)
 	return x
+}
+
+// answer replies to an information question from system data; a free
+// question goes to the AI with the same facts. "" = not a question after all.
+func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string) string {
+	s := t.sess
+	if len(s.Outlets) == 0 {
+		t.loadOutlets(ctx)
+	}
+	// The outlet the question names, else the chosen one, else all.
+	chosen := s.OutletID
+	if i := domain.MatchName(text, outletNames(s.Outlets)); i >= 0 {
+		chosen = s.Outlets[i].ID
+	}
+	switch kind {
+	case domain.QuestionAddress:
+		return domain.AnswerAddress(s.Outlets, chosen)
+	case domain.QuestionHours:
+		return domain.AnswerHours(s.Outlets, chosen)
+	case domain.QuestionPrice:
+		outletID, outletName := chosen, ""
+		if outletID == "" && len(s.Outlets) > 0 {
+			outletID = s.Outlets[0].ID
+		}
+		for _, o := range s.Outlets {
+			if o.ID == outletID {
+				outletName = o.Name
+			}
+		}
+		catalog := s.Catalog
+		if outletID != s.OutletID || len(catalog) == 0 {
+			catalog, _ = t.e.catalogFor(ctx, outletID)
+		}
+		return domain.AnswerPrices(outletName, catalog)
+	case domain.QuestionPayment:
+		return domain.AnswerPayment(t.e.ports.Spa.OnlinePayment())
+	case domain.QuestionReschedule:
+		return domain.AnswerReschedule()
+	}
+	if answerer, ok := t.e.ports.Extractor.(Answerer); ok {
+		ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+		defer cancel()
+		started := time.Now()
+		reply, err := answerer.Answer(ctx, t.db, text, t.facts(ctx))
+		if err != nil {
+			t.e.log.Warn("[wabot] jawaban AI gagal", "error", err)
+		} else {
+			t.e.log.Info("[wabot] jawaban AI", "ms", time.Since(started).Milliseconds(), "known", reply != "")
+		}
+		if reply != "" {
+			return reply
+		}
+	}
+	return domain.AnswerUnknown()
+}
+
+// facts is what the AI may answer from: outlets, the catalog, policies.
+func (t *turn) facts(ctx context.Context) string {
+	s := t.sess
+	var b strings.Builder
+	b.WriteString("OUTLET:\n")
+	for _, o := range s.Outlets {
+		b.WriteString("- " + o.Name + ": " + firstNonBlank(o.Address, "alamat belum tercantum"))
+		if o.City != "" {
+			b.WriteString(", " + o.City)
+		}
+		b.WriteString("; buka setiap hari " + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + " WIB")
+		if o.Phone != "" {
+			b.WriteString("; telp " + o.Phone)
+		}
+		b.WriteString("\n")
+	}
+	catalog := s.Catalog
+	outlet := s.OutletName
+	if len(catalog) == 0 && len(s.Outlets) > 0 {
+		catalog, _ = t.e.catalogFor(ctx, s.Outlets[0].ID)
+		outlet = s.Outlets[0].Name
+	}
+	if len(catalog) > 0 {
+		b.WriteString("TREATMENT & HARGA (" + outlet + "):\n")
+		for _, v := range catalog {
+			b.WriteString("- " + v.Label() + " (" + strconv.Itoa(v.DurationMin) + " menit): " + domain.Rupiah(v.Price) + "\n")
+		}
+	}
+	b.WriteString("KEBIJAKAN:\n- Booking lewat chat maksimal " + strconv.Itoa(domain.MaxPeople) + " orang per booking, untuk 60 hari ke depan.\n")
+	if t.e.ports.Spa.OnlinePayment() {
+		b.WriteString("- Pembayaran di outlet setelah treatment (tunai/QRIS/kartu) atau online lewat link (VA, QRIS, e-wallet, kartu); tanpa DP.\n")
+	} else {
+		b.WriteString("- Pembayaran di outlet setelah treatment (tunai/QRIS/kartu); tanpa DP.\n")
+	}
+	b.WriteString("- Jadwal bisa diubah/dibatalkan sendiri lewat link status booking sampai 1 jam sebelum kunjungan; setelah itu lewat admin.\n")
+	b.WriteString("- Terapis bisa dipilih sendiri (yang kosong di jam itu) atau dipilihkan Mizu; ada terapis wanita dan pria.\n")
+	b.WriteString("- Untuk hal lain (parkir, fasilitas, promo, grup lebih dari " + strconv.Itoa(domain.MaxPeople) + " orang) pelanggan diminta ketik admin.\n")
+	return b.String()
 }
 
 // sanitizeAI drops AI fields the message gives no cue for (a model may
@@ -624,7 +729,17 @@ func (t *turn) loadOutlets(ctx context.Context) {
 	}
 	t.sess.Outlets = t.sess.Outlets[:0]
 	for _, o := range list {
-		t.sess.Outlets = append(t.sess.Outlets, domain.OutletOpt{ID: o.BranchID, Name: o.Name, OpenTime: o.OpenTime, CloseTime: o.CloseTime})
+		opt := domain.OutletOpt{ID: o.BranchID, Name: o.Name, OpenTime: o.OpenTime, CloseTime: o.CloseTime}
+		if o.Address != nil {
+			opt.Address = strings.TrimSpace(*o.Address)
+		}
+		if o.City != nil {
+			opt.City = strings.TrimSpace(*o.City)
+		}
+		if o.Phone != nil {
+			opt.Phone = strings.TrimSpace(*o.Phone)
+		}
+		t.sess.Outlets = append(t.sess.Outlets, opt)
 	}
 }
 

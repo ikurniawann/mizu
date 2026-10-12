@@ -182,3 +182,28 @@ func TestMatchNameScoresDistinctiveWords(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectQuestion(t *testing.T) {
+	cases := map[string]QuestionKind{
+		"Kalau alamat mizu 1.0 itu dimana?": QuestionAddress, "lokasinya di mana kak": QuestionAddress,
+		"jam buka sampai jam berapa": QuestionHours, "masih buka ga malam ini?": QuestionHours,
+		"harga reflexology berapa?": QuestionPrice, "ada promo?": QuestionPrice,
+		"bisa bayar pakai qris?": QuestionPayment, "kalau mau ubah jadwal gimana": QuestionReschedule,
+		"ada ruang keluarga ga?": QuestionOther, "apakah terapisnya wanita semua": QuestionOther,
+		"2 orang": QuestionNone, "besok sore": QuestionNone, "halo": QuestionNone, "thai massage 60 menit": QuestionNone,
+	}
+	for in, want := range cases {
+		if got := DetectQuestion(in); got != want {
+			t.Fatalf("DetectQuestion(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestParseTimeDaytimeDefault(t *testing.T) {
+	cases := map[string]string{"jam 3": "15:00", "jam 3 pagi": "03:00", "jam 7": "19:00", "jam 9": "09:00", "jam 10": "10:00", "jam 15.30": "15:30", "pukul 2 siang": "14:00"}
+	for in, want := range cases {
+		if got := ParseTime(in); got != want {
+			t.Fatalf("ParseTime(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

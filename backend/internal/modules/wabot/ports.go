@@ -100,6 +100,12 @@ type ExtractContext struct {
 
 // Extractor turns a free-text message into an Extraction. A nil Extractor
 // means menu-only mode.
+// Answerer answers a free question from the facts given (outlets, prices,
+// policies) and nothing else; "" means it does not know.
+type Answerer interface {
+	Answer(ctx context.Context, q database.Querier, question, facts string) (string, error)
+}
+
 type Extractor interface {
 	Extract(ctx context.Context, q database.Querier, text string, ec ExtractContext) (*Extraction, error)
 }
