@@ -31,6 +31,7 @@ import {
   bookingTotal,
   canAddItem,
   canCancelBooking,
+  canRescheduleBooking,
   checkoutState,
   eventLabel,
   GENDER_PREF_LABEL,
@@ -184,7 +185,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
         actions={
           <>
             {!embedded && <BackLink readOnly={readOnly} />}
-            {!readOnly && canAddItem(booking) && (
+            {!readOnly && canRescheduleBooking(booking) && (
               <Button variant="outline" onClick={() => setDialog({ kind: "schedule" })}>Ubah jadwal</Button>
             )}
             {!readOnly && canCancelBooking(booking) && (

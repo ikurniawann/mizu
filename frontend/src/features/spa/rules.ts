@@ -164,6 +164,18 @@ export function allowedItemActions(
 }
 
 /** Tambah item hanya sebelum layanan dimulai dan sebelum dibayar. */
+/**
+ * Ubah jadwal (backoffice): booking terbuka, treatment belum dimulai, belum
+ * dikirim ke kasir. Boleh walau sudah dibayar (online) — pembayaran ikut;
+ * menambah/mengubah treatment tetap terkunci setelah bayar (canAddItem).
+ */
+export function canRescheduleBooking(
+  booking: Pick<Booking, "status" | "pos_order_id"> & { items?: Pick<BookingItem, "status">[] }
+): boolean {
+  return (booking.status === "unassigned" || booking.status === "assigned") && !booking.pos_order_id &&
+    !booking.items?.some((item) => item.status === "in_treatment" || item.status === "completed");
+}
+
 export function canAddItem(booking: Pick<Booking, "status" | "payment_status"> & { items?: Pick<BookingItem, "status">[] }): boolean {
   return (booking.status === "unassigned" || booking.status === "assigned") && booking.payment_status === "unpaid" &&
     !booking.items?.some((item) => item.status === "in_treatment" || item.status === "completed");

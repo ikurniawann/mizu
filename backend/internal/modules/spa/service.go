@@ -794,7 +794,7 @@ func (s *Service) PatchBooking(ctx context.Context, userID, id string, p booking
 					return httpx.Conflict("Jadwal booking tidak dapat diubah setelah treatment dimulai")
 				}
 			}
-			if err := domain.CanEditItems(b.Status, b.PaymentStatus, b.PosOrderID != nil && s.orderLive(ctx, q, *b.PosOrderID)); err != nil {
+			if err := domain.CanReschedule(b.Status, b.PosOrderID != nil && s.orderLive(ctx, q, *b.PosOrderID)); err != nil {
 				return ruleErr(err)
 			}
 			interval, err := bookingInterval(*p.ScheduledAt, items)

@@ -3,17 +3,27 @@
 import { useMemo, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { availabilityWarning, isDraggable, shiftMismatch } from "../calendar";
-import { useAssignBooking } from "../mutations";
-import { wibClockOf } from "../time";
+import { availabilityWarning, clockOf, isDraggable, minuteOfDay, PX_PER_MIN, shiftMismatch, snapStartMinute, type DayRange } from "../calendar";
+import { useAssignBooking, useRescheduleBooking } from "../mutations";
+import { wibClockOf, wibToIso } from "../time";
 import type { BoardItem, BoardTherapist } from "../types";
 
 export const BOOKING_DRAG_TYPE = "application/x-mizu-item";
+/** Jarak (px) titik pegang dari atas blok, agar posisi jatuh = posisi atas blok. */
+export const BOOKING_GRAB_TYPE = "application/x-mizu-grab";
+
+/** Kolom bersumbu jam (kalender): seret naik/turun di kolom yang sama = ubah jam. */
+export interface DropTimeline {
+  date: string;
+  range: DayRange;
+}
 
 export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapist[]) {
   const action = useAssignBooking();
+  const reschedule = useRescheduleBooking();
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [pending, setPending] = useState<{ item: BoardItem; row: BoardTherapist; warning: string } | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ item: BoardItem; date: string; minute: number } | null>(null);
   const byId = useMemo(
     () => new Map([...unassigned, ...therapists.flatMap((row) => row.items)].map((item) => [item.id, item])),
     [unassigned, therapists]
@@ -30,13 +40,34 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
       }
     );
 
-  const onDrop = (event: DragEvent, row: BoardTherapist | null) => {
+  const move = (item: BoardItem, date: string, minute: number) =>
+    reschedule.mutate(
+      { bookingId: item.booking_id, scheduledAt: wibToIso(date, clockOf(minute)) },
+      {
+        onSuccess: () => toast.success("Jadwal dipindah", {
+          description: `${item.customer_name} · ${wibClockOf(item.starts_at)} → ${clockOf(minute)}`,
+        }),
+        onError: (err) => toast.error("Gagal memindah jadwal", { description: err.message }),
+      }
+    );
+
+  const onDrop = (event: DragEvent, row: BoardTherapist | null, timeline?: DropTimeline) => {
     event.preventDefault();
     setDropTarget(null);
     const item = byId.get(event.dataTransfer.getData(BOOKING_DRAG_TYPE));
-    if (!item || item.therapist_id === (row?.therapist.id ?? null)) return;
+    if (!item) return;
+    const sameColumn = item.therapist_id === (row?.therapist.id ?? null);
+    if (sameColumn && !timeline) return;
     if (!isDraggable(item)) {
       toast.error("Booking ini sudah mulai dikerjakan, tidak bisa dipindah.");
+      return;
+    }
+    if (sameColumn && timeline) {
+      // Naik/turun di kolom yang sama: pindah jam, terapis tetap.
+      const grab = Number(event.dataTransfer.getData(BOOKING_GRAB_TYPE)) || 0;
+      const top = event.clientY - event.currentTarget.getBoundingClientRect().top - grab;
+      const minute = snapStartMinute(top, timeline.range, PX_PER_MIN);
+      if (minute !== minuteOfDay(item.starts_at)) setPendingMove({ item, date: timeline.date, minute });
       return;
     }
     if (!row) {
@@ -81,6 +112,23 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
   };
 
   const confirmation = (
+    <>
+    <ConfirmDialog
+      open={pendingMove !== null}
+      onOpenChange={(open) => !open && setPendingMove(null)}
+      title={`Pindahkan jadwal ${pendingMove?.item.customer_name ?? ""}?`}
+      description={
+        pendingMove
+          ? `${wibClockOf(pendingMove.item.starts_at)} → ${clockOf(pendingMove.minute)} WIB, ${pendingMove.item.therapist_name ? `tetap dengan ${pendingMove.item.therapist_name}` : "belum ada terapis"}. Sistem mengecek shift & bentrok terapis.`
+          : ""
+      }
+      confirmLabel="Pindahkan"
+      variant="default"
+      onConfirm={() => {
+        if (pendingMove) move(pendingMove.item, pendingMove.date, pendingMove.minute);
+        setPendingMove(null);
+      }}
+    />
     <ConfirmDialog
       open={pending !== null}
       onOpenChange={(open) => !open && setPending(null)}
@@ -92,6 +140,7 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
         setPending(null);
       }}
     />
+    </>
   );
 
   return { dropTarget, onDrop, onDragOver, onDragLeave, confirmation };

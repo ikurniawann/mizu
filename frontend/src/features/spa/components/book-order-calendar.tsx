@@ -23,7 +23,7 @@ import {
 import { genderLabel, sortByStart } from "../rules";
 import { shortClock, wibClockOf } from "../time";
 import type { BoardItem, BoardTherapist } from "../types";
-import { BOOKING_DRAG_TYPE, useBookingDnd } from "./use-booking-dnd";
+import { BOOKING_DRAG_TYPE, BOOKING_GRAB_TYPE, useBookingDnd } from "./use-booking-dnd";
 
 const HEADER_H = 64;
 const COL_W = 176;
@@ -182,7 +182,7 @@ export function BookOrderCalendar({
                   highlight={dnd.dropTarget === t.id}
                   onDragOver={(e) => dnd.onDragOver(e, t.id)}
                   onDragLeave={(e) => dnd.onDragLeave(e, t.id)}
-                  onDrop={(e) => dnd.onDrop(e, row)}
+                  onDrop={(e) => dnd.onDrop(e, row, { date, range })}
                   onEmptyClick={(minute) => onSlot({ therapistId: t.id, time: clockOf(minute) })}
                 >
                   {placed.map((p) => (
@@ -353,6 +353,7 @@ function ItemButton({ item, height, onOpen }: { item: BoardItem; height?: number
       draggable={draggable}
       onDragStart={(e) => {
         e.dataTransfer.setData(BOOKING_DRAG_TYPE, item.id);
+        e.dataTransfer.setData(BOOKING_GRAB_TYPE, String(e.clientY - e.currentTarget.getBoundingClientRect().top));
         e.dataTransfer.effectAllowed = "move";
       }}
       onClick={() => onOpen(item)}
@@ -401,7 +402,7 @@ function Legend() {
       <span className="inline-flex items-center gap-1.5">
         <span className="inline-block h-0.5 w-4 bg-danger" /> Sekarang
       </span>
-      <span className="ml-auto hidden sm:inline">Seret blok ke kolom terapis untuk menugaskan · klik slot kosong untuk booking baru</span>
+      <span className="ml-auto hidden sm:inline">Seret ke kolom lain = ganti terapis · seret naik/turun = ganti jam · klik slot kosong = booking baru</span>
     </div>
   );
 }

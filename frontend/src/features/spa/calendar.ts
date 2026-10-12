@@ -111,6 +111,16 @@ export function minuteAtOffset(y: number, range: DayRange, pxPerMin = PX_PER_MIN
   return Math.min(Math.max(snapped, range.start), range.end - step);
 }
 
+/**
+ * Jam mulai baru saat blok diseret naik/turun: `top` = posisi atas blok di
+ * kolom (px), dibulatkan ke `step` menit terdekat dan tetap di dalam rentang.
+ */
+export function snapStartMinute(top: number, range: DayRange, pxPerMin = PX_PER_MIN, step = 15): number {
+  const raw = range.start + Math.max(0, top) / pxPerMin;
+  const snapped = Math.round(raw / step) * step;
+  return Math.min(Math.max(snapped, range.start), range.end - step);
+}
+
 export interface Band {
   top: number;
   height: number;

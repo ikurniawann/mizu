@@ -32,6 +32,16 @@ function bookingChanged(qc: QueryClient, booking?: Booking) {
 
 // ── Booking ──────────────────────────────────────────────────────────────────
 
+/** Pindah jam booking (mis. seret di kalender Book Order); terapis tetap & dicek ulang server. */
+export const useRescheduleBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, scheduledAt }: { bookingId: string; scheduledAt: string }) =>
+      spaApi.updateBooking(bookingId, { scheduled_at: scheduledAt }),
+    onSuccess: (booking) => bookingChanged(qc, booking),
+  });
+};
+
 export const useAssignBooking = () => {
   const qc = useQueryClient();
   return useMutation({

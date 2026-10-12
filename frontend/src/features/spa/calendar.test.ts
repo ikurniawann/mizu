@@ -11,6 +11,7 @@ import {
   nowOffset,
   offShiftBands,
   PX_PER_MIN,
+  snapStartMinute,
 } from "./calendar";
 
 // 2026-10-09 10:00 WIB = 03:00Z
@@ -93,5 +94,16 @@ describe("interaksi", () => {
     expect(availabilityWarning(item("a", "14:00", "15:00"), { shift, on_leave: true })).toMatch("cuti");
     expect(availabilityWarning(item("a", "14:00", "15:00"), { shift, on_leave: false, day_off: true })).toMatch("libur");
     expect(availabilityWarning(item("a", "14:00", "15:00"), { shift: null, on_leave: false })).toMatch("tidak punya shift");
+  });
+});
+
+describe("snapStartMinute", () => {
+  const range = { start: 600, end: 1320 };
+  it("dibulatkan ke 15 menit terdekat & dibatasi rentang", () => {
+    expect(snapStartMinute(60 * PX_PER_MIN, range)).toBe(660);
+    expect(snapStartMinute(67 * PX_PER_MIN, range)).toBe(660);
+    expect(snapStartMinute(68 * PX_PER_MIN, range)).toBe(675);
+    expect(snapStartMinute(-40, range)).toBe(600);
+    expect(snapStartMinute(99999, range)).toBe(1305);
   });
 });

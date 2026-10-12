@@ -225,6 +225,19 @@ func CanEditItems(status, payment string, checkedOut bool) error {
 	return nil
 }
 
+// CanReschedule guards moving a booking to another time: it must still be
+// open and not sent to the cashier. Unlike CanEditItems a paid booking may
+// move (the payment follows the visit; its treatments and price do not change).
+func CanReschedule(status string, checkedOut bool) error {
+	if !IsOpenBooking(status) {
+		return rule("Booking sudah %s", BookingLabel(status))
+	}
+	if checkedOut {
+		return rule("Booking sudah dikirim ke kasir; batalkan tagihan di POS untuk mengubah jadwal")
+	}
+	return nil
+}
+
 // ShouldExpire reports whether the sweep may expire a booking whose last
 // item ends at lastEnd.
 func ShouldExpire(status string, lastEnd, now time.Time) bool {

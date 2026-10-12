@@ -97,3 +97,48 @@ func TestPublicRescheduleByBookingCode(t *testing.T) {
 		t.Fatalf("late reschedule message = %v", late)
 	}
 }
+
+// Staff move a paid booking (no POS bill yet); the assigned therapist's
+// clashes still block the move.
+func TestStaffReschedulePaidBooking(t *testing.T) {
+	e := setup(t)
+	admin := &e.admin
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID).Scan(&warehouse); err != nil {
+		t.Fatal(err)
+	}
+	branch := e.org.BranchID
+	e.data(admin, "PUT", "/api/spa/outlets/"+branch, map[string]any{
+		"warehouse_id": warehouse, "open_time": "08:00", "close_time": "21:00", "slot_minutes": 30,
+	}, http.StatusOK)
+	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{
+		"code": "SR" + testutil.RandomHex(2), "name": "Shiatsu",
+		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 210000}},
+	}, http.StatusCreated)
+	v60 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	th := e.data(admin, "POST", "/api/spa/therapists", map[string]any{
+		"employee_id": e.employee("Tari Terapis", nil), "home_branch_id": branch, "gender": "female",
+	}, http.StatusCreated)["id"].(string)
+	create := func(name, at string) map[string]any {
+		return e.data(admin, "POST", "/api/spa/bookings", map[string]any{
+			"branch_id": branch, "booking_type": "reservation", "customer_name": name, "scheduled_at": at,
+			"items": []any{map[string]any{"variant_id": v60, "therapist_id": th}},
+		}, http.StatusCreated)
+	}
+	paid := create("Lina", "2026-10-09T03:00:00.000Z") // 10:00 WIB
+	create("Maya", "2026-10-09T06:00:00.000Z")          // 13:00 WIB, same therapist
+	id := paid["id"].(string)
+	if _, err := e.tx.Exec(e.ctx, `UPDATE spa.bookings SET payment_status = 'paid', payment_method = 'online' WHERE id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
+	moved := e.data(admin, "PATCH", "/api/spa/bookings/"+id, map[string]any{"scheduled_at": "2026-10-09T04:00:00.000Z"}, http.StatusOK)
+	if moved["scheduled_at"] != "2026-10-09T04:00:00.000Z" || moved["payment_status"] != "paid" || moved["therapist_id"] != th {
+		t.Fatalf("paid booking moved = %v", moved)
+	}
+	out := e.call(admin, "PATCH", "/api/spa/bookings/"+id, map[string]any{"scheduled_at": "2026-10-09T06:30:00.000Z"}, http.StatusConflict)
+	if msg, _ := out["error"].(string); !strings.Contains(msg, "bentrok") {
+		t.Fatalf("clash message = %v", out)
+	}
+	// Treatments of a paid booking stay locked.
+	e.call(admin, "POST", "/api/spa/bookings/"+id+"/items", map[string]any{"variant_id": v60}, http.StatusConflict)
+}

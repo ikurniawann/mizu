@@ -5,6 +5,7 @@ import {
   bookingStatusBadge,
   bookingTotal,
   canAddItem,
+  canRescheduleBooking,
   canCancelBooking,
   checkoutState,
   commissionValueLabel,
@@ -168,5 +169,15 @@ describe("treatment", () => {
     const opts = activeVariantOptions([t("A", true, [v("a1", true), v("a2", false)]), t("B", false, [v("b1", true)])]);
     expect(opts.map((o) => o.variant.id)).toEqual(["a1"]);
     expect(opts[0].label).toBe("A — a1 (60 mnt)");
+  });
+});
+
+describe("canRescheduleBooking", () => {
+  const base = { status: "assigned" as const, pos_order_id: null, items: [{ status: "assigned" as const }] };
+  it("boleh walau sudah dibayar, selama belum ke kasir & belum mulai", () => {
+    expect(canRescheduleBooking(base)).toBe(true);
+    expect(canRescheduleBooking({ ...base, pos_order_id: "o1" })).toBe(false);
+    expect(canRescheduleBooking({ ...base, items: [{ status: "in_treatment" as const }] })).toBe(false);
+    expect(canRescheduleBooking({ ...base, status: "cancelled" as const })).toBe(false);
   });
 });

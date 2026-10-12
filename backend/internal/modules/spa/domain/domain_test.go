@@ -224,3 +224,18 @@ func TestResolveCommission(t *testing.T) {
 		t.Fatal("ShouldExpire")
 	}
 }
+
+func TestCanReschedule(t *testing.T) {
+	if err := CanReschedule(BookingAssigned, false); err != nil {
+		t.Fatalf("open booking: %v", err)
+	}
+	if err := CanEditItems(BookingAssigned, PaymentPaid, false); err == nil {
+		t.Fatal("paid booking must keep its treatments")
+	}
+	if err := CanReschedule(BookingCancelled, false); err == nil {
+		t.Fatal("cancelled booking must not move")
+	}
+	if err := CanReschedule(BookingUnassigned, true); err == nil {
+		t.Fatal("checked-out booking must not move")
+	}
+}
