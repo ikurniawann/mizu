@@ -343,3 +343,12 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   `TestDepositHoldsAndSettlesOnlineBookings`, `TestBotDepositFlow` (dijalankan dengan `XENDIT_MOCK=1`),
   suite spa/wabot/app lulus tanpa mock; tsc/eslint/vitest frontend. Catatan: checkout grup FO (fitur sesi lain,
   uncommitted) belum mengurangi DP.
+- 2026-10-13 — Revisi R2 (audit UX DP, `5b5c2bcf`, `ef37679d`, `36015449`): uji jalan alur web di live menemukan
+  bug: route status hanya menerima `?bayar=simulasi|gagal`, padahal link DP memakai `dp-simulasi` → kartu bayar
+  DP (demo) tak pernah tampil dan tombol "Bayar DP" memutar ke halaman yang sama. Diperbaiki (regex `(dp-)?…`).
+  Polesan: hero "Satu langkah lagi: bayar DP" + batas jam saat DP tertunda, QR disembunyikan sampai DP masuk,
+  ringkasan wizard (web) & ringkasan konfirmasi (bot) memecah Total → Booking fee (DP) → Sisa di outlet,
+  bilah aksi ponsel menyebut DP. Bot: pengingat DP sekali ±15–25 menit sebelum batas tahan
+  (`spa.PendingDeposits`, `wabot.RemindDeposits` di pengawas, klaim `spa_deposit_remind`). Bukti:
+  `TestBotRemindsPendingDepositOnce`, `TestSummaryMentionsBookingFee`, suite wabot/spa lulus; tsc/eslint.
+  Booking uji `MZ-261013-HCVW` dibatalkan manual. Image: `mizu-api:wabot-20`, `mizu:wabot-10`.
