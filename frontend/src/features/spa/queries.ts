@@ -61,6 +61,12 @@ export const useSpaAvailability = (params: AvailabilityParams | null) =>
     enabled: !!params,
   });
 
+export const useSpaRooms = (branchId: string, activeOnly = false) =>
+  useQuery({ queryKey: spaKeys.rooms(branchId, activeOnly), queryFn: () => spaApi.rooms(branchId, activeOnly), enabled: !!branchId, staleTime: 60_000 });
+
+export const useRoomBoard = (branchId: string) =>
+  useQuery({ queryKey: spaKeys.roomBoard(branchId), queryFn: () => spaApi.roomBoard(branchId), enabled: !!branchId, refetchInterval: 15_000 });
+
 export const useSpaBoard = (branchId: string, date: string) =>
   useQuery({
     queryKey: spaKeys.board(branchId, date),

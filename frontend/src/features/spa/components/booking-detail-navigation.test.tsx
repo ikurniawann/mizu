@@ -26,7 +26,7 @@ const booking: Booking = {
   id: "booking-1", booking_code: "SPA-001", branch_id: "branch-1", branch_name: "Mizu", booking_type: "reservation",
   source: "staff", customer_name: "Ayu", customer_phone: "081234567890", scheduled_at: item.starts_at, ends_at: item.ends_at,
   status: "unassigned", payment_status: "unpaid", item_count: 2, total_idr: 300000, therapist_names: [],
-  pos_order_id: null, created_at: "2026-10-09T02:00:00Z", company_id: "company-1", warehouse_id: null, customer_id: null,
+  pos_order_id: null, room_id: null, room_name: null, room_price_idr: 0, created_at: "2026-10-09T02:00:00Z", company_id: "company-1", warehouse_id: null, customer_id: null,
   therapist_gender_pref: "any", notes: "Catatan booking", checked_out_at: null, paid_at: null, cancelled_at: null,
   cancel_reason: null, pos_order_number: null, therapist_rating: null,
   items: [item, { ...item, id: "item-2", treatment_name: "Refleksi", price_idr: 100000 }],

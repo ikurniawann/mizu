@@ -13,6 +13,7 @@ import type {
   WaitlistCreateInput,
   ItemActionInput,
   OutletInput,
+  RoomInput,
   PriceInput,
   PublicBookingInput,
   TherapistCreateInput,
@@ -110,6 +111,28 @@ export const useCheckoutBooking = (id: string) => {
 };
 
 // ── Outlet ───────────────────────────────────────────────────────────────────
+
+export const useSaveRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id?: string; input: RoomInput }) => (id ? spaApi.updateRoom(id, input) : spaApi.createRoom(input)),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["spa", "rooms"] });
+      void qc.invalidateQueries({ queryKey: ["spa", "room-board"] });
+    },
+  });
+};
+
+export const useSetBookingRoom = (bookingId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (roomId: string | null) => spaApi.setBookingRoom(bookingId, roomId),
+    onSuccess: (booking) => {
+      bookingChanged(qc, booking);
+      void qc.invalidateQueries({ queryKey: ["spa", "room-board"] });
+    },
+  });
+};
 
 export const useSaveOutlet = () => {
   const qc = useQueryClient();

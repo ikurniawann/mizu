@@ -231,7 +231,12 @@ export interface BookingSummary {
   status: BookingStatus;
   payment_status: PaymentStatus;
   item_count: number;
+  /** Treatment + room. */
   total_idr: number;
+  /** Room yang ditahan untuk booking ini (revisi R6); harga disalin saat room dipilih. */
+  room_id: string | null;
+  room_name: string | null;
+  room_price_idr: number;
   therapist_names: string[];
   pos_order_id: string | null;
   created_at: string;
@@ -307,6 +312,8 @@ export interface BookingCreateInput {
   notes?: string;
   scheduled_at: string;
   items: BookingItemInput[];
+  /** Room yang ditahan sejak dibuat (opsional). */
+  room_id?: string;
 }
 
 export interface BookingUpdateInput {
@@ -626,3 +633,54 @@ export type WaitlistCreateInput = {
   people?: number;
   note?: string;
 };
+
+// ── Room (revisi R6/R9) ──────────────────────────────────────────────────────
+
+export interface Room {
+  id: string;
+  branch_id: string;
+  name: string;
+  capacity: number;
+  price_idr: number;
+  description: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface RoomInput {
+  branch_id: string;
+  name: string;
+  capacity: number;
+  price_idr: number;
+  description?: string;
+  is_active: boolean;
+  sort_order?: number;
+}
+
+export type RoomState = "free" | "reserved" | "occupied" | "done" | "inactive";
+
+export interface RoomOccupant {
+  booking_id: string;
+  booking_code: string;
+  customer_name: string;
+  therapist_name: string | null;
+  treatments: string[];
+  status: BookingStatus;
+  scheduled_at: string;
+  ends_at: string;
+  started_at: string | null;
+  /** Total durasi treatment aktif; timer = started_at + duration_min. */
+  duration_min: number;
+}
+
+export interface RoomBoardEntry extends Room {
+  state: RoomState;
+  current: RoomOccupant | null;
+  next: RoomOccupant | null;
+}
+
+export interface RoomBoard {
+  branch_id: string;
+  at: string;
+  rooms: RoomBoardEntry[];
+}

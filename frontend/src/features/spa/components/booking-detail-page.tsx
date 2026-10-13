@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Pencil, PlayCircle, Plus, Receipt, Star, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, DoorOpen, Pencil, PlayCircle, Plus, Receipt, Star, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,7 @@ import {
 import type { Booking, BookingItem, GenderPref } from "../types";
 import { isoToWibLocalInput, wibLocalInputToIso } from "../time";
 import { AddItemDialog, AssignTherapistDialog } from "./item-dialogs";
+import { RoomSelectDialog } from "./room-select-dialog";
 import {
   BookingStatusBadge,
   Field,
@@ -137,6 +138,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
 
   const items = booking.items;
   const total = bookingTotal(booking.items);
+  const [roomDialog, setRoomDialog] = useState(false);
   const co = checkoutState(booking);
   const closed = isBookingClosed(booking);
   const activeItems = items.filter((i) => i.status !== "cancelled");
@@ -270,6 +272,30 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
               <InfoRow label="Total treatment">
                 <span className="text-lg tabular-nums">{formatRupiah(total)}</span>
               </InfoRow>
+              <InfoRow label="Room">
+                <span className="flex flex-wrap items-center gap-2">
+                  {booking.room_name ? (
+                    <span className="inline-flex items-center gap-1">
+                      <DoorOpen className="size-4 text-muted-foreground" /> {booking.room_name}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {booking.room_price_idr > 0 ? `· ${formatRupiah(booking.room_price_idr)}` : "· gratis"}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="font-normal text-muted-foreground">Tanpa room</span>
+                  )}
+                  {!readOnly && !closed && !booking.checked_out_at && (
+                    <Button size="sm" variant="ghost" onClick={() => setRoomDialog(true)}>
+                      {booking.room_name ? "Ganti room" : "Pilih room"}
+                    </Button>
+                  )}
+                </span>
+              </InfoRow>
+              {booking.room_price_idr > 0 && (
+                <InfoRow label="Total tagihan">
+                  <span className="text-lg tabular-nums">{formatRupiah(total + booking.room_price_idr)}</span>
+                </InfoRow>
+              )}
               <InfoRow label="Order POS">{booking.pos_order_number ? <span className="font-mono">{booking.pos_order_number}</span> : "Belum checkout"}</InfoRow>
               <InfoRow label="Checkout">{formatDateTime(booking.checked_out_at)}</InfoRow>
               <InfoRow label="Lunas">{formatDateTime(booking.paid_at)}</InfoRow>
@@ -452,6 +478,9 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
       {!readOnly && dialog?.kind === "schedule" && <ScheduleBookingDialog booking={booking} onClose={close} />}
       {!readOnly && dialog?.kind === "add" && (
         <AddItemDialog bookingId={booking.id} branchId={booking.branch_id} onClose={close} />
+      )}
+      {!readOnly && roomDialog && (
+        <RoomSelectDialog bookingId={booking.id} branchId={booking.branch_id} currentRoomId={booking.room_id} onClose={() => setRoomDialog(false)} />
       )}
       {!readOnly && dialog?.kind === "confirm-item" && (
         <ConfirmDialog

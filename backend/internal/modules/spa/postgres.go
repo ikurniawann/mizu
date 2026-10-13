@@ -556,19 +556,20 @@ type bookingFilter struct {
 const summaryColumns = `b.id::text, b.booking_code, b.branch_id::text, br.name, b.booking_type, b.source, b.customer_name,
 	b.customer_phone, b.scheduled_at, b.ends_at, b.status, b.payment_status,
 	(SELECT count(*) FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled')::int,
-	(SELECT COALESCE(sum(i.price_idr), 0) FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled')::float8,
+	((SELECT COALESCE(sum(i.price_idr), 0) FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled') + b.room_price_idr)::float8,
 	COALESCE((SELECT array_agg(DISTINCT e.full_name) FROM spa.booking_items i
 	            JOIN spa.therapists t ON t.id = i.therapist_id JOIN hris.employees e ON e.id = t.employee_id
 	           WHERE i.booking_id = b.id AND i.status <> 'cancelled'), '{}'),
 	b.pos_order_id::text, b.created_at, b.therapist_id::text,
- (SELECT e.full_name FROM spa.therapists t JOIN hris.employees e ON e.id = t.employee_id WHERE t.id = b.therapist_id)`
+ (SELECT e.full_name FROM spa.therapists t JOIN hris.employees e ON e.id = t.employee_id WHERE t.id = b.therapist_id),
+	b.room_id::text, (SELECT r.name FROM spa.rooms r WHERE r.id = b.room_id), b.room_price_idr::float8`
 
 func scanSummary(r pgx.Row, extra ...any) (BookingSummary, error) {
 	var s BookingSummary
 	var scheduled, ends, created time.Time
 	dest := append([]any{&s.ID, &s.BookingCode, &s.BranchID, &s.BranchName, &s.BookingType, &s.Source, &s.CustomerName,
 		&s.CustomerPhone, &scheduled, &ends, &s.Status, &s.PaymentStatus, &s.ItemCount, &s.TotalIDR, &s.TherapistNames,
-		&s.PosOrderID, &created, &s.TherapistID, &s.TherapistName}, extra...)
+		&s.PosOrderID, &created, &s.TherapistID, &s.TherapistName, &s.RoomID, &s.RoomName, &s.RoomPriceIDR}, extra...)
 	err := r.Scan(dest...)
 	s.ScheduledAt, s.EndsAt, s.CreatedAt = jsTime(scheduled), jsTime(ends), jsTime(created)
 	return s, err
@@ -625,18 +626,22 @@ type bookingRow struct {
 	ScheduledAt     time.Time
 	EndsAt          time.Time
 	TherapistRating *int
+	RoomID          *string
+	RoomPriceIDR    float64
 }
 
 func (store) bookingRow(ctx context.Context, q Q, id string, lock bool) (*bookingRow, error) {
 	sql := `SELECT id::text, booking_code, company_id::text, branch_id::text, warehouse_id::text, customer_id::text,
-	        customer_name, customer_phone, therapist_gender_pref, status, payment_status, pos_order_id::text, checked_out_at, scheduled_at, ends_at, therapist_id::text, therapist_rating
+	        customer_name, customer_phone, therapist_gender_pref, status, payment_status, pos_order_id::text, checked_out_at, scheduled_at, ends_at, therapist_id::text, therapist_rating,
+	        room_id::text, room_price_idr::float8
 	   FROM spa.bookings WHERE id = $1`
 	if lock {
 		sql += ` FOR UPDATE`
 	}
 	var b bookingRow
 	err := q.QueryRow(ctx, sql, id).Scan(&b.ID, &b.Code, &b.CompanyID, &b.BranchID, &b.WarehouseID, &b.CustomerID,
-		&b.CustomerName, &b.CustomerPhone, &b.GenderPref, &b.Status, &b.PaymentStatus, &b.PosOrderID, &b.CheckedOutAt, &b.ScheduledAt, &b.EndsAt, &b.TherapistID, &b.TherapistRating)
+		&b.CustomerName, &b.CustomerPhone, &b.GenderPref, &b.Status, &b.PaymentStatus, &b.PosOrderID, &b.CheckedOutAt, &b.ScheduledAt, &b.EndsAt, &b.TherapistID, &b.TherapistRating,
+		&b.RoomID, &b.RoomPriceIDR)
 	return one(&b, err)
 }
 

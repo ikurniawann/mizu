@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { formatRupiah } from "@/lib/format";
 import { useCreateBooking } from "../mutations";
-import { useSpaCustomers, useSpaTherapists, useSpaTreatments } from "../queries";
+import { useSpaCustomers, useSpaRooms, useSpaTherapists, useSpaTreatments } from "../queries";
 import { activeVariantOptions, GENDER_PREF_LABEL, isValidPhone, variantPrice } from "../rules";
 import { isoToWibLocalInput, wibLocalInputToIso } from "../time";
 import type { BookingType, GenderPref, Outlet, SpaCustomer } from "../types";
@@ -109,11 +109,13 @@ export function BookingCreateDialog({
   const [genderPref, setGenderPref] = useState<GenderPref>("any");
   const [notes, setNotes] = useState("");
   const [therapistId, setTherapistId] = useState(defaultTherapistId ?? "");
+  const [roomId, setRoomId] = useState("");
   const [items, setItems] = useState<ItemRow[]>([{ key: 1, variant_id: "" }]);
   const [error, setError] = useState<string | null>(null);
 
   const treatments = useSpaTreatments(true);
   const therapists = useSpaTherapists({ branch_id: branchId || undefined, active: true });
+  const rooms = useSpaRooms(branchId, true);
   const options = useMemo(() => activeVariantOptions(treatments.data ?? []), [treatments.data]);
   const create = useCreateBooking();
 
@@ -147,6 +149,7 @@ export function BookingCreateDialog({
         notes: notes.trim() || undefined,
         scheduled_at: scheduledIso,
         therapist_id: therapistId || undefined,
+        room_id: roomId || undefined,
         items: chosen.map((r) => ({ variant_id: r.variant_id })),
       },
       {
@@ -329,6 +332,16 @@ export function BookingCreateDialog({
               </div>
             </div>
 
+            <Field label="Room" className="sm:col-span-2" hint="Room ditahan selama jadwal booking; harganya masuk ke tagihan kasir.">
+              <select className={SELECT} aria-label="Room" value={roomId} onChange={(e) => setRoomId(e.target.value)}>
+                <option value="">{!branchId ? "Pilih outlet dulu" : rooms.isLoading ? "Memuat…" : (rooms.data ?? []).length ? "Tanpa room" : "Outlet ini belum punya room"}</option>
+                {(rooms.data ?? []).map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} · {r.capacity} orang{r.price_idr > 0 ? ` · ${formatRupiah(r.price_idr)}` : ""}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <Field label="Catatan" className="sm:col-span-2">
               <textarea className={TEXTAREA} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Keluhan, area fokus, alergi…" />
             </Field>

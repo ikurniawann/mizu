@@ -17,6 +17,7 @@ import { useMyCommissions, useMySchedule, useMySummary, useSpaMe } from "../quer
 import { isBookingClosed } from "../rules";
 import { currentMonthWib, wibDateOf } from "../time";
 import type { MyScheduleItem } from "../types";
+import { Countdown } from "./countdown";
 import { MyAddTreatmentDialog } from "./my-add-treatment-dialog";
 import { ItemStatusBadge, SPA_KICKER, TimeRange } from "./shared";
 
@@ -385,7 +386,12 @@ function TreatmentRow({ item, actions }: { item: MyScheduleItem; actions: boolea
       )}
       {actions && item.status === "in_treatment" && (
         <>
-          {item.started_at && <p className="text-xs text-muted-foreground">Dimulai {formatTime(item.started_at)}</p>}
+          {item.started_at && (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">Dimulai {formatTime(item.started_at)}</p>
+              <Countdown startedAt={item.started_at} durationMin={item.duration_min} size="lg" />
+            </div>
+          )}
           <Button size="lg" variant="ink" className="w-full" disabled={action.isPending} onClick={() => run("complete")}>
             <CheckCircle2 className="size-5" /> Selesai
           </Button>

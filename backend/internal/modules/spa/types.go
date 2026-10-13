@@ -153,8 +153,12 @@ type BookingSummary struct {
 	Status         string       `json:"status"`
 	PaymentStatus  string       `json:"payment_status"`
 	ItemCount      int          `json:"item_count"`
-	TotalIDR       float64      `json:"total_idr"`
+	TotalIDR       float64      `json:"total_idr"` // treatments + room
 	TherapistNames []string     `json:"therapist_names"`
+	// Room (revisi R6): the room held for the booking's window, price snapshotted.
+	RoomID       *string `json:"room_id"`
+	RoomName     *string `json:"room_name"`
+	RoomPriceIDR float64 `json:"room_price_idr"`
 	PosOrderID     *string      `json:"pos_order_id"`
 	CreatedAt      httpx.JSTime `json:"created_at"`
 }

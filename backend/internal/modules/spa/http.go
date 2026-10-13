@@ -114,6 +114,11 @@ func (h *Handler) Routes() []module.Route {
 		staff("PATCH "+p+"/bookings/{id}/items/{itemId}", iam.SpaBookings, h.itemAction),
 		staff("POST "+p+"/bookings/{id}/cancel", iam.SpaBookings, h.cancelBooking),
 		staff("POST "+p+"/bookings/{id}/deposit", iam.SpaBookings, h.bookingDeposit),
+		staff("PUT "+p+"/bookings/{id}/room", iam.SpaBookings, h.setBookingRoom),
+		staff("GET "+p+"/room-board", iam.SpaBookings, h.roomBoard),
+		staff("GET "+p+"/rooms", iam.Spa, h.listRooms),
+		staff("POST "+p+"/rooms", iam.SpaOutlets, h.createRoom),
+		staff("PUT "+p+"/rooms/{id}", iam.SpaOutlets, h.updateRoom),
 		staff("GET "+p+"/settings/deposit", iam.SpaOutlets, h.getDepositSettings),
 		staff("PUT "+p+"/settings/deposit", iam.SpaOutlets, h.putDepositSettings),
 		staff("POST "+p+"/bookings/{id}/checkout", iam.SpaBookings, h.checkout),
@@ -792,6 +797,7 @@ func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request, u *auth.
 		CustomerGender:      str(f.Enum("customer_gender", optNull, genders)),
 		TherapistGenderPref: f.StrDefault("therapist_gender_pref", "any", validate.StrOpts{Check: validate.EnumCheck(genderPrefs)}),
 		Notes:               f.StrDefault("notes", "", validate.StrOpts{Trim: true, Max: 1000}),
+		RoomID:              str(f.Str("room_id", optNull, uuidOpts)),
 	}
 	if at := parseTime(f.Str("scheduled_at", req, datetimeOpts)); at != nil {
 		in.ScheduledAt = *at

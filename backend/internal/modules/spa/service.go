@@ -672,6 +672,7 @@ type createBookingInput struct {
 	Notes               string
 	ScheduledAt         time.Time
 	Items               []itemRequest
+	RoomID              string // optional room held for the booking (revisi R6)
 }
 
 // planItems resolves variants; planning times are transient, never item data.
@@ -765,6 +766,15 @@ func (s *Service) CreateBooking(ctx context.Context, userID string, in createBoo
 		if _, err := bookingInterval(in.ScheduledAt, stored); err != nil {
 			return err
 		}
+		if in.RoomID != "" {
+			b, err := s.st.bookingRow(ctx, q, id, true)
+			if err != nil {
+				return err
+			}
+			if err := s.assignRoomIn(ctx, q, userID, b, in.RoomID); err != nil {
+				return err
+			}
+		}
 		if in.TherapistID != "" {
 			b, err := s.st.bookingRow(ctx, q, id, true)
 			if err != nil {
@@ -853,6 +863,9 @@ func (s *Service) PatchBooking(ctx context.Context, userID, id string, p booking
 				}
 			}
 			if err := s.st.setBookingWindow(ctx, q, id, interval.Start, interval.End); err != nil {
+				return err
+			}
+			if err := s.checkRoomWindow(ctx, q, id, interval.Start, interval.End); err != nil {
 				return err
 			}
 			if err := s.st.event(ctx, q, id, nil, "reschedule", nil, nil, userID, interval.Start.In(domain.WIB).Format("02/01 15:04")+" WIB"); err != nil {
@@ -958,6 +971,9 @@ func (s *Service) addItemIn(ctx context.Context, q Q, b *bookingRow, userID stri
 		return "", err
 	}
 	if err := s.st.setBookingWindow(ctx, q, id, interval.Start, interval.End); err != nil {
+		return "", err
+	}
+	if err := s.checkRoomWindow(ctx, q, id, interval.Start, interval.End); err != nil {
 		return "", err
 	}
 	if b.TherapistID != nil {
@@ -1338,6 +1354,14 @@ func (s *Service) Checkout(ctx context.Context, userID, id string, rating *int) 
 			}
 			lines = append(lines, BillLine{ProductID: pid, Name: it.TreatmentName + " (" + it.VariantName + ")",
 				SKU: "SPA-" + v.TreatmentCode, UnitPrice: it.PriceIDR, Note: note})
+		}
+		// Room (revisi R6): billed at the price snapshotted when the room was assigned.
+		if b.RoomID != nil && b.RoomPriceIDR > 0 {
+			line, err := s.roomBillLine(ctx, q, o, *b.RoomID, b.RoomPriceIDR)
+			if err != nil {
+				return err
+			}
+			lines = append(lines, line)
 		}
 		prepaid, err := s.st.paidDeposit(ctx, q, id)
 		if err != nil {

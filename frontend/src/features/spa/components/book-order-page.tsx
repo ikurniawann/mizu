@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type DragEvent } from "react";
-import { CalendarDays, GripVertical, LayoutGrid, List, Plus, RefreshCw, UserRoundX } from "lucide-react";
+import { CalendarDays, DoorOpen, GripVertical, LayoutGrid, List, Plus, RefreshCw, UserRoundX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,7 @@ import { BookOrderList } from "./book-order-list";
 import { BookingCreateDialog } from "./booking-create-dialog";
 import { BookingDetailDialog } from "./booking-detail-page";
 import { AssignTherapistDialog } from "./item-dialogs";
+import { RoomBoard } from "./room-board";
 import { ItemStatusBadge, OutletSelect, SELECT, SPA_KICKER, TableNote, TimeRange } from "./shared";
 import { BOOKING_DRAG_TYPE, useBookingDnd } from "./use-booking-dnd";
 
@@ -29,15 +30,16 @@ function visible(items: BoardItem[]): BoardItem[] {
   return sortByStart(items.filter((i) => i.status !== "cancelled"));
 }
 
-type BoardView = "calendar" | "cards" | "list";
+type BoardView = "calendar" | "cards" | "list" | "room";
 const VIEWS: { value: BoardView; label: string; icon: typeof List }[] = [
   { value: "calendar", label: "Kalender", icon: CalendarDays },
   { value: "cards", label: "Kartu", icon: LayoutGrid },
   { value: "list", label: "Daftar", icon: List },
+  { value: "room", label: "Room", icon: DoorOpen },
 ];
 
 function isView(v: unknown): v is BoardView {
-  return v === "calendar" || v === "cards" || v === "list";
+  return v === "calendar" || v === "cards" || v === "list" || v === "room";
 }
 
 // Tampilan terakhir yang dipilih, disimpan per peramban; bawaan kalender.
@@ -175,6 +177,8 @@ export function SpaBookOrderPage() {
         />
       ) : view === "list" ? (
         <BookOrderList items={allItems} onOpenItem={openBooking} />
+      ) : view === "room" ? (
+        <RoomBoard branchId={branchId} onOpenBooking={setOpenedBookingId} />
       ) : (
         <BookOrderCards
           therapists={therapists}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, Settings2 } from "lucide-react";
+import { DoorOpen, RefreshCw, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { useSaveDepositSettings, useSaveOutlet, useSyncPos } from "../mutations"
 import { useDepositSettings, useSpaOutlets } from "../queries";
 import { parseClock, shortClock } from "../time";
 import type { Outlet } from "../types";
+import { RoomsDialog } from "./rooms-dialog";
 import { Field, FormError, SELECT, SPA_KICKER, TableNote } from "./shared";
 
 /** Spa → Outlet Spa: jadikan cabang outlet spa, atur stall POS, jam buka, slot, dan booking publik. */
@@ -32,6 +33,7 @@ export function SpaOutletsPage() {
   const outlets = useSpaOutlets();
   const sync = useSyncPos();
   const [editing, setEditing] = useState<Outlet | null>(null);
+  const [rooms, setRooms] = useState<Outlet | null>(null);
   const rows = [...(outlets.data ?? [])].sort(
     (a, b) => Number(b.configured) - Number(a.configured) || a.branch_name.localeCompare(b.branch_name)
   );
@@ -107,6 +109,11 @@ export function SpaOutletsPage() {
                         <Settings2 /> {o.configured ? "Atur" : "Jadikan outlet spa"}
                       </Button>
                       {o.configured && (
+                        <Button size="sm" variant="ghost" onClick={() => setRooms(o)}>
+                          <DoorOpen /> Room
+                        </Button>
+                      )}
+                      {o.configured && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -127,6 +134,7 @@ export function SpaOutletsPage() {
         )}
       </Card>
       {editing && <OutletDialog outlet={editing} onClose={() => setEditing(null)} />}
+      {rooms && <RoomsDialog branchId={rooms.branch_id} branchName={rooms.branch_name} onClose={() => setRooms(null)} />}
     </div>
   );
 }

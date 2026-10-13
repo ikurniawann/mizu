@@ -29,6 +29,9 @@ import type {
   MeResponse,
   Outlet,
   OutletInput,
+  Room,
+  RoomBoard,
+  RoomInput,
   OutletPic,
   Paginated,
   PriceInput,
@@ -137,6 +140,12 @@ export const spaApi = {
 
   // Outlet
   saveOutlet: (branchId: string, input: OutletInput) => send<Outlet>(`${BASE}/outlets/${enc(branchId)}`, input, "PUT"),
+  // Room (revisi R6/R9)
+  rooms: (branchId: string, activeOnly = false) => call<Room[]>(withQuery(`${BASE}/rooms`, { branch_id: branchId, active: activeOnly ? "true" : undefined })),
+  createRoom: (input: RoomInput) => send<Room>(`${BASE}/rooms`, input),
+  updateRoom: (id: string, input: RoomInput) => send<Room>(`${BASE}/rooms/${enc(id)}`, input, "PUT"),
+  setBookingRoom: (bookingId: string, roomId: string | null) => send<Booking>(`${BASE}/bookings/${enc(bookingId)}/room`, { room_id: roomId }, "PUT"),
+  roomBoard: (branchId: string) => call<RoomBoard>(withQuery(`${BASE}/room-board`, { branch_id: branchId })),
   syncPos: (branchId: string) => send<{ synced: number }>(`${BASE}/outlets/${enc(branchId)}/sync-pos`, {}),
 
   // Treatment
