@@ -357,6 +357,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                   picked={picked}
                   totalDuration={totalDuration}
                   total={totalPrice}
+                  deposit={needsDeposit ? depositIdr : 0}
                   therapistName={therapist?.name ?? null}
                 />
               </div>
@@ -466,6 +467,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               picked={picked}
               totalDuration={totalDuration}
               total={totalPrice}
+              deposit={needsDeposit ? depositIdr : 0}
               therapistName={therapist?.name ?? null}
               showTherapist={step === "waktu" || step === "kontak"}
               onRemove={step === "treatment" ? toggleVariant : undefined}
@@ -493,7 +495,12 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                 <p className="truncate text-xs text-muted-foreground">
                   {picked.length ? `${picked.length} treatment · ${totalDuration} menit` : (outlet?.name ?? "")}
                 </p>
-                <p className="font-display text-lg font-bold tabular-nums">{formatRupiah(totalPrice)}</p>
+                <p className="font-display text-lg font-bold tabular-nums">
+                  {formatRupiah(totalPrice)}
+                  {needsDeposit && picked.length > 0 ? (
+                    <span className="ml-1.5 text-xs font-medium text-muted-foreground">· DP {formatRupiah(depositIdr)}</span>
+                  ) : null}
+                </p>
               </div>
               <Button size="lg" disabled={cta.disabled} onClick={next}>
                 {create.isPending ? <Loader2 className="animate-spin" /> : null}
@@ -1060,6 +1067,7 @@ function Summary({
   picked,
   totalDuration,
   total,
+  deposit = 0,
   therapistName,
   showTherapist = true,
   onRemove,
@@ -1069,6 +1077,8 @@ function Summary({
   picked: Picked[];
   totalDuration: number;
   total: number;
+  /** Booking fee (DP) yang dibayar online sekarang; 0 = tidak ada DP. */
+  deposit?: number;
   therapistName: string | null;
   showTherapist?: boolean;
   onRemove?: (v: PublicVariant) => void;
@@ -1135,6 +1145,19 @@ function Summary({
           </span>
           <span className="font-display text-2xl font-bold tabular-nums">{formatRupiah(total)}</span>
         </div>
+        {deposit > 0 && picked.length > 0 && (
+          <div className="space-y-1.5 rounded-lg bg-surface px-3 py-2.5 text-xs" data-testid="summary-deposit">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-body">Booking fee (DP) · bayar online sekarang</span>
+              <span className="font-semibold tabular-nums text-foreground">{formatRupiah(Math.min(deposit, total))}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-body">Sisa · bayar di outlet setelah treatment</span>
+              <span className="font-semibold tabular-nums text-foreground">{formatRupiah(Math.max(0, total - deposit))}</span>
+            </div>
+            <p className="text-muted-foreground">DP mengunci jadwal kamu dan langsung mengurangi total treatment.</p>
+          </div>
+        )}
       </div>
     </div>
   );
