@@ -107,7 +107,7 @@ export function SiteFooter({ branches, social }: { branches: BranchSummary[]; so
               </Link>
             </li>
           </ul>
-          <p className="mt-6 text-xs text-muted-foreground">Booking online, pembayaran di outlet.</p>
+          <p className="mt-6 text-xs text-muted-foreground">Booking online dengan DP, sisa pembayaran di outlet.</p>
         </nav>
       </div>
       <div className="border-t border-border/60">

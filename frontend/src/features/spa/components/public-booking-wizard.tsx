@@ -105,6 +105,8 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const router = useRouter();
 
   const outlets = usePublicSpaOutlets();
+  // Kebijakan DP berlaku global; dipakai di teks pembuka sebelum outlet dipilih.
+  const heroDeposit = outlets.data?.find((o) => (o.deposit_idr ?? 0) > 0)?.deposit_idr ?? 0;
   const outlet = outlets.data?.find((o) => o.branch_id === outletId || o.slug === outletId) ?? null;
   const treatments = usePublicSpaTreatments(outlet?.branch_id ?? "");
   const create = useCreatePublicBooking();
@@ -280,7 +282,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
 
   return (
     <div className="bg-background">
-      <Hero step={step} reach={reach} onStep={go} />
+      <Hero step={step} reach={reach} onStep={go} deposit={heroDeposit} />
 
       <Container className="grid grid-cols-1 gap-8 pt-8 pb-40 lg:grid-cols-[minmax(0,1fr)_22rem] lg:pt-12 lg:pb-20">
         <div ref={top} className="min-w-0 scroll-mt-32 space-y-6">
@@ -508,8 +510,9 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
 
 // ── Hero & langkah ───────────────────────────────────────────────────────────
 
-function Hero({ step, reach, onStep }: { step: Step; reach: Record<Step, boolean>; onStep: (s: Step) => void }) {
+function Hero({ step, reach, onStep, deposit }: { step: Step; reach: Record<Step, boolean>; onStep: (s: Step) => void; deposit: number }) {
   const current = STEPS.indexOf(step);
+  const heroDeposit = deposit;
   return (
     <section className="relative isolate overflow-hidden bg-ink text-on-ink">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -520,12 +523,13 @@ function Hero({ step, reach, onStep }: { step: Step; reach: Record<Step, boolean
           <Kicker onInk>Booking online · Mizu Family Massage &amp; Reflexology</Kicker>
           <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-5xl">Waktunya istirahat sejenak.</h1>
           <p className="max-w-xl text-on-ink-muted md:text-lg">
-            Pilih outlet, treatment, jam dan terapis favoritmu. Bayar di outlet setelah treatment, atau langsung online.
+            Pilih outlet, treatment, jam dan terapis favoritmu.{" "}
+            {heroDeposit > 0 ? `Kunci jadwal dengan DP ${formatRupiah(heroDeposit)}, sisanya dibayar di outlet setelah treatment.` : "Bayar di outlet setelah treatment, atau langsung online."}
           </p>
           <ul className="flex flex-wrap gap-2 pt-1 text-xs font-medium text-on-ink">
             {[
               { icon: UserRound, text: "Pilih terapis sendiri" },
-              { icon: CreditCard, text: "Bayar di outlet atau online" },
+              { icon: CreditCard, text: heroDeposit > 0 ? `DP ${formatRupiah(heroDeposit)} · sisa di outlet` : "Bayar di outlet atau online" },
               { icon: QrCode, text: "Kode & QR booking langsung" },
             ].map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur">
