@@ -31,6 +31,10 @@ type BookingNotice struct {
 	PaymentStatus string    `json:"payment_status"`
 	DepositIDR    float64   `json:"deposit_idr"`
 	DepositStatus string    `json:"deposit_status"`
+	// DepositHoldUntil / DepositURL: the DP deadline and payment link (for the
+	// "DP hampir kedaluwarsa" reminder).
+	DepositHoldUntil *time.Time `json:"deposit_hold_until,omitempty"`
+	DepositURL       string     `json:"deposit_url,omitempty"`
 }
 
 const noticeSelect = `SELECT b.id::text, b.booking_code, b.customer_name, COALESCE(b.customer_phone, ''), COALESCE(br.name, ''),
@@ -38,13 +42,13 @@ const noticeSelect = `SELECT b.id::text, b.booking_code, b.customer_name, COALES
 	    COALESCE((SELECT array_agg(i.treatment_name || ' · ' || i.variant_name ORDER BY i.sort_order)
 	              FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled'), '{}'),
 	    COALESCE((SELECT sum(i.price_idr)::float8 FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled'), 0),
-	    b.deposit_idr::float8, b.deposit_status
+	    b.deposit_idr::float8, b.deposit_status, b.deposit_hold_until, COALESCE(b.deposit_invoice_url, '')
 	   FROM spa.bookings b LEFT JOIN configuration.branches br ON br.id = b.branch_id`
 
 func scanNotice(row interface{ Scan(...any) error }) (*BookingNotice, error) {
 	var n BookingNotice
 	if err := row.Scan(&n.ID, &n.Code, &n.CustomerName, &n.CustomerPhone, &n.BranchName, &n.ScheduledAt, &n.Token,
-		&n.Source, &n.Status, &n.PaymentStatus, &n.Items, &n.TotalIDR, &n.DepositIDR, &n.DepositStatus); err != nil {
+		&n.Source, &n.Status, &n.PaymentStatus, &n.Items, &n.TotalIDR, &n.DepositIDR, &n.DepositStatus, &n.DepositHoldUntil, &n.DepositURL); err != nil {
 		return nil, err
 	}
 	if n.Items == nil {
@@ -59,6 +63,28 @@ func (store) notice(ctx context.Context, q Q, bookingID string) (*BookingNotice,
 		return nil, nil
 	}
 	return n, err
+}
+
+// PendingDeposits lists open website/chat bookings whose DP is still unpaid
+// and whose hold ends within [from, to), for the "DP hampir kedaluwarsa"
+// reminder.
+func (s *Service) PendingDeposits(ctx context.Context, from, to time.Time) ([]BookingNotice, error) {
+	rows, err := s.db.Query(ctx, noticeSelect+` WHERE b.deposit_status = 'pending' AND b.deposit_hold_until >= $1 AND b.deposit_hold_until < $2
+	   AND b.status IN ($3, $4) AND b.source IN ('public', 'whatsapp') AND COALESCE(b.customer_phone, '') <> ''
+	   ORDER BY b.deposit_hold_until LIMIT 500`, from, to, domain.BookingUnassigned, domain.BookingAssigned)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []BookingNotice{}
+	for rows.Next() {
+		n, err := scanNotice(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *n)
+	}
+	return out, rows.Err()
 }
 
 // UpcomingBookings lists open bookings made by guests themselves (website or

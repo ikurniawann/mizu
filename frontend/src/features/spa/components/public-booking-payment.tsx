@@ -108,7 +108,7 @@ export function PublicBookingPayment({
             <p className="font-display text-xl font-semibold">Bayar DP {dp} untuk mengunci jadwal</p>
             <p className="text-sm text-body">
               {deadline ? `Jadwal ditahan sampai ${deadline} WIB. ` : ""}Lewat batas itu booking dibatalkan otomatis dan jamnya dilepas. Sisa{" "}
-              <span className="font-semibold">{formatRupiah(deposit.remaining_idr - deposit.deposit_idr < 0 ? 0 : booking.total_idr - deposit.deposit_idr)}</span> dibayar di outlet setelah treatment.
+              <span className="font-semibold">{formatRupiah(Math.max(0, booking.total_idr - deposit.deposit_idr))}</span> dibayar di outlet setelah treatment.
             </p>
           </div>
         </div>

@@ -55,6 +55,9 @@ export function PublicSpaBookingStatus({ token, notice }: { token: string; notic
   const result = booking.data;
   const cancelled = result.status === "cancelled";
   const inactive = cancelled || result.status === "expired";
+  // DP belum dibayar: jadwal baru terkunci setelah DP masuk, jadi hero & QR menyesuaikan.
+  const awaitingDeposit = !inactive && result.deposit?.deposit_status === "pending";
+  const depositDeadline = awaitingDeposit && result.deposit?.deposit_hold_until ? wibClockOf(result.deposit.deposit_hold_until) : null;
   const when = `${formatDateLong(wibDateOf(result.scheduled_at))} pukul ${wibClockOf(result.scheduled_at)} WIB`;
   const wa = whatsappHref(result.branch_phone, `Halo Mizu, saya booking dengan kode ${result.booking_code} untuk ${when}.`);
   const copy = async (what: "code" | "link") => {
@@ -76,14 +79,22 @@ export function PublicSpaBookingStatus({ token, notice }: { token: string; notic
           <span className={inactive ? "flex size-16 items-center justify-center rounded-full bg-white/15 text-on-ink" : "flex size-16 items-center justify-center rounded-full bg-accent text-ink"}>
             {inactive ? <X className="size-8" /> : <Check className="size-8" />}
           </span>
-          <Kicker onInk>{LABEL[result.status] ?? result.status}</Kicker>
+          <Kicker onInk>{awaitingDeposit ? "Menunggu DP" : (LABEL[result.status] ?? result.status)}</Kicker>
           <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-5xl">
-            {cancelled ? "Booking dibatalkan" : result.status === "expired" ? "Jadwal booking sudah lewat" : `Sampai jumpa di ${result.branch_name}!`}
+            {cancelled
+              ? "Booking dibatalkan"
+              : result.status === "expired"
+                ? "Jadwal booking sudah lewat"
+                : awaitingDeposit
+                  ? "Satu langkah lagi: bayar DP"
+                  : `Sampai jumpa di ${result.branch_name}!`}
           </h1>
           <p className="max-w-lg text-on-ink-muted">
             {inactive
               ? "Booking ini tidak aktif lagi. Kamu bisa membuat booking baru kapan saja."
-              : "Tunjukkan kode booking ini ke resepsionis saat tiba. Simpan tautan halaman ini untuk melihat atau mengubah booking."}
+              : awaitingDeposit
+                ? `Jadwal kamu ditahan${depositDeadline ? ` sampai pukul ${depositDeadline} WIB` : ""}. Setelah DP diterima, jadwal terkunci dan QR booking aktif.`
+                : "Tunjukkan kode booking ini ke resepsionis saat tiba. Simpan tautan halaman ini untuk melihat atau mengubah booking."}
           </p>
           <button
             type="button"
@@ -101,7 +112,7 @@ export function PublicSpaBookingStatus({ token, notice }: { token: string; notic
 
       <Container className="mt-8 max-w-2xl space-y-4">
         {!cancelled && <PublicBookingPayment booking={result} token={token} notice={notice} />}
-        {!inactive && <BookingQr code={result.booking_code} outlet={result.branch_name} when={when} />}
+        {!inactive && !awaitingDeposit && <BookingQr code={result.booking_code} outlet={result.branch_name} when={when} />}
         <div className="space-y-4 rounded-card bg-card p-6 shadow-card">
           <SummaryRow icon={MapPin} label="Outlet">
             {result.branch_name}

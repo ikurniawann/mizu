@@ -410,6 +410,26 @@ func DepositPaidNotice(l L, name, code, outlet, date, clock string, deposit, rem
 		"\n\nBooking *"+code+"* at "+outlet+" on "+LongDate(l, date)+", "+clock+" WIB is secured.\nDeposit: "+Rupiah(deposit)+" · Remaining at the outlet: *"+Rupiah(remaining)+"*\n\nBooking status & QR:\n"+statusURL+"\n\nSee you at Mizu 🌿")
 }
 
+// DepositReminderNotice nudges the guest shortly before the DP hold ends.
+func DepositReminderNotice(l L, name, code, outlet, date, clock string, deposit float64, until, url string) string {
+	greet := t(l, "Pengingat DP ⏳", "Deposit reminder ⏳")
+	if strings.TrimSpace(name) != "" {
+		greet += " " + strings.TrimSpace(name) + ","
+	}
+	b := strings.Builder{}
+	b.WriteString(greet + t(l, " booking *"+code+"* di "+outlet+" ("+LongDate(l, date)+", "+clock+" WIB) masih menunggu DP *"+Rupiah(deposit)+"*",
+		" booking *"+code+"* at "+outlet+" ("+LongDate(l, date)+", "+clock+" WIB) is still waiting for the deposit of *"+Rupiah(deposit)+"*"))
+	if until != "" {
+		b.WriteString(t(l, ". Jadwal ditahan sampai jam *"+until+"* WIB", ". The slot is held until *"+until+"* WIB"))
+	}
+	b.WriteString(t(l, "; lewat itu booking dibatalkan otomatis dan jamnya dilepas.", "; after that the booking is cancelled automatically and the slot released."))
+	if url != "" {
+		b.WriteString(t(l, "\n\nLink DP:\n", "\n\nDeposit link:\n") + url)
+	}
+	b.WriteString(t(l, "\n\nSetelah bayar, balas *sudah bayar* ya 🙏", "\n\nOnce paid, reply *paid* 🙏"))
+	return b.String()
+}
+
 func DepositExpiredNotice(l L, name, code, outlet, date, clock string) string {
 	greet := t(l, "Mohon maaf", "Sorry")
 	if strings.TrimSpace(name) != "" {

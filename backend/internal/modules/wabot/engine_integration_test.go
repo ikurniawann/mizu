@@ -74,6 +74,9 @@ func (a txSpa) DepositPolicy(ctx context.Context) (float64, int, bool) {
 	return cfg.AmountIDR, cfg.HoldMinutes, cfg.Enabled
 }
 func (a txSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.svc.ExpireDeposits(ctx) }
+func (a txSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
+	return a.svc.PendingDeposits(ctx, from, to)
+}
 
 type memSender struct{ sent []string }
 

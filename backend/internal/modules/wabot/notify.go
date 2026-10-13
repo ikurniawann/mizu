@@ -206,6 +206,57 @@ func (e *Engine) RemindUpcoming(ctx context.Context, db database.DB) (int, error
 	return sent, nil
 }
 
+// DepositReminderWindow: a DP reminder goes out when the hold ends within
+// this long (the watcher ticks every 10 minutes, so roughly 15–25 minutes
+// before the deadline).
+const DepositReminderWindow = 25 * time.Minute
+
+// RemindDeposits nudges guests whose DP hold is about to end; it returns how
+// many reminders were sent.
+func (e *Engine) RemindDeposits(ctx context.Context, db database.DB) (int, error) {
+	settings, err := e.st.settings(ctx, db)
+	if err != nil || !settings.NotifyCustomer {
+		return 0, err
+	}
+	now := e.now()
+	list, err := e.ports.Spa.PendingDeposits(ctx, now, now.Add(DepositReminderWindow))
+	if err != nil {
+		return 0, err
+	}
+	sent := 0
+	for _, n := range list {
+		phone := waPhone(n.CustomerPhone)
+		if phone == "" || !allowedSource(n.Source) {
+			continue
+		}
+		at := n.ScheduledAt.In(domain.WIB)
+		conversationID := e.st.conversationID(ctx, db, phone)
+		l := domain.LangID
+		if conversationID != "" {
+			l = e.st.sessionLang(ctx, db, conversationID)
+		}
+		until := ""
+		if n.DepositHoldUntil != nil {
+			until = domain.Clock(n.DepositHoldUntil.In(domain.WIB))
+		}
+		msg := domain.DepositReminderNotice(l, n.CustomerName, n.Code, n.BranchName, at.Format("2006-01-02"), domain.Clock(at), n.DepositIDR, until, n.DepositURL)
+		id, err := whatsapp.Claim(ctx, db, "spa_deposit_remind", n.ID, msg, []string{phone})
+		if err != nil {
+			return sent, err
+		}
+		if id == "" {
+			continue
+		}
+		if err := e.ports.Sender.Send(ctx, db, phone, conversationID, msg); err != nil {
+			e.log.Warn("[wabot] pengingat DP gagal dikirim", "booking", n.Code, "error", err)
+			_ = whatsapp.Release(ctx, db, id)
+			continue
+		}
+		sent++
+	}
+	return sent, nil
+}
+
 func (e *Engine) statusURL(token string) string {
 	return strings.TrimRight(e.ports.AppURL, "/") + "/booking/spa/status/" + token
 }

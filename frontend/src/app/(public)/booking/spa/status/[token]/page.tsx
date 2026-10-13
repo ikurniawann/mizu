@@ -16,7 +16,8 @@ export default async function Page({
   searchParams: Promise<{ bayar?: string | string[] }>;
 }) {
   const [{ token }, { bayar }] = await Promise.all([params, searchParams]);
-  const notice = typeof bayar === "string" && /^(simulasi|gagal)$/.test(bayar) ? bayar : undefined;
+  // ?bayar= : "simulasi"/"gagal" untuk pembayaran penuh, "dp-simulasi"/"dp-gagal" untuk DP.
+  const notice = typeof bayar === "string" && /^(dp-)?(simulasi|gagal)$/.test(bayar) ? bayar : undefined;
   return (
     <SiteLayout>
       <PublicSpaBookingStatus token={token} notice={notice} />

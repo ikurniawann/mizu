@@ -105,6 +105,9 @@ func (a waBotSpa) DepositPolicy(ctx context.Context) (float64, int, bool) {
 	return cfg.AmountIDR, cfg.HoldMinutes, cfg.Enabled
 }
 func (a waBotSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.svc.ExpireDeposits(ctx) }
+func (a waBotSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
+	return a.svc.PendingDeposits(ctx, from, to)
+}
 
 /* ── WhatsApp ────────────────────────────────────────────────────────── */
 

@@ -64,3 +64,38 @@ func TestBotPaidNoticeOnce(t *testing.T) {
 		t.Fatalf("front-office bookings get no bot notice: err=%v sent=%d", err, len(e.sender.sent))
 	}
 }
+
+// Shortly before the DP hold ends the guest gets one reminder with the link;
+// a paid DP gets none. Runs with XENDIT_MOCK=1 (the deposit policy is on).
+func TestBotRemindsPendingDepositOnce(t *testing.T) {
+	if _, _, enabled := e2Enabled(t); !enabled {
+		t.Skip("needs XENDIT_MOCK=1")
+	}
+	e := setupBot(t)
+	e.start()
+	e.say("1")
+	e.say("1")
+	e.say("besok jam 10 pagi")
+	e.say("0")
+	r := e.say("ya")
+	e.wants(r, "Kode booking", "Link DP")
+	e.sender.sent = nil
+	// Hold still 60 minutes away: nothing yet.
+	if n, err := e.engine.RemindDeposits(e.ctx, e.tx); err != nil || n != 0 {
+		t.Fatalf("too early: n=%d err=%v", n, err)
+	}
+	if _, err := e.tx.Exec(e.ctx, `UPDATE spa.bookings SET deposit_hold_until = $1 WHERE customer_phone = $2 AND source = 'whatsapp'`, fixedNow.Add(20*time.Minute), e.local()); err != nil {
+		t.Fatal(err)
+	}
+	n, err := e.engine.RemindDeposits(e.ctx, e.tx)
+	if err != nil || n != 1 || len(e.sender.sent) != 1 {
+		t.Fatalf("DP reminder: n=%d err=%v sent=%d", n, err, len(e.sender.sent))
+	}
+	msg := e.sender.sent[0]
+	if !strings.Contains(msg, "Pengingat DP ⏳") || !strings.Contains(msg, "DP *Rp100.000*") || !strings.Contains(msg, "sampai jam *09.20* WIB") || !strings.Contains(msg, "bayar=dp-simulasi") {
+		t.Fatalf("reminder text: %s", msg)
+	}
+	if n, err := e.engine.RemindDeposits(e.ctx, e.tx); err != nil || n != 0 || len(e.sender.sent) != 1 {
+		t.Fatalf("duplicate DP reminder: n=%d err=%v sent=%d", n, err, len(e.sender.sent))
+	}
+}

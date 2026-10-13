@@ -31,6 +31,11 @@ func (e *Engine) Watch(ctx context.Context, db database.DB, every time.Duration)
 			} else if n > 0 {
 				e.log.Info("[wabot] booking dibatalkan karena DP", "count", n)
 			}
+			if n, err := e.RemindDeposits(ctx, db); err != nil {
+				e.log.Error("[wabot] pengingat DP", "error", err)
+			} else if n > 0 {
+				e.log.Info("[wabot] pengingat DP terkirim", "count", n)
+			}
 			if n, err := e.RemindUpcoming(ctx, db); err != nil {
 				e.log.Error("[wabot] pengingat", "error", err)
 			} else if n > 0 {
