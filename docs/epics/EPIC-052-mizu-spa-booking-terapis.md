@@ -422,3 +422,10 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   rupiah "Rp 100.000" dengan spasi di seluruh aplikasi (`c8867dbf`: formatter frontend & Go, pesan WA, PDF, tes).
   Ikut diperbaiki: prefix publik `/api/wa/meta` di middleware Next (webhook Meta sebelumnya diminta login) dan
   `/site/photos/` di gate Go. Image: `mizu-api:wabot-27`, `mizu:wabot-17`.
+- 2026-10-13 — R1 lanjutan (`3fc28a0d`): keputusan owner mengikuti saran — gaji tetap terapis dibayar Payroll HRIS
+  (BPJS, PPh21, potongan, pinjaman), Payroll Terapis khusus komisi. Pengaturan `spa_pay_salary_via_hris` (bawaan
+  true); bila false, run akhir bulan kembali membayar gaji kotor HRIS. Tipe terapis tetap: "gaji tetap + komisi" =
+  punya data gaji HRIS; "komisi saja" = tanpa data gaji HRIS. Terbuka: PPh21 atas komisi belum masuk perhitungan
+  Payroll HRIS — menunggu arahan akuntan (opsi: kirim total komisi bulanan ke Payroll HRIS sebagai penghasilan).
+  Data live: baru 2 dari 17 terapis punya data gaji aktif di HRIS. Tes: `TestTherapistPayrollSalaryViaHRIS`.
+  Image: `mizu-api:wabot-28`, `mizu:wabot-18`.
