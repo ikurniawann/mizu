@@ -369,3 +369,16 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   Bukti: `TestAddTreatmentDuringAndAfterSession`, `TestTherapistCannotAddToOthersBooking`, lifecycle test
   disesuaikan (tambah saat sesi kini 200), `rules.test.ts`; suite spa/app/wabot lulus; tsc/eslint. Image:
   `mizu-api:wabot-22`, `mizu:wabot-12`.
+- 2026-10-13 — Revisi R6/R9 room & timer (`3bf42d51`): tabel `spa.rooms` (unik per outlet, kapasitas, harga,
+  aktif) + `spa.bookings.room_id/room_price_idr` (migrasi `20261013030000_spa_rooms.sql`, diterapkan live).
+  Keputusan owner: room dipilih saat booking, room punya harga. `assignRoomIn` menolak room bentrok pada jendela
+  booking (status unassigned/assigned/in_treatment); `checkRoomWindow` dipanggil saat ubah jadwal & tambah
+  treatment; harga room dibekukan ke booking, `total_idr` = treatment + room, checkout menambah baris POS
+  "Room <nama>" (`roomBillLine`, produk per outlet kategori "Room Spa"). `RoomBoard` menurunkan status
+  (kosong/akan dipakai ≤60 mnt/terisi/selesai belum checkout/nonaktif) dari booking hari ini. Rute:
+  `GET/POST /api/spa/rooms`, `PUT /api/spa/rooms/{id}` (menu Outlet), `PUT /api/spa/bookings/{id}/room`,
+  `GET /api/spa/room-board` (menu Book Order). UI: tombol Room di Outlet, tab Room di Book Order, pilihan room
+  di dialog booking & detail, hitung mundur (`countdown.tsx`) di aplikasi terapis & kartu room. Bukti:
+  `TestRoomsHoldBookingsAndShowOnBoard`, `rooms.test.ts`, suite spa/app/wabot & vitest spa lulus; tsc/eslint.
+  Belum dikerjakan: pilihan room di booking web & bot WA (room ditugaskan FO), harga room belum masuk
+  `PublicBookingResult.total_idr`. Image: `mizu-api:wabot-23`, `mizu:wabot-13`.
