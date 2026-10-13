@@ -750,3 +750,62 @@ export interface DayOffMonth {
   days: DayOffDay[];
   requests: DayOffRequest[];
 }
+
+// ── Payroll terapis (revisi R1) ──────────────────────────────────────────────
+
+export type PayType = "salary_commission" | "commission_only";
+
+export interface PaySettings {
+  commission_day: number;
+  salary_day: number;
+}
+
+export interface PayLine {
+  id: string;
+  run_id: string;
+  therapist_id: string;
+  therapist_name: string;
+  branch_name: string;
+  pay_type: PayType;
+  base_salary_idr: number;
+  allowance_idr: number;
+  commission_idr: number;
+  commission_count: number;
+  bonus_idr: number;
+  deduction_idr: number;
+  total_idr: number;
+  note: string;
+  /** Hanya di tampilan terapis. */
+  run_kind?: "commission" | "regular";
+  run_status?: "draft" | "approved" | "paid";
+  pay_date?: string;
+  period_start?: string;
+  period_end?: string;
+}
+
+export interface PayRun {
+  id: string;
+  period_month: string;
+  kind: "commission" | "regular";
+  period_start: string;
+  period_end: string;
+  pay_date: string;
+  status: "draft" | "approved" | "paid";
+  total_idr: number;
+  notes: string;
+  line_count: number;
+  created_at: string;
+  approved_at: string | null;
+  paid_at: string | null;
+  lines?: PayLine[];
+}
+
+export interface TherapistPay {
+  therapist_id: string;
+  full_name: string;
+  branch_name: string;
+  is_active: boolean;
+  pay_type: PayType;
+  base_salary_idr: number;
+  allowance_idr: number;
+}

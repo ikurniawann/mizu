@@ -110,6 +110,12 @@ export const useMyCommissions = (month: string, enabled = true) =>
 export const useMyCatalog = (branchId: string, enabled = true) =>
   useQuery({ queryKey: spaKeys.myCatalog(branchId), queryFn: () => spaApi.myCatalog(branchId), enabled: enabled && !!branchId });
 
+export const usePaySettings = () => useQuery({ queryKey: spaKeys.paySettings(), queryFn: spaApi.paySettings });
+export const useTherapistPays = () => useQuery({ queryKey: spaKeys.therapistPays(), queryFn: spaApi.therapistPays });
+export const usePayRuns = () => useQuery({ queryKey: spaKeys.payRuns(), queryFn: spaApi.payRuns });
+export const usePayRun = (id: string) => useQuery({ queryKey: spaKeys.payRun(id), queryFn: () => spaApi.payRun(id), enabled: !!id });
+export const useMyPay = () => useQuery({ queryKey: spaKeys.myPay(), queryFn: spaApi.myPay });
+
 export const useMyDayOffs = (month: string) =>
   useQuery({ queryKey: spaKeys.myDayOffs(month), queryFn: () => spaApi.myDayOffs(month), enabled: !!month });
 

@@ -14,6 +14,9 @@ import type {
   ItemActionInput,
   DayOffQuota,
   OutletInput,
+  PayRun,
+  PaySettings,
+  PayType,
   RoomInput,
   PriceInput,
   PublicBookingInput,
@@ -300,6 +303,60 @@ export const useMyAddItem = () => {
       void qc.invalidateQueries({ queryKey: ["spa", "me"] });
     },
   });
+};
+
+export const useSavePaySettings = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: PaySettings) => spaApi.savePaySettings(input),
+    onSuccess: (cfg) => qc.setQueryData(spaKeys.paySettings(), cfg),
+  });
+};
+
+export const useSetPayType = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ therapistId, payType }: { therapistId: string; payType: PayType }) => spaApi.setPayType(therapistId, payType),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.therapistPays() }),
+  });
+};
+
+export const useCreatePayRun = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ month, kind }: { month: string; kind: PayRun["kind"] }) => spaApi.createPayRun(month, kind),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.payRuns() }),
+  });
+};
+
+const payRunChanged = (qc: ReturnType<typeof useQueryClient>, run: PayRun) => {
+  qc.setQueryData(spaKeys.payRun(run.id), run);
+  void qc.invalidateQueries({ queryKey: spaKeys.payRuns(), exact: true });
+};
+
+export const useRecalcPayRun = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => spaApi.recalcPayRun(id), onSuccess: (run) => payRunChanged(qc, run) });
+};
+
+export const usePayRunAction = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (action: "approve" | "pay" | "reopen") => spaApi.payRunAction(id, action), onSuccess: (run) => payRunChanged(qc, run) });
+};
+
+export const useUpdatePayLine = (runId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lineId, input }: { lineId: string; input: { bonus_idr: number; deduction_idr: number; note: string } }) => spaApi.updatePayLine(lineId, input),
+    onSuccess: (run) => {
+      if (run.id === runId) payRunChanged(qc, run);
+    },
+  });
+};
+
+export const useDeletePayRun = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => spaApi.deletePayRun(id), onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.payRuns() }) });
 };
 
 export const useBookMyDayOff = () => {

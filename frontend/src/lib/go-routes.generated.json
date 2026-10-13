@@ -6292,6 +6292,11 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/spa/me/pay"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/spa/me/schedule"
   },
   {
@@ -6328,6 +6333,51 @@
     "module": "spa",
     "method": "POST",
     "path": "/api/spa/outlets/{branchId}/sync-pos"
+  },
+  {
+    "module": "spa",
+    "method": "PATCH",
+    "path": "/api/spa/pay-lines/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/pay-runs"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/pay-runs"
+  },
+  {
+    "module": "spa",
+    "method": "DELETE",
+    "path": "/api/spa/pay-runs/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/pay-runs/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/pay-runs/{id}/recalculate"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/pay-runs/{id}/status"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/pay-settings"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/pay-settings"
   },
   {
     "module": "spa",
@@ -6377,6 +6427,11 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/spa/therapist-pay"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/spa/therapists"
   },
   {
@@ -6388,6 +6443,11 @@
     "module": "spa",
     "method": "PATCH",
     "path": "/api/spa/therapists/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/therapists/{id}/pay-type"
   },
   {
     "module": "spa",

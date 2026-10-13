@@ -39,6 +39,7 @@ import {
 } from "../rules";
 import { currentMonthWib, monthRange } from "../time";
 import type { CommissionRule, CommissionType, Outlet, Treatment } from "../types";
+import { PayrollTab } from "./payroll-tab";
 import { Field, FormError, OutletSelect, SELECT, SPA_KICKER, SpaHint, TableNote } from "./shared";
 
 /** Spa → Komisi Terapis: laporan komisi (hanya booking lunas) dan aturan komisi. */
@@ -55,12 +56,16 @@ export function SpaCommissionsPage() {
         <TabsList>
           <TabsTrigger value="report">Laporan</TabsTrigger>
           <TabsTrigger value="rules">Aturan Komisi</TabsTrigger>
+          <TabsTrigger value="payroll">Payroll Terapis</TabsTrigger>
         </TabsList>
         <TabsContent value="report" className="mt-4">
           <ReportTab outlets={outlets.data ?? []} />
         </TabsContent>
         <TabsContent value="rules" className="mt-4">
           <RulesTab outlets={outlets.data ?? []} />
+        </TabsContent>
+        <TabsContent value="payroll" className="mt-4">
+          <PayrollTab />
         </TabsContent>
       </Tabs>
     </div>
