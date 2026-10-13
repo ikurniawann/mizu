@@ -394,3 +394,14 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   dari tree yang di-stage. Input harga room memakai `NumericInput` berawalan Rp. Bukti:
   `TestArrivalQueueAssignsInClockInOrderWithRotation`; suite spa/app/wabot & vitest spa lulus; tsc/eslint.
   Image: `mizu-api:wabot-24`, `mizu:wabot-14`.
+- 2026-10-13 — Revisi R5 jadwal libur terapis (`6f5bba35`): `spa.day_off_quotas` + `spa.day_off_requests`
+  (migrasi `20261013040000_spa_day_offs.sql`, diterapkan live). Keputusan owner: kuota per hari per outlet, siapa
+  cepat dia dapat. `BookDayOff` mengunci per outlet+tanggal (advisory lock) lalu `checkDayOff`: jendela besok s.d.
+  akhir bulan depan, harus bertugas & masuk hari itu, libur minggu itu (roster DayOff: pola HRIS + libur yang
+  dipesan) < `max_per_week`, tidak ada booking assigned/in_treatment, dan sisa terapis segender ≥ minimum.
+  Libur disetujui dibaca adapter `Rosters` sebagai DayOff → hilang dari slot publik, papan, auto-assign.
+  Terapis bisa membatalkan libur yang belum lewat; HRD bisa membatalkan dengan alasan. UI: `my-day-off-card.tsx`
+  (aplikasi terapis), `day-off-admin-tab.tsx` (Spa → Terapis → Jadwal Libur). Catatan: data seed memberi tiap
+  terapis 1 hari libur tetap per minggu di jadwal shift HRIS, sehingga dengan batas 2 terapis bisa memesan 1 hari
+  lagi. Bukti: `TestDayOffBookingRespectsGenderQuotaAndWeeklyLimit`, `my-day-off-card.test.tsx`; suite spa/app/wabot
+  & vitest spa lulus; tsc/eslint. Image: `mizu-api:wabot-25`, `mizu:wabot-15`.
