@@ -28,6 +28,7 @@ func (h *Handler) savePaySettings(w http.ResponseWriter, r *http.Request, _ *aut
 	if n := f.Int("salary_day", req, day); n != nil {
 		in.SalaryDay = *n
 	}
+	in.SalaryViaHRIS = f.BoolDefault("salary_via_hris", true)
 	if err := f.ErrAtPath("Tanggal gajian tidak valid"); err != nil {
 		return err
 	}

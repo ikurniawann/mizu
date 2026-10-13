@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { useCreatePayRun, useDeletePayRun, usePayRunAction, useRecalcPayRun, useSavePaySettings, useSetPayType, useUpdatePayLine } from "../mutations";
@@ -29,9 +30,10 @@ import type { PayLine, PayRun, PaySettings, PayType } from "../types";
 import { Field, FormError, SELECT, TableNote } from "./shared";
 
 /**
- * Spa → Komisi → Payroll Terapis (revisi R1): dua tipe terapis (gaji tetap +
- * komisi / komisi saja) dan dua kali gajian sebulan — komisi tengah bulan
- * (tgl 1 s.d. tanggal komisi) dan gaji reguler akhir bulan (gaji tetap + komisi sisa bulan).
+ * Spa → Komisi → Payroll Terapis (revisi R1): dua kali pembayaran sebulan —
+ * tengah bulan (komisi tgl 1 s.d. tanggal komisi) dan akhir bulan (komisi sisa
+ * bulan). Bawaan: gaji tetap dibayar lewat Payroll HRIS (BPJS, PPh21, potongan),
+ * jadi di sini hanya komisi; bila dimatikan, akhir bulan juga membayar gaji kotor dari HRIS.
  */
 export function PayrollTab() {
   const [open, setOpen] = useState<string | null>(null);
@@ -49,12 +51,13 @@ function SettingsCard() {
   const cfg = usePaySettings();
   if (cfg.isLoading) return <SkeletonTable columns={3} rows={1} />;
   if (cfg.error) return <Card className="py-0"><TableNote tone="danger">{cfg.error.message}</TableNote></Card>;
-  return cfg.data ? <SettingsForm key={`${cfg.data.commission_day}-${cfg.data.salary_day}`} cfg={cfg.data} /> : null;
+  return cfg.data ? <SettingsForm key={`${cfg.data.commission_day}-${cfg.data.salary_day}-${cfg.data.salary_via_hris}`} cfg={cfg.data} /> : null;
 }
 
 function SettingsForm({ cfg }: { cfg: PaySettings }) {
   const [commission, setCommission] = useState(String(cfg.commission_day));
   const [salary, setSalary] = useState(String(cfg.salary_day));
+  const [viaHris, setViaHris] = useState(cfg.salary_via_hris);
   const [error, setError] = useState<string | null>(null);
   const save = useSavePaySettings();
   const submit = () => {
@@ -63,7 +66,7 @@ function SettingsForm({ cfg }: { cfg: PaySettings }) {
     if (!Number.isInteger(s) || s < 1 || s > 31) return setError("Tanggal gajian 1–31.");
     if (s <= c) return setError("Tanggal gajian harus setelah tanggal komisi.");
     setError(null);
-    save.mutate({ commission_day: c, salary_day: s }, {
+    save.mutate({ commission_day: c, salary_day: s, salary_via_hris: viaHris }, {
       onSuccess: () => toast.success("Tanggal gajian disimpan"),
       onError: (err) => { setError(err.message); toast.error("Gagal menyimpan", { description: err.message }); },
     });
@@ -71,10 +74,10 @@ function SettingsForm({ cfg }: { cfg: PaySettings }) {
   return (
     <Card className="gap-3 px-5">
       <div>
-        <p className="font-semibold">Jadwal gajian terapis</p>
+        <p className="font-semibold">Jadwal pembayaran terapis</p>
         <p className="text-xs text-muted-foreground">
-          Komisi tengah bulan membayar komisi treatment yang selesai & lunas pada tanggal 1 s.d. tanggal komisi. Gaji reguler membayar gaji tetap
-          (terapis bertipe gaji tetap + komisi, dari data gaji HRIS) ditambah komisi sisa bulan. Tanggal gajian lewat akhir bulan memakai tanggal terakhir.
+          Tengah bulan membayar komisi treatment yang selesai & lunas pada tanggal 1 s.d. tanggal komisi; akhir bulan membayar komisi sisa bulan.
+          Tanggal lewat akhir bulan memakai tanggal terakhir.
         </p>
       </div>
       <form className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-end" onSubmit={(e) => { e.preventDefault(); submit(); }}>
@@ -85,6 +88,17 @@ function SettingsForm({ cfg }: { cfg: PaySettings }) {
           <Input type="number" min={1} max={31} value={salary} onChange={(e) => setSalary(e.target.value)} aria-label="Tanggal gajian reguler" />
         </Field>
         <Button type="submit" disabled={save.isPending}>{save.isPending ? "Menyimpan…" : "Simpan jadwal"}</Button>
+        <label className="flex items-start gap-3 text-sm sm:col-span-3">
+          <Switch checked={viaHris} onCheckedChange={setViaHris} aria-label="Gaji tetap dibayar lewat Payroll HRIS" />
+          <span>
+            Gaji tetap dibayar lewat Payroll HRIS
+            <span className="block text-xs text-muted-foreground">
+              {viaHris
+                ? "Disarankan. Gaji pokok, BPJS, PPh21 dan potongan diurus Payroll HRIS bulanan; di sini hanya komisi. Terapis komisi saja cukup tidak punya data gaji di HRIS."
+                : "Akhir bulan juga membayar gaji pokok + tunjangan kotor dari HRIS (tanpa BPJS/PPh21). Pastikan terapis tidak ikut Payroll HRIS agar tidak dibayar dua kali."}
+            </span>
+          </span>
+        </label>
       </form>
       <FormError>{error}</FormError>
     </Card>
@@ -157,7 +171,7 @@ function PayTypesCard() {
     <Card className="gap-3 px-5">
       <div>
         <p className="font-semibold">Tipe gaji terapis</p>
-        <p className="text-xs text-muted-foreground">Gaji pokok & tunjangan tetap diambil dari data gaji karyawan di HRIS. Terapis komisi saja tidak menerima gaji tetap.</p>
+        <p className="text-xs text-muted-foreground">Gaji pokok & tunjangan tetap dari data gaji karyawan di HRIS (sebagai informasi bila gaji dibayar lewat HRIS). Terapis komisi saja tidak menerima gaji tetap.</p>
       </div>
       {pays.isLoading ? (
         <SkeletonTable columns={4} rows={4} />

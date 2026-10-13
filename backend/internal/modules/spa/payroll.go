@@ -16,7 +16,10 @@ import (
 
 /* ── Therapist payroll (revisi R1) ────────────────────────────────────
    Two pay types: "salary_commission" (fixed salary from HRIS + commission)
-   and "commission_only". Two paydays a month:
+   and "commission_only". By default (salary_via_hris) the fixed salary is
+   paid by the HRIS monthly payroll — with BPJS, PPh21, attendance
+   deductions and loans — and this payroll only pays commission; switched
+   off, the regular run also pays the gross HRIS salary. Two paydays a month:
      • commission run — pay date = commission day (default 15), pays the
        commission of treatments completed on days 1..commission day;
      • regular run — pay date = salary day (default 30, or the month's last
@@ -42,6 +45,7 @@ const (
 const (
 	payCommissionDayKey = "spa_pay_commission_day"
 	paySalaryDayKey     = "spa_pay_salary_day"
+	paySalaryViaHRISKey = "spa_pay_salary_via_hris"
 	// payCatchUp: unpaid commission completed up to this long before the
 	// period start is still picked up (bookings paid late).
 	payCatchUp = 62 * 24 * time.Hour
@@ -51,6 +55,9 @@ const (
 type PaySettings struct {
 	CommissionDay int `json:"commission_day"`
 	SalaryDay     int `json:"salary_day"`
+	// SalaryViaHRIS: the fixed salary is paid by the HRIS payroll, so runs
+	// here carry commission (plus manual bonus/deduction) only.
+	SalaryViaHRIS bool `json:"salary_via_hris"`
 }
 
 // PayRun is one payroll run.
@@ -109,8 +116,8 @@ type TherapistPay struct {
 /* ── settings ────────────────────────────────────────────────────────── */
 
 func (s *Service) PaySettings(ctx context.Context) (PaySettings, error) {
-	out := PaySettings{CommissionDay: 15, SalaryDay: 30}
-	rows, err := s.db.Query(ctx, `SELECT key, value FROM configuration.app_settings WHERE key IN ($1, $2)`, payCommissionDayKey, paySalaryDayKey)
+	out := PaySettings{CommissionDay: 15, SalaryDay: 30, SalaryViaHRIS: true}
+	rows, err := s.db.Query(ctx, `SELECT key, value FROM configuration.app_settings WHERE key IN ($1, $2, $3)`, payCommissionDayKey, paySalaryDayKey, paySalaryViaHRISKey)
 	if err != nil {
 		return out, err
 	}
@@ -122,6 +129,10 @@ func (s *Service) PaySettings(ctx context.Context) (PaySettings, error) {
 			return out, err
 		}
 		if v == nil {
+			continue
+		}
+		if k == paySalaryViaHRISKey {
+			out.SalaryViaHRIS = strings.TrimSpace(*v) != "false"
 			continue
 		}
 		n, err := strconv.Atoi(strings.TrimSpace(*v))
@@ -147,9 +158,11 @@ func (s *Service) SavePaySettings(ctx context.Context, in PaySettings) (PaySetti
 	if in.SalaryDay <= in.CommissionDay {
 		return PaySettings{}, httpx.BadRequest("Tanggal gajian harus setelah tanggal pembayaran komisi")
 	}
-	for k, v := range map[string]int{payCommissionDayKey: in.CommissionDay, paySalaryDayKey: in.SalaryDay} {
+	values := map[string]string{payCommissionDayKey: strconv.Itoa(in.CommissionDay), paySalaryDayKey: strconv.Itoa(in.SalaryDay),
+		paySalaryViaHRISKey: strconv.FormatBool(in.SalaryViaHRIS)}
+	for k, v := range values {
 		if _, err := s.db.Exec(ctx, `INSERT INTO configuration.app_settings (key, value) VALUES ($1, $2)
-		  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, k, strconv.Itoa(v)); err != nil {
+		  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, k, v); err != nil {
 			return PaySettings{}, err
 		}
 	}
@@ -405,13 +418,17 @@ func (s *Service) calculatePayRun(ctx context.Context, q Q, id string, keep map[
 	if err != nil {
 		return err
 	}
+	cfg, err := s.PaySettings(ctx)
+	if err != nil {
+		return err
+	}
 	for _, p := range pays {
 		comm := byTherapist[p.TherapistID]
 		line := PayLine{TherapistID: p.TherapistID, PayType: p.PayType, CommissionCount: len(comm)}
 		for _, c := range comm {
 			line.CommissionIDR += c.amount
 		}
-		if run.Kind == PayRunRegular && p.PayType == PaySalaryCommission && p.IsActive {
+		if run.Kind == PayRunRegular && !cfg.SalaryViaHRIS && p.PayType == PaySalaryCommission && p.IsActive {
 			line.BaseSalaryIDR, line.AllowanceIDR = p.BaseSalaryIDR, p.AllowanceIDR
 		}
 		if k, ok := keep[p.TherapistID]; ok {

@@ -758,6 +758,8 @@ export type PayType = "salary_commission" | "commission_only";
 export interface PaySettings {
   commission_day: number;
   salary_day: number;
+  /** Gaji tetap dibayar lewat Payroll HRIS (BPJS, PPh21, potongan); di sini hanya komisi. */
+  salary_via_hris: boolean;
 }
 
 export interface PayLine {

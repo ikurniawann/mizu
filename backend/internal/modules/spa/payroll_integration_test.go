@@ -44,10 +44,15 @@ func TestTherapistPayrollTwiceAMonth(t *testing.T) {
 	e.data(admin, "PUT", "/api/spa/therapists/"+beni["id"].(string)+"/pay-type", map[string]any{"pay_type": "commission_only"}, http.StatusOK)
 	e.call(admin, "PUT", "/api/spa/therapists/"+beni["id"].(string)+"/pay-type", map[string]any{"pay_type": "harian"}, http.StatusBadRequest)
 
-	// Paydays: configurable, salary day after commission day.
+	// Paydays: configurable, salary day after commission day. By default the
+	// fixed salary goes through the HRIS payroll.
+	if cfg := e.data(admin, "GET", "/api/spa/pay-settings", nil, http.StatusOK); cfg["salary_via_hris"] != true {
+		t.Fatalf("default pay settings = %v", cfg)
+	}
 	e.call(admin, "PUT", "/api/spa/pay-settings", map[string]any{"commission_day": 20, "salary_day": 15}, http.StatusBadRequest)
-	cfg := e.data(admin, "PUT", "/api/spa/pay-settings", map[string]any{"commission_day": 15, "salary_day": 30}, http.StatusOK)
-	if cfg["commission_day"] != float64(15) || cfg["salary_day"] != float64(30) {
+	// This test covers paying the gross salary here too.
+	cfg := e.data(admin, "PUT", "/api/spa/pay-settings", map[string]any{"commission_day": 15, "salary_day": 30, "salary_via_hris": false}, http.StatusOK)
+	if cfg["commission_day"] != float64(15) || cfg["salary_day"] != float64(30) || cfg["salary_via_hris"] != false {
 		t.Fatalf("pay settings = %v", cfg)
 	}
 
@@ -144,5 +149,63 @@ func TestTherapistPayrollTwiceAMonth(t *testing.T) {
 	list := e.list(admin, "/api/spa/pay-runs?year=2026")
 	if len(list) != 2 {
 		t.Fatalf("runs = %v", list)
+	}
+}
+
+// Default policy (owner decision 13 Oct 2026): the fixed salary is paid by
+// the HRIS payroll, so the end-of-month run carries commission only.
+func TestTherapistPayrollSalaryViaHRIS(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	e := setup(t)
+	admin := &e.admin
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID).Scan(&warehouse); err != nil {
+		t.Fatal(err)
+	}
+	branch := e.org.BranchID
+	e.data(admin, "PUT", "/api/spa/outlets/"+branch, map[string]any{"warehouse_id": warehouse, "open_time": "09:00", "close_time": "22:00", "slot_minutes": 30, "is_active": true, "public_booking": true}, http.StatusOK)
+	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "HRS" + testutil.RandomHex(3), "name": "Massage",
+		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
+	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	e.data(admin, "POST", "/api/spa/commission-rules", map[string]any{"commission_type": "percent", "value": 10}, http.StatusCreated)
+	emp := e.employee("Sari HRIS", nil)
+	th := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
+	if _, err := e.tx.Exec(e.ctx, `INSERT INTO hris.employee_salary (employee_id, base_salary, fixed_allowance, effective_date, is_active)
+	  VALUES ($1, 3000000, 500000, '2026-01-01', true)`, emp); err != nil {
+		t.Fatal(err)
+	}
+	b := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
+		"branch_id": branch, "booking_type": "walk_in", "customer_name": "Tamu HRIS", "therapist_id": th["id"],
+		"scheduled_at": "2026-10-08T03:00:00Z", "items": []any{map[string]any{"variant_id": variant}},
+	}, http.StatusCreated)
+	id := b["id"].(string)
+	e.data(admin, "POST", "/api/spa/bookings/"+id+"/status", map[string]any{"action": "start"}, http.StatusOK)
+	e.data(admin, "POST", "/api/spa/bookings/"+id+"/status", map[string]any{"action": "complete"}, http.StatusOK)
+	if _, err := e.tx.Exec(e.ctx, `UPDATE spa.bookings SET payment_status = 'paid' WHERE id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.tx.Exec(e.ctx, `UPDATE spa.booking_items SET completed_at = '2026-10-20T05:00:00Z' WHERE booking_id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
+	reg := e.data(admin, "POST", "/api/spa/pay-runs", map[string]any{"month": "2026-10", "kind": "regular"}, http.StatusCreated)
+	var l map[string]any
+	for _, x := range reg["lines"].([]any) { // the test DB may hold demo therapists too
+		if m := x.(map[string]any); m["therapist_id"] == th["id"] {
+			l = m
+		}
+	}
+	if l == nil {
+		t.Fatal("no line for the therapist")
+	}
+	for _, x := range reg["lines"].([]any) {
+		if m := x.(map[string]any); m["base_salary_idr"] != float64(0) || m["allowance_idr"] != float64(0) {
+			t.Fatalf("no line may carry a fixed salary when HRIS pays it: %v", m)
+		}
+	}
+	if l["pay_type"] != "salary_commission" || l["base_salary_idr"] != float64(0) || l["allowance_idr"] != float64(0) ||
+		l["commission_idr"] != float64(20000) || l["total_idr"] != float64(20000) {
+		t.Fatalf("salary must stay in HRIS: %v", l)
 	}
 }

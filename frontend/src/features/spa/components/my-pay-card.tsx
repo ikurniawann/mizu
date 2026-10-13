@@ -7,7 +7,7 @@ import { formatDate, formatRupiah } from "@/lib/format";
 import { PAY_KIND_LABEL, PAY_STATUS_LABEL, PAY_STATUS_VARIANT } from "../payroll";
 import { useMyPay } from "../queries";
 
-/** Aplikasi terapis → Pembayaran (revisi R1): komisi tengah bulan & gaji reguler yang sudah disetujui. */
+/** Aplikasi terapis → Pembayaran (revisi R1): pembayaran komisi tengah & akhir bulan yang sudah disetujui (gaji pokok lewat slip gaji HRIS). */
 export function MyPayCard() {
   const pay = useMyPay();
   const list = pay.data ?? [];
@@ -28,7 +28,9 @@ export function MyPayCard() {
             <li key={l.id} className="space-y-1 py-3 text-sm">
               <div className="flex items-start justify-between gap-3">
                 <span className="min-w-0">
-                  <span className="block font-medium">{l.run_kind ? PAY_KIND_LABEL[l.run_kind] : "Pembayaran"}</span>
+                  <span className="block font-medium">
+                    {l.base_salary_idr + l.allowance_idr > 0 ? "Gaji & komisi" : "Komisi"} {l.run_kind ? PAY_KIND_LABEL[l.run_kind].toLowerCase() : ""}
+                  </span>
                   <span className="block text-xs text-muted-foreground">
                     {l.period_start && l.period_end ? `${formatDate(l.period_start)} – ${formatDate(l.period_end)}` : ""}
                     {l.pay_date ? ` · dibayar ${formatDate(l.pay_date)}` : ""}
