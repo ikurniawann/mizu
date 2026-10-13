@@ -5,7 +5,7 @@ Status: **Sudah ada** (tinggal dicek), **Sebagian** (fondasi ada, perlu fitur), 
 
 | # | Revisi | Status | Modul |
 |---|--------|--------|-------|
-| R1 | Payroll terapis: tipe gaji tetap + komisi vs komisi saja; 2× gajian per bulan (bonus/komisi tgl 15, gaji reguler tgl 30; tanggal bisa dikonfigurasi) | Sebagian | payroll · spa (commission_rules) · hris |
+| R1 | Payroll terapis: tipe gaji tetap + komisi vs komisi saja; 2× gajian per bulan (bonus/komisi tgl 15, gaji reguler tgl 30; tanggal bisa dikonfigurasi) | **Selesai** 13 Okt (`1a21727f`): Spa → Komisi → Payroll Terapis; kartu Pembayaran di aplikasi terapis. Gaji tetap dari HRIS tanpa BPJS/PPh21 | spa · hris (employee_salary) |
 | R2 | Reservasi online (web & WA) wajib DP dulu | **Selesai** (audit 13 Okt: bug kartu DP web diperbaiki, hero DP, pengingat DP WA) | spa · wabot |
 | R3 | Urutan booking ke terapis mengikuti urutan absensi (yang datang duluan dapat order duluan bila customer tidak memilih terapis) | **Selesai** 13 Okt (`38e36eee`): antrian dari jam absen HRIS, rotasi adil, otomatis hari H tiap 5 menit (≤3 jam ke depan) + tombol di tab Antrian | hris · spa |
 | R4 | Tambah treatment saat treatment berlangsung / setelah selesai, sebelum bayar | **Selesai** 13 Okt (`72c76324`): kasir dari detail booking, terapis dari aplikasi terapis; sampai booking dikirim ke kasir | spa |

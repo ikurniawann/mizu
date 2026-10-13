@@ -405,3 +405,15 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   terapis 1 hari libur tetap per minggu di jadwal shift HRIS, sehingga dengan batas 2 terapis bisa memesan 1 hari
   lagi. Bukti: `TestDayOffBookingRespectsGenderQuotaAndWeeklyLimit`, `my-day-off-card.test.tsx`; suite spa/app/wabot
   & vitest spa lulus; tsc/eslint. Image: `mizu-api:wabot-25`, `mizu:wabot-15`.
+- 2026-10-13 — Revisi R1 payroll terapis (`1a21727f`): `spa.therapists.pay_type`, `spa.pay_runs/pay_lines/
+  pay_commission_items` (migrasi `20261013050000_spa_therapist_pay.sql`, diterapkan live). Keputusan owner:
+  komisi tgl 15 = periode tgl 1–15. Run `commission` (tgl 1..hari komisi, bayar hari komisi) dan `regular`
+  (sisa bulan, bayar hari gajian, clamp ke akhir bulan); unik per bulan+jenis. Komisi = item `completed` dengan
+  booking `paid`, belum ada di `pay_commission_items` (unik item → dibayar sekali), selesai dalam periode atau
+  ≤62 hari sebelumnya (booking lunas terlambat masuk run berikutnya). Gaji tetap = `hris.employee_salary`
+  aktif (`base_salary + fixed_allowance`) hanya di run regular untuk tipe `salary_commission`. Bonus/potongan
+  manual per baris (draft), dipertahankan saat hitung ulang; draft → approved → paid, approved bisa dibuka
+  lagi; draft bisa dihapus (komisi kembali tersedia). Terapis melihat run approved/paid (`GET /api/spa/me/pay`).
+  Catatan: tanpa BPJS/PPh21 — payroll HRIS bulanan tetap untuk kewajiban statutori; jangan menggaji terapis
+  dua kali. Bukti: `TestTherapistPayrollTwiceAMonth`, `payroll.test.ts`; suite spa/app/wabot & vitest spa
+  lulus; tsc/eslint. Image: `mizu-api:wabot-26`, `mizu:wabot-16`.
