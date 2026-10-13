@@ -696,3 +696,31 @@ func TestBotLanguageMenu(t *testing.T) {
 		t.Fatalf("typed name = %q", name)
 	}
 }
+
+// "kembali" steps back one question; "booking baru" after a booking keeps
+// the language and name.
+func TestBotBackAndNewBooking(t *testing.T) {
+	e := setupBot(t)
+	e.start()
+	e.say("2")
+	r := e.say("1")
+	e.wants(r, "Mau datang kapan?")
+	r = e.say("kembali")
+	e.wants(r, "Oke, kembali satu langkah.", "Pilih treatment")
+	r = e.say("kembali")
+	e.wants(r, "Untuk berapa orang?")
+	e.say("1")
+	e.say("1")
+	e.say("besok")
+	e.say("1")
+	r = e.say("back") // at the therapist question: the time is undone
+	e.wants(r, "Oke, kembali satu langkah.", "Jam yang masih tersedia")
+	e.say("1")
+	e.say("0")
+	r = e.say("ya")
+	e.wants(r, "Kode booking")
+	r = e.say("booking baru")
+	e.wants(r, "Untuk berapa orang?") // name and language remembered: straight to the booking
+	r = e.say("kembali")
+	e.wants(r, "Tidak ada langkah")
+}

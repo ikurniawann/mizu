@@ -155,6 +155,16 @@ func (t *turn) run(ctx context.Context, text string) []string {
 	case domain.IntentAdmin:
 		t.handedOver = "customer"
 		return []string{domain.Handover(l, t.settings.Name)}
+	case domain.IntentBack:
+		greet()
+		if !s.Back() {
+			return append(out, domain.BackNone(l))
+		}
+		prompts := t.prompt(ctx)
+		if len(prompts) > 0 {
+			prompts[0] = domain.BackOK(l) + " " + prompts[0]
+		}
+		return append(out, prompts...)
 	case domain.IntentRestart:
 		if strings.Contains(domain.Normalize(text), "daftar tunggu") && s.WaitlistID != "" {
 			t.cancelWaitlist(ctx)

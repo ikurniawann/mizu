@@ -539,3 +539,9 @@ func hhmm(clock string) string {
 	}
 	return clock
 }
+
+func BackOK(l L) string { return t(l, "Oke, kembali satu langkah.", "Okay, one step back.") }
+func BackNone(l L) string {
+	return t(l, "Tidak ada langkah untuk dikembalikan. Ketik *ulang* untuk mulai dari awal, atau *status* untuk booking terakhir.",
+		"There's nothing to go back to. Type *restart* to start over, or *status* for your latest booking.")
+}

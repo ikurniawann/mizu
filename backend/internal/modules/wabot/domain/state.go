@@ -225,3 +225,40 @@ type Slot struct {
 	At   time.Time
 	Free int // therapists free (0 = unknown / not checked)
 }
+
+// Back forgets the most recent choice so the previous question is asked
+// again; false when there is nothing to go back to (nothing chosen yet, or
+// bookings already made).
+func (s *Session) Back() bool {
+	switch s.NextStep() {
+	case StepLang, StepName, StepPayment, StepDone:
+		return false
+	case StepOutlet:
+		return false
+	case StepPeople:
+		if len(s.Outlets) <= 1 {
+			return false // the only outlet is picked automatically: nothing before this
+		}
+		s.OutletID, s.OutletName, s.Catalog = "", "", nil
+	case StepTreatment:
+		if len(s.Persons) > 0 {
+			s.Persons = s.Persons[:len(s.Persons)-1]
+		} else {
+			s.People = 0
+		}
+	case StepDate:
+		s.Persons = nil
+	case StepTime:
+		s.Date, s.Period, s.WantedTime = "", "", ""
+	case StepTherapist:
+		s.ClearSlot()
+	case StepConfirm:
+		if s.People == 1 && (s.TherapistID != "" || s.SystemPick) {
+			s.TherapistID, s.TherapistName, s.SystemPick = "", "", false
+		} else {
+			s.ClearSlot()
+		}
+	}
+	s.ClearMenu()
+	return true
+}

@@ -23,6 +23,7 @@ const (
 	IntentStatus   Intent = "status" // asks about an existing booking
 	IntentGreeting Intent = "greeting"
 	IntentHelp     Intent = "help"
+	IntentBack     Intent = "back"     // one step back
 	IntentOutlet   Intent = "outlet"   // wants another outlet
 	IntentWaitlist Intent = "waitlist" // wants to be told when a slot frees up
 )
@@ -40,6 +41,7 @@ var (
 	statusWords   = []string{"status", "cek booking", "booking saya", "kode booking", "qr", "my booking", "booking code", "check booking"}
 	greetingWords = []string{"halo", "hallo", "hai", "hi", "hello", "selamat pagi", "selamat siang", "selamat sore", "selamat malam", "assalamualaikum", "permisi", "min", "kak", "mau booking", "booking", "mau pesan", "pesan tempat", "reservasi", "hey", "good morning", "good afternoon", "good evening", "i want to book", "book", "reservation", "i'd like to book"}
 	helpWords     = []string{"menu", "bantuan", "help", "pilihan", "options"}
+	backWords     = []string{"kembali", "balik", "back", "mundur", "sebelumnya", "go back", "previous", "undo", "salah pilih"}
 	outletWords   = []string{"ganti outlet", "outlet lain", "pindah outlet", "cek outlet lain", "outlet satunya", "other outlet", "change outlet", "another outlet", "other branch", "switch outlet"}
 	waitlistWords = []string{"daftar tunggu", "waiting list", "waitlist", "masuk daftar tunggu", "kabari", "kabarin", "tunggu saja", "daftar tunggu saja", "notify me", "let me know", "put me on the list"}
 )
@@ -54,6 +56,11 @@ func DetectIntent(text string, handoverKeywords []string) Intent {
 		k = Normalize(k)
 		if k != "" && (n == k || strings.HasPrefix(n, k+" ") || strings.Contains(n, "sama "+k) || strings.Contains(n, "dengan "+k) || strings.Contains(n, "ke "+k)) {
 			return IntentAdmin
+		}
+	}
+	for _, w := range backWords {
+		if n == w || strings.HasPrefix(n, w+" ") {
+			return IntentBack
 		}
 	}
 	for _, w := range restartWords {
