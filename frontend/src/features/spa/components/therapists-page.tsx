@@ -37,6 +37,7 @@ import {
 import { useSpaAssists, useSpaEmployees, useSpaOutletPics, useSpaOutlets, useSpaTherapists } from "../queries";
 import { GENDER_LABEL, genderLabel } from "../rules";
 import type { Assist, EmployeeCandidate, Outlet, OutletPic, Therapist, TherapistGender } from "../types";
+import { DayOffAdminTab } from "./day-off-admin-tab";
 import { Field, FormError, OutletSelect, SELECT, SPA_KICKER, TableNote, TEXTAREA } from "./shared";
 
 /** Spa → Terapis: daftar terapis, perbantuan antar-outlet, dan PIC outlet. */
@@ -54,6 +55,7 @@ export function SpaTherapistsPage() {
           <TabsTrigger value="therapists">Terapis</TabsTrigger>
           <TabsTrigger value="assists">Perbantuan</TabsTrigger>
           <TabsTrigger value="pics">PIC Outlet</TabsTrigger>
+          <TabsTrigger value="day-offs">Jadwal Libur</TabsTrigger>
         </TabsList>
         <TabsContent value="therapists" className="mt-4">
           <TherapistsTab outlets={outlets.data ?? []} />
@@ -63,6 +65,9 @@ export function SpaTherapistsPage() {
         </TabsContent>
         <TabsContent value="pics" className="mt-4">
           <PicsTab outlets={outlets.data ?? []} />
+        </TabsContent>
+        <TabsContent value="day-offs" className="mt-4">
+          <DayOffAdminTab outlets={outlets.data ?? []} />
         </TabsContent>
       </Tabs>
     </div>

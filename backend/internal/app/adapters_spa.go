@@ -413,6 +413,27 @@ func (spaPeople) Rosters(ctx context.Context, q database.Querier, employeeIDs []
 		}
 		out[emp] = r
 	}
+	// Days off booked in the therapist app (revisi R5) count as a day off.
+	offs, err := q.Query(ctx, `SELECT DISTINCT t.employee_id::text FROM spa.day_off_requests d
+	  JOIN spa.therapists t ON t.id = d.therapist_id
+	  WHERE t.employee_id = ANY($1::uuid[]) AND d.status = 'approved' AND d.off_date = $2::date`, employeeIDs, date)
+	if err != nil {
+		return nil, err
+	}
+	for offs.Next() {
+		var emp string
+		if err := offs.Scan(&emp); err != nil {
+			offs.Close()
+			return nil, err
+		}
+		r := out[emp]
+		r.DayOff = true
+		out[emp] = r
+	}
+	offs.Close()
+	if err := offs.Err(); err != nil {
+		return nil, err
+	}
 	leaves, err := q.Query(ctx, `SELECT DISTINCT employee_id::text FROM hris.leaves
 	  WHERE employee_id = ANY($1::uuid[]) AND status::text = 'approved' AND $2::date BETWEEN start_date AND end_date`, employeeIDs, date)
 	if err != nil {

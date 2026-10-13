@@ -12,6 +12,7 @@ import type {
   CommissionRuleInput,
   WaitlistCreateInput,
   ItemActionInput,
+  DayOffQuota,
   OutletInput,
   RoomInput,
   PriceInput,
@@ -298,6 +299,38 @@ export const useMyAddItem = () => {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["spa", "me"] });
     },
+  });
+};
+
+export const useBookMyDayOff = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (date: string) => spaApi.bookMyDayOff(date),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa", "me"] }),
+  });
+};
+
+export const useCancelMyDayOff = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => spaApi.cancelMyDayOff(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa", "me"] }),
+  });
+};
+
+export const useSaveDayOffQuota = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ branchId, input }: { branchId: string; input: Omit<DayOffQuota, "branch_id"> }) => spaApi.saveDayOffQuota(branchId, input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa", "day-offs"] }),
+  });
+};
+
+export const useCancelDayOff = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => spaApi.cancelDayOff(id, reason),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa", "day-offs"] }),
   });
 };
 

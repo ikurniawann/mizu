@@ -707,3 +707,46 @@ export interface AutoAssignResult {
   assigned: { booking_id: string; booking_code: string; therapist_id: string; therapist_name: string }[];
   skipped: { booking_id: string; booking_code: string; reason: string }[];
 }
+
+// ── Jadwal libur terapis (revisi R5) ─────────────────────────────────────────
+
+export interface DayOffQuota {
+  branch_id: string;
+  min_female: number;
+  min_male: number;
+  max_per_week: number;
+}
+
+export interface DayOffRequest {
+  id: string;
+  therapist_id: string;
+  therapist_name: string;
+  gender: TherapistGender | null;
+  branch_id: string;
+  date: string;
+  status: "approved" | "cancelled";
+  created_at: string;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+}
+
+export interface DayOffDay {
+  date: string;
+  /** ISO, Senin = 1. */
+  weekday: number;
+  working_female: number;
+  working_male: number;
+  off_count: number;
+  mine?: "requested" | "pattern" | "leave";
+  request_id?: string;
+  can_book: boolean;
+  reason?: string;
+}
+
+export interface DayOffMonth {
+  month: string;
+  branch_id: string;
+  quota: DayOffQuota;
+  days: DayOffDay[];
+  requests: DayOffRequest[];
+}

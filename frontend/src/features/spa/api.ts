@@ -31,6 +31,9 @@ import type {
   OutletInput,
   ArrivalQueue,
   AutoAssignResult,
+  DayOffMonth,
+  DayOffQuota,
+  DayOffRequest,
   Room,
   RoomBoard,
   RoomInput,
@@ -234,6 +237,13 @@ export const spaApi = {
   myAddItem: (bookingId: string, variantId: string) =>
     send<BoardItem>(`${BASE}/me/bookings/${enc(bookingId)}/items`, { variant_id: variantId }),
   myCatalog: (branchId: string) => call<PublicTreatment[]>(withQuery(`${BASE}/me/catalog`, { branch_id: branchId })),
+  // Jadwal libur terapis (revisi R5)
+  myDayOffs: (month: string) => call<DayOffMonth>(withQuery(`${BASE}/me/day-offs`, { month })),
+  bookMyDayOff: (date: string) => send<DayOffRequest>(`${BASE}/me/day-offs`, { date }),
+  cancelMyDayOff: (id: string) => send<DayOffRequest>(`${BASE}/me/day-offs/${enc(id)}/cancel`, {}),
+  outletDayOffs: (branchId: string, month: string) => call<DayOffMonth>(withQuery(`${BASE}/day-offs`, { branch_id: branchId, month })),
+  saveDayOffQuota: (branchId: string, input: Omit<DayOffQuota, "branch_id">) => send<DayOffQuota>(`${BASE}/day-off-quotas/${enc(branchId)}`, input, "PUT"),
+  cancelDayOff: (id: string, reason: string) => send<DayOffRequest>(`${BASE}/day-offs/${enc(id)}/cancel`, { reason }),
   myCommissions: async (month: string) =>
     normalizeMyCommissions(await call<unknown>(withQuery(`${BASE}/me/commissions`, { month }))),
 };

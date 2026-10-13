@@ -6226,6 +6226,21 @@
   },
   {
     "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/day-off-quotas/{branchId}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/day-offs"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/day-offs/{id}/cancel"
+  },
+  {
+    "module": "spa",
     "method": "GET",
     "path": "/api/spa/employees"
   },
@@ -6258,6 +6273,21 @@
     "module": "spa",
     "method": "GET",
     "path": "/api/spa/me/commissions"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/day-offs"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/me/day-offs"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/me/day-offs/{id}/cancel"
   },
   {
     "module": "spa",
