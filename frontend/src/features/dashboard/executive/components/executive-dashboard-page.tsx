@@ -14,6 +14,7 @@ import { formatRupiahCompact, formatTime } from "@/lib/format";
 import { executiveDashboardKey, useExecutiveDashboard } from "../queries";
 import { Delta, FailedNote, SectionCard, TargetBar } from "./executive-parts";
 import { GymTodayCard } from "./gym-today-card";
+import { TrendBars } from "./trend-bars";
 import { TargetEditor } from "./target-editor";
 import { ExecutiveModuleSections } from "./executive-module-sections";
 
@@ -26,7 +27,6 @@ const NO_TARGET: SalesTargetConfig = { harianRp: 0, bulananRp: 0 };
  * Halaman referensi gaya WIT (docs/frontend-conventions.md).
  */
 
-const DAY_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 export function ExecutiveDashboardPage() {
   const queryClient = useQueryClient();
@@ -92,7 +92,6 @@ export function ExecutiveDashboardPage() {
 
   // Insight mingguan: 7 hari terakhir vs 7 hari sebelumnya.
   const minggu = tren ? compareWeeks(tren) : null;
-  const maxOmzet = tren ? Math.max(...tren.map((p) => p.omzet), 1) : 1;
 
   const antrean = keputusan
     ? [
@@ -312,45 +311,7 @@ export function ExecutiveDashboardPage() {
       >
         {tren && (
           <>
-            <div
-              role="img"
-              aria-label={`Omzet 14 hari terakhir, hari ini ${formatRupiahCompact(tren[tren.length - 1]?.omzet ?? 0)}`}
-              className="flex h-40 items-end gap-1.5"
-            >
-              {tren.map((p, i) => (
-                <div key={p.tanggal} className="flex h-full flex-1 items-end">
-                  <div
-                    title={`${p.tanggal}: ${formatRupiahCompact(p.omzet)} · ${p.pesanan} pesanan`}
-                    style={{
-                      height: `${Math.max(3, (p.omzet / maxOmzet) * 100)}%`,
-                    }}
-                    className={cn(
-                      "w-full rounded-full transition-colors",
-                      i === tren.length - 1
-                        ? "bg-forest"
-                        : i >= 7
-                          ? "bg-silver hover:bg-muted-foreground"
-                          : "bg-chart-muted hover:bg-silver",
-                    )}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 flex gap-1.5">
-              {tren.map((p, i) => (
-                <span
-                  key={p.tanggal}
-                  className={cn(
-                    "flex-1 text-center text-[10px]",
-                    i === tren.length - 1
-                      ? "font-semibold text-foreground"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {DAY_SHORT[new Date(`${p.tanggal}T00:00:00`).getDay()]}
-                </span>
-              ))}
-            </div>
+            <TrendBars points={tren} />
             {minggu && (
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm text-body">
                 Minggu berjalan{" "}
