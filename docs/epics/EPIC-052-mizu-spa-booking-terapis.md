@@ -417,3 +417,8 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   Catatan: tanpa BPJS/PPh21 — payroll HRIS bulanan tetap untuk kewajiban statutori; jangan menggaji terapis
   dua kali. Bukti: `TestTherapistPayrollTwiceAMonth`, `payroll.test.ts`; suite spa/app/wabot & vitest spa
   lulus; tsc/eslint. Image: `mizu-api:wabot-26`, `mizu:wabot-16`.
+- 2026-10-13 — Keputusan owner: (a) pola shift terapis tetap 6 hari masuk + 1 libur tetap, total libur 2 hari per
+  minggu → terapis memilih 1 hari libur tambahan (perilaku R5 sudah sesuai, tidak ada perubahan); (b) format
+  rupiah "Rp 100.000" dengan spasi di seluruh aplikasi (`c8867dbf`: formatter frontend & Go, pesan WA, PDF, tes).
+  Ikut diperbaiki: prefix publik `/api/wa/meta` di middleware Next (webhook Meta sebelumnya diminta login) dan
+  `/site/photos/` di gate Go. Image: `mizu-api:wabot-27`, `mizu:wabot-17`.
