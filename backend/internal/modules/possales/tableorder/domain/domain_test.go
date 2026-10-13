@@ -245,7 +245,7 @@ func TestOrderAlertMessage(t *testing.T) {
 	})
 	want := "🛎️ Pesanan baru — Self-order QR\nBCD Coffee\nMeja WIT. Office Bandung · Makan di tempat\nAntrean 007 · ORD-1\n" +
 		"Atas nama: Budi · WA 081234567890\n\n• 2× Iced Latte (Regular, Extra Shot Espresso)\n\nCatatan: less ice\n\n" +
-		"Total Rp121.000 · Bayar di kasir (belum dibayar)\n\n👉 Buatkan Pesanan: https://app.test/dashboard/pos/self-orders?order=o1"
+		"Total Rp 121.000 · Bayar di kasir (belum dibayar)\n\n👉 Buatkan Pesanan: https://app.test/dashboard/pos/self-orders?order=o1"
 	if msg != want {
 		t.Fatalf("message:\n%s", msg)
 	}

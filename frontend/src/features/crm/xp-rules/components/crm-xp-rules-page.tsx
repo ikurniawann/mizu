@@ -471,7 +471,7 @@ function Field({
   value: string;
   onChange: (value: string) => void;
   numeric?: boolean;
-  /** "Rp" → pratinjau "Rp1.000"; "XP" → pratinjau "1 XP". */
+  /** "Rp" → pratinjau "Rp 1.000"; "XP" → pratinjau "1 XP". */
   satuan?: "Rp" | "XP";
 }) {
   const n = Number(value);

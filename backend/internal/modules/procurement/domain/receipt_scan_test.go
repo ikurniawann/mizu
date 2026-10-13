@@ -30,7 +30,7 @@ func TestParseAmount(t *testing.T) {
 		"250000":         float64(250_000),
 		"0":              nil,
 		"abc":            nil,
-		"Rp1.234.567,50": float64(1_234_568),
+		"Rp 1.234.567,50": float64(1_234_568),
 	}
 	for in, want := range cases {
 		if got := amount(ParseAmount(in)); got != want {

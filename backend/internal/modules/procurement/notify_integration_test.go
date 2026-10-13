@@ -54,7 +54,7 @@ func TestUrgentPrSendsOwnerWhatsApp(t *testing.T) {
 	// The second dispatch finds nothing due: one alert per PR and status.
 	if len(sent) != 1 || sent[0]["target"] != "6281234567890" ||
 		!strings.Contains(sent[0]["message"], r.data()["pr_number"].(string)+" diajukan, menunggu persetujuan.") ||
-		!strings.Contains(sent[0]["message"], "Total estimasi: *Rp30.000*") || !strings.Contains(sent[0]["message"], "• Gula pasir — 2 kg") {
+		!strings.Contains(sent[0]["message"], "Total estimasi: *Rp 30.000*") || !strings.Contains(sent[0]["message"], "• Gula pasir — 2 kg") {
 		t.Fatalf("sent = %v", sent)
 	}
 	if e.scalar(`SELECT count(*)::int FROM configuration.wa_notif_log WHERE notif_type = 'prMendesak' AND dedup_key = $1`, r.data()["id"].(string)+":pending_head") != int32(1) {

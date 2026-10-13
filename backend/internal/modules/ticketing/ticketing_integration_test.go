@@ -347,7 +347,7 @@ func TestWalkInVisitGateAndSettlement(t *testing.T) {
 		"contactName": "Budi", "paymentMode": "postpaid", "available": 450000})
 
 	f.fail(f.call("POST", "/api/ticketing/visits/"+visitID+"/settle", map[string]any{"visit_band_id": vb1,
-		"payments": []any{map[string]any{"method": "cash", "amount": 10000}}}), 400, "Nominal pembayaran (Rp10.000) harus pas Rp50.000")
+		"payments": []any{map[string]any{"method": "cash", "amount": 10000}}}), 400, "Nominal pembayaran (Rp 10.000) harus pas Rp 50.000")
 	one := f.ok(f.call("POST", "/api/ticketing/visits/"+visitID+"/settle", map[string]any{"visit_band_id": vb1,
 		"payments": []any{map[string]any{"method": "qris", "amount": 50000}}}))
 	if one.Raw != `{"success":true,"data":{"mode":"per-gelang","paid":50000,"closed":false},"message":"Settlement berhasil"}` {
@@ -370,7 +370,7 @@ func TestPrepaidTopUpVoidAndLostBand(t *testing.T) {
 	visitID := f.visit(body)
 
 	low := f.tap("0A0B0C0D").data()
-	eq(t, []any{low["result"], low["reason"]}, []any{"ditolak-saldo-kurang", "Saldo tidak cukup (saldo Rp30.000) — silakan top-up dulu"})
+	eq(t, []any{low["result"], low["reason"]}, []any{"ditolak-saldo-kurang", "Saldo tidak cukup (saldo Rp 30.000) — silakan top-up dulu"})
 	topup := f.ok(f.call("POST", "/api/ticketing/visits/"+visitID+"/deposit", map[string]any{"amount": 30000, "method": "qris"}))
 	eq(t, topup.Body["message"], "Top-up tersimpan")
 	eq(t, f.tap("0A0B0C0D").data()["charged_amount"], 50000)

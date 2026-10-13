@@ -129,7 +129,7 @@ describe("komisi", () => {
   });
   it("nilai & perhitungan", () => {
     expect(commissionValueLabel("percent", 12.5)).toBe("12,5%");
-    expect(commissionValueLabel("fixed", 25000)).toBe("Rp25.000");
+    expect(commissionValueLabel("fixed", 25000)).toBe("Rp 25.000");
     expect(commissionValueLabel(null, null)).toBe("-");
     expect(computeCommission("percent", 10, 250000)).toBe(25000);
     expect(computeCommission("fixed", 30000, 250000)).toBe(30000);

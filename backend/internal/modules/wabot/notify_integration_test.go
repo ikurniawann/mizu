@@ -52,7 +52,7 @@ func TestBotPaidNoticeOnce(t *testing.T) {
 	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil {
 		t.Fatal(err)
 	}
-	if len(e.sender.sent) != 1 || !strings.Contains(e.sender.sent[0], "Pembayaran diterima ✅ Terima kasih, Fajar!") || !strings.Contains(e.sender.sent[0], "MZ-TEST-PAID") || !strings.Contains(e.sender.sent[0], "Rp150.000") {
+	if len(e.sender.sent) != 1 || !strings.Contains(e.sender.sent[0], "Pembayaran diterima ✅ Terima kasih, Fajar!") || !strings.Contains(e.sender.sent[0], "MZ-TEST-PAID") || !strings.Contains(e.sender.sent[0], "Rp 150.000") {
 		t.Fatalf("paid notice: %v", e.sender.sent)
 	}
 	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil || len(e.sender.sent) != 1 {
@@ -92,7 +92,7 @@ func TestBotRemindsPendingDepositOnce(t *testing.T) {
 		t.Fatalf("DP reminder: n=%d err=%v sent=%d", n, err, len(e.sender.sent))
 	}
 	msg := e.sender.sent[0]
-	if !strings.Contains(msg, "Pengingat DP ⏳") || !strings.Contains(msg, "DP *Rp100.000*") || !strings.Contains(msg, "sampai jam *09.20* WIB") || !strings.Contains(msg, "bayar=dp-simulasi") {
+	if !strings.Contains(msg, "Pengingat DP ⏳") || !strings.Contains(msg, "DP *Rp 100.000*") || !strings.Contains(msg, "sampai jam *09.20* WIB") || !strings.Contains(msg, "bayar=dp-simulasi") {
 		t.Fatalf("reminder text: %s", msg)
 	}
 	if n, err := e.engine.RemindDeposits(e.ctx, e.tx); err != nil || n != 0 || len(e.sender.sent) != 1 {

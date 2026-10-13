@@ -29,7 +29,7 @@ func OrderPaidMessage(origin, orderNumber, customerName, accessToken string, tot
 		"Your order is being prepared. Check its status and tracking number here:\n" + origin + "/shop/order/" + accessToken
 }
 
-// FormatRupiah is formatRupiah: "Rp1.250.000", rounded to the rupiah.
+// FormatRupiah is formatRupiah: "Rp 1.250.000", rounded to the rupiah.
 func FormatRupiah(value float64) string {
 	n := jsmath.Round(value)
 	sign := ""
@@ -44,5 +44,5 @@ func FormatRupiah(value float64) string {
 		}
 		b.WriteRune(c)
 	}
-	return sign + "Rp" + b.String()
+	return sign + "Rp " + b.String()
 }

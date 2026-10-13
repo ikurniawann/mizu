@@ -42,7 +42,7 @@ describe("roundToStep", () => {
 });
 
 describe("applyChannelMarkup", () => {
-  it("markup 20% dibulatkan ke atas per Rp1.000 → harga tidak keriting", () => {
+  it("markup 20% dibulatkan ke atas per Rp 1.000 → harga tidak keriting", () => {
     expect(applyChannelMarkup(25000, gofood)).toBe(30000);
     expect(applyChannelMarkup(18000, gofood)).toBe(22000);
     expect(applyChannelMarkup(15000, gofood)).toBe(18000);
@@ -91,7 +91,7 @@ describe("util tampilan", () => {
     expect(markupPercentOf(25000, 30000)).toBe(20);
     expect(markupPercentOf(18000, 22000)).toBe(22.2);
     expect(markupPercentOf(0, 1000)).toBeNull();
-    expect(roundingLabel(1000, "up")).toBe("Kelipatan Rp1.000 ke atas");
+    expect(roundingLabel(1000, "up")).toBe("Kelipatan Rp 1.000 ke atas");
     expect(roundingLabel(1, "up")).toBe("Tanpa pembulatan");
   });
 });

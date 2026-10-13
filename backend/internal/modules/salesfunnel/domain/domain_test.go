@@ -352,11 +352,11 @@ func TestQuotationWaMessage(t *testing.T) {
 		"",
 		"Halo Budi, berikut ringkasan penawaran untuk *Gathering Akhir Tahun* (PT Maju):",
 		"",
-		"• Paket Makan — 50 pax @ Rp20.000 = *Rp1.000.000*",
+		"• Paket Makan — 50 pax @ Rp 20.000 = *Rp 1.000.000*",
 		"",
-		"Subtotal: Rp1.000.000",
-		"PPN 11%: Rp110.000",
-		"*TOTAL: Rp1.110.000*",
+		"Subtotal: Rp 1.000.000",
+		"PPN 11%: Rp 110.000",
+		"*TOTAL: Rp 1.110.000*",
 		"",
 		"Tanggal acara: Sabtu, 7 November 2026",
 		"",
@@ -426,7 +426,7 @@ func TestMergeTimeline(t *testing.T) {
 		WaMessages: []TimelineWa{{ID: "w1", Direction: "inbound", Body: &body, Status: &read, CreatedAt: "2026-09-09T01:00:00Z"}},
 	}, 100)
 	eq(t, keys(events), []string{"stage:s1", "quotation:q1", "task:t1", "wa:w1"})
-	if !strings.Contains(events[1].Get("title").(string), "Rp1.500.000") {
+	if !strings.Contains(events[1].Get("title").(string), "Rp 1.500.000") {
 		t.Fatal("quotation title")
 	}
 	eq(t, events[3].Get("title"), "WA masuk")
@@ -518,8 +518,8 @@ func TestValidateCustomValues(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
-	eq(t, FormatRupiah(1_250_000.4), "Rp1.250.000")
-	eq(t, FormatRupiah(-1500), "-Rp1.500")
+	eq(t, FormatRupiah(1_250_000.4), "Rp 1.250.000")
+	eq(t, FormatRupiah(-1500), "-Rp 1.500")
 	eq(t, FormatNumber(1234.5678, 3), "1.234,568")
 	eq(t, FormatDateLong("2026-10-04", "-"), "Minggu, 4 Oktober 2026")
 	eq(t, FormatDateLong("", "x"), "x")

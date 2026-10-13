@@ -216,14 +216,14 @@ func BuildDiscountReason(in DiscountReasonInput) string {
 
 /* ── formatting (lib/format.ts, queue-number.ts) ─────────────────────── */
 
-// FormatRupiah is formatRupiah: "Rp1.250.000", "-Rp5", rounded to rupiah.
+// FormatRupiah is formatRupiah: "Rp 1.250.000", "-Rp 5", rounded to rupiah.
 func FormatRupiah(v float64) string {
 	n := RoundHalfUp(ToNumber(v, 0))
 	sign := ""
 	if n < 0 {
 		sign = "-"
 	}
-	return sign + "Rp" + groupThousands(fmt.Sprintf("%.0f", math.Abs(n)))
+	return sign + "Rp " + groupThousands(fmt.Sprintf("%.0f", math.Abs(n)))
 }
 
 func groupThousands(digits string) string {

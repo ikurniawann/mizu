@@ -29,7 +29,7 @@ func TestMetaMenusAndTemplates(t *testing.T) {
 	// Long or many options become a list with the label in title and description.
 	long := []Option{}
 	for i := range 8 {
-		long = append(long, Option{ID: "k:" + string(rune('1'+i)), Title: "Balinese Massage · 60 menit — Rp185.000", Description: "Balinese Massage · 60 menit — Rp185.000"})
+		long = append(long, Option{ID: "k:" + string(rune('1'+i)), Title: "Balinese Massage · 60 menit — Rp 185.000", Description: "Balinese Massage · 60 menit — Rp 185.000"})
 	}
 	c.DispatchMenu(ctx, tx, phone, "Pilih treatment:", "", long, "fallback")
 	req = meta.requests[len(meta.requests)-1]

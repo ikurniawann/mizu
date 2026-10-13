@@ -189,5 +189,5 @@ func FormatRupiah(v float64) string {
 		}
 		b.WriteRune(c)
 	}
-	return sign + "Rp" + b.String()
+	return sign + "Rp " + b.String()
 }

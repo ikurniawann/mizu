@@ -307,7 +307,7 @@ func NextSequentialCode(prefix, lastCode string, pad int) string {
 	return fmt.Sprintf("%s-%0*d", prefix, pad, seq)
 }
 
-// FormatRupiah is formatRupiah: "Rp1.234.567" (id-ID grouping, rounded).
+// FormatRupiah is formatRupiah: "Rp 1.234.567" (id-ID grouping, rounded).
 func FormatRupiah(v float64) string {
 	n := math.Floor(v + 0.5)
 	sign := ""
@@ -322,7 +322,7 @@ func FormatRupiah(v float64) string {
 		}
 		b.WriteRune(c)
 	}
-	return sign + "Rp" + b.String()
+	return sign + "Rp " + b.String()
 }
 
 /* ── BOM costing (lib/purchasing/bom-cost.ts) ───────────────────────── */

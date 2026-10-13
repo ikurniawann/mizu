@@ -129,7 +129,7 @@ func TestSelfService(t *testing.T) {
 	if d["latest_payslip"].(map[string]any)["net_salary"] != 5250000.0 || len(d["week_schedule"].([]any)) != 7 || d["kpi"] != nil {
 		t.Fatalf("beranda = %s", home.raw)
 	}
-	if req := d["recent_requests"].([]any)[0].(map[string]any); req["detail"] != "Rp1.500.000" {
+	if req := d["recent_requests"].([]any)[0].(map[string]any); req["detail"] != "Rp 1.500.000" {
 		t.Fatalf("recent requests = %v", d["recent_requests"])
 	}
 	team := h.do(&boss, "GET", "/api/hris/me/team", nil)

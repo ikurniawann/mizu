@@ -207,7 +207,7 @@ func TestBotBooksTwoGuestsByMenu(t *testing.T) {
 	r := e.start()
 	e.wants(r, "orang") // people question (single outlet auto-picked)
 	r = e.say("2")
-	e.wants(r, "Reflexology", "Rp150.000")
+	e.wants(r, "Reflexology", "Rp 150.000")
 	r = e.say("1")
 	e.wants(r, "Hari ini", "Besok")
 	r = e.say("2") // tomorrow
@@ -220,7 +220,7 @@ func TestBotBooksTwoGuestsByMenu(t *testing.T) {
 	// Groups are assigned by Mizu (no therapist question); the WhatsApp
 	// profile name fills the name step, so the summary follows directly.
 	r = e.say("1")
-	e.wants(r, "dipilihkan oleh Mizu", "Fajar Bot", "2 orang", "Rp300.000", "Balas *ya*")
+	e.wants(r, "dipilihkan oleh Mizu", "Fajar Bot", "2 orang", "Rp 300.000", "Balas *ya*")
 	r = e.say("1")
 	// Online payment is off in this test, so no payment question is asked.
 	if strings.Contains(r, "Bayar online") {
@@ -399,7 +399,7 @@ func TestBotStaggersGroupWhenNoCommonSlot(t *testing.T) {
 	r := e.say("besok")
 	e.wants(r, "bergantian", "10.00 (2 orang) & 11.00 (1 orang)")
 	r = e.say("1")
-	e.wants(r, "bergantian", "(jam 10.00)", "(jam 11.00)", "Rp450.000")
+	e.wants(r, "bergantian", "(jam 10.00)", "(jam 11.00)", "Rp 450.000")
 	r = e.say("ya")
 	e.wants(r, "Kode booking", "jam 10.00", "jam 11.00")
 	var at10, at11 int
@@ -617,7 +617,7 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 	r = e.say("jam buka sampai jam berapa")
 	e.wants(r, "setiap hari 10.00–20.00 WIB")
 	r = e.say("harga reflexology berapa?")
-	e.wants(r, "Daftar harga", "Reflexology · 45 menit — Rp150.000")
+	e.wants(r, "Daftar harga", "Reflexology · 45 menit — Rp 150.000")
 	r = e.say("bisa bayar pakai qris?")
 	e.wants(r, "di outlet setelah treatment")
 	r = e.say("kalau mau ubah jadwal gimana")
@@ -798,9 +798,9 @@ func TestBotDepositFlow(t *testing.T) {
 	e.say("1")
 	e.say("besok jam 10 pagi")
 	r := e.say("0")
-	e.wants(r, "ringkasan", "Booking fee (DP): *Rp100.000*", "Sisa: *Rp50.000* dibayar di outlet")
+	e.wants(r, "ringkasan", "Booking fee (DP): *Rp 100.000*", "Sisa: *Rp 50.000* dibayar di outlet")
 	r = e.say("ya")
-	e.wants(r, "Kode booking", "Jadwal dikunci setelah DP *Rp100.000* dibayar", "bayar=dp-simulasi", "Sisa *Rp50.000* dibayar di outlet")
+	e.wants(r, "Kode booking", "Jadwal dikunci setelah DP *Rp 100.000* dibayar", "bayar=dp-simulasi", "Sisa *Rp 50.000* dibayar di outlet")
 	if strings.Contains(r, "Mau bayar bagaimana?") {
 		t.Fatalf("no payment menu with a deposit:\n%s", r)
 	}
@@ -814,7 +814,7 @@ func TestBotDepositFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 	r = e.say("sudah bayar")
-	e.wants(r, "DP untuk booking *MZ-", "sudah kami terima ✅", "Sisa *Rp50.000*")
+	e.wants(r, "DP untuk booking *MZ-", "sudah kami terima ✅", "Sisa *Rp 50.000*")
 }
 
 // e2Enabled reports whether the deposit policy is active in this run

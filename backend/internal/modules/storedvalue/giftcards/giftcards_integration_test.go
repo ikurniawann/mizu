@@ -458,7 +458,7 @@ func TestPromoGiftCardPatchAdjustReload(t *testing.T) {
 		t.Fatalf("reload ledger: %q", ref)
 	}
 	e.expect(&e.promo, "POST", path+"/reload", map[string]any{"amount": 99_999_999, "payment_method": "cash"}, 400,
-		`{"success":false,"error":"Saldo setelah reload melebihi plafon Rp100.000.000"}`)
+		`{"success":false,"error":"Saldo setelah reload melebihi plafon Rp 100.000.000"}`)
 }
 
 func TestPromoMemberLookupAndConfig(t *testing.T) {
@@ -514,7 +514,7 @@ func TestPrepareGiftCardSale(t *testing.T) {
 	}
 	e.settings[ConfigKey] = `{"presets":[50000,100000],"allow_custom":false}`
 	plan, _ = e.svc.PrepareGiftCardSale(e.ctx, e.tx, []SaleLine{{ProductID: gift, UnitPrice: 75000}})
-	if plan.OK || plan.Reason != "Nominal gift card harus salah satu dari: Rp50.000, Rp100.000" {
+	if plan.OK || plan.Reason != "Nominal gift card harus salah satu dari: Rp 50.000, Rp 100.000" {
 		t.Fatalf("preset rule: %+v", plan)
 	}
 	plan, _ = e.svc.PrepareGiftCardSale(e.ctx, e.tx, []SaleLine{{ProductID: gift, UnitPrice: 50000, Quantity: 21}})

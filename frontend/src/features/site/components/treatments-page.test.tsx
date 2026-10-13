@@ -24,7 +24,7 @@ describe("TreatmentsPage", () => {
     const html = renderToStaticMarkup(<TreatmentsPage guide={guide} outlets={{ ok: true, data: OUTLETS }} selected={OUTLETS[0]} treatments={{ ok: true, data: MENU }} />);
     expect(html).toContain("Reflexology");
     expect(html).toContain("Refleksi Kaki");
-    expect(html).toMatch(/Rp150\.000/);
+    expect(html).toMatch(/Rp 150\.000/);
     expect(html).toContain('href="/treatments?outlet=b2"');
     expect(html).toContain('href="/booking/spa?outlet=b1&amp;treatment=t1"');
     expect(html).toContain("10:00 – 22:00");

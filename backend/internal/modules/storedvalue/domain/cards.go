@@ -90,7 +90,7 @@ func RefundCompletedMessage(name, phone *string, amount float64) string {
 	} else if phone != nil && *phone != "" {
 		who = *phone
 	}
-	return "Refund " + who + " selesai — " + FormatRupiah(amount) + " dikembalikan, saldo member kini Rp0"
+	return "Refund " + who + " selesai — " + FormatRupiah(amount) + " dikembalikan, saldo member kini Rp 0"
 }
 
 var nonAlnum = regexp.MustCompile(`[^a-zA-Z0-9]`)

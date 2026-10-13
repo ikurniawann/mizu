@@ -66,7 +66,7 @@ func TestQuotations(t *testing.T) {
 	r = e.do(&s, "POST", "/api/sales-funnel/quotations/"+qid+"/send-wa", nil)
 	e.expect(r, 200, "Quotation terkirim ke Budi")
 	if !strings.HasPrefix(e.waSent[0]["message"], "*PENAWARAN "+number+"*\n") ||
-		!strings.Contains(e.waSent[0]["message"], "• Paket Makan — 50 pax @ Rp20.000 = *Rp1.000.000*") {
+		!strings.Contains(e.waSent[0]["message"], "• Paket Makan — 50 pax @ Rp 20.000 = *Rp 1.000.000*") {
 		t.Fatalf("wa %q", e.waSent[0]["message"])
 	}
 	if e.scalar(`SELECT status FROM crm.crm_sales_quotations WHERE id = $1`, qid) != "terkirim" {

@@ -193,7 +193,7 @@ describe("awardCrmXpForPosOrder", () => {
       reference_table: "pos_orders",
       reference_id: "order-uuid-1234",
       idempotency_key: "pos:order:order-uuid-1234:order_amount",
-      description: "XP transaksi POS — order #A-001 (Rp25.000)",
+      description: "XP transaksi POS — order #A-001 (Rp 25.000)",
     });
 
     const [profile] = tables.crm_member_profiles;
@@ -271,7 +271,7 @@ describe("awardCrmXpForSplitPayment", () => {
       source_type: "split_payment",
       reference_table: "pos_order_splits",
       idempotency_key: "pos:split:split-1:order_amount",
-      description: "XP split payment POS — order #A-001 (Rp5.000)",
+      description: "XP split payment POS — order #A-001 (Rp 5.000)",
     });
   });
 });
@@ -283,7 +283,7 @@ describe("awardCrmXpForTopup", () => {
     expect(result).toMatchObject({ status: "posted", xpAwarded: 5 });
     expect(tables.crm_xp_ledger[0]).toMatchObject({
       idempotency_key: "pos:topup:tx1",
-      description: "XP topup ARK — Rp55.000",
+      description: "XP topup ARK — Rp 55.000",
     });
   });
 });

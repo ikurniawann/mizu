@@ -114,13 +114,13 @@ func TestReservationRules(t *testing.T) {
 		!strings.Contains(ValidateStayDates("10-09-2026", "2026-09-12"), "Format") {
 		t.Fatal("stay dates")
 	}
-	if got := FormatRupiah(1_000_000); got != "Rp1.000.000" {
+	if got := FormatRupiah(1_000_000); got != "Rp 1.000.000" {
 		t.Fatalf("rupiah %q", got)
 	}
-	if got := FormatRupiah(-1500.5); got != "-Rp1.500" {
+	if got := FormatRupiah(-1500.5); got != "-Rp 1.500" {
 		t.Fatalf("negative rupiah %q", got)
 	}
-	if got := ReservationSummary("RSV-ABC123", "Budi", 2, 1, 4_700_000); got != "RSV-ABC123 — Budi, 1 kamar × 2 malam, total Rp4.700.000" {
+	if got := ReservationSummary("RSV-ABC123", "Budi", 2, 1, 4_700_000); got != "RSV-ABC123 — Budi, 1 kamar × 2 malam, total Rp 4.700.000" {
 		t.Fatalf("summary %q", got)
 	}
 }

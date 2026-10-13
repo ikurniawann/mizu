@@ -212,7 +212,7 @@ describe("add-on (grup modifier POS) di katalog GoFood", () => {
     expect(payload.menus[0].menu_items[0].variant_category_external_ids).toEqual([variantCategoryId("p-espresso"), "mg:g-shot"]);
   });
 
-  it("harga add-on ikut markup GoFood (+20%, bulat Rp1.000 ke atas)", () => {
+  it("harga add-on ikut markup GoFood (+20%, bulat Rp 1.000 ke atas)", () => {
     const rule = { code: "gofood", name: "GoFood", markupPercent: 20, roundingStep: 1000 as const, roundingMode: "up" as const, isActive: true };
     const { payload } = buildGobizCatalog(priceCatalogForChannel(products, rule, new Map()), { appUrl, requestId: "r" });
     expect(payload.variant_categories.map((c) => c.variants[0].price)).toEqual([12000, 6000]);

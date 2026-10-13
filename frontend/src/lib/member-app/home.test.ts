@@ -28,7 +28,7 @@ describe("notificationKind", () => {
 describe("promoLabel", () => {
   it("formats percent and rupiah discounts", () => {
     expect(promoLabel("percent", 10)).toBe("10% OFF");
-    expect(promoLabel("fixed", 100000)).toBe("Rp100.000 OFF");
+    expect(promoLabel("fixed", 100000)).toBe("Rp 100.000 OFF");
   });
 });
 

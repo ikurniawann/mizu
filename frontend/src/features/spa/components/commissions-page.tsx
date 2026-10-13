@@ -245,7 +245,7 @@ function RulesTab({ outlets }: { outlets: Outlet[] }) {
         ) : rules.error ? (
           <TableNote tone="danger">{rules.error.message}</TableNote>
         ) : rows.length === 0 ? (
-          <TableNote>Belum ada aturan komisi. Tanpa aturan, komisi item = Rp0.</TableNote>
+          <TableNote>Belum ada aturan komisi. Tanpa aturan, komisi item = Rp 0.</TableNote>
         ) : (
           <Table>
             <TableHeader>

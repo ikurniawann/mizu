@@ -66,7 +66,7 @@ describe("canCharge — guard prepaid", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.reason).toContain("top-up");
-      expect(r.reason).toContain("saldo Rp40.000");
+      expect(r.reason).toContain("saldo Rp 40.000");
     }
   });
 
@@ -95,7 +95,7 @@ describe("canCharge — guard postpaid credit limit", () => {
     });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe(
-      "Melewati plafon tagihan Rp500.000 — silakan bayar parsial di kasir"
+      "Melewati plafon tagihan Rp 500.000 — silakan bayar parsial di kasir"
     );
   });
 

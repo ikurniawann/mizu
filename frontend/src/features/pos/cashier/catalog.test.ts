@@ -172,8 +172,8 @@ describe("cart lines", () => {
   });
 
   it("gift card lines are unique per nominal", () => {
-    const line = giftCardLine(product({ name: "Gift" }), { nominal: 50_000, quantity: 2 }, (v) => `Rp${v}`);
-    expect(line).toMatchObject({ id: "p1-50000", name: "Gift Rp50000", price: 50_000, quantity: 2 });
+    const line = giftCardLine(product({ name: "Gift" }), { nominal: 50_000, quantity: 2 }, (v) => `Rp ${v}`);
+    expect(line).toMatchObject({ id: "p1-50000", name: "Gift Rp 50000", price: 50_000, quantity: 2 });
   });
 
   it("merch SKU lines use the variant id and price override", () => {

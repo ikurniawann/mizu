@@ -59,10 +59,10 @@ func TestQuotationPDFLayout(t *testing.T) {
 	inOrder(t, text, "PENAWARAN HARGA", "Cabang Dago", "QUOTATION QT-2610-0001",
 		"Kepada", "PT Maju — up. Budi (HR)", "Tanggal", "5 Oktober 2026",
 		"Acara", "Gathering Akhir Tahun (Gathering)", "Tanggal Acara / Berlaku s.d.", "1 Desember 2026 / —",
-		"DESKRIPSI", "QTY", "HARGA", "JUMLAH", "Paket makan siang nomor 1", "1,5 pax", "Rp20.000", "Rp30.000",
-		"Paket makan siang nomor 60", "Sewa venue", "1", "Rp1.000.000",
-		"Subtotal", "Rp2.000.000", "Diskon 10%", "- Rp200.000", "PPN 11%", "Rp198.000", "TOTAL", "Rp1.998.000",
-		"TERMIN PEMBAYARAN", "DP (33,33%)", "Rp665.933", "Pelunasan (66,67%) — jatuh tempo 1 Desember 2026", "Rp1.332.067",
+		"DESKRIPSI", "QTY", "HARGA", "JUMLAH", "Paket makan siang nomor 1", "1,5 pax", "Rp 20.000", "Rp 30.000",
+		"Paket makan siang nomor 60", "Sewa venue", "1", "Rp 1.000.000",
+		"Subtotal", "Rp 2.000.000", "Diskon 10%", "- Rp 200.000", "PPN 11%", "Rp 198.000", "TOTAL", "Rp 1.998.000",
+		"TERMIN PEMBAYARAN", "DP (33,33%)", "Rp 665.933", "Pelunasan (66,67%) — jatuh tempo 1 Desember 2026", "Rp 1.332.067",
 		"CATATAN", "Harga termasuk sound system", "Hormat kami,", "Cabang Dago",
 		"Dokumen ini dibuat otomatis oleh sistem dan sah tanpa tanda tangan basah.")
 	if strings.Contains(text, "Sewa venue pax") {
@@ -80,16 +80,16 @@ func TestInvoicePDFLayout(t *testing.T) {
 	text, _ := renderText(t, buildInvoicePDF(inv))
 	inOrder(t, text, "PT Nuhabit", "INVOICE INV-2610-0007", "Ditagihkan kepada", "SD Harapan — up. Ibu Sari",
 		"Tanggal Invoice", "5 Oktober 2026", "Field trip (Field Trip)", "Tanggal Acara / Jatuh Tempo", "— / 20 Oktober 2026",
-		"KETERANGAN", "JUMLAH", "DP 50% (50% dari nilai kesepakatan) — sesuai QT-2610-0001", "Rp5.550.000",
-		"DPP", "Rp5.000.000", "PPN 11%", "Rp550.000", "TOTAL TAGIHAN", "Rp5.550.000",
-		"Sudah dibayar", "Rp6.000.000", "SISA TAGIHAN", "Rp0", "Hormat kami,", "Rina")
+		"KETERANGAN", "JUMLAH", "DP 50% (50% dari nilai kesepakatan) — sesuai QT-2610-0001", "Rp 5.550.000",
+		"DPP", "Rp 5.000.000", "PPN 11%", "Rp 550.000", "TOTAL TAGIHAN", "Rp 5.550.000",
+		"Sudah dibayar", "Rp 6.000.000", "SISA TAGIHAN", "Rp 0", "Hormat kami,", "Rina")
 	if strings.Contains(text, "CATATAN") {
 		t.Fatal("no note, no notes block")
 	}
 
 	inv.UsePPN, inv.Paid, inv.TermPercent, inv.QuoteNumber, inv.OwnerName, inv.BranchName = false, 0, nil, nil, nil, nil
 	text, _ = renderText(t, buildInvoicePDF(inv))
-	inOrder(t, text, "DP 50% Rp5.550.000", "TOTAL TAGIHAN", "Tim Sales")
+	inOrder(t, text, "DP 50% Rp 5.550.000", "TOTAL TAGIHAN", "Tim Sales")
 	for _, absent := range []string{"DPP", "Sudah dibayar", "kesepakatan", "sesuai"} {
 		if strings.Contains(text, absent) {
 			t.Fatalf("%q printed: %s", absent, text)

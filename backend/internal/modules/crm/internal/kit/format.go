@@ -9,7 +9,7 @@ import (
 // JSRound is Math.round: halves round toward +Infinity.
 func JSRound(v float64) float64 { return math.Floor(v + 0.5) }
 
-// FormatRupiah mirrors formatRupiah in lib/format.ts ("Rp1.234.567", id-ID
+// FormatRupiah mirrors formatRupiah in lib/format.ts ("Rp 1.234.567", id-ID
 // grouping, rounded to whole rupiah).
 func FormatRupiah(v float64) string {
 	n := int64(JSRound(v))
@@ -18,7 +18,7 @@ func FormatRupiah(v float64) string {
 		sign = "-"
 		n = -n
 	}
-	return sign + "Rp" + GroupThousands(n)
+	return sign + "Rp " + GroupThousands(n)
 }
 
 // GroupThousands formats n with "." thousands separators (id-ID).

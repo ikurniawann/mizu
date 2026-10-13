@@ -60,7 +60,7 @@ describe("mergeRecentRequests", () => {
     }));
     const merged = mergeRecentRequests(leaves, overtime, loans);
     expect(merged.map((r) => r.id)).toEqual(["p7", "p6", "o5", "o4", "l3", "l2"]);
-    expect(merged[0].detail).toBe("Rp1.500.000");
+    expect(merged[0].detail).toBe("Rp 1.500.000");
     expect(merged[2]).toMatchObject({ kind: "lembur", label: "Lembur 2026-10-03", detail: "17:00–19:30" });
   });
 });

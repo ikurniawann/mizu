@@ -219,7 +219,7 @@ func TestSummaryAndCellFormat(t *testing.T) {
 	if got := SummarizeRows(nil, cols, jkt); got != "Tidak ada data." {
 		t.Fatal(got)
 	}
-	if got := SummarizeRows([]Row{{"owner_name": "Ani", "sum_value": 5_000_000.0}}, cols, jkt); got != "• Ani — Total Nilai: Rp5.000.000" {
+	if got := SummarizeRows([]Row{{"owner_name": "Ani", "sum_value": 5_000_000.0}}, cols, jkt); got != "• Ani — Total Nilai: Rp 5.000.000" {
 		t.Fatal(got)
 	}
 	cases := []struct {

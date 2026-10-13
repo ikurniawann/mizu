@@ -149,7 +149,7 @@ func TestSessionNextStep(t *testing.T) {
 	if s.NextStep() != StepDone {
 		t.Fatal("done")
 	}
-	if Rupiah(185000) != "Rp185.000" || Rupiah(1250000) != "Rp1.250.000" {
+	if Rupiah(185000) != "Rp 185.000" || Rupiah(1250000) != "Rp 1.250.000" {
 		t.Fatal("rupiah")
 	}
 }

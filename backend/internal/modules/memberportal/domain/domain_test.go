@@ -345,11 +345,11 @@ func TestChallengeAndReviewRules(t *testing.T) {
 }
 
 func TestWalletRules(t *testing.T) {
-	if FormatRupiah(10000) != "Rp10.000" || FormatRupiah(-1500) != "-Rp1.500" || FormatRupiah(999) != "Rp999" {
+	if FormatRupiah(10000) != "Rp 10.000" || FormatRupiah(-1500) != "-Rp 1.500" || FormatRupiah(999) != "Rp 999" {
 		t.Fatal(FormatRupiah(10000))
 	}
-	if CheckFreeAmount(5000, 10000, 0) != "Minimal top-up Rp10.000" || CheckFreeAmount(10.5, 1, 0) != "Nominal top-up tidak valid" ||
-		CheckFreeAmount(20_000_000, 10000, 10_000_000) != "Maksimal top-up Rp10.000.000" || CheckFreeAmount(50000, 10000, 0) != "" {
+	if CheckFreeAmount(5000, 10000, 0) != "Minimal top-up Rp 10.000" || CheckFreeAmount(10.5, 1, 0) != "Nominal top-up tidak valid" ||
+		CheckFreeAmount(20_000_000, 10000, 10_000_000) != "Maksimal top-up Rp 10.000.000" || CheckFreeAmount(50000, 10000, 0) != "" {
 		t.Fatal("free amount")
 	}
 	if !reflect.DeepEqual(NormalizeTopupPresets(json.RawMessage(`[100000, "50000", 0, 100000]`)), []float64{50000, 100000}) {

@@ -29,7 +29,7 @@ func TestMoney(t *testing.T) {
 			t.Errorf("Thousands(%v) = %q want %q", v, got, want)
 		}
 	}
-	if Rupiah(1250000.4) != "Rp1.250.000" || Rupiah(-4999.5) != "-Rp4.999" || Rupiah(2.5) != "Rp3" {
+	if Rupiah(1250000.4) != "Rp 1.250.000" || Rupiah(-4999.5) != "-Rp 4.999" || Rupiah(2.5) != "Rp 3" {
 		t.Errorf("Rupiah: %q %q %q", Rupiah(1250000.4), Rupiah(-4999.5), Rupiah(2.5))
 	}
 	if RupiahSpaced(4500000) != "Rp 4.500.000" || RupiahSpaced(-5000) != "Rp -5.000" {
@@ -108,7 +108,7 @@ func TestDocument(t *testing.T) {
 		t.Fatalf("pages %d %v", n, err)
 	}
 	text := pdftotext(t, data)
-	for _, want := range []string{"PT Mizu Indonesia", "Rp 4.500.000", "empat juta lima ratus ribu rupiah", "Halaman 1 dari " + strconv.Itoa(n), "Rp1.080.000"} {
+	for _, want := range []string{"PT Mizu Indonesia", "Rp 4.500.000", "empat juta lima ratus ribu rupiah", "Halaman 1 dari " + strconv.Itoa(n), "Rp 1.080.000"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q", want)
 		}

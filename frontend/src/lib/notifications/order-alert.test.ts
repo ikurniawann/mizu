@@ -34,7 +34,7 @@ describe("buildOrderAlertMessage", () => {
         "• 2× Iced Latte (Regular, Extra Shot Espresso, Oat Milk)",
         "\nCatatan: less ice",
         "",
-        "Total Rp48.000 · Bayar di kasir (belum dibayar)",
+        "Total Rp 48.000 · Bayar di kasir (belum dibayar)",
       ].join("\n")
     );
   });

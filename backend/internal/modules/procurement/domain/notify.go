@@ -32,7 +32,7 @@ func sliceUTF16(s string, n int) string {
 }
 
 // formatRp is `Rp${Math.round(n).toLocaleString("id-ID")}`.
-func formatRp(n float64) string { return "Rp" + FormatNumberID(JSRound(n), 0) }
+func formatRp(n float64) string { return "Rp " + FormatNumberID(JSRound(n), 0) }
 
 // BuildPrMendesakMessage is buildPrMendesakMessage (lib/wa/notifications-messages).
 func BuildPrMendesakMessage(in UrgentPr) string {

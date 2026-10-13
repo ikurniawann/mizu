@@ -11,21 +11,21 @@ import {
 
 describe("formatRupiah", () => {
   it("PUEBI tanpa spasi, dibulatkan, negatif di depan", () => {
-    expect(formatRupiah(1250000)).toBe("Rp1.250.000");
-    expect(formatRupiah("1500.6")).toBe("Rp1.501");
-    expect(formatRupiah(-2000)).toBe("-Rp2.000");
-    expect(formatRupiah(null)).toBe("Rp0");
-    expect(formatRupiah("abc")).toBe("Rp0");
+    expect(formatRupiah(1250000)).toBe("Rp 1.250.000");
+    expect(formatRupiah("1500.6")).toBe("Rp 1.501");
+    expect(formatRupiah(-2000)).toBe("-Rp 2.000");
+    expect(formatRupiah(null)).toBe("Rp 0");
+    expect(formatRupiah("abc")).toBe("Rp 0");
   });
 });
 
 describe("formatRupiahCompact", () => {
   it("rb, jt, M dengan desimal koma", () => {
-    expect(formatRupiahCompact(950)).toBe("Rp950");
-    expect(formatRupiahCompact(165_000)).toBe("Rp165 rb");
-    expect(formatRupiahCompact(1_250_000)).toBe("Rp1,25 jt");
-    expect(formatRupiahCompact(2_500_000_000)).toBe("Rp2,5 M");
-    expect(formatRupiahCompact(-165_000)).toBe("-Rp165 rb");
+    expect(formatRupiahCompact(950)).toBe("Rp 950");
+    expect(formatRupiahCompact(165_000)).toBe("Rp 165 rb");
+    expect(formatRupiahCompact(1_250_000)).toBe("Rp 1,25 jt");
+    expect(formatRupiahCompact(2_500_000_000)).toBe("Rp 2,5 M");
+    expect(formatRupiahCompact(-165_000)).toBe("-Rp 165 rb");
   });
 });
 

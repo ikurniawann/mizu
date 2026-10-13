@@ -42,7 +42,7 @@ func TestTabsChargeAndVoid(t *testing.T) {
 	if out := charge(order, "FFFFFFFF", 1000); out.Status != 404 || out.Reason != "Gelang tidak terikat kunjungan aktif — daftar di loket dulu" {
 		t.Fatalf("unknown band = %+v", out)
 	}
-	if out := charge(order, uid, 150000); out.Status != 402 || out.Reason != "Melewati plafon tagihan Rp100.000 — silakan bayar parsial di kasir" {
+	if out := charge(order, uid, 150000); out.Status != 402 || out.Reason != "Melewati plafon tagihan Rp 100.000 — silakan bayar parsial di kasir" {
 		t.Fatalf("limit = %+v", out)
 	}
 	// Lower-case uid with separators normalizes to the stored one.
@@ -91,7 +91,7 @@ func TestTabsPrepaid(t *testing.T) {
 	mustExec(t, tx, `INSERT INTO ticketing.ticket_visit_charges (company_id, branch_id, visit_id, charge_type, direction, description, amount)
 		VALUES ($1, $2, $3, 'deposit', 'kredit', 'Deposit', 50000)`, venue.CompanyID, venue.BranchID, visit)
 	out, err := Tabs{}.Charge(ctx, tx, ports.TabCharge{OrderID: newOrder(t, tx, venue, nil), OrderNumber: "B-1", Amount: 50000.4, BandUID: uid, CompanyID: venue.CompanyID, BranchID: venue.BranchID})
-	if err != nil || out.Status != 402 || out.Reason != "Saldo tidak cukup (saldo Rp50.000) — silakan top-up dulu" {
+	if err != nil || out.Status != 402 || out.Reason != "Saldo tidak cukup (saldo Rp 50.000) — silakan top-up dulu" {
 		t.Fatalf("prepaid = %+v %v", out, err)
 	}
 }

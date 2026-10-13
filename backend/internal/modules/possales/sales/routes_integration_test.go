@@ -280,7 +280,7 @@ func TestQrisCreateAndStatus(t *testing.T) {
 		t.Fatalf("%v", out)
 	}
 	order := e.openBillOrder()
-	if out := e.call(true, "POST", "/api/pos/qris", map[string]any{"order_id": order["id"], "amount": 1000}, 409); !strings.HasPrefix(errorOf(out), "Total di layar (Rp1.000) tidak sama") {
+	if out := e.call(true, "POST", "/api/pos/qris", map[string]any{"order_id": order["id"], "amount": 1000}, 409); !strings.HasPrefix(errorOf(out), "Total di layar (Rp 1.000) tidak sama") {
 		t.Fatalf("%v", out)
 	}
 	qr := e.call(true, "POST", "/api/pos/qris", map[string]any{"order_id": order["id"]}, 200)["data"].(map[string]any)

@@ -83,7 +83,7 @@ func buildVoidBesarMessage(orderNumber string, total float64, reason, supervisor
 	return strings.Join([]string{
 		"🚨 *Void Bernilai Besar*",
 		"",
-		"Order " + orderNumber + " senilai *Rp" + localeID(domain.RoundHalfUp(total)) + "* di-void.",
+		"Order " + orderNumber + " senilai *Rp " + localeID(domain.RoundHalfUp(total)) + "* di-void.",
 		"Alasan: " + sliceUTF16(reason, 200),
 		"Disetujui: " + supervisor,
 		"",
@@ -99,7 +99,7 @@ func buildGiftCardSoldMessage(buyerName *string, cards []ports.IssuedGiftCard) s
 	}
 	lines := make([]string, len(cards))
 	for i, c := range cards {
-		lines[i] = "• Kode: *" + c.Code + "*\n  Saldo: Rp" + localeID(c.InitialValue) + "\n" +
+		lines[i] = "• Kode: *" + c.Code + "*\n  Saldo: Rp " + localeID(c.InitialValue) + "\n" +
 			"  Berlaku: " + formatGiftExpiry(c.ExpiresAt)
 	}
 	penutup := "\n\nSimpan kode ini baik-baik."

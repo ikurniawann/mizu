@@ -41,7 +41,7 @@ describe("MembershipPanel", () => {
     expect(pass.compareDocumentPosition(credits) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(pass).toHaveTextContent("4-Week Pass");
     expect(pass).toHaveTextContent("Most popular");
-    expect(pass).toHaveTextContent("Rp1.000.000");
+    expect(pass).toHaveTextContent("Rp 1.000.000");
     expect(pass).toHaveTextContent("Valid for 4 weeks");
     expect(pass).toHaveTextContent("Unlimited class bookings");
     expect(credits).toHaveTextContent("5 class credits");

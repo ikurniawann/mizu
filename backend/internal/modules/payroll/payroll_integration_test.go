@@ -588,7 +588,7 @@ func TestLoans(t *testing.T) {
 	e.exec(`INSERT INTO hris.employee_salary (employee_id, base_salary, effective_date) VALUES ($1, 5000000, '2026-01-01')`, worker)
 	wantErr(t, e.call(&e.hr, "POST", "/api/hris/loans", map[string]any{"employee_id": worker, "loan_type": "loan",
 		"principal_amount": 6000000, "tenor_months": 3}, 400),
-		"Cicilan Rp2.000.000/bulan melebihi batas 30% dari gaji pokok (maks Rp1.500.000)")
+		"Cicilan Rp 2.000.000/bulan melebihi batas 30% dari gaji pokok (maks Rp 1.500.000)")
 
 	// The employee files for themselves: interest forced to 0.
 	created := e.call(&e.staff, "POST", "/api/hris/loans", map[string]any{"employee_id": hrEmp, "loan_type": "kasbon",

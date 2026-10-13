@@ -93,7 +93,7 @@ func jsNumber(v any) (float64, bool) {
 	return f, !math.IsNaN(f) && !math.IsInf(f, 0)
 }
 
-// formatRupiah mirrors lib/format formatRupiah ("Rp50.000").
+// formatRupiah mirrors lib/format formatRupiah ("Rp 50.000").
 func formatRupiah(v float64) string {
 	n := int64(math.Floor(v + 0.5))
 	sign := ""
@@ -108,5 +108,5 @@ func formatRupiah(v float64) string {
 		}
 		b.WriteRune(c)
 	}
-	return sign + "Rp" + b.String()
+	return sign + "Rp " + b.String()
 }

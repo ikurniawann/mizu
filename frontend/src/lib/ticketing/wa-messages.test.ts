@@ -23,14 +23,14 @@ describe("pesan WA booking", () => {
     const message = buildBookingPaidMessage(booking);
     expect(message).toContain("Kode booking: *BK-ABC234*");
     expect(message).toContain("Tanggal kunjungan: Minggu, 4 Oktober 2026");
-    expect(message).toContain("Total: Rp150.000\n\n");
+    expect(message).toContain("Total: Rp 150.000\n\n");
     expect(message).not.toContain("Potongan promo");
     expect(message).toContain("https://tiket.example/booking/status/tok");
   });
 
   test("dengan promo: rincian potongan dan jumlah dibayar", () => {
     const message = buildBookingPaidMessage({ ...booking, discount_amount: "25000" });
-    expect(message).toContain("Total: Rp150.000\nPotongan promo: -Rp25.000\nDibayar: Rp125.000");
+    expect(message).toContain("Total: Rp 150.000\nPotongan promo: -Rp 25.000\nDibayar: Rp 125.000");
   });
 
   test("hadiah: pemesan diberi tahu, penerima dapat e-tiket", () => {

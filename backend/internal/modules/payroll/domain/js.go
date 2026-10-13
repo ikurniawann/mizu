@@ -107,14 +107,14 @@ func groupThousands(n int64) string {
 	return b.String()
 }
 
-// FormatRupiah is formatRupiah in lib/format.ts: "Rp1.500.000".
+// FormatRupiah is formatRupiah in lib/format.ts: "Rp 1.500.000".
 func FormatRupiah(v float64) string {
 	n := Round(v)
 	sign := ""
 	if n < 0 {
 		sign = "-"
 	}
-	return sign + "Rp" + groupThousands(int64(math.Abs(n)))
+	return sign + "Rp " + groupThousands(int64(math.Abs(n)))
 }
 
 // EncodeURIComponent is the JS global of the same name.

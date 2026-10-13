@@ -76,7 +76,7 @@ describe("offer form", () => {
   it("ringkasan tabel, periode, dan lencana batas", () => {
     expect(summarizeOffer(rule())).toBe("min qty 5 → 3%");
     expect(summarizeOffer(rule({ volume_basis: "spend", volume_min: "100000", discount_type: "fixed", discount_value: "3000" })))
-      .toBe("min belanja 100.000 → Rp3.000");
+      .toBe("min belanja 100.000 → Rp 3.000");
     expect(summarizeOffer(rule({ offer_type: "bxgy", buy_qty: 2, get_qty: 1, get_mode: "specific_products" })))
       .toBe("Beli 2 gratis 1 (item spesifik)");
     expect(formatOfferWindow({ valid_from: "2026-10-01", valid_until: null })).toBe("2026-10-01 s/d …");

@@ -65,7 +65,7 @@ function RoomCard({ room, onOpenBooking }: { room: RoomBoardEntry; onOpenBooking
               <DoorOpen className="size-5 text-muted-foreground" /> {room.name}
             </p>
             <p className="text-xs text-muted-foreground">
-              {room.capacity} orang{room.price_idr > 0 ? ` · Rp${room.price_idr.toLocaleString("id-ID")}` : ""}
+              {room.capacity} orang{room.price_idr > 0 ? ` · Rp ${room.price_idr.toLocaleString("id-ID")}` : ""}
             </p>
           </div>
           <Badge variant={ROOM_STATE_VARIANT[room.state]}>{ROOM_STATE_LABEL[room.state]}</Badge>

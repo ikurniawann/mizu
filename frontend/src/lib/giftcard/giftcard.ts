@@ -240,7 +240,7 @@ export const GIFT_CARD_RELOAD_REJECT_MESSAGES: Record<GiftCardReloadRejectReason
   "nominal-tidak-valid": "Nominal reload harus rupiah bulat di atas 0",
   nonaktif: "Kartu nonaktif atau belum dibayar — tidak bisa di-reload",
   kedaluwarsa: "Kartu sudah kedaluwarsa — tidak bisa di-reload",
-  "melebihi-plafon": `Saldo setelah reload melebihi plafon Rp${MAX_GIFT_CARD_VALUE.toLocaleString("id-ID")}`,
+  "melebihi-plafon": `Saldo setelah reload melebihi plafon Rp ${MAX_GIFT_CARD_VALUE.toLocaleString("id-ID")}`,
 };
 
 export type GiftCardReloadResult =

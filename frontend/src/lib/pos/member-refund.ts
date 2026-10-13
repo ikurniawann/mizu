@@ -38,5 +38,5 @@ export function buildRefundWalletNotes(input: { approverName?: string | null; re
 /** Pure: pesan sukses untuk kasir. */
 export function refundCompletedMessage(input: { name?: string | null; phone?: string | null; amount: number }): string {
   const who = input.name || input.phone || "member";
-  return `Refund ${who} selesai — ${formatRupiah(input.amount)} dikembalikan, saldo member kini Rp0`;
+  return `Refund ${who} selesai — ${formatRupiah(input.amount)} dikembalikan, saldo member kini Rp 0`;
 }

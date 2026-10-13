@@ -227,7 +227,7 @@ func TestReservationLifecycle(t *testing.T) {
 	code := data["reservation_code"].(string)
 	// 2 rooms × 2.5m + 2 extra beds × 200k × 2 nights − 100k.
 	if data["nights"] != float64(2) || data["total"] != float64(5_700_000) ||
-		created.Body["message"] != code+" — Budi Santoso, 2 kamar × 2 malam, total Rp5.700.000" {
+		created.Body["message"] != code+" — Budi Santoso, 2 kamar × 2 malam, total Rp 5.700.000" {
 		t.Fatalf("create: %s", created.Raw)
 	}
 	if got := f.scalar(`SELECT string_agg(charge_type || ':' || direction || ':' || amount::int || ':' || description || ':' || created_by_name, '|' ORDER BY created_at, charge_type DESC)
@@ -286,13 +286,13 @@ func TestReservationLifecycle(t *testing.T) {
 		t.Fatal("paid_at not stamped")
 	}
 	paid := f.ok(f.call("POST", "/api/resort/reservations/"+id+"/charges", map[string]any{"charge_type": "pembayaran", "description": "DP transfer", "amount": 5_000_000, "payment_method": "transfer"}), 201)
-	if paid.Body["message"] != "Pembayaran Rp5.000.000 dicatat — sisa Rp700.000" ||
+	if paid.Body["message"] != "Pembayaran Rp 5.000.000 dicatat — sisa Rp 700.000" ||
 		!strings.Contains(paid.Raw, `"totals":{"charges":5800000,"payments":5100000,"balance":700000}`) ||
 		paid.data()["charge"].(map[string]any)["direction"] != "kredit" {
 		t.Fatalf("payment: %s", paid.Raw)
 	}
 	fee := f.ok(f.call("POST", "/api/resort/reservations/"+id+"/charges", map[string]any{"charge_type": "fnb", "description": "Makan malam", "amount": 300_000}), 201)
-	if fee.Body["message"] != "Biaya Makan malam ditambahkan — saldo Rp1.000.000" {
+	if fee.Body["message"] != "Biaya Makan malam ditambahkan — saldo Rp 1.000.000" {
 		t.Fatalf("fee: %s", fee.Raw)
 	}
 
@@ -317,7 +317,7 @@ func TestReservationLifecycle(t *testing.T) {
 
 	// Check-out with an open folio: refused, then forced with a note.
 	f.fail(f.call("POST", "/api/resort/reservations/"+id+"/status", map[string]any{"action": "check-out"}), 409,
-		"Folio masih bersaldo Rp1.000.000 — lunasi dulu atau centang lanjutkan dengan catatan")
+		"Folio masih bersaldo Rp 1.000.000 — lunasi dulu atau centang lanjutkan dengan catatan")
 	f.ok(f.call("POST", "/api/resort/reservations/"+id+"/status", map[string]any{"action": "check-out", "force": true, "reason": "Ditagih ke kantor"}), 200)
 	if got := f.scalar(`SELECT notes || '|' || status || '|' || (checked_out_at IS NOT NULL)::text FROM resort.reservations WHERE id = $1`, id); got != "Datang malam\nCheck-out dengan saldo terbuka (Sari): Ditagih ke kantor|check-out|true" {
 		t.Fatalf("forced check-out: %q", got)

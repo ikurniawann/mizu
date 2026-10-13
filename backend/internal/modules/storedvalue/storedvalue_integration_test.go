@@ -343,7 +343,7 @@ func TestCashierTopup(t *testing.T) {
 		t.Fatalf("amount required %s", raw)
 	}
 	code, _, raw = e.do(e.cashier, "POST", "/api/pos/topup", map[string]any{"customer_id": e.member.CustomerID, "amount": 5000, "payment_method": "cash"})
-	if code != 400 || raw != `{"success":false,"error":"Minimum top-up is Rp10.000"}` {
+	if code != 400 || raw != `{"success":false,"error":"Minimum top-up is Rp 10.000"}` {
 		t.Fatalf("minimum %s", raw)
 	}
 
@@ -437,7 +437,7 @@ func TestCashierTopup(t *testing.T) {
 	code, body, raw = e.do(e.admin, "POST", "/api/wallet/entries/"+id+"/refund", map[string]any{"method": "transfer", "reason": "member minta refund"})
 	expect(t, "refund", code, 201, raw)
 	ref := body["data"].(map[string]any)
-	if ref["amount"] != -50000.0 || ref["notes"] != "Refund top-up Rp50.000 via transfer (manual, QRIS tanpa refund API)" || e.balance() != 70000 {
+	if ref["amount"] != -50000.0 || ref["notes"] != "Refund top-up Rp 50.000 via transfer (manual, QRIS tanpa refund API)" || e.balance() != 70000 {
 		t.Fatalf("refund %s", raw)
 	}
 	code, body, raw = e.do(e.admin, "GET", "/api/wallet/payments/"+id, nil)
@@ -471,7 +471,7 @@ func TestMemberCardsAndRefunds(t *testing.T) {
 	}
 	code, _, raw = e.do(e.cashier, "POST", "/api/pos/member-cards/"+e.member.CustomerID+"/refund", map[string]any{"notes": "transfer BCA"})
 	expect(t, "refund request", code, 200, raw)
-	if !strings.Contains(raw, `"message":"Kartu `+uid+` dilepas & refund Rp67.350 untuk Go Test Member diajukan ke Finance"`) {
+	if !strings.Contains(raw, `"message":"Kartu `+uid+` dilepas & refund Rp 67.350 untuk Go Test Member diajukan ke Finance"`) {
 		t.Fatalf("refund request %s", raw)
 	}
 	code, _, raw = e.do(e.cashier, "POST", "/api/pos/member-cards/"+e.member.CustomerID+"/unlink", map[string]any{"reason": "lost"})
@@ -493,7 +493,7 @@ func TestMemberCardsAndRefunds(t *testing.T) {
 	}
 	code, body, raw = e.do(e.cashier, "POST", "/api/pos/member-refunds/"+requestID+"/complete", map[string]any{"supervisor_pin": "1234"})
 	expect(t, "complete", code, 200, raw)
-	if body["message"] != "Refund Go Test Member selesai — Rp67.350 dikembalikan, saldo member kini Rp0" || e.balance() != 0 {
+	if body["message"] != "Refund Go Test Member selesai — Rp 67.350 dikembalikan, saldo member kini Rp 0" || e.balance() != 0 {
 		t.Fatalf("complete %s", raw)
 	}
 	code, _, raw = e.do(e.cashier, "POST", "/api/pos/member-refunds/"+requestID+"/complete", map[string]any{"supervisor_pin": "1234"})

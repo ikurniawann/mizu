@@ -95,7 +95,7 @@ var ReloadMessages = map[string]string{
 	ReasonInvalidAmount: "Nominal reload harus rupiah bulat di atas 0",
 	ReasonInactive:      "Kartu nonaktif atau belum dibayar — tidak bisa di-reload",
 	ReasonExpired:       "Kartu sudah kedaluwarsa — tidak bisa di-reload",
-	ReasonOverCeiling:   "Saldo setelah reload melebihi plafon Rp" + LocaleID(MaxValue),
+	ReasonOverCeiling:   "Saldo setelah reload melebihi plafon Rp " + LocaleID(MaxValue),
 }
 
 // RedeemResult is GiftCardRedeemResult; Reason is set when OK is false.
@@ -299,7 +299,7 @@ func NominalRejection(c Config) string {
 	}
 	parts := make([]string, len(c.Presets))
 	for i, p := range c.Presets {
-		parts[i] = "Rp" + LocaleID(p)
+		parts[i] = "Rp " + LocaleID(p)
 	}
 	return "Nominal gift card harus salah satu dari: " + strings.Join(parts, ", ")
 }

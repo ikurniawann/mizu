@@ -24,7 +24,7 @@ describe("HomePage", () => {
     expect(html).toContain("Rest. Relax. Rejuvenate.");
     expect(html).toContain("Mizu Family Massage &amp; Reflexology");
     expect(html).toContain('href="/booking/spa"');
-    expect(html).toMatch(/Mulai Rp185\.000 di Mizu 1\.0/);
+    expect(html).toMatch(/Mulai Rp 185\.000 di Mizu 1\.0/);
     expect(html).toContain("Buy 1 Get 1 untuk usia 60+");
     expect(html).toContain('href="/booking/spa?outlet=mizu-westhoff"');
     // The signature ritual is the featured offer and links straight to it.

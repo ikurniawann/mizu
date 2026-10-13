@@ -377,7 +377,7 @@ func TestCardsAndRefunds(t *testing.T) {
 		t.Fatal("wallet notes")
 	}
 	ani, phone := "Ani", "0812"
-	if RefundCompletedMessage(&ani, nil, 67_350) != "Refund Ani selesai — Rp67.350 dikembalikan, saldo member kini Rp0" ||
+	if RefundCompletedMessage(&ani, nil, 67_350) != "Refund Ani selesai — Rp 67.350 dikembalikan, saldo member kini Rp 0" ||
 		!strings.Contains(RefundCompletedMessage(nil, &phone, 0), "Refund 0812 selesai") {
 		t.Fatal("completed message")
 	}
@@ -391,7 +391,7 @@ func TestReceiptsAndFormats(t *testing.T) {
 	if JamWib(at) != "4 Okt 2026, 10.05" || FormatWib(at) != "Min, 4 Okt, 10.05" || TanggalWib(at) != "4 Okt 2026" {
 		t.Fatal(JamWib(at), FormatWib(at))
 	}
-	if FormatRupiah(-1500) != "-Rp1.500" || FormatRupiah(1_250_000) != "Rp1.250.000" {
+	if FormatRupiah(-1500) != "-Rp 1.500" || FormatRupiah(1_250_000) != "Rp 1.250.000" {
 		t.Fatal("rupiah")
 	}
 	for raw, want := range map[string]string{"0812-3456-7890": "6281234567890", "+62 812 3456 7890": "6281234567890", "123": ""} {

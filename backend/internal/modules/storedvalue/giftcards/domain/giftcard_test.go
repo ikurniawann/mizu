@@ -159,7 +159,7 @@ func TestEvaluateReload(t *testing.T) {
 	if got := EvaluateReload(State{Status: "active", Balance: MaxValue - 1_000}, 0, 2_000, now); got.Reason != "melebihi-plafon" {
 		t.Errorf("ceiling: %+v", got)
 	}
-	if ReloadMessages[ReasonOverCeiling] != "Saldo setelah reload melebihi plafon Rp100.000.000" {
+	if ReloadMessages[ReasonOverCeiling] != "Saldo setelah reload melebihi plafon Rp 100.000.000" {
 		t.Errorf("ceiling message: %q", ReloadMessages[ReasonOverCeiling])
 	}
 }
@@ -228,7 +228,7 @@ func TestIsAllowedNominal(t *testing.T) {
 			t.Errorf("IsAllowedNominal(%+v, %v) = %v", tc.cfg, tc.nominal, got)
 		}
 	}
-	if got := NominalRejection(presetOnly); got != "Nominal gift card harus salah satu dari: Rp50.000, Rp100.000" {
+	if got := NominalRejection(presetOnly); got != "Nominal gift card harus salah satu dari: Rp 50.000, Rp 100.000" {
 		t.Errorf("NominalRejection = %q", got)
 	}
 }

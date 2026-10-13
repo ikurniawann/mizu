@@ -154,7 +154,7 @@ export function shouldStopQrisAutoRetry(attempts: number): boolean {
 // bukan checkout multi-stall) sebelumnya membuat order BARU muncul di DB
 // setelah pembayaran dikonfirmasi — kalau proses itu gagal (validasi,
 // sesi habis, tab ditutup), uang yang sudah diterima Xendit jadi orphan
-// tanpa jejak apapun (4 kasus, Rp77.500, hari ini). Fix: order dibuat
+// tanpa jejak apapun (4 kasus, Rp 77.500, hari ini). Fix: order dibuat
 // 'unpaid' DULU (mirror pola checkout multi-stall), baru QR diikat ke
 // order itu — kalau gagal SETELAH bayar, order tetap ada & bisa
 // diselesaikan manual dari Orders, bukan hilang.

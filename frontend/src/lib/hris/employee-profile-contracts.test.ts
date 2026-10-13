@@ -109,7 +109,7 @@ describe("contractActionMessage", () => {
         message: "Kontrak diakhiri",
         compensation_amount: 4500000,
       })
-    ).toBe("Kontrak diakhiri — uang kompensasi Rp4.500.000");
+    ).toBe("Kontrak diakhiri — uang kompensasi Rp 4.500.000");
   });
   it("tanpa kompensasi: pesan apa adanya", () => {
     expect(

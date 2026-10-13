@@ -50,7 +50,7 @@ func rupiah(v float64) string {
 		}
 		b.WriteRune(d)
 	}
-	return "Rp" + sign + b.String()
+	return "Rp " + sign + b.String()
 }
 
 func localPhone(phone string) string {

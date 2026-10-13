@@ -156,9 +156,9 @@ func TestQuotationAndInvoicePDF(t *testing.T) {
 
 	text := pdfOf(t, e.do(&s, "GET", target, nil), number+"-PT-Maju-Jaya.pdf")
 	inOrder(t, text, company, "QUOTATION "+number, "PT. Maju & Jaya — up. Budi (HRD)", "Gathering (Field Trip)",
-		"1 Desember 2026 / 15 November 2026", "Paket Makan", "50 pax", "Rp20.000", "Rp1.000.000", "Sewa venue",
-		"Subtotal", "Rp2.000.000", "Diskon 10%", "- Rp200.000", "PPN 11%", "Rp198.000", "TOTAL", "Rp1.998.000",
-		"DP (50%)", "Rp999.000", "Pelunasan (50%) — jatuh tempo 1 Desember 2026", "Rp999.000",
+		"1 Desember 2026 / 15 November 2026", "Paket Makan", "50 pax", "Rp 20.000", "Rp 1.000.000", "Sewa venue",
+		"Subtotal", "Rp 2.000.000", "Diskon 10%", "- Rp 200.000", "PPN 11%", "Rp 198.000", "TOTAL", "Rp 1.998.000",
+		"DP (50%)", "Rp 999.000", "Pelunasan (50%) — jatuh tempo 1 Desember 2026", "Rp 999.000",
 		"CATATAN", "Termasuk sound system", "Hormat kami,")
 
 	// Invoices: sales submit, finance and sales may download.
@@ -176,9 +176,9 @@ func TestQuotationAndInvoicePDF(t *testing.T) {
 	text = pdfOf(t, e.do(&fin, "GET", target, nil), invoiceNo+"-PT-Maju-Jaya.pdf")
 	inOrder(t, text, company, "INVOICE "+invoiceNo, "Ditagihkan kepada", "PT. Maju & Jaya — up. Budi (HRD)",
 		"Tanggal Acara / Jatuh Tempo", "1 Desember 2026 / 1 November 2026",
-		"DP 50% (50% dari nilai kesepakatan) — sesuai "+number, "Rp999.000",
-		"DPP", "Rp900.000", "PPN 11%", "Rp99.000", "TOTAL TAGIHAN", "Rp999.000",
-		"Sudah dibayar", "Rp400.000", "SISA TAGIHAN", "Rp599.000", "Hormat kami,")
+		"DP 50% (50% dari nilai kesepakatan) — sesuai "+number, "Rp 999.000",
+		"DPP", "Rp 900.000", "PPN 11%", "Rp 99.000", "TOTAL TAGIHAN", "Rp 999.000",
+		"Sudah dibayar", "Rp 400.000", "SISA TAGIHAN", "Rp 599.000", "Hormat kami,")
 	pdfOf(t, e.do(&s, "GET", target, nil), invoiceNo+"-PT-Maju-Jaya.pdf")
 }
 

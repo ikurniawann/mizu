@@ -441,7 +441,7 @@ func TestXenditWebhookSettlesOrder(t *testing.T) {
 	if got := f.scalar(`SELECT status FROM shop.stock_reservations WHERE order_id = $1`, id); got != "committed" {
 		t.Errorf("reservation = %s", got)
 	}
-	if len(f.wa.sent) != 1 || !strings.Contains(f.wa.sent[0], "Total: Rp112.000") || !strings.Contains(f.wa.sent[0], "https://app.example/shop/order/") {
+	if len(f.wa.sent) != 1 || !strings.Contains(f.wa.sent[0], "Total: Rp 112.000") || !strings.Contains(f.wa.sent[0], "https://app.example/shop/order/") {
 		t.Errorf("wa = %v", f.wa.sent)
 	}
 	if _, err := bus.Dispatch(f.ctx, f.tx); err != nil {

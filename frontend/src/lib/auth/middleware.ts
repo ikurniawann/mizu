@@ -60,6 +60,8 @@ const PUBLIC_AUTH_PREFIXES = [
   "/share",
   "/api/share",
   "/api/wa/inbound",
+  // Webhook Meta Cloud API (verifikasi hub.challenge & pesan masuk, ditandatangani HMAC).
+  "/api/wa/meta",
   "/api/crm/instagram/webhook",
   "/api/payments/xendit/webhook",
   "/booking",

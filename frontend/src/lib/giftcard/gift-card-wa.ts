@@ -7,7 +7,7 @@
 import { loadGatewayConfig, sendGatewayText } from "@/lib/whatsapp/gateway";
 import type { IssuedGiftCard } from "./giftcard-server";
 
-const formatRp = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
+const formatRp = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
 const formatExpiry = (iso: string | null): string =>
   iso

@@ -51,7 +51,7 @@ func TestTherapistPayrollTwiceAMonth(t *testing.T) {
 		t.Fatalf("pay settings = %v", cfg)
 	}
 
-	// A completed treatment (completed today, 8 Oct) with a paid booking earns 10% = Rp20.000.
+	// A completed treatment (completed today, 8 Oct) with a paid booking earns 10% = Rp 20.000.
 	done := func(therapistID, at string, paid bool) string {
 		b := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
 			"branch_id": branch, "booking_type": "walk_in", "customer_name": "Tamu Gaji", "therapist_id": therapistID,

@@ -123,7 +123,7 @@ export async function prepareGiftCardSale(
         reason: config.allow_custom
           ? "Nominal gift card tidak valid — isi rupiah bulat di atas 0"
           : `Nominal gift card harus salah satu dari: ${config.presets
-              .map((p) => `Rp${p.toLocaleString("id-ID")}`)
+              .map((p) => `Rp ${p.toLocaleString("id-ID")}`)
               .join(", ")}`,
       };
     }

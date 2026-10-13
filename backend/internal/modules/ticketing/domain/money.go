@@ -78,14 +78,14 @@ func FormatNumber(n float64) string {
 	return strconv.FormatFloat(n, 'f', -1, 64)
 }
 
-// FormatRupiah is formatRupiah: "Rp1.250.000", "-Rp5.000", rounded to rupiah.
+// FormatRupiah is formatRupiah: "Rp 1.250.000", "-Rp 5.000", rounded to rupiah.
 func FormatRupiah(value float64) string {
 	n := jsRound(value)
 	sign := ""
 	if n < 0 {
 		sign = "-"
 	}
-	return sign + "Rp" + groupThousands(strconv.FormatFloat(math.Abs(n), 'f', 0, 64))
+	return sign + "Rp " + groupThousands(strconv.FormatFloat(math.Abs(n), 'f', 0, 64))
 }
 
 // groupThousands inserts the id-ID thousands separator (".").

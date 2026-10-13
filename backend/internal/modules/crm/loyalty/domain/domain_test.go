@@ -144,7 +144,7 @@ func TestHumanizeLedgerDescription(t *testing.T) {
 		t.Fatal(got)
 	}
 	topup := LedgerRow{Description: sp("XP topup ARK untuk " + order), ReferenceTable: sp("pos_wallet_transactions"), ReferenceID: sp("tx"), Amount: "50000"}
-	if got := HumanizeLedgerDescription(topup, nil); got != "XP topup ARK — Rp50.000" {
+	if got := HumanizeLedgerDescription(topup, nil); got != "XP topup ARK — Rp 50.000" {
 		t.Fatal(got)
 	}
 	if got := HumanizeLedgerDescription(LedgerRow{Description: sp("Bonus " + order)}, nil); got != "Bonus 0b6f2c1e" {

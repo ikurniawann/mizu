@@ -106,7 +106,7 @@ describe("POST /api/public/booking/webhook/xendit", () => {
     expect(queryOne).toHaveBeenCalledTimes(1);
     expect(query.mock.calls[0][1]).toEqual([
       BOOKING_ID,
-      "Xendit melapor PAID dengan nominal Rp100.000 — kurang dari tagihan booking Rp125.000. Pembayaran TIDAK ditandai lunas; periksa dashboard Xendit.",
+      "Xendit melapor PAID dengan nominal Rp 100.000 — kurang dari tagihan booking Rp 125.000. Pembayaran TIDAK ditandai lunas; periksa dashboard Xendit.",
     ]);
     expect(sendBookingPaidWa).not.toHaveBeenCalled();
   });

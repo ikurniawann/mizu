@@ -109,7 +109,7 @@ describe("payment terms", () => {
     expect(validatePaymentForm(base, 500)).toBeNull();
     expect(validatePaymentForm({ ...base, amount: 0 }, 500)).toMatch(/Masukkan tanggal/);
     expect(validatePaymentForm({ ...base, amount: 600 }, 500)).toBe(
-      "Nominal pembayaran tidak boleh melebihi sisa tagihan (Rp500)"
+      "Nominal pembayaran tidak boleh melebihi sisa tagihan (Rp 500)"
     );
   });
 

@@ -249,11 +249,11 @@ export function ruleSpecificity(rule: Pick<CommissionRule, "treatment_id" | "var
 export const COMMISSION_RESOLUTION_TEXT =
   "Aturan paling spesifik menang: varian + outlet → varian → treatment + outlet → treatment → default + outlet → default. Persentase = harga × nilai ÷ 100; nominal tetap = nilai.";
 
-/** "10%" atau "Rp25.000" (tanpa import formatter supaya tetap murni). */
+/** "10%" atau "Rp 25.000" (tanpa import formatter supaya tetap murni). */
 export function commissionValueLabel(type: CommissionType | null | undefined, value: number | null | undefined): string {
   if (!type || value === null || value === undefined) return "-";
   if (type === "percent") return `${Number(value).toLocaleString("id-ID", { maximumFractionDigits: 2 })}%`;
-  return `Rp${Math.round(Number(value)).toLocaleString("id-ID")}`;
+  return `Rp ${Math.round(Number(value)).toLocaleString("id-ID")}`;
 }
 
 /** Perkiraan komisi untuk satu harga. */

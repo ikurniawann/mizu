@@ -371,7 +371,7 @@ func TestLoans(t *testing.T) {
 	if msg := ValidateLoanLimits(2_000_000, ptr(10_000_000.0), 30, 0, 1); msg != "" {
 		t.Fatal(msg)
 	}
-	if msg := ValidateLoanLimits(3_500_000, ptr(10_000_000.0), 30, 0, 1); msg != "Cicilan Rp3.500.000/bulan melebihi batas 30% dari gaji pokok (maks Rp3.000.000)" {
+	if msg := ValidateLoanLimits(3_500_000, ptr(10_000_000.0), 30, 0, 1); msg != "Cicilan Rp 3.500.000/bulan melebihi batas 30% dari gaji pokok (maks Rp 3.000.000)" {
 		t.Fatal(msg)
 	}
 	if msg := ValidateLoanLimits(1, ptr(10_000_000.0), 30, 1, 1); msg != "Karyawan sudah punya 1 pinjaman aktif (maks 1)" {
@@ -435,7 +435,7 @@ func TestAccessRules(t *testing.T) {
 }
 
 func TestJSHelpers(t *testing.T) {
-	if FormatRupiah(1_500_000) != "Rp1.500.000" || FormatRupiah(-999.5) != "-Rp999" || FormatRupiah(0) != "Rp0" {
+	if FormatRupiah(1_500_000) != "Rp 1.500.000" || FormatRupiah(-999.5) != "-Rp 999" || FormatRupiah(0) != "Rp 0" {
 		t.Fatal(FormatRupiah(1_500_000), FormatRupiah(-999.5))
 	}
 	if EncodeURIComponent("Halo Budi, slip → Gaji!") != "Halo%20Budi%2C%20slip%20%E2%86%92%20Gaji!" {

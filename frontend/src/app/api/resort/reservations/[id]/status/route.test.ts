@@ -59,7 +59,7 @@ describe("POST /api/resort/reservations/[id]/status", () => {
       .mockResolvedValueOnce({ rows: [{ direction: "debit", amount: "1500000" }, { direction: "kredit", amount: "500000" }] });
     const res = await call({ action: "check-out" });
     expect(res.status).toBe(409);
-    expect((await res.json()).error).toContain("Rp1.000.000");
+    expect((await res.json()).error).toContain("Rp 1.000.000");
   });
 
   it("konfirmasi sukses: status + paid_at, pesan ringkas", async () => {

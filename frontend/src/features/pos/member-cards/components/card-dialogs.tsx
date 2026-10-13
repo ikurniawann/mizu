@@ -153,7 +153,7 @@ export function RefundDialog({ member, busy, onClose, onSubmit }: DialogBase & {
         </p>
         <p>
           <strong>3.</strong> Setelah Finance mengembalikan uangnya, tandai <strong>Refund Completed</strong> (PIN supervisor) di
-          daftar permintaan; saldo member menjadi Rp0.
+          daftar permintaan; saldo member menjadi Rp 0.
         </p>
       </div>
       <div>
@@ -197,7 +197,7 @@ export function CompleteRefundDialog({ request, busy, onClose, onSubmit }: Dialo
       </div>
       <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
         Tandai hanya bila Finance sudah mengonfirmasi uang <strong>{formatRupiah(request.current_balance)}</strong>{" "}
-        dikembalikan ke member. Saldo ARK member akan menjadi <strong>Rp0</strong> dan tercatat sebagai transaksi refund. XP
+        dikembalikan ke member. Saldo ARK member akan menjadi <strong>Rp 0</strong> dan tercatat sebagai transaksi refund. XP
         tidak berubah.
       </p>
       <div>

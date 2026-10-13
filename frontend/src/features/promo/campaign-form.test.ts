@@ -59,8 +59,8 @@ describe("campaign form", () => {
   });
 
   it("teks tabel & CSV", () => {
-    expect(formatCampaignDiscount({ discount_type: "percent", value: "10", max_discount: "25000" })).toBe("10% (maks Rp25.000)");
-    expect(formatCampaignDiscount({ discount_type: "fixed", value: "15000", max_discount: null })).toBe("Rp15.000");
+    expect(formatCampaignDiscount({ discount_type: "percent", value: "10", max_discount: "25000" })).toBe("10% (maks Rp 25.000)");
+    expect(formatCampaignDiscount({ discount_type: "fixed", value: "15000", max_discount: null })).toBe("Rp 15.000");
     expect(formatCampaignWindow({ valid_from: null, valid_until: null })).toBe("Tanpa batas waktu");
     expect(codesCsv([{ code: "POS-A", usage_limit: 1, usage_count: 0, is_active: true }]))
       .toBe("code,usage_limit,usage_count,is_active\nPOS-A,1,0,1");

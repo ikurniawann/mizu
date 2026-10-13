@@ -86,7 +86,7 @@ func TestAssistantAttachment(t *testing.T) {
 	}
 
 	doc := pdfgen.New(pdfgen.Options{})
-	doc.Para("Faktur pembelian bahan baku dari PT Sumber Makmur, total Rp1.250.000", pdfgen.TextOpts{})
+	doc.Para("Faktur pembelian bahan baku dari PT Sumber Makmur, total Rp 1.250.000", pdfgen.TextOpts{})
 	pdf, err := doc.Bytes()
 	if err != nil {
 		t.Fatal(err)

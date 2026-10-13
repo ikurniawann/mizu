@@ -141,7 +141,7 @@ func TestRawMaterialReceivingFlow(t *testing.T) {
 		t.Fatalf("events = %v", ev.got)
 	}
 	sl := stock[0]["lines"].([]any)[0].(map[string]any)
-	// 7 kg at Rp1.000/kg → 7000 g at Rp1/g (konversi_factor 1000).
+	// 7 kg at Rp 1.000/kg → 7000 g at Rp 1/g (konversi_factor 1000).
 	if sl["raw_material_id"] != f.Material || sl["qty"] != float64(7000) || sl["unit_cost"] != float64(1) || sl["warehouse_id"] != wh {
 		t.Fatalf("stock line = %v", sl)
 	}

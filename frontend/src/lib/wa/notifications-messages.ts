@@ -6,7 +6,7 @@
 
 import type { DesktopOverview } from "@/lib/desktop/overview";
 
-const formatRp = (n: number) => `Rp${Math.round(n).toLocaleString("id-ID")}`;
+const formatRp = (n: number) => `Rp ${Math.round(n).toLocaleString("id-ID")}`;
 
 /** Tanggal operasional WIB (yyyy-mm-dd) — tanggal server belum tentu sama. */
 export function todayWib(now = new Date()): string {

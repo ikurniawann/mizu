@@ -491,7 +491,7 @@ func MergeRecentRequests(rows []RecentRequest) []RecentRequest {
 	return out
 }
 
-// FormatRupiah is formatRupiah: "Rp1.500.000", "-Rp…", rounded.
+// FormatRupiah is formatRupiah: "Rp 1.500.000", "-Rp…", rounded.
 func FormatRupiah(value string) string {
 	n := JSNumber(value)
 	if !IsFinite(n) {
@@ -511,7 +511,7 @@ func FormatRupiah(value string) string {
 		}
 		b.WriteRune(c)
 	}
-	return sign + "Rp" + b.String()
+	return sign + "Rp " + b.String()
 }
 
 // Clock5 is time.slice(0, 5) on a nullable "HH:MM:SS" ("undefined" for null).

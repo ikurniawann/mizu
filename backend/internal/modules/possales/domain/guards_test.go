@@ -161,7 +161,7 @@ func TestKolQuotaAllows(t *testing.T) {
 		t.Errorf("0.5 tolerance rejected: %q", got)
 	}
 	got := KolQuotaAllows(ptr(500000), 400000, 100001)
-	want := "Kuota komplimen KOL bulan ini terlampaui (terpakai Rp400.000 dari Rp500.000, order ini Rp100.001)"
+	want := "Kuota komplimen KOL bulan ini terlampaui (terpakai Rp 400.000 dari Rp 500.000, order ini Rp 100.001)"
 	if got != want {
 		t.Errorf("over quota = %q, want %q", got, want)
 	}

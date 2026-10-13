@@ -65,13 +65,13 @@ func TestCompNotifMessage(t *testing.T) {
 
 func TestVoidAndGiftMessages(t *testing.T) {
 	got := buildVoidBesarMessage("ORD-0042", 750_000, "salah input menu", "Budi")
-	want := "🚨 *Void Bernilai Besar*\n\nOrder ORD-0042 senilai *Rp750.000* di-void.\nAlasan: salah input menu\nDisetujui: Budi\n\nCek POS → Laporan untuk rinciannya."
+	want := "🚨 *Void Bernilai Besar*\n\nOrder ORD-0042 senilai *Rp 750.000* di-void.\nAlasan: salah input menu\nDisetujui: Budi\n\nCek POS → Laporan untuk rinciannya."
 	if got != want {
 		t.Fatalf("void = %q", got)
 	}
 	buyer := "Sari"
 	one := buildGiftCardSoldMessage(&buyer, []ports.IssuedGiftCard{{Code: "ABCD2345EFGH", InitialValue: 100000, ExpiresAt: json.RawMessage("null")}})
-	if one != "*Gift Card aktif* 🎁\n\nHalo Sari,\n\nGift card kamu sudah aktif dan bisa langsung dipakai di kasir:\n\n• Kode: *ABCD2345EFGH*\n  Saldo: Rp100.000\n  Berlaku: tanpa batas waktu\n\nSimpan kode ini baik-baik. Siapa pun yang memegang kode ini bisa memakai saldonya." {
+	if one != "*Gift Card aktif* 🎁\n\nHalo Sari,\n\nGift card kamu sudah aktif dan bisa langsung dipakai di kasir:\n\n• Kode: *ABCD2345EFGH*\n  Saldo: Rp 100.000\n  Berlaku: tanpa batas waktu\n\nSimpan kode ini baik-baik. Siapa pun yang memegang kode ini bisa memakai saldonya." {
 		t.Fatalf("gift = %q", one)
 	}
 	two := buildGiftCardSoldMessage(nil, []ports.IssuedGiftCard{{Code: "A", InitialValue: 1, ExpiresAt: json.RawMessage("null")}, {Code: "B", InitialValue: 2, ExpiresAt: json.RawMessage(`"2027-01-01T00:00:00.000Z"`)}})
@@ -243,7 +243,7 @@ func TestOwnerNotices(t *testing.T) {
 	}
 	n.NotifyLargeVoid(ctx, void)
 	n.NotifyLargeVoid(ctx, void)
-	if len(gw.requests) != 1 || gw.requests[0]["target"] != "6281234567890" || !strings.Contains(gw.requests[0]["message"].(string), "*Rp750.000*") || countLog("voidBesar", orderID) != 1 {
+	if len(gw.requests) != 1 || gw.requests[0]["target"] != "6281234567890" || !strings.Contains(gw.requests[0]["message"].(string), "*Rp 750.000*") || countLog("voidBesar", orderID) != 1 {
 		t.Fatalf("void requests = %v", gw.requests)
 	}
 

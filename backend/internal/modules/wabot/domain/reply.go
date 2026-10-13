@@ -19,7 +19,7 @@ func t(l L, id, en string) string {
 	return id
 }
 
-// Rupiah is "Rp185.000".
+// Rupiah is "Rp 185.000".
 func Rupiah(v float64) string {
 	n := int64(v + 0.5)
 	s := strconv.FormatInt(n, 10)
@@ -30,7 +30,7 @@ func Rupiah(v float64) string {
 		}
 		b.WriteRune(c)
 	}
-	return "Rp" + b.String()
+	return "Rp " + b.String()
 }
 
 // NumberedMenu renders options as "1. Label" lines.

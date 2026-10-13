@@ -33,7 +33,7 @@ func Thousands(v float64) string {
 	return b.String()
 }
 
-// Rupiah is formatRupiah in lib/format.ts: "Rp1.250.000", "-Rp5.000",
+// Rupiah is formatRupiah in lib/format.ts: "Rp 1.250.000", "-Rp 5.000",
 // rounded with Math.round.
 func Rupiah(v float64) string {
 	n := jsmath.Round(v)
@@ -41,7 +41,7 @@ func Rupiah(v float64) string {
 	if n < 0 {
 		sign = "-"
 	}
-	return sign + "Rp" + Thousands(math.Abs(n))
+	return sign + "Rp " + Thousands(math.Abs(n))
 }
 
 // RupiahSpaced is the payslip's rupiah(): "Rp 1.250.000", "Rp -5.000".

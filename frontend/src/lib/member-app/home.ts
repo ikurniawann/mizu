@@ -32,9 +32,9 @@ export function notificationKind(type: string): NotificationKind {
   return "OTHER";
 }
 
-/** Label diskon promo, mis. "10% OFF" atau "Rp100.000 OFF". */
+/** Label diskon promo, mis. "10% OFF" atau "Rp 100.000 OFF". */
 export function promoLabel(discountType: PromoDiscountType, value: number): string {
-  return discountType === "percent" ? `${value}% OFF` : `Rp${Math.round(value).toLocaleString("id-ID")} OFF`;
+  return discountType === "percent" ? `${value}% OFF` : `Rp ${Math.round(value).toLocaleString("id-ID")} OFF`;
 }
 
 const wibDay = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });

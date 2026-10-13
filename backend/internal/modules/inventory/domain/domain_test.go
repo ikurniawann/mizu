@@ -155,7 +155,7 @@ func TestProductionRules(t *testing.T) {
 	if rows, msg := ValidateVariantSplit(2, []VariantRow{{"a", 1.005}, {"b", 0.995}}, []string{"a", "b"}); msg != "" || len(rows) != 2 {
 		t.Error(msg)
 	}
-	if got := CompletionMessage("PROD-1", 2840.4, p(40.5)); got != "Produksi PROD-1 selesai. HPP aktual Rp2.840 tersinkron ke POS. Margin POS 40.5%." {
+	if got := CompletionMessage("PROD-1", 2840.4, p(40.5)); got != "Produksi PROD-1 selesai. HPP aktual Rp 2.840 tersinkron ke POS. Margin POS 40.5%." {
 		t.Error(got)
 	}
 	r := BuildHppReview(10000, 10400.6, 2)
@@ -165,7 +165,7 @@ func TestProductionRules(t *testing.T) {
 	if ResolvePosStation("", "Dessert") != "bar" || ResolvePosStation("BAR", "") != "bar" || ResolvePosStation("", "Roti") != "bakery" {
 		t.Error("station") // "dessert" contains "es": the TS regex picks bar first
 	}
-	if FormatRupiah(-1234567.5) != "-Rp1.234.567" {
+	if FormatRupiah(-1234567.5) != "-Rp 1.234.567" {
 		t.Error(FormatRupiah(-1234567.5))
 	}
 }

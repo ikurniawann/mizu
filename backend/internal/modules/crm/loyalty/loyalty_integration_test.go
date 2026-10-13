@@ -312,7 +312,7 @@ func TestPosSaleSubscriberAwardsXPAndStats(t *testing.T) {
 	if _, err := bus.Dispatch(ctx, e.tx); err != nil {
 		t.Fatal(err)
 	}
-	// Default settings: 1 XP per Rp10.000 => 2 XP, regular tier multiplier 1.
+	// Default settings: 1 XP per Rp 10.000 => 2 XP, regular tier multiplier 1.
 	if xpTotal := crmtest.Scalar[float64](t, e.tx, `SELECT total_xp::float8 FROM pos.pos_customers WHERE id = $1`, customer); xpTotal != 2 {
 		t.Fatalf("total_xp = %v", xpTotal)
 	}
@@ -323,7 +323,7 @@ func TestPosSaleSubscriberAwardsXPAndStats(t *testing.T) {
 		t.Fatalf("visit_count = %d (stats follow each event)", visits)
 	}
 	desc := crmtest.Scalar[string](t, e.tx, `SELECT description FROM crm.crm_xp_ledger WHERE idempotency_key = $1`, "pos:order:"+orderID+":order_amount")
-	if desc != "XP transaksi POS — order "+orderID[:8]+" (Rp25.000)" {
+	if desc != "XP transaksi POS — order "+orderID[:8]+" (Rp 25.000)" {
 		t.Fatalf("description %q", desc)
 	}
 

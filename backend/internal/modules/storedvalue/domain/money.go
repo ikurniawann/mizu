@@ -16,8 +16,8 @@ func JSRound(v float64) float64 { return math.Floor(v + 0.5) }
 // Math.round(v * 100) / 100.
 func RoundIdr(v float64) float64 { return JSRound(v*100) / 100 }
 
-// FormatRupiah mirrors formatRupiah in lib/format.ts: "Rp10.000",
-// "-Rp1.500", rounded to whole rupiah.
+// FormatRupiah mirrors formatRupiah in lib/format.ts: "Rp 10.000",
+// "-Rp 1.500", rounded to whole rupiah.
 func FormatRupiah(v float64) string {
 	n := int64(JSRound(v))
 	sign := ""
@@ -25,7 +25,7 @@ func FormatRupiah(v float64) string {
 		sign = "-"
 		n = -n
 	}
-	return sign + "Rp" + GroupThousands(n)
+	return sign + "Rp " + GroupThousands(n)
 }
 
 // GroupThousands is toLocaleString("id-ID") of a non-negative integer.

@@ -114,9 +114,9 @@ describe("costs", () => {
 
 describe("completionMessage", () => {
   it("mentions the POS sync only when a margin is given", () => {
-    expect(completionMessage("PROD-1", 12500.4, null)).toBe("Produksi PROD-1 selesai. HPP aktual Rp12.500");
+    expect(completionMessage("PROD-1", 12500.4, null)).toBe("Produksi PROD-1 selesai. HPP aktual Rp 12.500");
     expect(completionMessage("PROD-1", 12500, 40)).toBe(
-      "Produksi PROD-1 selesai. HPP aktual Rp12.500 tersinkron ke POS. Margin POS 40%."
+      "Produksi PROD-1 selesai. HPP aktual Rp 12.500 tersinkron ke POS. Margin POS 40%."
     );
   });
 });

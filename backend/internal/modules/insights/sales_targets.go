@@ -203,7 +203,7 @@ func (s *Service) salesTargetBody(r *http.Request, u *auth.User) (salesTargetInp
 		return body, httpx.BadRequest("Outlet wajib dipilih")
 	}
 	if math.IsNaN(body.Amount) || math.IsInf(body.Amount, 0) || body.Amount <= 0 || body.Amount > 100000000000 || math.Round(body.Amount*100) == 0 {
-		return body, httpx.BadRequest("Target harus lebih dari 0 dan maksimal Rp100 miliar")
+		return body, httpx.BadRequest("Target harus lebih dari 0 dan maksimal Rp 100 miliar")
 	}
 	outlets, err := s.salesOutlets(r.Context(), u.ID)
 	if err != nil {

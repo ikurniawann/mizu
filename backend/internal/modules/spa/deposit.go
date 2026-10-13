@@ -48,7 +48,7 @@ type DepositSettings struct {
 	Enabled bool `json:"enabled"`
 }
 
-// DepositSettings reads the policy (defaults: Rp100.000, 60 minutes).
+// DepositSettings reads the policy (defaults: Rp 100.000, 60 minutes).
 func (s *Service) DepositSettings(ctx context.Context) (DepositSettings, error) {
 	return s.depositSettings(ctx, s.db)
 }
@@ -399,5 +399,5 @@ func domainRupiah(v float64) string {
 		}
 		b.WriteRune(c)
 	}
-	return "Rp" + b.String()
+	return "Rp " + b.String()
 }

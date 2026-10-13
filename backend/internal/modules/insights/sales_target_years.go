@@ -104,7 +104,7 @@ func (s *Service) saveSalesTargetYear(w http.ResponseWriter, r *http.Request, u 
 		seen[key] = true
 		for _, amount := range []*float64{cell.Amount, cell.Previous} {
 			if amount != nil && (math.IsNaN(*amount) || math.IsInf(*amount, 0) || *amount <= 0 || *amount > 100000000000 || math.Round(*amount*100) == 0) {
-				return httpx.BadRequest("Target harus lebih dari 0 dan maksimal Rp100 miliar; gunakan sel kosong untuk menghapus")
+				return httpx.BadRequest("Target harus lebih dari 0 dan maksimal Rp 100 miliar; gunakan sel kosong untuk menghapus")
 			}
 		}
 	}

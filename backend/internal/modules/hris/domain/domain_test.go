@@ -458,8 +458,8 @@ func TestESS(t *testing.T) {
 	eq(t, []any{week[2].IsToday, week[2].DayOfWeek, *week[2].ShiftName}, []any{true, 3, "Pagi"})
 	eq(t, week[5].ShiftName == nil, true)
 
-	eq(t, FormatRupiah("1500000"), "Rp1.500.000")
-	eq(t, FormatRupiah("-950"), "-Rp950")
+	eq(t, FormatRupiah("1500000"), "Rp 1.500.000")
+	eq(t, FormatRupiah("-950"), "-Rp 950")
 	eq(t, Clock5(&start), "08:00")
 	merged := MergeRecentRequests([]RecentRequest{{ID: "l1", CreatedAt: "2026-10-01"}, {ID: "p7", CreatedAt: "2026-10-07"}, {ID: "o5", CreatedAt: "2026-10-05"}})
 	eq(t, []string{merged[0].ID, merged[1].ID, merged[2].ID}, []string{"p7", "o5", "l1"})

@@ -61,7 +61,7 @@ describe("buildVoidBesarMessage", () => {
       supervisorName: "Budi",
     });
     expect(msg).toContain("ORD-0042");
-    expect(msg).toContain("Rp750.000");
+    expect(msg).toContain("Rp 750.000");
     expect(msg).toContain("salah input menu");
     expect(msg).toContain("Budi");
   });
@@ -110,7 +110,7 @@ describe("buildDigestMessage", () => {
       },
     };
     const msg = buildDigestMessage(overview, "2026-07-22");
-    expect(msg).toContain("Rp1.200.000");
+    expect(msg).toContain("Rp 1.200.000");
     expect(msg).toContain("▲ 20% vs kemarin");
   });
 
@@ -126,7 +126,7 @@ describe("buildDigestMessage", () => {
       },
     };
     const msg = buildDigestMessage(overview, "2026-07-22");
-    expect(msg).toContain("Rp500.000");
+    expect(msg).toContain("Rp 500.000");
     expect(msg).not.toContain("vs kemarin");
   });
 
@@ -275,7 +275,7 @@ describe("PR mendesak", () => {
     expect(msg).toContain("MENDESAK");
     expect(msg).toContain("PR-202609-0007 diajukan");
     expect(msg).toContain("Erik Hidayat · Produksi");
-    expect(msg).toContain("Rp2.500.000");
+    expect(msg).toContain("Rp 2.500.000");
     expect(msg).toContain("2026-09-06");
     expect(msg).toContain("Bahan 5 — 10 M");
     expect(msg).not.toContain("Bahan 6 —");

@@ -38,5 +38,5 @@ func TestKolComp(t *testing.T) {
 	mustExec(t, tx, `UPDATE pos.pos_orders SET comp_type = 'kol_comp', subtotal = 90000, status = 'voided', ordered_at = '2026-10-02 10:00:00+07' WHERE id = $1`, voided)
 	check(cust, 40000, "")
 	check(cust, 40000.5, "") // 0.5 tolerance
-	check(cust, 40001, "Kuota komplimen KOL bulan ini terlampaui (terpakai Rp60.000 dari Rp100.000, order ini Rp40.001)")
+	check(cust, 40001, "Kuota komplimen KOL bulan ini terlampaui (terpakai Rp 60.000 dari Rp 100.000, order ini Rp 40.001)")
 }

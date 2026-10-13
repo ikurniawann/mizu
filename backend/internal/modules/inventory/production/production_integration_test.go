@@ -83,7 +83,7 @@ func TestProductOrderLifecycle(t *testing.T) {
 	e.Call("PATCH", "/api/purchasing/production/orders/"+id, map[string]any{"action": "start"}, http.StatusOK)
 	out = e.Call("PATCH", "/api/purchasing/production/orders/"+id, map[string]any{"action": "complete", "actual_qty": 4}, http.StatusOK)
 	if out["message"] != "Produksi "+obj(obj(out["data"])["order"])["nomor_produksi"].(string)+
-		" selesai. HPP aktual Rp3.550 tersinkron ke POS. Margin POS 40.5%." || pos.synced != 1 {
+		" selesai. HPP aktual Rp 3.550 tersinkron ke POS. Margin POS 40.5%." || pos.synced != 1 {
 		t.Fatalf("complete %v", out)
 	}
 	var qty, fg float64

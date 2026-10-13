@@ -29,7 +29,7 @@ func ToNumber(v any) float64 {
 	return f
 }
 
-// FormatRupiah is formatRupiah: "Rp1.250.000", rounded to whole rupiah.
+// FormatRupiah is formatRupiah: "Rp 1.250.000", rounded to whole rupiah.
 func FormatRupiah(v float64) string {
 	n := jsmath.Round(v)
 	if math.IsNaN(n) || math.IsInf(n, 0) {
@@ -39,7 +39,7 @@ func FormatRupiah(v float64) string {
 	if n < 0 {
 		sign, n = "-", -n
 	}
-	return sign + "Rp" + group(strconv.FormatFloat(n, 'f', 0, 64))
+	return sign + "Rp " + group(strconv.FormatFloat(n, 'f', 0, 64))
 }
 
 func group(intPart string) string {

@@ -238,11 +238,11 @@ func TestPublicBookingFlowAndWebhook(t *testing.T) {
 	under := p.ok(p.pub("POST", hook, paid(map[string]any{"amount": 50000}), "203.0.113.9", "x-callback-token", "rahasia"))
 	eq(t, under.Raw, `{"success":true,"ignored":true}`)
 	eq(t, p.scalar(`SELECT status || '|' || webhook_alert FROM ticketing.ticket_bookings WHERE id = $1`, id),
-		"menunggu-bayar|Xendit melapor PAID dengan nominal Rp50.000 — kurang dari tagihan booking Rp75.000. Pembayaran TIDAK ditandai lunas; periksa dashboard Xendit.")
+		"menunggu-bayar|Xendit melapor PAID dengan nominal Rp 50.000 — kurang dari tagihan booking Rp 75.000. Pembayaran TIDAK ditandai lunas; periksa dashboard Xendit.")
 	eq(t, p.ok(p.pub("POST", hook, paid(map[string]any{"amount": 75000}), "203.0.113.9", "x-callback-token", "rahasia")).Raw, `{"success":true}`)
 	eq(t, p.scalar(`SELECT status || '|' || (paid_at IS NOT NULL) FROM ticketing.ticket_bookings WHERE id = $1`, id), "terbayar|true")
 	eq(t, p.promo.captured, []string{"ticket_booking:" + id})
-	if len(p.wa.sent) != 1 || !strings.HasPrefix(p.wa.sent[0], "6281234567890|*Pembayaran diterima*") || !strings.Contains(p.wa.sent[0], "Dibayar: Rp75.000") {
+	if len(p.wa.sent) != 1 || !strings.HasPrefix(p.wa.sent[0], "6281234567890|*Pembayaran diterima*") || !strings.Contains(p.wa.sent[0], "Dibayar: Rp 75.000") {
 		t.Fatalf("wa = %v", p.wa.sent)
 	}
 	eq(t, p.ok(p.pub("POST", hook, paid(nil), "203.0.113.9", "x-callback-token", "rahasia")).Raw, `{"success":true}`)

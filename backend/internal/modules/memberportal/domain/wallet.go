@@ -27,7 +27,7 @@ func RoundIdr(v float64) float64 { return jsRound(v*100) / 100 }
 
 func jsRound(v float64) float64 { return math.Floor(v + 0.5) }
 
-// FormatRupiah mirrors formatRupiah: "Rp10.000", "-Rp1.500".
+// FormatRupiah mirrors formatRupiah: "Rp 10.000", "-Rp 1.500".
 func FormatRupiah(v float64) string {
 	n := int64(jsRound(v))
 	sign := ""
@@ -35,7 +35,7 @@ func FormatRupiah(v float64) string {
 		sign = "-"
 		n = -n
 	}
-	return sign + "Rp" + groupThousands(n)
+	return sign + "Rp " + groupThousands(n)
 }
 
 func groupThousands(n int64) string {

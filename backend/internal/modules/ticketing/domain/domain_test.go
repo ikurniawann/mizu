@@ -36,14 +36,14 @@ func TestTab(t *testing.T) {
 	prepaid := ComputeTabSummary([]TabEntry{kredit(100000), debit(60000)})
 	eq(t, CanCharge("prepaid", prepaid, 40000, nil), "")
 	reason := CanCharge("prepaid", prepaid, 40001, nil)
-	if !strings.Contains(reason, "top-up") || !strings.Contains(reason, "saldo Rp40.000") {
+	if !strings.Contains(reason, "top-up") || !strings.Contains(reason, "saldo Rp 40.000") {
 		t.Fatal(reason)
 	}
 	eq(t, CanCharge("prepaid", prepaid, 0, nil), "Nominal charge harus > 0")
 
 	postpaid := ComputeTabSummary([]TabEntry{debit(450000)})
 	eq(t, CanCharge("postpaid", postpaid, 50000, f(500000)), "")
-	eq(t, CanCharge("postpaid", postpaid, 50001, f(500000)), "Melewati plafon tagihan Rp500.000 — silakan bayar parsial di kasir")
+	eq(t, CanCharge("postpaid", postpaid, 50001, f(500000)), "Melewati plafon tagihan Rp 500.000 — silakan bayar parsial di kasir")
 	eq(t, CanCharge("postpaid", postpaid, 9_999_999, nil), "")
 
 	eq(t, PlanSettlement(ComputeTabSummary([]TabEntry{debit(150000), debit(80000)})), SettlementPlan{AmountDue: 230000})
@@ -201,9 +201,9 @@ func TestCalendar(t *testing.T) {
 	eq(t, NowJakartaTime(jkt), "00:30")
 	eq(t, FormatDate("2026-10-04"), "4 Okt 2026")
 	eq(t, FormatDateLong("2026-10-04"), "Minggu, 4 Oktober 2026")
-	eq(t, FormatRupiah(1234567.5), "Rp1.234.568")
-	eq(t, FormatRupiah(-5000), "-Rp5.000")
-	eq(t, FormatRupiah(0), "Rp0")
+	eq(t, FormatRupiah(1234567.5), "Rp 1.234.568")
+	eq(t, FormatRupiah(-5000), "-Rp 5.000")
+	eq(t, FormatRupiah(0), "Rp 0")
 	tenth, fifth := 0.1, 0.2
 	eq(t, []string{FormatNumber(150000), FormatNumber(12.5), FormatNumber(tenth + fifth)}, []string{"150000", "12.5", "0.30000000000000004"})
 	eq(t, []float64{JSNumber("12500.50"), JSNumber(""), JSNumber(" 3 "), JSNumber("0x10")}, []float64{12500.5, 0, 3, 16})
@@ -351,7 +351,7 @@ func TestReports(t *testing.T) {
 func TestBookingMessages(t *testing.T) {
 	b := PaidBooking{BookingCode: "BK-ABC234", AccessToken: "tok", VisitDate: "2026-10-04", CustomerName: "Budi", Total: 150000}
 	msg := BookingPaidMessage("https://tiket.example", b)
-	for _, want := range []string{"Kode booking: *BK-ABC234*", "Tanggal kunjungan: Minggu, 4 Oktober 2026", "Total: Rp150.000\n\n", "https://tiket.example/booking/status/tok"} {
+	for _, want := range []string{"Kode booking: *BK-ABC234*", "Tanggal kunjungan: Minggu, 4 Oktober 2026", "Total: Rp 150.000\n\n", "https://tiket.example/booking/status/tok"} {
 		if !strings.Contains(msg, want) {
 			t.Fatalf("missing %q in %q", want, msg)
 		}
@@ -360,7 +360,7 @@ func TestBookingMessages(t *testing.T) {
 		t.Fatal(msg)
 	}
 	b.Discount = 25000
-	if !strings.Contains(BookingPaidMessage("", b), "Total: Rp150.000\nPotongan promo: -Rp25.000\nDibayar: Rp125.000") {
+	if !strings.Contains(BookingPaidMessage("", b), "Total: Rp 150.000\nPotongan promo: -Rp 25.000\nDibayar: Rp 125.000") {
 		t.Fatal("discount lines")
 	}
 	b.Discount = 0

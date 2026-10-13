@@ -62,7 +62,7 @@ export type OrderAlertInput = {
 
 const localPhone = (phone: string) => (phone.startsWith("62") ? `0${phone.slice(2)}` : phone);
 
-const rupiah = (value: number) => `Rp${Math.round(value).toLocaleString("id-ID")}`;
+const rupiah = (value: number) => `Rp ${Math.round(value).toLocaleString("id-ID")}`;
 
 /** Teks polos (tanpa markdown) — dipakai sama untuk WA & Telegram. */
 export function buildOrderAlertMessage(input: OrderAlertInput): string {

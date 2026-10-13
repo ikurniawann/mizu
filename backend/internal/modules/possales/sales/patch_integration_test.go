@@ -14,7 +14,7 @@ func TestPatchSettlesOpenBill(t *testing.T) {
 	e := setup(t)
 	order := e.openBillOrder()
 	path := "/api/pos/orders/" + order["id"].(string)
-	if out := e.call(true, "PATCH", path, map[string]any{"payment_status": "paid", "payment_method": "cash", "amount_paid": 1000}, 400); errorOf(out) != "Nominal pembayaran (Rp1.000) kurang dari total bill "+order["order_number"].(string)+" (Rp40.000)" {
+	if out := e.call(true, "PATCH", path, map[string]any{"payment_status": "paid", "payment_method": "cash", "amount_paid": 1000}, 400); errorOf(out) != "Nominal pembayaran (Rp 1.000) kurang dari total bill "+order["order_number"].(string)+" (Rp 40.000)" {
 		t.Fatalf("%v", out)
 	}
 	if out := e.call(true, "PATCH", path, map[string]any{"payment_status": "paid", "payment_method": "qris", "amount_paid": 40000}, 400); errorOf(out) != "Menunggu pembayaran QRIS" {

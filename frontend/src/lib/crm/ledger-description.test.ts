@@ -17,7 +17,7 @@ describe("humanizeLedgerDescription", () => {
 
   it("baris non-order dengan nominal memakai rupiah PUEBI", () => {
     const row = { description: `XP topup ARK untuk ${ORDER_ID}`, reference_table: "pos_wallet_transactions", reference_id: "tx", metadata: { amount: "50000" } };
-    expect(humanizeLedgerDescription(row, new Map())).toBe("XP topup ARK — Rp50.000");
+    expect(humanizeLedgerDescription(row, new Map())).toBe("XP topup ARK — Rp 50.000");
   });
 
   it("tanpa nominal: UUID dipotong 8 karakter", () => {

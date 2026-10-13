@@ -281,6 +281,6 @@ export const OFFER_PAGE_META: Record<OfferType, { title: string; description: st
   volume: {
     title: "Diskon Volume",
     description: "Diskon setelah minimum qty atau minimum belanja.",
-    note: "Contoh: beli 5 diskon 3% / Rp3.000. Kosongkan daftar produk = semua item.",
+    note: "Contoh: beli 5 diskon 3% / Rp 3.000. Kosongkan daftar produk = semua item.",
   },
 };

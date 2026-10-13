@@ -57,7 +57,7 @@ const maxRecipients = 5
 
 // ParseNotifConfig is parseWaNotifConfig: a broken or partial value falls
 // back to the defaults per field (master switch off, every type on, void
-// threshold Rp500.000).
+// threshold Rp 500.000).
 func ParseNotifConfig(raw string) NotifConfig {
 	cfg := NotifConfig{Types: map[string]bool{}, VoidThresholdRp: 500_000}
 	for _, t := range notifTypes {

@@ -1,6 +1,6 @@
 /**
  * Pemformat tampilan bersama: rupiah, angka, tanggal, jam. Rupiah mengikuti
- * PUEBI ("Rp1.250.000", tanpa spasi). Tanggal & jam selalu WIB supaya server
+ * "Rp 1.250.000" (dengan spasi, permintaan owner Mizu 13 Okt 2026). Tanggal & jam selalu WIB supaya server
  * (UTC) dan browser menampilkan hal yang sama.
  */
 
@@ -18,19 +18,19 @@ export function formatNumber(value: NumberLike, maximumFractionDigits = 0): stri
   return toNumber(value).toLocaleString(LOCALE, { maximumFractionDigits });
 }
 
-/** "Rp1.250.000"; negatif "-Rp1.250.000"; dibulatkan ke rupiah. */
+/** "Rp 1.250.000"; negatif "-Rp 1.250.000"; dibulatkan ke rupiah. */
 export function formatRupiah(value: NumberLike): string {
   const n = Math.round(toNumber(value));
-  return `${n < 0 ? "-" : ""}Rp${Math.abs(n).toLocaleString(LOCALE)}`;
+  return `${n < 0 ? "-" : ""}Rp ${Math.abs(n).toLocaleString(LOCALE)}`;
 }
 
-/** Ringkas untuk kartu & grafik: "Rp950", "Rp165 rb", "Rp1,25 jt", "Rp2,5 M". */
+/** Ringkas untuk kartu & grafik: "Rp 950", "Rp 165 rb", "Rp 1,25 jt", "Rp 2,5 M". */
 export function formatRupiahCompact(value: NumberLike): string {
   const n = toNumber(value);
   const abs = Math.abs(n);
   const sign = n < 0 ? "-" : "";
   const scaled = (divisor: number, suffix: string, digits: number) =>
-    `${sign}Rp${(abs / divisor).toLocaleString(LOCALE, { maximumFractionDigits: digits })} ${suffix}`;
+    `${sign}Rp ${(abs / divisor).toLocaleString(LOCALE, { maximumFractionDigits: digits })} ${suffix}`;
   if (abs >= 1_000_000_000) return scaled(1_000_000_000, "M", 2);
   if (abs >= 1_000_000) return scaled(1_000_000, "jt", 2);
   if (abs >= 1_000) return scaled(1_000, "rb", 0);
