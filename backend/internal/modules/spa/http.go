@@ -170,6 +170,7 @@ func (h *Handler) Routes() []module.Route {
 		public("GET "+publicPrefix+"/outlets/{branchId}/therapists", h.publicTherapists),
 		public("GET "+publicPrefix+"/outlets/{branchId}/rooms", h.publicRooms),
 		public("GET "+publicPrefix+"/bookings/{token}", h.publicBooking),
+		public("GET "+publicPrefix+"/bookings/{token}/qr.png", h.publicBookingQR),
 		public("POST "+publicPrefix+"/bookings/{token}/change", h.publicChangeBooking),
 		public("POST "+publicPrefix+"/bookings/find", h.publicFindBooking),
 		public("POST "+publicPrefix+"/bookings/{token}/pay", h.publicPay),

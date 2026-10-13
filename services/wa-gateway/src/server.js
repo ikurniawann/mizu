@@ -8,7 +8,7 @@
 
 import { timingSafeEqual } from "node:crypto";
 import http from "node:http";
-import { connect, getQr, getStatus, sendText } from "./wa.js";
+import { connect, getQr, getStatus, sendImage, sendText } from "./wa.js";
 
 const PORT = Number(process.env.WA_GATEWAY_PORT || 3471);
 const HOST = "127.0.0.1";
@@ -104,6 +104,21 @@ const server = http.createServer(async (req, res) => {
     }
 
     const result = await sendText(payload?.target, payload?.message);
+    return json(res, result.success ? 200 : 502, {
+      success: result.success,
+      error: result.success ? undefined : result.reason,
+      messageId: result.messageId,
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/send-image") {
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req, 7 * 1024 * 1024));
+    } catch {
+      return json(res, 400, { success: false, error: "JSON tidak valid" });
+    }
+    const result = await sendImage(payload?.target, payload?.image, payload?.caption, payload?.mimetype || "image/png");
     return json(res, result.success ? 200 : 502, {
       success: result.success,
       error: result.success ? undefined : result.reason,

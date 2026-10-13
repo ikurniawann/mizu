@@ -4162,6 +4162,11 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/public/spa/bookings/{token}/qr.png"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/public/spa/outlets"
   },
   {

@@ -468,6 +468,12 @@ func DepositReminderNotice(l L, name, code, outlet, date, clock string, deposit 
 	return b.String()
 }
 
+// QRCaption goes with the booking QR picture sent after payment.
+func QRCaption(l L, code, outlet, date, clock string) string {
+	return t(l, "QR booking *"+code+"* — "+outlet+", "+LongDate(l, date)+" "+clock+" WIB. Tunjukkan QR ini ke resepsionis saat tiba 🌿",
+		"Booking QR *"+code+"* — "+outlet+", "+LongDate(l, date)+" "+clock+" WIB. Show this QR at the reception when you arrive 🌿")
+}
+
 func DepositExpiredNotice(l L, name, code, outlet, date, clock string) string {
 	greet := t(l, "Mohon maaf", "Sorry")
 	if strings.TrimSpace(name) != "" {

@@ -295,6 +295,51 @@ export async function connect() {
 }
 
 /**
+ * Kirim gambar (mis. QR booking) dengan caption. Gambar dikirim sebagai buffer
+ * (base64 dari backend); serial & berjeda seperti sendText.
+ */
+export function sendImage(target, imageBase64, caption, mimetype = "image/png") {
+  const jid = toJid(target);
+  if (!jid) {
+    return Promise.resolve({ success: false, reason: "Nomor tujuan tidak valid" });
+  }
+  let image;
+  try {
+    image = Buffer.from(String(imageBase64 ?? ""), "base64");
+  } catch {
+    image = null;
+  }
+  if (!image || image.length === 0) {
+    return Promise.resolve({ success: false, reason: "Gambar kosong" });
+  }
+  if (image.length > 5 * 1024 * 1024) {
+    return Promise.resolve({ success: false, reason: "Gambar terlalu besar (maks 5 MB)" });
+  }
+
+  const task = sendChain.then(async () => {
+    if (!state.connected || !state.socket) {
+      return { success: false, reason: "WhatsApp belum terhubung" };
+    }
+    const gap = randomGap();
+    const sinceLast = Date.now() - lastSentAt;
+    if (sinceLast < gap) await sleep(gap - sinceLast);
+    try {
+      const result = await state.socket.sendMessage(jid, { image, caption: caption ? String(caption) : undefined, mimetype });
+      lastSentAt = Date.now();
+      return { success: true, messageId: result?.key?.id ?? null };
+    } catch (error) {
+      lastSentAt = Date.now();
+      return { success: false, reason: error?.message ?? "Gagal mengirim gambar" };
+    }
+  });
+  sendChain = task.then(
+    () => undefined,
+    () => undefined
+  );
+  return task;
+}
+
+/**
  * Kirim pesan teks. Dijalankan serial dengan jeda acak antar pesan.
  * Mengembalikan objek hasil, tidak melempar, agar pemanggil HTTP mudah.
  */

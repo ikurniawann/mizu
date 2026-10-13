@@ -88,7 +88,37 @@ func (e *Engine) PaidNotice(ctx context.Context, q database.Querier, db database
 	}
 	tpl := e.template(ctx, q, metaPaidTemplateKey, []string{firstNonBlank(n.CustomerName, "Kak"), n.Code, n.BranchName,
 		domain.LongDate(l, at.Format("2006-01-02")) + " " + domain.Clock(at), domain.Rupiah(n.TotalIDR), e.statusURL(n.Token)})
-	return e.sendNotice(ctx, db, phone, conversationID, msg, tpl)
+	if err := e.sendNotice(ctx, db, phone, conversationID, msg, tpl); err != nil {
+		return err
+	}
+	e.sendQR(ctx, q, db, phone, conversationID, l, n)
+	return nil
+}
+
+// sendQR sends the booking QR as a picture once per booking, after the DP
+// or the full payment is received. A failure is logged, never retried by
+// the outbox (the status page always shows the QR too).
+func (e *Engine) sendQR(ctx context.Context, q database.Querier, db database.DB, phone, conversationID string, l domain.L, n spa.BookingNotice) {
+	is, ok := e.ports.Sender.(ImageSender)
+	if !ok || n.Token == "" {
+		return
+	}
+	png, err := e.ports.Spa.BookingQR(ctx, n.Token)
+	if err != nil {
+		e.log.Warn("[wabot] QR booking gagal dibuat", "booking", n.Code, "error", err)
+		return
+	}
+	at := n.ScheduledAt.In(domain.WIB)
+	caption := domain.QRCaption(l, n.Code, n.BranchName, at.Format("2006-01-02"), domain.Clock(at))
+	id, err := whatsapp.Claim(ctx, q, "spa_qr", n.ID, caption, []string{phone})
+	if err != nil || id == "" {
+		return
+	}
+	link := strings.TrimRight(e.ports.AppURL, "/") + "/api/public/spa/bookings/" + n.Token + "/qr.png"
+	if err := is.SendImage(ctx, db, phone, conversationID, caption, png, link); err != nil {
+		e.log.Warn("[wabot] QR booking gagal dikirim", "booking", n.Code, "error", err)
+		_ = whatsapp.Release(ctx, q, id)
+	}
 }
 
 // sendNotice prefers the template-aware sender (Meta outside the 24-hour
@@ -156,7 +186,13 @@ func (e *Engine) DepositNotice(ctx context.Context, q database.Querier, db datab
 	if err != nil || id == "" {
 		return err
 	}
-	return e.ports.Sender.Send(ctx, db, phone, conversationID, msg)
+	if err := e.ports.Sender.Send(ctx, db, phone, conversationID, msg); err != nil {
+		return err
+	}
+	if paid {
+		e.sendQR(ctx, q, db, phone, conversationID, l, n)
+	}
+	return nil
 }
 
 // RemindUpcoming sends the H-1 and 2-hour reminders due now; it returns how

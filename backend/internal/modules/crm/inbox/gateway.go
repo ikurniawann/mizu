@@ -203,6 +203,17 @@ func (g Gateway) SendNotice(ctx context.Context, db database.DB, phone, text str
 	return res
 }
 
+// SendImage sends a picture with a caption (the booking QR) and logs the
+// caption as an image message on the conversation.
+func (g Gateway) SendImage(ctx context.Context, db database.DB, phone string, png []byte, link, caption, messageType, conversationID string) SendResult {
+	h := &handler{Ports: Ports{WhatsApp: g.WhatsApp}, db: db, log: g.logger()}
+	res := g.WhatsApp.SendImage(ctx, db, phone, png, link, caption)
+	if err := h.logOutbound(ctx, &phone, caption, res, textMeta{messageType: messageType, conversationID: conversationID, mediaType: "image"}); err != nil {
+		h.log.Error("[wa-log] Gagal mencatat pesan keluar", "error", err)
+	}
+	return res
+}
+
 func (g Gateway) logger() *slog.Logger {
 	if g.Log == nil {
 		return slog.Default()

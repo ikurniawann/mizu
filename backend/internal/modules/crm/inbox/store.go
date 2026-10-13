@@ -34,6 +34,7 @@ type textMeta struct {
 	messageType    string // notification | chat | broadcast | system
 	sentByUserID   string
 	conversationID string
+	mediaType      string // "" = text; "image" for a picture with caption
 }
 
 // sendWhatsApp mirrors sendWhatsAppText: dispatch, then log the outbound
@@ -66,12 +67,12 @@ func (h *handler) logOutbound(ctx context.Context, phone *string, body string, r
 	}
 	_, err = h.db.Exec(ctx, `INSERT INTO crm.wa_messages
          (conversation_id, direction, message_type, phone, customer_id, body,
-          status, provider, provider_message_id, error_reason, sent_by_user_id)
-       VALUES ($1, 'out', $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          status, provider, provider_message_id, error_reason, sent_by_user_id, media_type)
+       VALUES ($1, 'out', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        ON CONFLICT (provider_message_id) WHERE provider_message_id IS NOT NULL
        DO NOTHING`,
 		nilIfEmpty(meta.conversationID), meta.messageType, phone, customerID, body,
-		status, nilIfEmpty(res.Provider), res.MessageID, reason, nilIfEmpty(meta.sentByUserID))
+		status, nilIfEmpty(res.Provider), res.MessageID, reason, nilIfEmpty(meta.sentByUserID), nilIfEmpty(meta.mediaType))
 	return err
 }
 

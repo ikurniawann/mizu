@@ -40,6 +40,8 @@ type Spa interface {
 	ExpireDeposits(ctx context.Context) (int, error)
 	// PhoneBanned: a banned member sees every schedule as unavailable.
 	PhoneBanned(ctx context.Context, phone string) (bool, error)
+	// BookingQR is the booking's QR PNG by public token.
+	BookingQR(ctx context.Context, token string) ([]byte, error)
 	// Rooms lists the outlet's rooms with place for people guests in [start, end).
 	Rooms(ctx context.Context, branchID string, start, end time.Time, people int) ([]spa.PublicRoom, error)
 	// PendingDeposits lists unpaid-DP bookings whose hold ends within [from, to).
@@ -67,6 +69,12 @@ type Template struct {
 // customer window is closed (Meta); other providers send the text.
 type NoticeSender interface {
 	SendNotice(ctx context.Context, db database.DB, phone, conversationID, text string, tpl Template) error
+}
+
+// ImageSender is a Sender that can send a picture with a caption (the
+// booking QR after payment); png for the gateway, link for Meta.
+type ImageSender interface {
+	SendImage(ctx context.Context, db database.DB, phone, conversationID, caption string, png []byte, link string) error
 }
 
 type Sender interface {

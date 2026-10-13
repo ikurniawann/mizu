@@ -77,6 +77,10 @@ func (a txSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.svc.E
 func (a txSpa) PhoneBanned(ctx context.Context, phone string) (bool, error) {
 	return a.svc.PhoneBanned(ctx, phone)
 }
+func (a txSpa) BookingQR(ctx context.Context, token string) ([]byte, error) {
+	png, _, err := a.svc.PublicBookingQR(ctx, token)
+	return png, err
+}
 func (a txSpa) Rooms(ctx context.Context, branchID string, start, end time.Time, people int) ([]spa.PublicRoom, error) {
 	return a.svc.PublicRoomsAt(ctx, branchID, start, end, people)
 }
@@ -84,10 +88,23 @@ func (a txSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.B
 	return a.svc.PendingDeposits(ctx, from, to)
 }
 
-type memSender struct{ sent []string }
+type memSender struct {
+	sent   []string
+	images []memImage
+}
+
+type memImage struct {
+	caption, link string
+	png           []byte
+}
 
 func (m *memSender) Send(_ context.Context, _ database.DB, _, _, text string) error {
 	m.sent = append(m.sent, text)
+	return nil
+}
+
+func (m *memSender) SendImage(_ context.Context, _ database.DB, _, _, caption string, png []byte, link string) error {
+	m.images = append(m.images, memImage{caption: caption, link: link, png: png})
 	return nil
 }
 
@@ -894,5 +911,46 @@ func TestBotGuestChoosesRoom(t *testing.T) {
 	}
 	if got != roomID || price != 100000 {
 		t.Fatalf("booking room = %s / %v", got, price)
+	}
+}
+
+// After payment the guest receives the booking QR as a picture, once.
+func TestBotSendsBookingQRAfterPayment(t *testing.T) {
+	e := setupBot(t)
+	e.start()
+	e.say("1")
+	e.say("1")
+	e.say("besok jam 10 pagi")
+	e.say("0")
+	r := e.say("ya")
+	e.wants(r, "Kode booking")
+	if _, err := e.tx.Exec(e.ctx, `UPDATE spa.bookings SET payment_status = 'paid' WHERE customer_phone = $1 AND source = 'whatsapp'`, e.local()); err != nil {
+		t.Fatal(err)
+	}
+	list, err := e.spa.svc.UpcomingBookings(e.ctx, fixedNow, fixedNow.Add(72*time.Hour))
+	if err != nil || len(list) == 0 {
+		t.Fatalf("notices: %v %v", list, err)
+	}
+	var n spa.BookingNotice
+	for _, x := range list {
+		if x.Source == "whatsapp" {
+			n = x
+		}
+	}
+	e.sender.images = nil
+	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.sender.images) != 1 {
+		t.Fatalf("images = %d", len(e.sender.images))
+	}
+	img := e.sender.images[0]
+	if !strings.Contains(img.caption, "QR booking *"+n.Code+"*") || !strings.Contains(img.caption, "Tunjukkan QR ini ke resepsionis") ||
+		!strings.HasSuffix(img.link, "/api/public/spa/bookings/"+n.Token+"/qr.png") || len(img.png) < 100 || string(img.png[1:4]) != "PNG" {
+		t.Fatalf("QR image = %q %q %d bytes", img.caption, img.link, len(img.png))
+	}
+	// Sent once per booking.
+	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil || len(e.sender.images) != 1 {
+		t.Fatalf("QR must be sent once: err=%v images=%d", err, len(e.sender.images))
 	}
 }

@@ -95,6 +95,30 @@ func allShort(options []Option) bool {
 	return true
 }
 
+// DispatchImage sends an image with a caption: Meta by public link, the
+// gateway with the PNG itself; other providers get the caption (+ link) as text.
+func (c *Client) DispatchImage(ctx context.Context, q database.Querier, target string, png []byte, link, caption string) Result {
+	switch c.provider(ctx, q) {
+	case "meta":
+		if link == "" {
+			break
+		}
+		return c.postMeta(ctx, c.metaConfig(ctx, q), map[string]any{
+			"messaging_product": "whatsapp", "recipient_type": "individual", "to": target,
+			"type": "image", "image": map[string]any{"link": link, "caption": cut(caption, metaBodyMax)},
+		})
+	case "gateway":
+		if len(png) > 0 {
+			return c.LoadGateway(ctx, q).SendImage(ctx, target, png, caption)
+		}
+	}
+	text := caption
+	if link != "" {
+		text += "\n" + link
+	}
+	return c.Dispatch(ctx, q, target, text)
+}
+
 // DispatchTemplate sends an approved Meta template with body parameters
 // ({{1}}, {{2}}, … in order); other providers get fallback as text.
 func (c *Client) DispatchTemplate(ctx context.Context, q database.Querier, target, name, lang string, params []string, fallback string) Result {

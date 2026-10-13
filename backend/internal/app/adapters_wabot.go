@@ -108,6 +108,10 @@ func (a waBotSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.sv
 func (a waBotSpa) PhoneBanned(ctx context.Context, phone string) (bool, error) {
 	return a.svc.PhoneBanned(ctx, phone)
 }
+func (a waBotSpa) BookingQR(ctx context.Context, token string) ([]byte, error) {
+	png, _, err := a.svc.PublicBookingQR(ctx, token)
+	return png, err
+}
 func (a waBotSpa) Rooms(ctx context.Context, branchID string, start, end time.Time, people int) ([]spa.PublicRoom, error) {
 	return a.svc.PublicRoomsAt(ctx, branchID, start, end, people)
 }
@@ -147,6 +151,15 @@ func (s waBotSender) SendNotice(ctx context.Context, db database.DB, phone, conv
 	res := s.gw.SendNotice(ctx, db, phone, text, inbox.Template{Name: tpl.Name, Lang: tpl.Lang, Params: tpl.Params}, "bot", conversationID)
 	if !res.Success {
 		return errors.New(firstNonEmptyStr(res.Reason, "pengiriman WhatsApp gagal"))
+	}
+	return nil
+}
+
+// SendImage sends the booking QR picture with its caption.
+func (s waBotSender) SendImage(ctx context.Context, db database.DB, phone, conversationID, caption string, png []byte, link string) error {
+	res := s.gw.SendImage(ctx, db, phone, png, link, caption, "bot", conversationID)
+	if !res.Success {
+		return errors.New(firstNonEmptyStr(res.Reason, "pengiriman gambar WhatsApp gagal"))
 	}
 	return nil
 }

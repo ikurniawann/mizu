@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"net"
 	"net/http"
@@ -107,6 +108,31 @@ func (c *Client) LoadGateway(ctx context.Context, q database.Querier) *Gateway {
 
 // timeoutReason is the gateway's reason for an uncertain send.
 const timeoutReason = "Gateway tidak merespons (timeout)"
+
+// SendImage posts a PNG (base64) with a caption to {baseUrl}/send-image.
+func (g *Gateway) SendImage(ctx context.Context, target string, png []byte, caption string) Result {
+	ctx, cancel := context.WithTimeout(ctx, g.Timeout*2)
+	defer cancel()
+	status, data, err := postJSON(ctx, g.HTTPClient(), g.BaseURL+"/send-image", map[string]string{
+		"target": target, "caption": caption, "mimetype": "image/png", "image": base64.StdEncoding.EncodeToString(png),
+	}, map[string]string{"x-gateway-token": g.Token})
+	switch {
+	case errors.Is(err, errNotJSON):
+	case err != nil && isTimeout(ctx, err):
+		return Result{Provider: "gateway", Reason: timeoutReason, TimedOut: true}
+	case err != nil:
+		return Result{Provider: "gateway", Reason: fetchFailed}
+	}
+	if !is2xx(status) {
+		reason, isString := field(data, "error").(string)
+		if !isString {
+			reason = "Gateway menolak kiriman gambar"
+		}
+		return Result{Provider: "gateway", Reason: reason}
+	}
+	id, _ := field(data, "messageId").(string)
+	return Result{Success: true, Provider: "gateway", MessageID: id}
+}
 
 // SendText is sendGatewayText: POST {baseUrl}/send with x-gateway-token,
 // bounded by the gateway timeout. It does not log to crm.wa_messages.

@@ -47,6 +47,11 @@ func (f *fakeWA) SendTemplate(_ context.Context, _ database.Querier, target, _, 
 
 func (f *fakeWA) Provider(context.Context, database.Querier) string { return "gateway" }
 
+func (f *fakeWA) SendImage(_ context.Context, _ database.Querier, target string, _ []byte, _, caption string) SendResult {
+	f.sent = append(f.sent, target+"|[gambar] "+caption)
+	return f.result
+}
+
 type fakeIG struct {
 	cfg  *InstagramWebhookConfig
 	send InstagramSend

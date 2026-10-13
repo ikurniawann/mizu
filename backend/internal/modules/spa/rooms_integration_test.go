@@ -2,6 +2,8 @@ package spa_test
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"nuhabit/backend/internal/platform/testutil"
@@ -159,4 +161,35 @@ func TestGuestsChooseRoomOnline(t *testing.T) {
 	book("0813 1000 0003", couple["id"].(string), http.StatusConflict)
 	book("0813 1000 0004", single["id"].(string), http.StatusCreated)
 	book("0813 1000 0005", single["id"].(string), http.StatusConflict)
+}
+
+// The booking QR is served as a PNG for WhatsApp (Meta fetches it by link).
+func TestPublicBookingQRImage(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	e := setup(t)
+	admin := &e.admin
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID).Scan(&warehouse); err != nil {
+		t.Fatal(err)
+	}
+	branch := e.org.BranchID
+	e.data(admin, "PUT", "/api/spa/outlets/"+branch, map[string]any{"warehouse_id": warehouse, "open_time": "09:00", "close_time": "22:00", "slot_minutes": 30, "is_active": true, "public_booking": true}, http.StatusOK)
+	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "QRI" + testutil.RandomHex(3), "name": "Massage",
+		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 150000}}}, http.StatusCreated)
+	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis QR", nil), "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
+	res := e.data(nil, "POST", "/api/public/spa/bookings", map[string]any{"branch_id": branch, "scheduled_at": "2026-10-09T05:00:00.000Z",
+		"customer_name": "Tamu QR", "customer_phone": "0813 2000 0001", "variant_ids": []any{variant}}, http.StatusCreated)
+	rec := httptest.NewRecorder()
+	e.mux.ServeHTTP(rec, testutil.Request("GET", "/api/public/spa/bookings/"+res["access_token"].(string)+"/qr.png", nil))
+	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/png" || !strings.HasPrefix(rec.Body.String(), "\x89PNG") {
+		t.Fatalf("qr.png: %d %q %d bytes", rec.Code, rec.Header().Get("Content-Type"), rec.Body.Len())
+	}
+	rec = httptest.NewRecorder()
+	e.mux.ServeHTTP(rec, testutil.Request("GET", "/api/public/spa/bookings/bukan-token/qr.png", nil))
+	if rec.Code != http.StatusBadRequest && rec.Code != http.StatusNotFound {
+		t.Fatalf("bad token: %d", rec.Code)
+	}
 }

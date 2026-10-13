@@ -25,6 +25,16 @@ func (g *WhatsAppGateway) SendText(ctx context.Context, q database.Querier, targ
 	return out
 }
 
+// SendImage dispatches an image with a caption.
+func (g *WhatsAppGateway) SendImage(ctx context.Context, q database.Querier, target string, png []byte, link, caption string) SendResult {
+	res := g.Client.DispatchImage(ctx, q, target, png, link, caption)
+	out := SendResult{Success: res.Success, Reason: res.Reason, Provider: res.Provider}
+	if res.MessageID != "" {
+		out.MessageID = &res.MessageID
+	}
+	return out
+}
+
 // OwnerNotifierWA is lib/wa/notifications-sender fireOwnerNotification on
 // platform/whatsapp.
 type OwnerNotifierWA struct {

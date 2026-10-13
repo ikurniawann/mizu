@@ -41,6 +41,9 @@ type WhatsApp interface {
 	SendTemplate(ctx context.Context, q database.Querier, target, name, lang string, params []string, fallback string) SendResult
 	// Provider names the active provider ("meta", "gateway", "fonnte", "").
 	Provider(ctx context.Context, q database.Querier) string
+	// SendImage sends a PNG (gateway) or the image at link (Meta) with a
+	// caption; other providers send the caption as text.
+	SendImage(ctx context.Context, q database.Querier, target string, png []byte, link, caption string) SendResult
 }
 
 // Template is a Meta message template with its body parameters.
