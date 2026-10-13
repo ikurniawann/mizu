@@ -360,3 +360,12 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   (menu spa.customer), badge di daftar customer, kartu blokir di detail. Bukti: `TestBannedMemberSeesSlotsAsFull`,
   `TestBotBannedMemberSeesEveryDayFull`, vitest `customer-detail-page.test.tsx`; suite spa/wabot/app lulus (tes
   `customer_report` milik sesi lain gagal di working tree, bukan bagian commit). Image: `mizu-api:wabot-21`, `mizu:wabot-11`.
+- 2026-10-13 — Revisi R4 tambah treatment saat/setelah sesi (`72c76324`): `AddItem` → `addItemIn` tidak lagi
+  menolak booking `in_treatment`/`completed`; batasnya hanya `CanEditItems` (belum dibayar, belum ada tagihan POS
+  hidup). Item baru mengikuti terapis booking, mulai setelah treatment terakhir atau `now` bila sudah lewat; booking
+  `completed` kembali `assigned` → Mulai → Selesai → checkout. Terapis: `POST /api/spa/me/bookings/{id}/items`
+  (booking miliknya saja, 404 untuk milik terapis lain) + `GET /api/spa/me/catalog?branch_id=`; UI tombol "Tambah
+  treatment" di kartu booking aplikasi terapis (`my-add-treatment-dialog.tsx`); kasir memakai `canAddItem` baru.
+  Bukti: `TestAddTreatmentDuringAndAfterSession`, `TestTherapistCannotAddToOthersBooking`, lifecycle test
+  disesuaikan (tambah saat sesi kini 200), `rules.test.ts`; suite spa/app/wabot lulus; tsc/eslint. Image:
+  `mizu-api:wabot-22`, `mizu:wabot-12`.

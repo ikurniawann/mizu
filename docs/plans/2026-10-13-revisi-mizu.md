@@ -8,7 +8,7 @@ Status: **Sudah ada** (tinggal dicek), **Sebagian** (fondasi ada, perlu fitur), 
 | R1 | Payroll terapis: tipe gaji tetap + komisi vs komisi saja; 2× gajian per bulan (bonus/komisi tgl 15, gaji reguler tgl 30; tanggal bisa dikonfigurasi) | Sebagian | payroll · spa (commission_rules) · hris |
 | R2 | Reservasi online (web & WA) wajib DP dulu | **Selesai** (audit 13 Okt: bug kartu DP web diperbaiki, hero DP, pengingat DP WA) | spa · wabot |
 | R3 | Urutan booking ke terapis mengikuti urutan absensi (yang datang duluan dapat order duluan bila customer tidak memilih terapis) | Sebagian | hris (shift & absensi ada) · spa (assignment) |
-| R4 | Tambah treatment saat treatment berlangsung / setelah selesai, sebelum bayar | Baru | spa · pos |
+| R4 | Tambah treatment saat treatment berlangsung / setelah selesai, sebelum bayar | **Selesai** 13 Okt (`72c76324`): kasir dari detail booking, terapis dari aplikasi terapis; sampai booking dikirim ke kasir | spa |
 | R5 | ESS: terapis memilih 2 hari libur per minggu; HRD menetapkan kuota minimal terapis wanita & pria per shift; pengajuan ditolak bila kuota tidak terpenuhi | Baru | hris (leaves, shifts, employee_shifts ada) |
 | R6 | Master room per outlet + harga room; room dipilih saat booking; monitoring room mana yang terisi dan statusnya | Baru | spa (belum ada tabel room) |
 | R7 | Bayar parkir lewat sistem: kategori "Parkir" di POS, transaksi terpisah | **Selesai** (seeder `db:seed:mizu-parkir`, 3 produk × 2 outlet, harga sementara) | pos |
