@@ -846,6 +846,21 @@ func (t *turn) applyMenu(ctx context.Context, nums []int) bool {
 			s.TherapistID, s.TherapistName, s.SystemPick = o.Value, o.Label, false
 		}
 		return true
+	case domain.StepRoom:
+		o := pick(nums[0])
+		if o == nil {
+			return false
+		}
+		s.RoomDone = true
+		if o.Value == "none" {
+			s.RoomID, s.RoomName, s.RoomPrice = "", "", 0
+			return true
+		}
+		// Value is "id|price"; the label starts with the room name.
+		id, price, _ := strings.Cut(o.Value, "|")
+		s.RoomID, s.RoomName = id, strings.SplitN(o.Label, " · ", 2)[0]
+		s.RoomPrice, _ = strconv.ParseFloat(price, 64)
+		return true
 	case domain.StepConfirm:
 		if nums[0] == 1 {
 			t.createBookings(ctx)
@@ -1176,6 +1191,12 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 				continue
 			}
 			return []string{msg}
+		case domain.StepRoom:
+			msg, done := t.promptRoom(ctx)
+			if done {
+				continue
+			}
+			return []string{msg}
 		case domain.StepName:
 			profile := ""
 			if looksLikeName(t.conv.DisplayName) {
@@ -1438,6 +1459,51 @@ func (t *turn) promptTherapist(ctx context.Context) (string, bool) {
 	return domain.AskTherapist(l, opts, s.Pref), false
 }
 
+// promptRoom offers the rooms free for the whole party's time (skipped
+// when the outlet has none free, or rooms cannot be read).
+func (t *turn) promptRoom(ctx context.Context) (string, bool) {
+	s := t.sess
+	l := s.Lang
+	start, err := domain.ParseISO(s.SlotISO)
+	if err != nil {
+		s.ClearSlot()
+		return "", true
+	}
+	end := start
+	for i, p := range s.Persons {
+		at := start
+		if v, err := domain.ParseISO(s.SlotOf(i)); err == nil {
+			at = v
+		}
+		if e := at.Add(time.Duration(p.DurationMin) * time.Minute); e.After(end) {
+			end = e
+		}
+	}
+	people := s.People
+	if people < 1 {
+		people = 1
+	}
+	rooms, err := t.e.ports.Spa.Rooms(ctx, s.OutletID, start, end, people)
+	if err != nil {
+		t.e.log.Warn("[wabot] daftar room gagal", "error", err)
+	}
+	if err != nil || len(rooms) == 0 {
+		s.RoomDone = true
+		return "", true
+	}
+	opts := []domain.MenuOption{{Key: "0", Label: domain.NoRoomLabel(l), Value: "none"}}
+	for i, r := range rooms {
+		if i >= 8 {
+			break
+		}
+		opts = append(opts, domain.MenuOption{Key: strconv.Itoa(i + 1), Label: domain.RoomLabel(l, r.Name, r.Capacity, r.PriceIDR),
+			Value: r.ID + "|" + strconv.FormatFloat(r.PriceIDR, 'f', -1, 64)})
+	}
+	s.RoomAsked = true
+	s.SetMenu(domain.StepRoom, opts)
+	return domain.AskRoom(l, opts, people), false
+}
+
 /* ── actions ─────────────────────────────────────────────────────────── */
 
 // createBookings books the guest, or the whole group in one go (all or
@@ -1454,7 +1520,7 @@ func (t *turn) createBookings(ctx context.Context) {
 		in := spa.PublicBookingInput{
 			BranchID: s.OutletID, ScheduledAt: at, CustomerName: s.Name, CustomerPhone: t.conv.Phone,
 			TherapistGenderPref: s.Pref, Notes: notes, VariantIDs: []string{s.Persons[0].VariantID},
-			PaymentMethod: "outlet", Source: "whatsapp", TherapistID: s.TherapistID,
+			PaymentMethod: "outlet", Source: "whatsapp", TherapistID: s.TherapistID, RoomID: s.RoomID,
 		}
 		res, err := t.e.ports.Spa.Book(ctx, in)
 		if err != nil {
@@ -1467,7 +1533,7 @@ func (t *turn) createBookings(ctx context.Context) {
 	}
 	in := spa.PublicGroupInput{
 		BranchID: s.OutletID, CustomerName: s.Name, CustomerPhone: t.conv.Phone, TherapistGenderPref: s.Pref,
-		Notes: notes, PaymentMethod: "outlet", Source: "whatsapp",
+		Notes: notes, PaymentMethod: "outlet", Source: "whatsapp", RoomID: s.RoomID,
 	}
 	starts := make([]time.Time, len(s.Persons))
 	for i, p := range s.Persons {

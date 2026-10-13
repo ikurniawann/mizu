@@ -53,6 +53,7 @@ import type {
   PublicLookup,
   PublicPayment,
   PublicSlot,
+  PublicRoom,
   PublicTherapist,
   PublicTreatment,
   SpaCustomer,
@@ -275,6 +276,8 @@ export const publicSpaApi = {
       variant_ids: variantIds.join(","),
       therapist_gender_pref: pref,
     })),
+  rooms: (branchId: string, startsAt: string, variantIds: string[]) =>
+    call<PublicRoom[]>(withQuery(`${PUBLIC_BASE}/outlets/${enc(branchId)}/rooms`, { starts_at: startsAt, variant_ids: variantIds.join(",") })),
   therapists: (branchId: string, startsAt: string, variantIds: string[], pref: string) =>
     call<PublicTherapist[]>(withQuery(`${PUBLIC_BASE}/outlets/${enc(branchId)}/therapists`, {
       starts_at: startsAt,

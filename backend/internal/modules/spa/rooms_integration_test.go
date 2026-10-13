@@ -28,12 +28,12 @@ func TestRoomsHoldBookingsAndShowOnBoard(t *testing.T) {
 	therapist := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Room", nil), "home_branch_id": branch}, http.StatusCreated)
 
 	// Master rooms: name unique per outlet, price per room.
-	vip := e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "VIP 1", "capacity": 2, "price_idr": 50000}, http.StatusCreated)
+	vip := e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "VIP 1", "capacity": 1, "price_idr": 50000}, http.StatusCreated)
 	e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "Reguler 1", "price_idr": 0}, http.StatusCreated)
 	e.call(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "VIP 1"}, http.StatusConflict)
 	e.call(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "  "}, http.StatusBadRequest)
 	vipID := vip["id"].(string)
-	e.data(admin, "PUT", "/api/spa/rooms/"+vipID, map[string]any{"name": "VIP 1", "capacity": 2, "price_idr": 75000, "is_active": true}, http.StatusOK)
+	e.data(admin, "PUT", "/api/spa/rooms/"+vipID, map[string]any{"name": "VIP 1", "capacity": 1, "price_idr": 75000, "is_active": true}, http.StatusOK)
 	rooms := e.list(admin, "/api/spa/rooms?branch_id="+branch)
 	if len(rooms) != 2 {
 		t.Fatalf("rooms = %v", rooms)
@@ -103,4 +103,60 @@ func TestRoomsHoldBookingsAndShowOnBoard(t *testing.T) {
 	}
 	// After checkout the room can no longer change.
 	e.call(admin, "PUT", "/api/spa/bookings/"+id+"/room", map[string]any{"room_id": nil}, http.StatusConflict)
+}
+
+// Guests choose a room themselves (website): the room list shows only rooms
+// with place left at that time, a couple room takes two bookings at once,
+// and the room price is part of the booking total.
+func TestGuestsChooseRoomOnline(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	e := setup(t)
+	admin := &e.admin
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID).Scan(&warehouse); err != nil {
+		t.Fatal(err)
+	}
+	branch := e.org.BranchID
+	e.data(admin, "PUT", "/api/spa/outlets/"+branch, map[string]any{"warehouse_id": warehouse, "open_time": "09:00", "close_time": "22:00", "slot_minutes": 30, "is_active": true, "public_booking": true}, http.StatusOK)
+	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "GRM" + testutil.RandomHex(3), "name": "Massage",
+		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 150000}}}, http.StatusCreated)
+	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	for i := 0; i < 4; i++ {
+		e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Room "+string(rune('A'+i)), nil), "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
+	}
+	couple := e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "Couple", "capacity": 2, "price_idr": 100000}, http.StatusCreated)
+	single := e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "Single", "capacity": 1, "price_idr": 0}, http.StatusCreated)
+	at := "2026-10-09T05:00:00.000Z"
+	rooms := func() map[string]bool {
+		out := map[string]bool{}
+		for _, x := range e.list(nil, "/api/public/spa/outlets/"+branch+"/rooms?starts_at=2026-10-09T05:00:00Z&variant_ids="+variant) {
+			out[x.(map[string]any)["name"].(string)] = true
+		}
+		return out
+	}
+	if r := rooms(); !r["Couple"] || !r["Single"] {
+		t.Fatalf("free rooms = %v", r)
+	}
+	book := func(phone, roomID string, status int) map[string]any {
+		return e.call(nil, "POST", "/api/public/spa/bookings", map[string]any{"branch_id": branch, "scheduled_at": at, "customer_name": "Tamu Room",
+			"customer_phone": phone, "variant_ids": []any{variant}, "room_id": roomID}, status)
+	}
+	res := book("0813 1000 0001", couple["id"].(string), http.StatusCreated)["data"].(map[string]any)
+	if res["room_name"] != "Couple" || res["room_price_idr"] != float64(100000) || res["total_idr"] != float64(250000) {
+		t.Fatalf("booking with room = %v / %v / %v", res["room_name"], res["room_price_idr"], res["total_idr"])
+	}
+	// The status page reads the same room and total.
+	status := e.data(nil, "GET", "/api/public/spa/bookings/"+res["access_token"].(string), nil, http.StatusOK)
+	if status["room_name"] != "Couple" || status["total_idr"] != float64(250000) {
+		t.Fatalf("status page = %v / %v", status["room_name"], status["total_idr"])
+	}
+	book("0813 1000 0002", couple["id"].(string), http.StatusCreated) // second place in the couple room
+	if r := rooms(); r["Couple"] {
+		t.Fatalf("a full couple room must not be offered: %v", r)
+	}
+	book("0813 1000 0003", couple["id"].(string), http.StatusConflict)
+	book("0813 1000 0004", single["id"].(string), http.StatusCreated)
+	book("0813 1000 0005", single["id"].(string), http.StatusConflict)
 }

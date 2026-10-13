@@ -129,17 +129,33 @@ func (store) updateRoom(ctx context.Context, q Q, id string, in roomInput) error
 	return err
 }
 
-// roomConflict returns the code of another open booking holding the room
-// within [start, end), or "".
-func (store) roomConflict(ctx context.Context, q Q, roomID, bookingID string, start, end time.Time) (string, error) {
-	var code string
-	err := q.QueryRow(ctx, `SELECT booking_code FROM spa.bookings
-	   WHERE room_id = $1 AND id <> $2 AND status IN ($3, $4, $5) AND scheduled_at < $7 AND ends_at > $6
-	   ORDER BY scheduled_at LIMIT 1`, roomID, bookingID, domain.BookingUnassigned, domain.BookingAssigned, domain.BookingInTreatment, start, end).Scan(&code)
-	if database.IsNoRows(err) {
-		return "", nil
+// roomUse counts the other open bookings holding the room within
+// [start, end) and names the first of them. A room holds as many bookings at
+// once as its capacity (a couple room takes two guests).
+func (store) roomUse(ctx context.Context, q Q, roomID, bookingID string, start, end time.Time) (int, string, error) {
+	var n int
+	var code *string
+	err := q.QueryRow(ctx, `SELECT count(*)::int, min(booking_code) FROM spa.bookings
+	   WHERE room_id = $1 AND id::text <> $2 AND status IN ($3, $4, $5) AND scheduled_at < $7 AND ends_at > $6`,
+		roomID, bookingID, domain.BookingUnassigned, domain.BookingAssigned, domain.BookingInTreatment, start, end).Scan(&n, &code)
+	if code == nil {
+		return n, "", err
 	}
-	return code, err
+	return n, *code, err
+}
+
+// roomConflict returns the code of a booking that leaves no place for one
+// more guest in the room within [start, end), or "".
+func (st store) roomConflict(ctx context.Context, q Q, roomID, bookingID string, start, end time.Time) (string, error) {
+	var capacity int
+	if err := q.QueryRow(ctx, `SELECT capacity FROM spa.rooms WHERE id = $1`, roomID).Scan(&capacity); err != nil {
+		return "", err
+	}
+	n, code, err := st.roomUse(ctx, q, roomID, bookingID, start, end)
+	if err != nil || n < capacity {
+		return "", err
+	}
+	return code, nil
 }
 
 func (store) setBookingRoom(ctx context.Context, q Q, bookingID string, roomID *string, price float64) error {
@@ -270,6 +286,12 @@ func (s *Service) SetBookingRoom(ctx context.Context, userID, bookingID, roomID 
 }
 
 func (s *Service) assignRoomIn(ctx context.Context, q Q, userID string, b *bookingRow, roomID string) error {
+	return s.assignRoom(ctx, q, userID, b, roomID, false)
+}
+
+// assignRoom puts the booking in the room; waivePrice charges no room price
+// (the second guest of a party sharing the room — the price counts once).
+func (s *Service) assignRoom(ctx context.Context, q Q, userID string, b *bookingRow, roomID string, waivePrice bool) error {
 	if !domain.IsOpenBooking(b.Status) {
 		return httpx.Conflict("Booking sudah " + domain.BookingLabel(b.Status))
 	}
@@ -299,7 +321,11 @@ func (s *Service) assignRoomIn(ctx context.Context, q Q, userID string, b *booki
 	if code != "" {
 		return httpx.Conflict("Room " + room.Name + " sudah dipakai booking " + code + " pada jam itu")
 	}
-	if err := s.st.setBookingRoom(ctx, q, b.ID, &room.ID, room.PriceIDR); err != nil {
+	price := room.PriceIDR
+	if waivePrice {
+		price = 0
+	}
+	if err := s.st.setBookingRoom(ctx, q, b.ID, &room.ID, price); err != nil {
 		return err
 	}
 	return s.st.event(ctx, q, b.ID, nil, "room", nil, nil, userID, "Room "+room.Name)
@@ -412,4 +438,62 @@ func (s *Service) roomBillLine(ctx context.Context, q Q, o *outletRow, roomID st
 		return BillLine{}, err
 	}
 	return BillLine{ProductID: pid, Name: "Room " + room.Name, SKU: "ROOM-" + rid[:8], UnitPrice: price, Note: "Room"}, nil
+}
+
+/* ── rooms for guests (website & WhatsApp) ───────────────────────────── */
+
+// PublicRoom is a room a guest may choose for a slot.
+type PublicRoom struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Capacity    int     `json:"capacity"`
+	PriceIDR    float64 `json:"price_idr"`
+	Description string  `json:"description"`
+}
+
+// PublicRoomsAt lists the outlet's active rooms with room for people more
+// guests during [start, end).
+func (s *Service) PublicRoomsAt(ctx context.Context, branchID string, start, end time.Time, people int) ([]PublicRoom, error) {
+	if _, err := s.publicOutlet(ctx, s.db, branchID); err != nil {
+		return nil, err
+	}
+	if people < 1 {
+		people = 1
+	}
+	rooms, err := s.st.rooms(ctx, s.db, branchID, true)
+	if err != nil {
+		return nil, err
+	}
+	out := []PublicRoom{}
+	for _, r := range rooms {
+		if r.Capacity < people {
+			continue
+		}
+		n, _, err := s.st.roomUse(ctx, s.db, r.ID, "", start, end)
+		if err != nil {
+			return nil, err
+		}
+		if n+people > r.Capacity {
+			continue
+		}
+		out = append(out, PublicRoom{ID: r.ID, Name: r.Name, Capacity: r.Capacity, PriceIDR: r.PriceIDR, Description: r.Description})
+	}
+	return out, nil
+}
+
+// PublicRooms is PublicRoomsAt for a single guest's treatments starting at startsAt.
+func (s *Service) PublicRooms(ctx context.Context, branchID string, startsAt time.Time, variantIDs []string) ([]PublicRoom, error) {
+	reqs := make([]itemRequest, len(variantIDs))
+	for i, id := range variantIDs {
+		reqs[i] = itemRequest{VariantID: id}
+	}
+	items, err := s.planItems(ctx, s.db, branchID, startsAt, reqs)
+	if err != nil {
+		return nil, err
+	}
+	end := startsAt
+	for _, it := range items {
+		end = end.Add(time.Duration(it.Variant.DurationMin) * time.Minute)
+	}
+	return s.PublicRoomsAt(ctx, branchID, startsAt, end, 1)
 }

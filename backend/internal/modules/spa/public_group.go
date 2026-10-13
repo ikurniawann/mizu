@@ -31,6 +31,9 @@ type PublicGroupInput struct {
 	PaymentMethod       string
 	Source              string
 	Guests              []PublicGuest
+	// RoomID: one room for the whole party (its capacity must fit them;
+	// the room price is charged once, on the first guest).
+	RoomID string
 }
 
 // MaxPublicGroup is the most guests one chat group booking covers.
@@ -49,6 +52,7 @@ func (s *Service) PublicBookGroup(ctx context.Context, in PublicGroupInput) ([]*
 			BranchID: in.BranchID, ScheduledAt: g.ScheduledAt, CustomerName: in.CustomerName + " (" + strconv.Itoa(i+1) + ")",
 			CustomerPhone: in.CustomerPhone, TherapistGenderPref: in.TherapistGenderPref, Notes: in.Notes,
 			VariantIDs: g.VariantIDs, PaymentMethod: in.PaymentMethod, Source: in.Source, TherapistID: g.TherapistID,
+			RoomID: in.RoomID, roomPriceWaived: i > 0,
 		}
 		if err := publicBookingChecks(&inputs[i], now, s.onlinePaymentReady()); err != nil {
 			return nil, err

@@ -409,6 +409,9 @@ type PublicBookingResult struct {
 	OnlinePayment bool `json:"online_payment"`
 	// Deposit is the DP that holds the slot (status none when not required).
 	Deposit DepositInfo `json:"deposit"`
+	// Room the guest chose (price included in TotalIDR).
+	RoomName     *string `json:"room_name"`
+	RoomPriceIDR float64 `json:"room_price_idr"`
 	// bookingID is kept for follow-up reads.
 	bookingID string
 }

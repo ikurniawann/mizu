@@ -1090,6 +1090,11 @@ func (store) publicBookingByToken(ctx context.Context, q Q, token string, now ti
 	for _, item := range items {
 		result.TotalIDR += item.PriceIDR
 	}
+	if err := q.QueryRow(ctx, `SELECT r.name, b.room_price_idr::float8 FROM spa.bookings b LEFT JOIN spa.rooms r ON r.id = b.room_id
+	  WHERE b.id = $1`, bookingID).Scan(&result.RoomName, &result.RoomPriceIDR); err != nil {
+		return nil, err
+	}
+	result.TotalIDR += result.RoomPriceIDR
 	return result, nil
 }
 

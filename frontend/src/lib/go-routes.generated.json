@@ -4167,6 +4167,11 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/public/spa/outlets/{branchId}/rooms"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/public/spa/outlets/{branchId}/slots"
   },
   {

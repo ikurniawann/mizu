@@ -550,7 +550,18 @@ export interface PublicBookingInput {
   variant_ids: string[];
   /** Terapis pilihan tamu; kosong = dipilihkan outlet. */
   therapist_id?: string;
+  /** Room pilihan tamu (opsional); harganya ditambahkan ke total. */
+  room_id?: string;
   payment_method?: PublicPaymentMethod;
+}
+
+/** Room yang masih bisa dipilih tamu pada jam itu. */
+export interface PublicRoom {
+  id: string;
+  name: string;
+  capacity: number;
+  price_idr: number;
+  description: string;
 }
 
 /** DP (deposit) yang menahan jadwal booking online. */
@@ -590,6 +601,9 @@ export interface PublicBookingResult {
   deposit?: DepositInfo;
   /** Tamu masih bisa mengubah jadwal (sampai 1 jam sebelum kunjungan). */
   can_reschedule?: boolean;
+  /** Room pilihan tamu; harganya sudah termasuk total_idr. */
+  room_name?: string | null;
+  room_price_idr?: number;
 }
 
 /** POST /api/public/spa/bookings/find: kode booking + nomor WA cocok. */

@@ -130,8 +130,12 @@ func TestSessionNextStep(t *testing.T) {
 	}
 	s.Persons = append(s.Persons, Person{VariantID: "b"})
 	s.Date, s.SlotISO = "2026-10-13", "2026-10-13T03:00:00Z"
+	if s.NextStep() != StepRoom {
+		t.Fatal("groups skip the therapist step and go to the room")
+	}
+	s.RoomDone = true
 	if s.NextStep() != StepConfirm {
-		t.Fatal("groups skip the therapist step")
+		t.Fatal("room answered: confirm")
 	}
 	s.People, s.Persons = 1, s.Persons[:1]
 	if s.NextStep() != StepTherapist {

@@ -269,6 +269,28 @@ func AskTherapist(l L, options []MenuOption, pref string) string {
 		"\n\nReply with the therapist's *number*, or *0* to let Mizu choose. You can also type *female* / *male*.")
 }
 
+// NoRoomLabel is the "no particular room" choice.
+func NoRoomLabel(l L) string { return t(l, "Tanpa room khusus", "No particular room") }
+
+// RoomLabel is "VIP 1 · 2 orang · Rp 100.000" (or "gratis").
+func RoomLabel(l L, name string, capacity int, price float64) string {
+	label := name + " · " + strconv.Itoa(capacity) + t(l, " orang", " people")
+	if price > 0 {
+		return label + " · " + Rupiah(price)
+	}
+	return label + t(l, " · gratis", " · free")
+}
+
+// AskRoom offers the rooms free for the chosen time.
+func AskRoom(l L, options []MenuOption, people int) string {
+	head := t(l, "Mau pakai room tertentu? Room yang masih kosong di jam itu", "Would you like a particular room? Rooms free at that time")
+	if people > 1 {
+		head += t(l, " (muat "+strconv.Itoa(people)+" orang)", " (for "+strconv.Itoa(people)+" people)")
+	}
+	return head + ":\n" + NumberedMenu(options) + t(l, "\n\nBalas *nomor* room, atau *0* kalau tidak perlu room khusus. Harga room ditambahkan ke total.",
+		"\n\nReply with the room's *number*, or *0* if you don't need a particular room. The room price is added to the total.")
+}
+
 // Summary lists everything before the guest confirms. depositEach is the
 // booking fee (DP) per booking that online bookings must pay; 0 = no DP.
 func Summary(l L, s *Session, depositEach float64) string {
@@ -301,6 +323,13 @@ func Summary(l L, s *Session, depositEach float64) string {
 		b.WriteString(t(l, "• Terapis: pria (dipilihkan Mizu)\n", "• Therapist: male (chosen by Mizu)\n"))
 	default:
 		b.WriteString(t(l, "• Terapis: dipilihkan oleh Mizu\n", "• Therapist: chosen by Mizu\n"))
+	}
+	if s.RoomID != "" {
+		price := t(l, "gratis", "free")
+		if s.RoomPrice > 0 {
+			price = Rupiah(s.RoomPrice)
+		}
+		b.WriteString("• Room: *" + s.RoomName + "* — " + price + "\n")
 	}
 	b.WriteString(t(l, "• Atas nama: *", "• Name: *") + s.Name + "*\n")
 	b.WriteString("• Total: *" + Rupiah(s.TotalPrice()) + "*\n")

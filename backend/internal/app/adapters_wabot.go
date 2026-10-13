@@ -108,6 +108,9 @@ func (a waBotSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.sv
 func (a waBotSpa) PhoneBanned(ctx context.Context, phone string) (bool, error) {
 	return a.svc.PhoneBanned(ctx, phone)
 }
+func (a waBotSpa) Rooms(ctx context.Context, branchID string, start, end time.Time, people int) ([]spa.PublicRoom, error) {
+	return a.svc.PublicRoomsAt(ctx, branchID, start, end, people)
+}
 func (a waBotSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
 	return a.svc.PendingDeposits(ctx, from, to)
 }

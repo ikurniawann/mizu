@@ -2028,6 +2028,10 @@ type publicBookingInput struct {
 	Source string
 	// skipCap: the group path checked the per-phone cap once for the whole party.
 	skipCap bool
+	// RoomID is the room the guest chose ("" = none).
+	RoomID string
+	// roomPriceWaived: a later guest of a party sharing the room (charged once).
+	roomPriceWaived bool
 }
 
 // PublicBookingInput is the self-service booking request for other
@@ -2165,6 +2169,16 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 		// A booking fulfils the guest's waitlist wish for that outlet and day.
 		if err := s.resolveWaitlistIn(ctx, q, o.BranchID, phone, domain.WIBDate(in.ScheduledAt)); err != nil {
 			return err
+		}
+		// The room the guest chose (revisi R6): refused when it has no place left.
+		if in.RoomID != "" {
+			row, err := s.st.bookingRow(ctx, q, id, true)
+			if err != nil {
+				return err
+			}
+			if err := s.assignRoom(ctx, q, "", row, in.RoomID, in.roomPriceWaived); err != nil {
+				return err
+			}
 		}
 		// Online bookings hold their slot against a deposit (DP).
 		if err := s.applyDeposit(ctx, q, id, now); err != nil {

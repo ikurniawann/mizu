@@ -77,6 +77,9 @@ func (a txSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.svc.E
 func (a txSpa) PhoneBanned(ctx context.Context, phone string) (bool, error) {
 	return a.svc.PhoneBanned(ctx, phone)
 }
+func (a txSpa) Rooms(ctx context.Context, branchID string, start, end time.Time, people int) ([]spa.PublicRoom, error) {
+	return a.svc.PublicRoomsAt(ctx, branchID, start, end, people)
+}
 func (a txSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
 	return a.svc.PendingDeposits(ctx, from, to)
 }
@@ -857,4 +860,39 @@ func TestBotBannedMemberSeesEveryDayFull(t *testing.T) {
 	}
 	r = e.say("besok")
 	e.wants(r, "Jam yang masih tersedia")
+}
+
+// The guest chooses a room in the chat (revisi R6): it shows in the summary,
+// is added to the total and lands on the booking.
+func TestBotGuestChoosesRoom(t *testing.T) {
+	e := setupBot(t)
+	var roomID string
+	if err := e.tx.QueryRow(e.ctx, `INSERT INTO spa.rooms (branch_id, name, capacity, price_idr) VALUES ($1, 'VIP Bot', 2, 100000) RETURNING id::text`,
+		e.branch).Scan(&roomID); err != nil {
+		t.Fatal(err)
+	}
+	e.start()
+	e.say("1")
+	e.say("1")
+	e.say("besok jam 10 pagi")
+	r := e.say("0") // therapist chosen by Mizu → the room question
+	e.wants(r, "Mau pakai room tertentu?", "Tanpa room khusus", "VIP Bot · 2 orang · Rp 100.000")
+	r = e.say("1")
+	e.wants(r, "ringkasan", "Room: *VIP Bot* — Rp 100.000", "Total: *Rp 250.000*")
+	// "kembali" from the summary asks the room again.
+	r = e.say("kembali")
+	e.wants(r, "Mau pakai room tertentu?")
+	r = e.say("1")
+	e.wants(r, "Room: *VIP Bot*")
+	r = e.say("ya")
+	e.wants(r, "Kode booking")
+	var got string
+	var price float64
+	if err := e.tx.QueryRow(e.ctx, `SELECT room_id::text, room_price_idr::float8 FROM spa.bookings WHERE customer_phone = $1 AND source = 'whatsapp'`, e.local()).
+		Scan(&got, &price); err != nil {
+		t.Fatal(err)
+	}
+	if got != roomID || price != 100000 {
+		t.Fatalf("booking room = %s / %v", got, price)
+	}
 }

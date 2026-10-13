@@ -17,6 +17,7 @@ const (
 	StepDate      = "date"
 	StepTime      = "time"
 	StepTherapist = "therapist"
+	StepRoom      = "room"
 	StepName      = "name"
 	StepConfirm   = "confirm"
 	StepPayment   = "payment"
@@ -144,6 +145,14 @@ type Session struct {
 	FromWaitlist bool   `json:"from_waitlist,omitempty"`
 	// PendingTreatments were named before the outlet was known.
 	PendingTreatments []string `json:"pending_treatments,omitempty"`
+	// Room the guest chose (revisi R6): RoomDone once answered or skipped
+	// (no room free); RoomAsked when the menu was actually shown. RoomPrice
+	// is charged once for the party.
+	RoomID    string  `json:"room_id,omitempty"`
+	RoomName  string  `json:"room_name,omitempty"`
+	RoomPrice float64 `json:"room_price,omitempty"`
+	RoomDone  bool    `json:"room_done,omitempty"`
+	RoomAsked bool    `json:"room_asked,omitempty"`
 }
 
 // NewSession starts at the outlet step.
@@ -174,12 +183,18 @@ func (s *Session) SlotOf(i int) string {
 	return s.SlotISO
 }
 
-// ClearSlot forgets the chosen time(s).
+// ClearSlot forgets the chosen time(s) and the room (it depends on the time).
 func (s *Session) ClearSlot() {
 	s.SlotISO = ""
 	for i := range s.Persons {
 		s.Persons[i].SlotISO = ""
 	}
+	s.ClearRoom()
+}
+
+// ClearRoom forgets the room choice so the room step asks again.
+func (s *Session) ClearRoom() {
+	s.RoomID, s.RoomName, s.RoomPrice, s.RoomDone, s.RoomAsked = "", "", 0, false, false
 }
 
 // SetMenu remembers the numbered options the bot just offered.
@@ -209,6 +224,8 @@ func (s *Session) NextStep() string {
 		return StepTime
 	case s.People == 1 && s.TherapistID == "" && !s.SystemPick:
 		return StepTherapist
+	case len(s.Bookings) == 0 && !s.RoomDone:
+		return StepRoom
 	case len(s.Bookings) == 0:
 		return StepConfirm
 	case s.PayMethod == "":
@@ -217,9 +234,10 @@ func (s *Session) NextStep() string {
 	return StepDone
 }
 
-// TotalPrice and TotalDuration sum the chosen variants.
+// TotalPrice is what the guest pays: the chosen variants plus the room
+// (once); TotalDuration is the longest treatment.
 func (s *Session) TotalPrice() float64 {
-	t := 0.0
+	t := s.RoomPrice
 	for _, p := range s.Persons {
 		t += p.Price
 	}
@@ -278,8 +296,16 @@ func (s *Session) Back() bool {
 		s.Date, s.Period, s.WantedTime = "", "", ""
 	case StepTherapist:
 		s.ClearSlot()
-	case StepConfirm:
+	case StepRoom:
 		if s.People == 1 && (s.TherapistID != "" || s.SystemPick) {
+			s.TherapistID, s.TherapistName, s.SystemPick = "", "", false
+		} else {
+			s.ClearSlot()
+		}
+	case StepConfirm:
+		if s.RoomAsked {
+			s.ClearRoom()
+		} else if s.People == 1 && (s.TherapistID != "" || s.SystemPick) {
 			s.TherapistID, s.TherapistName, s.SystemPick = "", "", false
 		} else {
 			s.ClearSlot()

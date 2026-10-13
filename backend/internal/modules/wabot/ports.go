@@ -40,6 +40,8 @@ type Spa interface {
 	ExpireDeposits(ctx context.Context) (int, error)
 	// PhoneBanned: a banned member sees every schedule as unavailable.
 	PhoneBanned(ctx context.Context, phone string) (bool, error)
+	// Rooms lists the outlet's rooms with place for people guests in [start, end).
+	Rooms(ctx context.Context, branchID string, start, end time.Time, people int) ([]spa.PublicRoom, error)
 	// PendingDeposits lists unpaid-DP bookings whose hold ends within [from, to).
 	PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error)
 }

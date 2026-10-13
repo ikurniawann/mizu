@@ -204,8 +204,8 @@ func (store) payRow(ctx context.Context, q Q, where string, arg any) (*payRow, e
 
 func (store) activeTotal(ctx context.Context, q Q, bookingID string) (float64, error) {
 	var total float64
-	err := q.QueryRow(ctx, `SELECT COALESCE(sum(price_idr), 0)::float8 FROM spa.booking_items
-	  WHERE booking_id = $1 AND status <> 'cancelled'`, bookingID).Scan(&total)
+	err := q.QueryRow(ctx, `SELECT (COALESCE((SELECT sum(price_idr) FROM spa.booking_items WHERE booking_id = $1 AND status <> 'cancelled'), 0)
+	    + COALESCE((SELECT room_price_idr FROM spa.bookings WHERE id = $1), 0))::float8`, bookingID).Scan(&total)
 	return total, err
 }
 

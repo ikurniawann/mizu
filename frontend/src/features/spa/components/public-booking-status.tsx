@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, Check, Copy, Link2, Loader2, MapPin, MessageCircle, Phone, Sparkles, UserRound, X } from "lucide-react";
+import { CalendarDays, Check, Copy, DoorOpen, Link2, Loader2, MapPin, MessageCircle, Phone, Sparkles, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container, Kicker } from "@/features/site/components/site-section";
 import { formatDateLong, formatRupiah } from "@/lib/format";
@@ -123,6 +123,14 @@ export function PublicSpaBookingStatus({ token, notice }: { token: string; notic
           <SummaryRow icon={UserRound} label="Terapis">
             {result.therapist_name ?? <span className="font-normal text-body">Dipilihkan oleh Mizu sebelum kunjungan</span>}
           </SummaryRow>
+          {result.room_name && (
+            <SummaryRow icon={DoorOpen} label="Room">
+              <span className="flex justify-between gap-3">
+                <span>{result.room_name}</span>
+                <span className="tabular-nums">{(result.room_price_idr ?? 0) > 0 ? formatRupiah(result.room_price_idr ?? 0) : "Gratis"}</span>
+              </span>
+            </SummaryRow>
+          )}
           <SummaryRow icon={Sparkles} label="Treatment">
             <ul className="space-y-1.5">
               {result.items.map((item, i) => (

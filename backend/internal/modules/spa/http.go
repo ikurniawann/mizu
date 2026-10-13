@@ -168,6 +168,7 @@ func (h *Handler) Routes() []module.Route {
 		public("GET "+publicPrefix+"/outlets/{branchId}/treatments", h.publicTreatments),
 		public("GET "+publicPrefix+"/outlets/{branchId}/slots", h.publicSlots),
 		public("GET "+publicPrefix+"/outlets/{branchId}/therapists", h.publicTherapists),
+		public("GET "+publicPrefix+"/outlets/{branchId}/rooms", h.publicRooms),
 		public("GET "+publicPrefix+"/bookings/{token}", h.publicBooking),
 		public("POST "+publicPrefix+"/bookings/{token}/change", h.publicChangeBooking),
 		public("POST "+publicPrefix+"/bookings/find", h.publicFindBooking),
@@ -1322,6 +1323,7 @@ func (h *Handler) publicBook(w http.ResponseWriter, r *http.Request) error {
 		Notes:               f.StrDefault("notes", "", validate.StrOpts{Trim: true, Max: 500}),
 		VariantIDs:          f.Strings("variant_ids", req, 5, uuidOpts),
 		TherapistID:         f.StrDefault("therapist_id", "", uuidOpts),
+		RoomID:              f.StrDefault("room_id", "", uuidOpts),
 		PaymentMethod:       f.StrDefault("payment_method", PaymentAtOutlet, validate.StrOpts{Check: validate.EnumCheck([]string{PaymentAtOutlet, PaymentOnline})}),
 	}
 	if at := parseTime(f.Str("scheduled_at", req, datetimeOpts)); at != nil {

@@ -8,6 +8,7 @@ import {
   Check,
   Clock,
   CreditCard,
+  DoorOpen,
   QrCode,
   Loader2,
   MapPin,
@@ -38,10 +39,10 @@ import {
 } from "../public-booking";
 import { resetBookingFunnel, trackBookingStep } from "../booking-funnel";
 import { publicSpaApi } from "../api";
-import { usePublicSpaOutlets, usePublicSpaSlots, usePublicSpaTherapists, usePublicSpaTreatments } from "../queries";
+import { usePublicSpaOutlets, usePublicSpaRooms, usePublicSpaSlots, usePublicSpaTherapists, usePublicSpaTreatments } from "../queries";
 import { isValidPhone } from "../rules";
 import { addDaysToDate, shortClock, wibClockOf, wibDateOf } from "../time";
-import type { GenderPref, PublicOutlet, PublicPaymentMethod, PublicTherapist, PublicVariant } from "../types";
+import type { GenderPref, PublicOutlet, PublicPaymentMethod, PublicRoom, PublicTherapist, PublicVariant } from "../types";
 
 const MAX_DAYS_AHEAD = 30;
 const STRIP_DAYS = 14;
@@ -95,6 +96,8 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const [notes, setNotes] = useState("");
   // null = "Pilihkan oleh Mizu"; pilihan hanya berlaku selama terapis itu masih kosong di jam terpilih.
   const [therapistId, setTherapistId] = useState<string | null>(null);
+  // null = tanpa room khusus; pilihan berlaku selama room itu masih punya tempat di jam terpilih.
+  const [roomId, setRoomId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<PublicPaymentMethod>("outlet");
   const [redirecting, setRedirecting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -128,7 +131,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const picked: Picked[] = ids.flatMap((id) => byVariant.get(id) ?? []);
 
   const totalDuration = picked.reduce((sum, p) => sum + p.variant.duration_min, 0);
-  const totalPrice = picked.reduce((sum, p) => sum + p.variant.price_idr, 0);
+  const treatmentPrice = picked.reduce((sum, p) => sum + p.variant.price_idr, 0);
   const availableSlots = usePublicSpaSlots(outlet?.branch_id ?? "", date, ids, pref);
   const slots = useMemo(
     () => (availableSlots.data ?? []).map((slot) => ({ iso: slot.starts_at, time: wibClockOf(slot.starts_at) })),
@@ -137,6 +140,10 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const slotValid = !!slotIso && slots.some((s) => s.iso === slotIso);
   const freeTherapists = usePublicSpaTherapists(outlet?.branch_id ?? "", slotValid ? slotIso : null, ids, pref);
   const therapist = freeTherapists.data?.find((t) => t.id === therapistId) ?? null;
+  const freeRooms = usePublicSpaRooms(outlet?.branch_id ?? "", slotValid ? slotIso : null, ids);
+  const room = freeRooms.data?.find((r) => r.id === roomId) ?? null;
+  // Total yang dibayar tamu: treatment + room (bila dipilih).
+  const totalPrice = treatmentPrice + (room?.price_idr ?? 0);
   const onlineReady = !!outlet?.online_payment;
   // DP: booking online menahan jadwal setelah DP dibayar; sisa di outlet.
   const depositIdr = outlet?.deposit_idr ?? 0;
@@ -216,6 +223,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
         notes: notes.trim(),
         variant_ids: picked.map((p) => p.variant.id),
         ...(therapist ? { therapist_id: therapist.id } : {}),
+        ...(room ? { room_id: room.id } : {}),
         payment_method: payOnline ? "online" : "outlet",
       },
       {
@@ -250,12 +258,14 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
           trackBookingStep("error", outlet.branch_id);
           setFormError(err.message);
           // Jam atau terapis keburu terisi orang lain: kembali ke pilihan yang segar.
-          if (err.message.includes("penuh") || err.message.includes("Terapis pilihanmu")) {
+          if (err.message.includes("penuh") || err.message.includes("Terapis pilihanmu") || err.message.includes("Room ")) {
             if (err.message.includes("penuh")) setSlotIso(null);
             setTherapistId(null);
+            setRoomId(null);
             go("waktu");
             void availableSlots.refetch();
             void freeTherapists.refetch();
+            void freeRooms.refetch();
           }
         },
       }
@@ -345,6 +355,9 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               therapistsLoading={freeTherapists.isLoading}
               therapistId={therapist?.id ?? null}
               onTherapist={setTherapistId}
+              rooms={freeRooms.data ?? []}
+              roomId={room?.id ?? null}
+              onRoom={setRoomId}
             />
           )}
 
@@ -359,6 +372,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                   total={totalPrice}
                   deposit={needsDeposit ? depositIdr : 0}
                   therapistName={therapist?.name ?? null}
+                  room={room}
                 />
               </div>
               <div className="space-y-5 rounded-card bg-card p-5 shadow-card md:p-6">
@@ -469,6 +483,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               total={totalPrice}
               deposit={needsDeposit ? depositIdr : 0}
               therapistName={therapist?.name ?? null}
+              room={room}
               showTherapist={step === "waktu" || step === "kontak"}
               onRemove={step === "treatment" ? toggleVariant : undefined}
             />
@@ -806,6 +821,9 @@ function TimeStep({
   therapistsLoading,
   therapistId,
   onTherapist,
+  rooms,
+  roomId,
+  onRoom,
 }: {
   outlet: PublicOutlet;
   today: string;
@@ -824,6 +842,9 @@ function TimeStep({
   therapistsLoading: boolean;
   therapistId: string | null;
   onTherapist: (id: string | null) => void;
+  rooms: PublicRoom[];
+  roomId: string | null;
+  onRoom: (id: string | null) => void;
 }) {
   const strip = dateStrip(today, STRIP_DAYS);
   const inStrip = strip.some((d) => d.date === date);
@@ -962,6 +983,8 @@ function TimeStep({
         <TherapistPicker therapists={therapists} loading={therapistsLoading} value={therapistId} onChange={onTherapist} />
       )}
 
+      {selected && rooms.length > 0 && <RoomPicker rooms={rooms} value={roomId} onChange={onRoom} />}
+
       {selected ? (
         <div className="flex items-center gap-3 rounded-2xl bg-accent-soft px-4 py-3 text-sm">
           <Clock className="size-5 shrink-0 text-forest dark:text-accent" />
@@ -1059,6 +1082,49 @@ function TherapistPicker({
   );
 }
 
+// ── Pilih room ───────────────────────────────────────────────────────────────
+
+/** Room untuk jam terpilih (revisi R6): "Tanpa room khusus" (bawaan) atau room yang masih punya tempat; harganya ditambahkan ke total. */
+function RoomPicker({ rooms, value, onChange }: { rooms: PublicRoom[]; value: string | null; onChange: (id: string | null) => void }) {
+  const option = (on: boolean) =>
+    cn(
+      "flex items-start gap-3 rounded-2xl p-3 text-left text-sm shadow-card ring-2 transition",
+      on ? "bg-ink text-on-ink ring-ink" : "bg-card ring-transparent hover:bg-surface"
+    );
+  return (
+    <fieldset className="space-y-3">
+      <legend className="flex w-full items-baseline justify-between gap-3">
+        <span className="text-sm font-semibold">Room</span>
+        <span className="text-xs text-muted-foreground">{rooms.length} room tersedia di jam ini</span>
+      </legend>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <button type="button" aria-pressed={value === null} onClick={() => onChange(null)} className={option(value === null)}>
+          <DoorOpen className="mt-0.5 size-5 shrink-0" />
+          <span className="min-w-0">
+            <span className="block font-semibold">Tanpa room khusus</span>
+            <span className={cn("block text-xs", value === null ? "text-on-ink-muted" : "text-muted-foreground")}>Outlet menyiapkan ruang treatment · gratis</span>
+          </span>
+        </button>
+        {rooms.map((r) => {
+          const on = value === r.id;
+          return (
+            <button key={r.id} type="button" aria-pressed={on} onClick={() => onChange(r.id)} className={option(on)}>
+              <DoorOpen className="mt-0.5 size-5 shrink-0" />
+              <span className="min-w-0">
+                <span className="block truncate font-semibold">{r.name}</span>
+                <span className={cn("block text-xs", on ? "text-on-ink-muted" : "text-muted-foreground")}>
+                  {r.capacity} orang · {r.price_idr > 0 ? `+${formatRupiah(r.price_idr)}` : "gratis"}
+                  {r.description ? ` · ${r.description}` : ""}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 // ── Ringkasan ────────────────────────────────────────────────────────────────
 
 function Summary({
@@ -1069,6 +1135,7 @@ function Summary({
   total,
   deposit = 0,
   therapistName,
+  room = null,
   showTherapist = true,
   onRemove,
 }: {
@@ -1079,6 +1146,8 @@ function Summary({
   total: number;
   /** Booking fee (DP) yang dibayar online sekarang; 0 = tidak ada DP. */
   deposit?: number;
+  /** Room pilihan tamu (harganya sudah termasuk total). */
+  room?: PublicRoom | null;
   therapistName: string | null;
   showTherapist?: boolean;
   onRemove?: (v: PublicVariant) => void;
@@ -1138,6 +1207,14 @@ function Summary({
             </ul>
           )}
         </SummaryRow>
+        {room && (
+          <SummaryRow icon={DoorOpen} label="Room">
+            <span className="flex items-start justify-between gap-3">
+              <span>{room.name}</span>
+              <span className="tabular-nums">{room.price_idr > 0 ? formatRupiah(room.price_idr) : "Gratis"}</span>
+            </span>
+          </SummaryRow>
+        )}
         <div className="flex items-end justify-between border-t border-dashed border-border pt-4">
           <span className="text-body">
             Total
