@@ -288,6 +288,14 @@ export const useBookingDeposit = (id: string) => {
   });
 };
 
+export const useSetCustomerBan = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ banned, reason }: { banned: boolean; reason?: string }) => spaApi.setCustomerBan(id, banned, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["spa", "customer-directory"] }),
+  });
+};
+
 export const useSaveDepositSettings = () => {
   const qc = useQueryClient();
   return useMutation({

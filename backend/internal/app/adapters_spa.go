@@ -199,7 +199,7 @@ var _ spa.Customers = spaCustomers{}
 
 func (spaCustomers) Search(ctx context.Context, q database.Querier, term string, limit int) ([]spa.CustomerRef, error) {
 	like := "%" + strings.ReplaceAll(strings.ReplaceAll(term, "%", ""), "_", "") + "%"
-	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(name, ''), phone, email, gender FROM pos.pos_customers
+	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(name, ''), phone, email, gender, banned_at IS NOT NULL FROM pos.pos_customers
 	  WHERE COALESCE(is_active, true) AND (name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1)
 	  ORDER BY last_visit DESC NULLS LAST, name LIMIT $2`, like, limit)
 	if err != nil {
@@ -209,7 +209,7 @@ func (spaCustomers) Search(ctx context.Context, q database.Querier, term string,
 	out := []spa.CustomerRef{}
 	for rows.Next() {
 		var c spa.CustomerRef
-		if err := rows.Scan(&c.ID, &c.Name, &c.Phone, &c.Email, &c.Gender); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Phone, &c.Email, &c.Gender, &c.Banned); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -224,7 +224,7 @@ func (spaCustomers) Page(ctx context.Context, q database.Querier, term string, p
 	if err := q.QueryRow(ctx, `SELECT count(*) FROM pos.pos_customers WHERE `+where, like).Scan(&total); err != nil {
 		return nil, 0, err
 	}
-	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(name, ''), phone, email, gender FROM pos.pos_customers
+	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(name, ''), phone, email, gender, banned_at IS NOT NULL FROM pos.pos_customers
 	  WHERE `+where+` ORDER BY name, id LIMIT $2 OFFSET $3`, like, limit, (page-1)*limit)
 	if err != nil {
 		return nil, 0, err
@@ -233,7 +233,7 @@ func (spaCustomers) Page(ctx context.Context, q database.Querier, term string, p
 	out := []spa.CustomerRef{}
 	for rows.Next() {
 		var c spa.CustomerRef
-		if err := rows.Scan(&c.ID, &c.Name, &c.Phone, &c.Email, &c.Gender); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Phone, &c.Email, &c.Gender, &c.Banned); err != nil {
 			return nil, 0, err
 		}
 		out = append(out, c)
@@ -243,9 +243,9 @@ func (spaCustomers) Page(ctx context.Context, q database.Querier, term string, p
 
 func (spaCustomers) Detail(ctx context.Context, q database.Querier, id string) (*spa.CustomerProfile, error) {
 	var profile spa.CustomerProfile
-	err := q.QueryRow(ctx, `SELECT id::text, COALESCE(name, ''), phone, gender
+	err := q.QueryRow(ctx, `SELECT id::text, COALESCE(name, ''), phone, gender, banned_at, banned_reason
 	  FROM pos.pos_customers WHERE id = $1 AND COALESCE(is_active, true)`, id).
-		Scan(&profile.ID, &profile.Name, &profile.Phone, &profile.Gender)
+		Scan(&profile.ID, &profile.Name, &profile.Phone, &profile.Gender, &profile.BannedAt, &profile.BannedReason)
 	if database.IsNoRows(err) {
 		return nil, nil
 	}
@@ -253,6 +253,22 @@ func (spaCustomers) Detail(ctx context.Context, q database.Querier, id string) (
 		return nil, err
 	}
 	return &profile, nil
+}
+
+func (spaCustomers) Banned(ctx context.Context, q database.Querier, phone string) (bool, error) {
+	var banned bool
+	err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM pos.pos_customers WHERE phone = $1 AND banned_at IS NOT NULL)`, phone).Scan(&banned)
+	return banned, err
+}
+
+func (spaCustomers) SetBan(ctx context.Context, q database.Querier, id, userID, reason string, banned bool) error {
+	if !banned {
+		_, err := q.Exec(ctx, `UPDATE pos.pos_customers SET banned_at = NULL, banned_reason = NULL, banned_by = NULL, updated_at = now() WHERE id = $1`, id)
+		return err
+	}
+	_, err := q.Exec(ctx, `UPDATE pos.pos_customers SET banned_at = now(), banned_reason = NULLIF($2, ''), banned_by = NULLIF($3, '')::uuid, updated_at = now()
+	  WHERE id = $1`, id, reason, userID)
+	return err
 }
 
 func (spaCustomers) SetGender(ctx context.Context, q database.Querier, id, gender string) error {

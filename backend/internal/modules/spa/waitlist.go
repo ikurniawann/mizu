@@ -105,6 +105,11 @@ func (s *Service) JoinWaitlist(ctx context.Context, in WaitlistInput) (*Waitlist
 	if _, _, ok := domain.DayBounds(in.VisitDate); !ok {
 		return nil, httpx.BadRequest("Tanggal tidak valid")
 	}
+	if banned, err := s.ports.Customers.Banned(ctx, s.db, phone); err != nil {
+		return nil, err
+	} else if banned {
+		return nil, httpx.Conflict("Daftar tunggu untuk tanggal ini sudah penuh.")
+	}
 	if in.People < 1 {
 		in.People = 1
 	}

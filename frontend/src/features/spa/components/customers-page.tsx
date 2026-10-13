@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -53,6 +54,7 @@ export function SpaCustomersPage() {
                       <Link href={`/dashboard/spa/customer/${customer.id}`} className="text-brand-text hover:underline">
                         {customer.name || "—"}
                       </Link>
+                      {customer.banned && <Badge variant="destructive" className="ml-2">Diblokir</Badge>}
                     </TableCell>
                     <TableCell className="font-mono">{customer.phone || "—"}</TableCell>
                     <TableCell>{customer.gender ? genderLabel[customer.gender] : "Belum diisi"}</TableCell>

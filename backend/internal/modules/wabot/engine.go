@@ -64,6 +64,11 @@ func (e *Engine) Handle(ctx context.Context, db database.DB, conversationID, tex
 		sess = row.Session
 	}
 	t := &turn{e: e, db: db, conv: conv, sess: sess, settings: settings, at: at}
+	if banned, err := e.ports.Spa.PhoneBanned(ctx, conv.Phone); err != nil {
+		e.log.Warn("[wabot] cek status member", "error", err)
+	} else {
+		t.banned = banned
+	}
 	replies := t.run(ctx, text)
 	if sender == nil {
 		sender = e.ports.Sender
@@ -107,6 +112,9 @@ type turn struct {
 	failure string
 	// stagger holds two-wave seatings found while listing the day's slots.
 	stagger []staggerOption
+	// banned: the member is blocked; every day looks full and no
+	// alternatives/waitlist are offered (revisi R8).
+	banned bool
 }
 
 func (t *turn) run(ctx context.Context, text string) []string {
@@ -983,6 +991,9 @@ func (t *turn) rematch(persons []domain.Person) []domain.Person {
 // slots lists the day's free starts (every guest needs a free therapist).
 func (t *turn) slots(ctx context.Context, date string) ([]domain.Slot, error) {
 	s := t.sess
+	if t.banned {
+		return nil, nil
+	}
 	raw, err := t.e.ports.Spa.Slots(ctx, s.OutletID, date, s.FirstVariantIDs(), s.Pref)
 	if err != nil {
 		return nil, err
@@ -1280,6 +1291,10 @@ func (t *turn) promptTime(ctx context.Context) (string, bool) {
 func (t *turn) noSlots(ctx context.Context) string {
 	s := t.sess
 	l := s.Lang
+	if t.banned {
+		s.SetMenu(domain.StepDate, nil)
+		return domain.NoSlotsClosed(l, s.Date, s.People)
+	}
 	day, _ := time.ParseInLocation("2006-01-02", s.Date, domain.WIB)
 	var opts []domain.MenuOption
 	add := func(label, value string) {

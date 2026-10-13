@@ -74,6 +74,9 @@ func (a txSpa) DepositPolicy(ctx context.Context) (float64, int, bool) {
 	return cfg.AmountIDR, cfg.HoldMinutes, cfg.Enabled
 }
 func (a txSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.svc.ExpireDeposits(ctx) }
+func (a txSpa) PhoneBanned(ctx context.Context, phone string) (bool, error) {
+	return a.svc.PhoneBanned(ctx, phone)
+}
 func (a txSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
 	return a.svc.PendingDeposits(ctx, from, to)
 }
@@ -825,4 +828,33 @@ func e2Enabled(t *testing.T) (float64, int, bool) {
 		t.Fatal(err)
 	}
 	return cfg.AmountIDR, cfg.HoldMinutes, cfg.Enabled
+}
+
+// A banned member (revisi R8) is told every day is full, with no other days,
+// outlets or waitlist offered — and never that they are banned.
+func TestBotBannedMemberSeesEveryDayFull(t *testing.T) {
+	e := setupBot(t)
+	if _, err := e.tx.Exec(e.ctx, `INSERT INTO pos.pos_customers (phone, name, member_type, banned_at, banned_reason)
+	  VALUES ($1, 'Fajar Bot', 'registered', now(), 'uji')
+	  ON CONFLICT (phone) DO UPDATE SET banned_at = now(), banned_reason = 'uji'`, e.local()); err != nil {
+		t.Fatal(err)
+	}
+	e.start()
+	e.say("1")
+	e.say("1")
+	r := e.say("besok")
+	e.wants(r, "jadwal sudah penuh", "Coba tulis tanggal lain")
+	for _, forbidden := range []string{"daftar tunggu", "Yang bisa saya tawarkan", "blokir", "banned"} {
+		if strings.Contains(strings.ToLower(r), strings.ToLower(forbidden)) {
+			t.Fatalf("banned member must not see %q:\n%s", forbidden, r)
+		}
+	}
+	r = e.say("lusa")
+	e.wants(r, "jadwal sudah penuh")
+	// Unbanned: the same day has slots again.
+	if _, err := e.tx.Exec(e.ctx, `UPDATE pos.pos_customers SET banned_at = NULL, banned_reason = NULL WHERE phone = $1`, e.local()); err != nil {
+		t.Fatal(err)
+	}
+	r = e.say("besok")
+	e.wants(r, "Jam yang masih tersedia")
 }

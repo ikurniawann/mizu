@@ -195,6 +195,15 @@ func AskTime(l L, date string, options []MenuOption, requested string) string {
 
 // NoSlots offers what is left when the day is full: nearby days, another
 // outlet the same day, and the waitlist (menu values carry the choice).
+// NoSlotsClosed is the "full" answer without alternatives or waitlist (banned member).
+func NoSlotsClosed(l L, date string, people int) string {
+	msg := t(l, "Maaf, pada *"+LongDate(l, date)+"* jadwal sudah penuh", "Sorry, *"+LongDate(l, date)+"* is fully booked")
+	if people > 1 {
+		msg += t(l, " untuk "+strconv.Itoa(people)+" orang sekaligus", " for "+strconv.Itoa(people)+" people at once")
+	}
+	return msg + t(l, " 🙏 Coba tulis tanggal lain ya.", " 🙏 Please try another date.")
+}
+
 func NoSlots(l L, date string, options []MenuOption, people int) string {
 	msg := t(l, "Maaf, pada *"+LongDate(l, date)+"* jadwal sudah penuh", "Sorry, *"+LongDate(l, date)+"* is fully booked")
 	if people > 1 {

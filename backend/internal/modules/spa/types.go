@@ -110,6 +110,7 @@ type CustomerRef struct {
 	Phone  string  `json:"phone"`
 	Email  *string `json:"email"`
 	Gender *string `json:"gender"`
+	Banned bool    `json:"banned"`
 }
 
 // CustomerProfile is the POS identity shown in Spa's customer detail.
@@ -118,6 +119,9 @@ type CustomerProfile struct {
 	Name   string  `json:"name"`
 	Phone  string  `json:"phone"`
 	Gender *string `json:"gender"`
+	// Banned member: online channels always answer "jadwal tidak tersedia".
+	BannedAt     *time.Time `json:"banned_at"`
+	BannedReason *string    `json:"banned_reason"`
 }
 
 // CustomerTreatment is one completed spa treatment for a customer.
@@ -387,7 +391,7 @@ type PublicBookingResult struct {
 	PaymentStatus string       `json:"payment_status"`
 	CanManage     bool         `json:"can_manage"`
 	// CanReschedule: the guest may still move the visit (until 1 hour before).
-	CanReschedule bool `json:"can_reschedule"`
+	CanReschedule bool         `json:"can_reschedule"`
 	Items         []PublicItem `json:"items"`
 	TotalIDR      float64      `json:"total_idr"`
 	// TherapistName is the assigned therapist's short public name.

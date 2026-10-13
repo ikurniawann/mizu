@@ -3,11 +3,11 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { SpaCustomerDetailPage } from "./customer-detail-page";
 
-function showDetail(history: unknown[]) {
+function showDetail(history: unknown[], customer: Record<string, unknown> = {}) {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
     success: true,
     data: {
-      customer: { id: "c1", name: "Ayu", phone: "08123456789", gender: "female" },
+      customer: { id: "c1", name: "Ayu", phone: "08123456789", gender: "female", ...customer },
       history,
       pagination: { page: 1, limit: 20, total: history.length, totalPages: history.length ? 1 : 0 },
     },
@@ -32,4 +32,19 @@ it("menampilkan profil dan treatment selesai dari riwayat customer", async () =>
 it("menjelaskan saat customer belum punya treatment selesai", async () => {
   showDetail([]);
   expect(await screen.findByText("Belum ada treatment spa yang selesai.")).toBeInTheDocument();
+});
+
+it("menandai member yang diblokir beserta alasannya dan menawarkan buka blokir", async () => {
+  showDetail([], { banned_at: "2026-10-13T03:00:00Z", banned_reason: "Sering tidak datang" });
+  expect(await screen.findByText("Diblokir")).toBeInTheDocument();
+  expect(screen.getByText(/Alasan: Sering tidak datang/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Buka blokir" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Blokir member" })).not.toBeInTheDocument();
+});
+
+it("member aktif punya tombol blokir yang meminta alasan", async () => {
+  showDetail([]);
+  expect(await screen.findByText("Aktif")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Blokir member" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Buka blokir" })).not.toBeInTheDocument();
 });

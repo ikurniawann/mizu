@@ -99,10 +99,14 @@ export interface SpaCustomer {
   phone: string | null;
   email: string | null;
   gender: "male" | "female" | null;
+  /** Member diblokir: booking web & bot WA selalu dijawab "jadwal tidak tersedia". */
+  banned?: boolean;
 }
 
 export interface SpaCustomerProfile extends Pick<SpaCustomer, "id" | "name" | "phone"> {
   gender: "male" | "female" | null;
+  banned_at?: string | null;
+  banned_reason?: string | null;
 }
 
 export interface SpaCustomerTreatment {

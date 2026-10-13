@@ -44,6 +44,7 @@ import type {
   PublicTreatment,
   SpaCustomer,
   SpaCustomerDetail,
+  SpaCustomerProfile,
   Therapist,
   TherapistAvailability,
   TherapistCreateInput,
@@ -131,6 +132,8 @@ export const spaApi = {
     callPage<SpaCustomer>(withQuery(`${BASE}/customer-directory`, params)),
   customerDetail: (id: string, page = 1) =>
     call<SpaCustomerDetail>(withQuery(`${BASE}/customer-directory/${enc(id)}`, { page })),
+  setCustomerBan: (id: string, banned: boolean, reason = "") =>
+    send<SpaCustomerProfile>(`${BASE}/customer-directory/${enc(id)}/ban`, { banned, reason }),
 
   // Outlet
   saveOutlet: (branchId: string, input: OutletInput) => send<Outlet>(`${BASE}/outlets/${enc(branchId)}`, input, "PUT"),

@@ -103,6 +103,7 @@ func (h *Handler) Routes() []module.Route {
 		staff("GET "+p+"/customers", iam.SpaBookings, h.listCustomers),
 		report("GET "+p+"/customer-directory", iam.SpaCustomer, h.customerDirectory),
 		report("GET "+p+"/customer-directory/{id}", iam.SpaCustomer, h.customerDetail),
+		staff("POST "+p+"/customer-directory/{id}/ban", iam.SpaCustomer, h.setCustomerBan),
 		staff("GET "+p+"/bookings", iam.SpaBookings, h.listBookings),
 		staff("POST "+p+"/bookings", iam.SpaBookings, h.createBooking),
 		staff("GET "+p+"/bookings/{id}", iam.SpaBookings, h.getBooking),
@@ -684,6 +685,26 @@ func (h *Handler) customerDetail(w http.ResponseWriter, r *http.Request, _ *auth
 		History    []CustomerTreatment `json:"history"`
 		Pagination paginationInfo      `json:"pagination"`
 	}{profile, history, paginationInfo{Page: page, Limit: limit, Total: total, TotalPages: (total + limit - 1) / limit}})
+}
+
+// setCustomerBan bans/unbans a member: {"banned": true, "reason": "..."}.
+func (h *Handler) setCustomerBan(w http.ResponseWriter, r *http.Request, user *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	var in struct {
+		Banned bool   `json:"banned"`
+		Reason string `json:"reason"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&in); err != nil {
+		return httpx.BadRequest("Body tidak valid")
+	}
+	profile, err := h.svc.SetCustomerBan(r.Context(), user.ID, id, in.Reason, in.Banned)
+	if err != nil {
+		return err
+	}
+	return ok(w, profile)
 }
 
 func oneOf(r *http.Request, name string, options []string) (string, error) {

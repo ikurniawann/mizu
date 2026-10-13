@@ -38,6 +38,8 @@ type Spa interface {
 	DepositPolicy(ctx context.Context) (amount float64, holdMinutes int, enabled bool)
 	// ExpireDeposits cancels pending-DP bookings past their hold.
 	ExpireDeposits(ctx context.Context) (int, error)
+	// PhoneBanned: a banned member sees every schedule as unavailable.
+	PhoneBanned(ctx context.Context, phone string) (bool, error)
 	// PendingDeposits lists unpaid-DP bookings whose hold ends within [from, to).
 	PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error)
 }

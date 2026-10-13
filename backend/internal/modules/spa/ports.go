@@ -126,6 +126,10 @@ type Customers interface {
 	SetGender(ctx context.Context, q database.Querier, id, gender string) error
 	// FindOrCreate returns the customer with phone, creating it with name.
 	FindOrCreate(ctx context.Context, q database.Querier, name, phone string) (string, error)
+	// Banned reports whether the customer with this phone (0812… form) is banned.
+	Banned(ctx context.Context, q database.Querier, phone string) (bool, error)
+	// SetBan bans (reason, by user) or unbans the customer.
+	SetBan(ctx context.Context, q database.Querier, id, userID, reason string, banned bool) error
 }
 
 // Roster is an employee's working status on a date.

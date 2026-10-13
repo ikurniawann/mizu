@@ -556,6 +556,37 @@ func (s *Service) CustomerDirectory(ctx context.Context, term string, page, limi
 	return s.ports.Customers.Page(ctx, s.db, term, page, limit)
 }
 
+// slotFullMessage is also what a banned member sees (revisi R8).
+const slotFullMessage = "Jam ini sudah penuh. Silakan pilih jam lain atau hubungi outlet."
+
+// PhoneBanned reports whether the member with this phone is banned; online
+// channels then present every schedule as unavailable.
+func (s *Service) PhoneBanned(ctx context.Context, rawPhone string) (bool, error) {
+	phone := domain.NormalizePhone(rawPhone)
+	if phone == "" {
+		return false, nil
+	}
+	return s.ports.Customers.Banned(ctx, s.db, phone)
+}
+
+// SetCustomerBan bans or unbans a member (front office keeps booking rights).
+func (s *Service) SetCustomerBan(ctx context.Context, userID, id, reason string, banned bool) (*CustomerProfile, error) {
+	profile, err := s.ports.Customers.Detail(ctx, s.db, id)
+	if err != nil {
+		return nil, err
+	}
+	if profile == nil {
+		return nil, httpx.NotFound("Customer tidak ditemukan")
+	}
+	if banned && strings.TrimSpace(reason) == "" {
+		return nil, httpx.BadRequest("Isi alasan blokir")
+	}
+	if err := s.ports.Customers.SetBan(ctx, s.db, id, userID, strings.TrimSpace(reason), banned); err != nil {
+		return nil, err
+	}
+	return s.ports.Customers.Detail(ctx, s.db, id)
+}
+
 // CustomerDetail combines the customer profile with completed spa treatments.
 func (s *Service) CustomerDetail(ctx context.Context, id string, page, limit int) (*CustomerProfile, []CustomerTreatment, int, error) {
 	profile, err := s.ports.Customers.Detail(ctx, s.db, id)
@@ -2038,7 +2069,13 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 			return err
 		}
 		if !available {
-			return httpx.Conflict("Jam ini sudah penuh. Silakan pilih jam lain atau hubungi outlet.")
+			return httpx.Conflict(slotFullMessage)
+		}
+		// A banned member is told the slot is full, never that they are banned.
+		if banned, err := s.ports.Customers.Banned(ctx, q, phone); err != nil {
+			return err
+		} else if banned {
+			return httpx.Conflict(slotFullMessage)
 		}
 		customerID, err := s.ports.Customers.FindOrCreate(ctx, q, in.CustomerName, phone)
 		if err != nil {
