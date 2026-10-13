@@ -31,16 +31,27 @@ type spaModule struct{ routes []module.Route }
 func (spaModule) Name() string             { return Name }
 func (m spaModule) Routes() []module.Route { return m.routes }
 
-// New mounts the module on the shared pool.
-func New(deps module.Deps, ports Ports) module.Module { return NewOn(deps, deps.DB, ports) }
+// New mounts the module on the shared pool and starts the day-of
+// auto-assignment pass (revisi R3: bookings without a chosen therapist go to
+// the arrival queue once therapists have clocked in).
+func New(deps module.Deps, ports Ports) module.Module {
+	m, svc := build(deps, deps.DB, ports)
+	go svc.AutoAssignLoop(context.Background(), AutoAssignEvery)
+	return m
+}
 
 // NewOn mounts the module on db: the pool in production, a rolled-back
-// transaction in tests.
+// transaction in tests (no background loop).
 func NewOn(deps module.Deps, db database.DB, ports Ports) module.Module {
+	m, _ := build(deps, db, ports)
+	return m
+}
+
+func build(deps module.Deps, db database.DB, ports Ports) (module.Module, *Service) {
 	svc := NewService(db, ports, deps)
 	Subscribe(deps.Events, svc)
 	h := &Handler{svc: svc, auth: deps.Auth}
-	return spaModule{routes: h.Routes()}
+	return spaModule{routes: h.Routes()}, svc
 }
 
 // NewService builds the service; tests drive it directly.

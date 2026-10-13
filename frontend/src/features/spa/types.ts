@@ -684,3 +684,26 @@ export interface RoomBoard {
   at: string;
   rooms: RoomBoardEntry[];
 }
+
+// ── Antrian terapis (revisi R3) ──────────────────────────────────────────────
+
+export interface ArrivalEntry extends Therapist {
+  present: boolean;
+  clock_in: string | null;
+  last_assigned_at: string | null;
+  assigned_today: number;
+  /** Urutan rotasi (1 = berikutnya); 0 bila belum absen. */
+  position: number;
+}
+
+export interface ArrivalQueue {
+  branch_id: string;
+  date: string;
+  queue: ArrivalEntry[];
+  absent: ArrivalEntry[];
+}
+
+export interface AutoAssignResult {
+  assigned: { booking_id: string; booking_code: string; therapist_id: string; therapist_name: string }[];
+  skipped: { booking_id: string; booking_code: string; reason: string }[];
+}

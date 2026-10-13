@@ -15,6 +15,7 @@ import {
   DialogPanelTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatRupiah } from "@/lib/format";
@@ -95,7 +96,7 @@ export function RoomsDialog({ branchId, branchName, onClose }: { branchId: strin
 function RoomForm({ branchId, room, onDone }: { branchId: string; room: Room | null; onDone: () => void }) {
   const [name, setName] = useState(room?.name ?? "");
   const [capacity, setCapacity] = useState(String(room?.capacity ?? 1));
-  const [price, setPrice] = useState(String(room?.price_idr ?? 0));
+  const [price, setPrice] = useState<number>(room?.price_idr ?? 0);
   const [description, setDescription] = useState(room?.description ?? "");
   const [active, setActive] = useState(room?.is_active ?? true);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +104,7 @@ function RoomForm({ branchId, room, onDone }: { branchId: string; room: Room | n
 
   const submit = () => {
     const cap = Number(capacity);
-    const priceIdr = Number(price);
+    const priceIdr = price;
     if (!name.trim()) return setError("Nama room wajib diisi.");
     if (!Number.isInteger(cap) || cap < 1 || cap > 10) return setError("Kapasitas 1–10 orang.");
     if (!Number.isFinite(priceIdr) || priceIdr < 0) return setError("Harga tidak valid.");
@@ -139,8 +140,8 @@ function RoomForm({ branchId, room, onDone }: { branchId: string; room: Room | n
       <Field label="Kapasitas (orang)">
         <Input type="number" min={1} max={10} value={capacity} onChange={(e) => setCapacity(e.target.value)} required aria-label="Kapasitas room" />
       </Field>
-      <Field label="Harga room (Rp)" hint="0 = tanpa biaya tambahan">
-        <Input type="number" min={0} step={1000} value={price} onChange={(e) => setPrice(e.target.value)} required aria-label="Harga room" />
+      <Field label="Harga room" hint="0 = tanpa biaya tambahan">
+        <NumericInput prefix="Rp" value={price} onValueChange={setPrice} inputMode="numeric" aria-label="Harga room" />
       </Field>
       <Field label="Keterangan">
         <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mis. couple room, ada shower" aria-label="Keterangan room" />

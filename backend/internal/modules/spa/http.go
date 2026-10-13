@@ -116,6 +116,8 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/bookings/{id}/deposit", iam.SpaBookings, h.bookingDeposit),
 		staff("PUT "+p+"/bookings/{id}/room", iam.SpaBookings, h.setBookingRoom),
 		staff("GET "+p+"/room-board", iam.SpaBookings, h.roomBoard),
+		staff("GET "+p+"/arrival-queue", iam.SpaBookings, h.arrivalQueue),
+		staff("POST "+p+"/auto-assign", iam.SpaBookings, h.autoAssign),
 		staff("GET "+p+"/rooms", iam.Spa, h.listRooms),
 		staff("POST "+p+"/rooms", iam.SpaOutlets, h.createRoom),
 		staff("PUT "+p+"/rooms/{id}", iam.SpaOutlets, h.updateRoom),

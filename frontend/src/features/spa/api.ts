@@ -29,6 +29,8 @@ import type {
   MeResponse,
   Outlet,
   OutletInput,
+  ArrivalQueue,
+  AutoAssignResult,
   Room,
   RoomBoard,
   RoomInput,
@@ -146,6 +148,9 @@ export const spaApi = {
   updateRoom: (id: string, input: RoomInput) => send<Room>(`${BASE}/rooms/${enc(id)}`, input, "PUT"),
   setBookingRoom: (bookingId: string, roomId: string | null) => send<Booking>(`${BASE}/bookings/${enc(bookingId)}/room`, { room_id: roomId }, "PUT"),
   roomBoard: (branchId: string) => call<RoomBoard>(withQuery(`${BASE}/room-board`, { branch_id: branchId })),
+  // Antrian terapis (revisi R3)
+  arrivalQueue: (branchId: string, date: string) => call<ArrivalQueue>(withQuery(`${BASE}/arrival-queue`, { branch_id: branchId, date })),
+  autoAssign: (branchId: string, date: string) => send<AutoAssignResult>(`${BASE}/auto-assign`, { branch_id: branchId, date }),
   syncPos: (branchId: string) => send<{ synced: number }>(`${BASE}/outlets/${enc(branchId)}/sync-pos`, {}),
 
   // Treatment

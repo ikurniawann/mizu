@@ -6082,6 +6082,11 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/spa/arrival-queue"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/spa/assists"
   },
   {
@@ -6093,6 +6098,11 @@
     "module": "spa",
     "method": "DELETE",
     "path": "/api/spa/assists/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/auto-assign"
   },
   {
     "module": "spa",
@@ -6156,6 +6166,11 @@
   },
   {
     "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/bookings/{id}/room"
+  },
+  {
+    "module": "spa",
     "method": "POST",
     "path": "/api/spa/bookings/{id}/status"
   },
@@ -6201,6 +6216,11 @@
   },
   {
     "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/customer-directory/{id}/ban"
+  },
+  {
+    "module": "spa",
     "method": "GET",
     "path": "/api/spa/customers"
   },
@@ -6223,6 +6243,16 @@
     "module": "spa",
     "method": "PATCH",
     "path": "/api/spa/me/assignments/{itemId}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/me/bookings/{id}/items"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/catalog"
   },
   {
     "module": "spa",
@@ -6283,6 +6313,26 @@
     "module": "spa",
     "method": "GET",
     "path": "/api/spa/reports/trend"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/room-board"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/rooms"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/rooms"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/rooms/{id}"
   },
   {
     "module": "spa",

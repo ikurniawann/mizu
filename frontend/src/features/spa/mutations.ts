@@ -134,6 +134,18 @@ export const useSetBookingRoom = (bookingId: string) => {
   });
 };
 
+export const useAutoAssign = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ branchId, date }: { branchId: string; date: string }) => spaApi.autoAssign(branchId, date),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["spa", "arrival-queue"] });
+      void qc.invalidateQueries({ queryKey: ["spa", "board"] });
+      void qc.invalidateQueries({ queryKey: ["spa", "bookings"] });
+    },
+  });
+};
+
 export const useSaveOutlet = () => {
   const qc = useQueryClient();
   return useMutation({

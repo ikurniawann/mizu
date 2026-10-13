@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type DragEvent } from "react";
-import { CalendarDays, DoorOpen, GripVertical, LayoutGrid, List, Plus, RefreshCw, UserRoundX } from "lucide-react";
+import { CalendarDays, DoorOpen, GripVertical, LayoutGrid, List, ListOrdered, Plus, RefreshCw, UserRoundX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,7 @@ import { BookOrderList } from "./book-order-list";
 import { BookingCreateDialog } from "./booking-create-dialog";
 import { BookingDetailDialog } from "./booking-detail-page";
 import { AssignTherapistDialog } from "./item-dialogs";
+import { ArrivalQueuePanel } from "./arrival-queue";
 import { RoomBoard } from "./room-board";
 import { ItemStatusBadge, OutletSelect, SELECT, SPA_KICKER, TableNote, TimeRange } from "./shared";
 import { BOOKING_DRAG_TYPE, useBookingDnd } from "./use-booking-dnd";
@@ -30,16 +31,17 @@ function visible(items: BoardItem[]): BoardItem[] {
   return sortByStart(items.filter((i) => i.status !== "cancelled"));
 }
 
-type BoardView = "calendar" | "cards" | "list" | "room";
+type BoardView = "calendar" | "cards" | "list" | "room" | "queue";
 const VIEWS: { value: BoardView; label: string; icon: typeof List }[] = [
   { value: "calendar", label: "Kalender", icon: CalendarDays },
   { value: "cards", label: "Kartu", icon: LayoutGrid },
   { value: "list", label: "Daftar", icon: List },
   { value: "room", label: "Room", icon: DoorOpen },
+  { value: "queue", label: "Antrian", icon: ListOrdered },
 ];
 
 function isView(v: unknown): v is BoardView {
-  return v === "calendar" || v === "cards" || v === "list" || v === "room";
+  return v === "calendar" || v === "cards" || v === "list" || v === "room" || v === "queue";
 }
 
 // Tampilan terakhir yang dipilih, disimpan per peramban; bawaan kalender.
@@ -179,6 +181,8 @@ export function SpaBookOrderPage() {
         <BookOrderList items={allItems} onOpenItem={openBooking} />
       ) : view === "room" ? (
         <RoomBoard branchId={branchId} onOpenBooking={setOpenedBookingId} />
+      ) : view === "queue" ? (
+        <ArrivalQueuePanel branchId={branchId} date={date} />
       ) : (
         <BookOrderCards
           therapists={therapists}
