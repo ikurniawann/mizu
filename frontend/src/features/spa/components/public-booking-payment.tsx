@@ -65,7 +65,8 @@ export function PublicBookingPayment({
   if (upcoming && deposit?.deposit_status === "pending") {
     const dp = formatRupiah(deposit.deposit_idr);
     const deadline = deposit.deposit_hold_until ? formatDateTime(deposit.deposit_hold_until) : null;
-    if (notice === "dp-simulasi" && booking.mock_payment !== false && deposit.deposit_invoice_url) {
+    // Mode demo: link DP menunjuk kembali ke halaman ini dengan ?bayar=dp-simulasi.
+    if (notice === "dp-simulasi" && deposit.deposit_invoice_url?.includes("bayar=dp-simulasi")) {
       return (
         <section className="overflow-hidden rounded-card bg-card shadow-float ring-2 ring-accent-strong">
           <div className="flex items-center justify-between gap-3 bg-ink px-5 py-4 text-on-ink">
