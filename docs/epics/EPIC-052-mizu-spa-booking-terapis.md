@@ -352,3 +352,11 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   (`spa.PendingDeposits`, `wabot.RemindDeposits` di pengawas, klaim `spa_deposit_remind`). Bukti:
   `TestBotRemindsPendingDepositOnce`, `TestSummaryMentionsBookingFee`, suite wabot/spa lulus; tsc/eslint.
   Booking uji `MZ-261013-HCVW` dibatalkan manual. Image: `mizu-api:wabot-20`, `mizu:wabot-10`.
+- 2026-10-13 — Revisi R8 blokir member (`a59e5b88`): kolom `pos.pos_customers.banned_at/banned_reason/banned_by`
+  (migrasi `20261013020000_pos_customer_ban.sql`, diterapkan live). Keputusan owner: ban pada akun member; kanal
+  online tidak pernah menyebut blokir. `publicBookIn` (web, bot, grup) dan `JoinWaitlist` menolak nomor yang diblokir
+  dengan pesan "jam sudah penuh"; bot (`turn.banned`) melihat setiap hari penuh tanpa tawaran hari/outlet lain atau
+  daftar tunggu (`NoSlotsClosed`). FO tetap bisa membuat booking. Backoffice: `POST /api/spa/customer-directory/{id}/ban`
+  (menu spa.customer), badge di daftar customer, kartu blokir di detail. Bukti: `TestBannedMemberSeesSlotsAsFull`,
+  `TestBotBannedMemberSeesEveryDayFull`, vitest `customer-detail-page.test.tsx`; suite spa/wabot/app lulus (tes
+  `customer_report` milik sesi lain gagal di working tree, bukan bagian commit). Image: `mizu-api:wabot-21`, `mizu:wabot-11`.

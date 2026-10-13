@@ -12,7 +12,7 @@ Status: **Sudah ada** (tinggal dicek), **Sebagian** (fondasi ada, perlu fitur), 
 | R5 | ESS: terapis memilih 2 hari libur per minggu; HRD menetapkan kuota minimal terapis wanita & pria per shift; pengajuan ditolak bila kuota tidak terpenuhi | Baru | hris (leaves, shifts, employee_shifts ada) |
 | R6 | Master room per outlet + harga room; room dipilih saat booking; monitoring room mana yang terisi dan statusnya | Baru | spa (belum ada tabel room) |
 | R7 | Bayar parkir lewat sistem: kategori "Parkir" di POS, transaksi terpisah | **Selesai** (seeder `db:seed:mizu-parkir`, 3 produk × 2 outlet, harga sementara) | pos |
-| R8 | Banned member: member berstatus banned selalu diberi tahu jadwal tidak tersedia (web & WA) | Baru | pos_customers · spa · wabot |
+| R8 | Banned member: member berstatus banned selalu diberi tahu jadwal tidak tersedia (web & WA) | **Selesai** 13 Okt (`a59e5b88`): blokir/buka blokir di Spa → Customer; web, bot, grup, daftar tunggu menjawab penuh | pos_customers · spa · wabot |
 | R9 | Timer room: tombol Start memunculkan hitung mundur total durasi treatment | Sebagian | spa (`started_at` sudah ada; UI hitung mundur belum) |
 | R10 | Harga treatment berbeda per outlet (multiple price) | **Terverifikasi** 13 Okt: katalog web, bot, item booking, dan produk POS per outlet memakai harga outlet | spa (`variant_outlet_prices`) |
 
