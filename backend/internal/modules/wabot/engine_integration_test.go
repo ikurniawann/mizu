@@ -66,6 +66,14 @@ func (a txSpa) MarkWaitlistNotified(ctx context.Context, id string) error {
 func (a txSpa) UpcomingBookings(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
 	return a.svc.UpcomingBookings(ctx, from, to)
 }
+func (a txSpa) DepositPolicy(ctx context.Context) (float64, int, bool) {
+	cfg, err := a.svc.DepositSettings(ctx)
+	if err != nil {
+		return 0, 0, false
+	}
+	return cfg.AmountIDR, cfg.HoldMinutes, cfg.Enabled
+}
+func (a txSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.svc.ExpireDeposits(ctx) }
 
 type memSender struct{ sent []string }
 
@@ -767,4 +775,50 @@ func TestBotOffScriptMessages(t *testing.T) {
 	}
 	r = e.say("xyzzy") // truly unknown: still a miss
 	e.wants(r, "belum paham")
+}
+
+/* ── deposit (DP); runs with XENDIT_MOCK=1 ──────────────────────────── */
+
+// With a deposit policy the bot skips the payment question: the
+// confirmation carries the DP link and deadline, "sudah bayar" checks the
+// DP, and a paid DP is reported with the remainder due at the outlet.
+func TestBotDepositFlow(t *testing.T) {
+	if _, _, enabled := e2Enabled(t); !enabled {
+		t.Skip("needs XENDIT_MOCK=1")
+	}
+	e := setupBot(t)
+	e.start()
+	e.say("1")
+	e.say("1")
+	e.say("besok jam 10 pagi")
+	e.say("0")
+	r := e.say("ya")
+	e.wants(r, "Kode booking", "Jadwal dikunci setelah DP *Rp100.000* dibayar", "bayar=dp-simulasi", "Sisa *Rp50.000* dibayar di outlet")
+	if strings.Contains(r, "Mau bayar bagaimana?") {
+		t.Fatalf("no payment menu with a deposit:\n%s", r)
+	}
+	r = e.say("sudah bayar")
+	e.wants(r, "DP *MZ-", "belum terlihat")
+	var token string
+	if err := e.tx.QueryRow(e.ctx, `SELECT public_token::text FROM spa.bookings WHERE customer_phone = $1 AND source = 'whatsapp'`, e.local()).Scan(&token); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.spa.svc.PublicMockPayDeposit(e.ctx, token); err != nil {
+		t.Fatal(err)
+	}
+	r = e.say("sudah bayar")
+	e.wants(r, "DP untuk booking *MZ-", "sudah kami terima ✅", "Sisa *Rp50.000*")
+}
+
+// e2Enabled reports whether the deposit policy is active in this run
+// (XENDIT_MOCK=1 makes online payment "configured").
+func e2Enabled(t *testing.T) (float64, int, bool) {
+	t.Helper()
+	deps := testutil.Deps(t, nil)
+	tx := testutil.Tx(t)
+	cfg, err := spa.NewService(tx, app.SpaPorts(), deps).DepositSettings(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cfg.AmountIDR, cfg.HoldMinutes, cfg.Enabled
 }

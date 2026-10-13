@@ -137,9 +137,13 @@ export function PublicSpaBookingStatus({ token, notice }: { token: string; notic
                     ? result.paid_online
                       ? "Lunas · dibayar online"
                       : "Lunas"
-                    : result.payment_method === "online"
-                      ? "Menunggu pembayaran online"
-                      : "Bayar di outlet setelah treatment"}
+                    : result.deposit?.deposit_status === "pending"
+                      ? `Menunggu DP ${formatRupiah(result.deposit.deposit_idr)}`
+                      : result.deposit?.deposit_status === "paid"
+                        ? `DP ${formatRupiah(result.deposit.deposit_idr)} lunas · sisa ${formatRupiah(result.deposit.remaining_idr)} di outlet`
+                        : result.payment_method === "online"
+                          ? "Menunggu pembayaran online"
+                          : "Bayar di outlet setelah treatment"}
               </span>
             </span>
             <span className="font-display text-2xl font-bold tabular-nums">{formatRupiah(result.total_idr)}</span>

@@ -196,6 +196,7 @@ type Booking struct {
 	CancelledAt         *httpx.JSTime `json:"cancelled_at"`
 	CancelReason        *string       `json:"cancel_reason"`
 	PosOrderNumber      *string       `json:"pos_order_number"`
+	Deposit             DepositInfo   `json:"deposit"` // online DP (status none for front-office bookings)
 	TherapistRating     *int          `json:"therapist_rating"`
 	Items               []Item        `json:"items"`
 	Events              []Event       `json:"events"`
@@ -331,6 +332,9 @@ type PublicOutlet struct {
 	SlotMinutes int     `json:"slot_minutes"`
 	// OnlinePayment: the guest may pay by Xendit invoice.
 	OnlinePayment bool `json:"online_payment"`
+	// DepositIDR is the DP an online booking must pay to hold its slot (0 = none).
+	DepositIDR      float64 `json:"deposit_idr"`
+	DepositHoldMins int     `json:"deposit_hold_minutes"`
 }
 
 // PublicVariant is a bookable variant with the outlet price.
@@ -395,6 +399,10 @@ type PublicBookingResult struct {
 	// MockPayment: the link is a simulation (XENDIT_MOCK=1).
 	MockPayment   bool `json:"mock_payment"`
 	OnlinePayment bool `json:"online_payment"`
+	// Deposit is the DP that holds the slot (status none when not required).
+	Deposit DepositInfo `json:"deposit"`
+	// bookingID is kept for follow-up reads.
+	bookingID string
 }
 
 // MeResult is GET /api/spa/me.

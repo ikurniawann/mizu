@@ -16,7 +16,11 @@ import (
 
 /* ── customer notices: payment confirmation & reminders (EPIC-053) ───── */
 
-const subscriberPaid = "wabot.customer-paid-notice"
+const (
+	subscriberPaid           = "wabot.customer-paid-notice"
+	subscriberDepositPaid    = "wabot.customer-deposit-paid"
+	subscriberDepositExpired = "wabot.customer-deposit-expired"
+)
 
 // Reminder windows: the watcher ticks every 10 minutes, so each window is
 // wider than a tick and the wa_notif_log claim keeps every notice single.
@@ -40,6 +44,20 @@ func (e *Engine) Subscribe(bus *outbox.Bus, db database.DB) {
 			return err
 		}
 		return e.PaidNotice(ctx, tx, db, n)
+	})
+	bus.Subscribe(spa.TopicBookingDepositPaid, subscriberDepositPaid, func(ctx context.Context, tx pgx.Tx, ev outbox.Event) error {
+		var n spa.BookingNotice
+		if err := ev.Decode(&n); err != nil {
+			return err
+		}
+		return e.DepositNotice(ctx, tx, db, n, true)
+	})
+	bus.Subscribe(spa.TopicBookingDepositExpired, subscriberDepositExpired, func(ctx context.Context, tx pgx.Tx, ev outbox.Event) error {
+		var n spa.BookingNotice
+		if err := ev.Decode(&n); err != nil {
+			return err
+		}
+		return e.DepositNotice(ctx, tx, db, n, false)
 	})
 }
 
@@ -105,6 +123,40 @@ func firstNonBlank(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// DepositNotice tells the guest their DP was received (paid=true) or that
+// the booking was cancelled for an unpaid DP (paid=false).
+func (e *Engine) DepositNotice(ctx context.Context, q database.Querier, db database.DB, n spa.BookingNotice, paid bool) error {
+	settings, err := e.st.settings(ctx, q)
+	if err != nil {
+		return err
+	}
+	if !settings.NotifyCustomer || !allowedSource(n.Source) {
+		return nil
+	}
+	phone := waPhone(n.CustomerPhone)
+	if phone == "" {
+		return nil
+	}
+	at := n.ScheduledAt.In(domain.WIB)
+	conversationID := e.st.conversationID(ctx, q, phone)
+	l := domain.LangID
+	if conversationID != "" {
+		l = e.st.sessionLang(ctx, q, conversationID)
+	}
+	kind, msg := "spa_deposit_paid", ""
+	if paid {
+		msg = domain.DepositPaidNotice(l, n.CustomerName, n.Code, n.BranchName, at.Format("2006-01-02"), domain.Clock(at), n.DepositIDR, n.TotalIDR-n.DepositIDR, e.statusURL(n.Token))
+	} else {
+		kind = "spa_deposit_expired"
+		msg = domain.DepositExpiredNotice(l, n.CustomerName, n.Code, n.BranchName, at.Format("2006-01-02"), domain.Clock(at))
+	}
+	id, err := whatsapp.Claim(ctx, q, kind, n.ID, msg, []string{phone})
+	if err != nil || id == "" {
+		return err
+	}
+	return e.ports.Sender.Send(ctx, db, phone, conversationID, msg)
 }
 
 // RemindUpcoming sends the H-1 and 2-hour reminders due now; it returns how

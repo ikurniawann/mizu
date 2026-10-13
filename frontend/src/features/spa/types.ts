@@ -271,6 +271,7 @@ export interface Booking extends BookingSummary {
   cancelled_at: string | null;
   cancel_reason: string | null;
   pos_order_number: string | null;
+  deposit?: DepositInfo;
   items: BookingItem[];
   events: BookingEvent[];
 }
@@ -488,6 +489,9 @@ export interface PublicOutlet {
   slot_minutes: number;
   /** Tamu boleh bayar online (invoice Xendit). */
   online_payment?: boolean;
+  /** DP yang harus dibayar online agar jadwal terkunci (0 = tanpa DP). */
+  deposit_idr?: number;
+  deposit_hold_minutes?: number;
 }
 
 /** Terapis yang bisa dipilih tamu untuk satu jam; nama dipendekkan ("Ayu L."). */
@@ -537,6 +541,20 @@ export interface PublicBookingInput {
   payment_method?: PublicPaymentMethod;
 }
 
+/** DP (deposit) yang menahan jadwal booking online. */
+export type DepositStatus = "none" | "pending" | "paid" | "waived" | "expired";
+
+export type DepositInfo = {
+  deposit_idr: number;
+  deposit_status: DepositStatus;
+  deposit_paid_at: string | null;
+  deposit_hold_until: string | null;
+  deposit_invoice_url: string | null;
+  remaining_idr: number;
+};
+
+export type DepositSettings = { amount_idr: number; hold_minutes: number; enabled: boolean };
+
 export interface PublicBookingResult {
   access_token: string;
   branch_id: string;
@@ -557,6 +575,7 @@ export interface PublicBookingResult {
   paid_online?: boolean;
   mock_payment?: boolean;
   online_payment?: boolean;
+  deposit?: DepositInfo;
   /** Tamu masih bisa mengubah jadwal (sampai 1 jam sebelum kunjungan). */
   can_reschedule?: boolean;
 }

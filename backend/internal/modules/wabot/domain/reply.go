@@ -326,7 +326,31 @@ func Confirmed(l L, s *Session, botName string) string {
 	} else {
 		b.WriteString("Outlet: " + s.OutletName + t(l, "\nJadwal: ", "\nSchedule: ") + LongDate(l, s.Date) + ", " + clockOfISO(s.SlotISO) + " WIB\n")
 	}
-	if s.PayMethod == "online" {
+	if s.PayMethod == "deposit" {
+		until := ""
+		for _, bk := range s.Bookings {
+			if bk.DepositUntil != "" {
+				until = bk.DepositUntil
+				break
+			}
+		}
+		b.WriteString(t(l, "\n⚠️ Jadwal dikunci setelah DP *"+Rupiah(s.DepositTotal())+"* dibayar", "\n⚠️ Your slot is secured once the deposit of *"+Rupiah(s.DepositTotal())+"* is paid"))
+		if until != "" {
+			b.WriteString(t(l, " (sebelum jam *"+until+"* WIB)", " (by *"+until+"* WIB)"))
+		}
+		b.WriteString(t(l, ". Link DP:\n", "). Deposit link:\n"))
+		for _, bk := range s.Bookings {
+			if bk.DepositURL != "" {
+				b.WriteString(bk.DepositURL + "\n")
+			}
+		}
+		remaining := s.TotalPrice() - s.DepositTotal()
+		if remaining < 0 {
+			remaining = 0
+		}
+		b.WriteString(t(l, "Sisa *"+Rupiah(remaining)+"* dibayar di outlet setelah treatment. Setelah DP terbayar, balas *sudah bayar* dan saya cek ya.",
+			"The remaining *"+Rupiah(remaining)+"* is paid at the outlet after the treatment. Once the deposit is paid, reply *paid* and I'll check."))
+	} else if s.PayMethod == "online" {
 		b.WriteString(t(l, "\nSilakan bayar lewat link berikut (berlaku 2 jam):\n", "\nPlease pay through this link (valid for 2 hours):\n"))
 		for _, bk := range s.Bookings {
 			if bk.PayURL != "" {
@@ -344,6 +368,35 @@ func Confirmed(l L, s *Session, botName string) string {
 	b.WriteString(t(l, "\nTunjukkan kode/QR ke resepsionis saat tiba. Jadwal bisa diubah sendiri sampai 1 jam sebelum kunjungan lewat link di atas.\nTerima kasih, sampai jumpa di Mizu 🌿",
 		"\nShow the code/QR at the reception when you arrive. You can reschedule yourself up to 1 hour before the visit through the link above.\nThank you, see you at Mizu 🌿"))
 	return b.String()
+}
+
+// DepositSeen answers "sudah bayar" for a DP booking.
+func DepositSeen(l L, paid bool, code string, remaining float64) string {
+	if paid {
+		return t(l, "DP untuk booking *"+code+"* sudah kami terima ✅ Jadwal terkunci. Sisa *"+Rupiah(remaining)+"* dibayar di outlet. Sampai jumpa di Mizu!",
+			"Deposit for booking *"+code+"* received ✅ Your slot is secured. The remaining *"+Rupiah(remaining)+"* is paid at the outlet. See you at Mizu!")
+	}
+	return t(l, "DP *"+code+"* belum terlihat di sistem. Kalau baru saja bayar, tunggu 1–2 menit lalu balas *sudah bayar* lagi. Link DP ada di pesan konfirmasi.",
+		"The deposit for *"+code+"* hasn't shown up yet. If you just paid, wait 1–2 minutes and reply *paid* again. The deposit link is in the confirmation message.")
+}
+
+// DepositPaidNotice / DepositExpiredNotice are sent by the outbox subscriber.
+func DepositPaidNotice(l L, name, code, outlet, date, clock string, deposit, remaining float64, statusURL string) string {
+	greet := t(l, "DP diterima ✅", "Deposit received ✅")
+	if strings.TrimSpace(name) != "" {
+		greet += t(l, " Terima kasih, ", " Thank you, ") + strings.TrimSpace(name) + "!"
+	}
+	return greet + t(l, "\n\nBooking *"+code+"* di "+outlet+" pada "+LongDate(l, date)+", "+clock+" WIB sudah terkunci.\nDP: "+Rupiah(deposit)+" · Sisa di outlet: *"+Rupiah(remaining)+"*\n\nStatus & QR booking:\n"+statusURL+"\n\nSampai jumpa di Mizu 🌿",
+		"\n\nBooking *"+code+"* at "+outlet+" on "+LongDate(l, date)+", "+clock+" WIB is secured.\nDeposit: "+Rupiah(deposit)+" · Remaining at the outlet: *"+Rupiah(remaining)+"*\n\nBooking status & QR:\n"+statusURL+"\n\nSee you at Mizu 🌿")
+}
+
+func DepositExpiredNotice(l L, name, code, outlet, date, clock string) string {
+	greet := t(l, "Mohon maaf", "Sorry")
+	if strings.TrimSpace(name) != "" {
+		greet += ", " + strings.TrimSpace(name)
+	}
+	return greet + t(l, " — booking *"+code+"* di "+outlet+" ("+LongDate(l, date)+", "+clock+" WIB) dibatalkan karena DP belum dibayar dalam batas waktu. Jadwalnya dilepas untuk tamu lain.\n\nKetik *booking* untuk membuat booking baru 🙏",
+		" — booking *"+code+"* at "+outlet+" ("+LongDate(l, date)+", "+clock+" WIB) was cancelled because the deposit wasn't paid in time. The slot has been released.\n\nType *book* to make a new booking 🙏")
 }
 
 func PaymentSeen(l L, paid bool, code string) string {

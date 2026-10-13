@@ -278,3 +278,20 @@ export const useCreateWaitlist = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: spaKeys.waitlistAll() }),
   });
 };
+
+/** DP: FO menandai DP diterima manual / membebaskan; pengaturan nominal & batas waktu. */
+export const useBookingDeposit = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ action, note }: { action: "paid" | "waive"; note?: string }) => spaApi.bookingDeposit(id, action, note),
+    onSuccess: (booking) => bookingChanged(qc, booking),
+  });
+};
+
+export const useSaveDepositSettings = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { amount_idr: number; hold_minutes: number }) => spaApi.saveDepositSettings(input),
+    onSuccess: (cfg) => qc.setQueryData(spaKeys.depositSettings(), cfg),
+  });
+};

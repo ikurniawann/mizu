@@ -112,6 +112,9 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/bookings/{id}/items", iam.SpaBookings, h.addItem),
 		staff("PATCH "+p+"/bookings/{id}/items/{itemId}", iam.SpaBookings, h.itemAction),
 		staff("POST "+p+"/bookings/{id}/cancel", iam.SpaBookings, h.cancelBooking),
+		staff("POST "+p+"/bookings/{id}/deposit", iam.SpaBookings, h.bookingDeposit),
+		staff("GET "+p+"/settings/deposit", iam.SpaOutlets, h.getDepositSettings),
+		staff("PUT "+p+"/settings/deposit", iam.SpaOutlets, h.putDepositSettings),
 		staff("POST "+p+"/bookings/{id}/checkout", iam.SpaBookings, h.checkout),
 		staff("GET "+p+"/availability", iam.SpaBookings, h.availability),
 		staff("GET "+p+"/board", iam.SpaBookings, h.board),
@@ -142,6 +145,8 @@ func (h *Handler) Routes() []module.Route {
 		public("POST "+publicPrefix+"/bookings/find", h.publicFindBooking),
 		public("POST "+publicPrefix+"/bookings/{token}/pay", h.publicPay),
 		public("POST "+publicPrefix+"/bookings/{token}/mock-pay", h.publicMockPay),
+		public("POST "+publicPrefix+"/bookings/{token}/deposit", h.publicPayDeposit),
+		public("POST "+publicPrefix+"/bookings/{token}/mock-pay-deposit", h.publicMockPayDeposit),
 		public("POST "+publicPrefix+"/bookings", h.publicBook),
 		public("POST "+publicPrefix+"/webhook/xendit", h.publicXenditWebhook),
 	}

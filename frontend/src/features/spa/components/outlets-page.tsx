@@ -21,8 +21,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useSaveOutlet, useSyncPos } from "../mutations";
-import { useSpaOutlets } from "../queries";
+import { useSaveDepositSettings, useSaveOutlet, useSyncPos } from "../mutations";
+import { useDepositSettings, useSpaOutlets } from "../queries";
 import { parseClock, shortClock } from "../time";
 import type { Outlet } from "../types";
 import { Field, FormError, SELECT, SPA_KICKER, TableNote } from "./shared";
@@ -50,6 +50,7 @@ export function SpaOutletsPage() {
         title="Outlet Spa"
         description="Setiap cabang aktif dapat dijadikan outlet spa. Outlet POS menentukan gudang/kasir tempat produk treatment dijual; Sinkron produk POS membuat atau memperbarui produk untuk semua varian aktif."
       />
+      <DepositSettingsCard />
       <Card className="py-0">
         {outlets.isLoading ? (
           <div className="p-4">
@@ -224,5 +225,55 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
         </DialogPanelForm>
       </DialogPanel>
     </Dialog>
+  );
+}
+
+/** DP booking online: nominal per booking dan lama jadwal ditahan sampai DP dibayar. */
+function DepositSettingsCard() {
+  const settings = useDepositSettings();
+  const save = useSaveDepositSettings();
+  const [edits, setEdits] = useState<{ amount: string; hold: string } | null>(null);
+  const draft = edits ?? {
+    amount: String(settings.data?.amount_idr ?? 100000),
+    hold: String(settings.data?.hold_minutes ?? 60),
+  };
+  const submit = () => {
+    save.mutate(
+      { amount_idr: Math.max(0, Number(draft.amount) || 0), hold_minutes: Math.min(1440, Math.max(10, Number(draft.hold) || 60)) },
+      {
+        onSuccess: () => {
+          setEdits(null);
+          toast.success("Pengaturan DP tersimpan");
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Gagal menyimpan"),
+      }
+    );
+  };
+  return (
+    <Card className="p-4">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="min-w-56 flex-1">
+          <p className="text-sm font-medium">DP booking online</p>
+          <p className="text-xs text-muted-foreground">
+            Booking dari website/WhatsApp menahan jadwal setelah DP dibayar lewat link; sisa harga dibayar di outlet dan tagihan kasir otomatis
+            dikurangi DP. Isi 0 untuk tanpa DP.
+            {settings.data && !settings.data.enabled && settings.data.amount_idr > 0 && (
+              <span className="block text-warning">Pembayaran online belum dikonfigurasi, jadi DP belum ditagihkan.</span>
+            )}
+          </p>
+        </div>
+        <label className="space-y-1 text-xs text-muted-foreground">
+          Nominal DP (Rp)
+          <Input type="number" min={0} step={10000} value={draft.amount} onChange={(e) => setEdits({ ...draft, amount: e.target.value })} className="w-36" aria-label="Nominal DP" />
+        </label>
+        <label className="space-y-1 text-xs text-muted-foreground">
+          Tahan jadwal (menit)
+          <Input type="number" min={10} max={1440} value={draft.hold} onChange={(e) => setEdits({ ...draft, hold: e.target.value })} className="w-32" aria-label="Lama tahan jadwal" />
+        </label>
+        <Button onClick={submit} disabled={save.isPending || settings.isLoading}>
+          {save.isPending ? "Menyimpan…" : "Simpan DP"}
+        </Button>
+      </div>
+    </Card>
   );
 }

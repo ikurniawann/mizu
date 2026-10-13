@@ -240,6 +240,11 @@ func (s *Service) PublicPay(ctx context.Context, token string) (*PublicPayment, 
 		if total, err = s.st.activeTotal(ctx, q, b.ID); err != nil {
 			return err
 		}
+		prepaid, err := s.st.paidDeposit(ctx, q, b.ID)
+		if err != nil {
+			return err
+		}
+		total -= prepaid
 		if total <= 0 {
 			return httpx.Conflict("Booking tidak memiliki treatment aktif")
 		}
@@ -333,12 +338,15 @@ func (s *Service) settleOnline(ctx context.Context, bookingID, invoiceID string,
 // PublicInvoiceCallback handles a Xendit invoice callback for spa bookings.
 // It reports what happened; other prefixes are ignored for other modules.
 func (s *Service) PublicInvoiceCallback(ctx context.Context, cb InvoiceCallback) (string, error) {
-	if !strings.HasPrefix(cb.ExternalID, spaInvoicePrefix) {
+	if !strings.HasPrefix(cb.ExternalID, spaInvoicePrefix) && !strings.HasPrefix(cb.ExternalID, spaDepositPrefix) {
 		return "ignored", nil
 	}
-	id := strings.TrimPrefix(cb.ExternalID, spaInvoicePrefix)
+	id := strings.TrimPrefix(strings.TrimPrefix(cb.ExternalID, spaInvoicePrefix), spaDepositPrefix)
 	if !validate.IsUUID(id) {
 		return "ignored", nil
+	}
+	if strings.HasPrefix(cb.ExternalID, spaDepositPrefix) {
+		return s.depositCallback(ctx, id, cb)
 	}
 	switch strings.ToUpper(cb.Status) {
 	case "PAID", "SETTLED":
@@ -353,6 +361,26 @@ func (s *Service) PublicInvoiceCallback(ctx context.Context, cb InvoiceCallback)
 	case "EXPIRED":
 		_, err := s.db.Exec(ctx, `UPDATE spa.bookings SET xendit_invoice_url = NULL, updated_at = now()
 		  WHERE id = $1 AND xendit_invoice_id = $2 AND payment_status = 'unpaid'`, id, cb.ID)
+		return "expired", err
+	}
+	return "ignored", nil
+}
+
+// depositCallback settles or expires a DP invoice.
+func (s *Service) depositCallback(ctx context.Context, id string, cb InvoiceCallback) (string, error) {
+	switch strings.ToUpper(cb.Status) {
+	case "PAID", "SETTLED":
+		settled, err := s.settleDeposit(ctx, id, cb.ID, "Xendit")
+		if err != nil {
+			return "", err
+		}
+		if settled {
+			return "deposit_paid", nil
+		}
+		return "unchanged", nil
+	case "EXPIRED":
+		_, err := s.db.Exec(ctx, `UPDATE spa.bookings SET deposit_invoice_url = NULL, updated_at = now()
+		  WHERE id = $1 AND deposit_invoice_id = $2 AND deposit_status = 'pending'`, id, cb.ID)
 		return "expired", err
 	}
 	return "ignored", nil

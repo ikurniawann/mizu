@@ -1043,6 +1043,7 @@ func (store) publicBookingByToken(ctx context.Context, q Q, token string, now ti
 	var bookingID string
 	var at time.Time
 	result := &PublicBookingResult{AccessToken: token, Items: []PublicItem{}}
+	defer func() { result.bookingID = bookingID }()
 	var therapistName *string
 	err := q.QueryRow(ctx, `SELECT b.id::text, b.branch_id::text, b.booking_code, b.scheduled_at, br.name, br.phone,
 	    b.therapist_gender_pref, b.status, b.payment_status,

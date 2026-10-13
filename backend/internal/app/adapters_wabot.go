@@ -97,6 +97,14 @@ func (a waBotSpa) MarkWaitlistNotified(ctx context.Context, id string) error {
 func (a waBotSpa) UpcomingBookings(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
 	return a.svc.UpcomingBookings(ctx, from, to)
 }
+func (a waBotSpa) DepositPolicy(ctx context.Context) (float64, int, bool) {
+	cfg, err := a.svc.DepositSettings(ctx)
+	if err != nil {
+		return 0, 0, false
+	}
+	return cfg.AmountIDR, cfg.HoldMinutes, cfg.Enabled
+}
+func (a waBotSpa) ExpireDeposits(ctx context.Context) (int, error) { return a.svc.ExpireDeposits(ctx) }
 
 /* ── WhatsApp ────────────────────────────────────────────────────────── */
 

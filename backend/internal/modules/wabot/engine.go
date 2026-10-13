@@ -548,6 +548,9 @@ func (t *turn) facts(ctx context.Context) string {
 		}
 	}
 	b.WriteString("KEBIJAKAN:\n- Booking lewat chat maksimal " + strconv.Itoa(domain.MaxPeople) + " orang per booking, untuk 60 hari ke depan.\n")
+	if amount, hold, enabled := t.e.ports.Spa.DepositPolicy(ctx); enabled {
+		b.WriteString("- Booking online memerlukan DP " + domain.Rupiah(amount) + " per booking, dibayar lewat link dalam " + strconv.Itoa(hold) + " menit agar jadwal terkunci; sisa harga dibayar di outlet setelah treatment. DP tidak dikembalikan bila booking dibatalkan sepihak (tanya admin untuk pengecualian).\n")
+	}
 	if t.e.ports.Spa.OnlinePayment() {
 		b.WriteString("- Pembayaran di outlet setelah treatment (tunai/QRIS/kartu) atau online lewat link (VA, QRIS, e-wallet, kartu); tanpa DP.\n")
 	} else {
@@ -1172,6 +1175,12 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 			s.SetMenu(domain.StepConfirm, []domain.MenuOption{{Key: "1", Label: yes, Value: "yes"}, {Key: "2", Label: change, Value: "no"}})
 			return []string{domain.Summary(l, s)}
 		case domain.StepPayment:
+			if s.NeedsDeposit() {
+				// The DP link is the payment step: nothing to choose.
+				s.PayMethod = "deposit"
+				t.justBooked = true
+				continue
+			}
 			s.OnlinePay = t.e.ports.Spa.OnlinePayment()
 			if !s.OnlinePay {
 				// Nothing to choose: paying at the outlet is the only way.
@@ -1460,8 +1469,18 @@ func (t *turn) createBookings(ctx context.Context) {
 }
 
 func (t *turn) refOf(res *spa.PublicBookingResult, customer string, at time.Time) domain.BookingRef {
-	return domain.BookingRef{Code: res.BookingCode, Token: res.AccessToken, Customer: customer, When: domain.Clock(at),
+	ref := domain.BookingRef{Code: res.BookingCode, Token: res.AccessToken, Customer: customer, When: domain.Clock(at),
 		StatusURL: strings.TrimRight(t.e.ports.AppURL, "/") + "/booking/spa/status/" + res.AccessToken}
+	if res.Deposit.Status == "pending" || res.Deposit.Status == "paid" {
+		ref.DepositIDR, ref.DepositStatus = res.Deposit.AmountIDR, res.Deposit.Status
+		if res.Deposit.InvoiceURL != nil {
+			ref.DepositURL = *res.Deposit.InvoiceURL
+		}
+		if res.Deposit.HoldUntil != nil {
+			ref.DepositUntil = domain.Clock(time.Time(*res.Deposit.HoldUntil))
+		}
+	}
+	return ref
 }
 
 // bookingFailed turns a refused booking into the next prompt.
@@ -1514,14 +1533,29 @@ func (t *turn) setPayment(ctx context.Context, method string) {
 func (t *turn) paymentCheck(ctx context.Context) string {
 	s := t.sess
 	l := s.Lang
+	remaining := 0.0
 	for i, b := range s.Bookings {
 		res, err := t.e.ports.Spa.Booking(ctx, b.Token)
-		if err == nil && res.PaymentStatus == "paid" {
+		if err != nil {
+			continue
+		}
+		if res.PaymentStatus == "paid" {
 			s.Bookings[i].Paid = true
+		}
+		if b.DepositStatus != "" {
+			s.Bookings[i].DepositStatus = res.Deposit.Status
+			remaining += res.Deposit.RemainingIDR
 		}
 	}
 	if len(s.Bookings) == 0 {
 		return domain.StatusOf(l, nil)
+	}
+	if s.PayMethod == "deposit" {
+		allPaid := true
+		for _, b := range s.Bookings {
+			allPaid = allPaid && b.DepositStatus == "paid"
+		}
+		return domain.DepositSeen(l, allPaid, s.Bookings[0].Code, remaining)
 	}
 	allPaid := true
 	for _, b := range s.Bookings {

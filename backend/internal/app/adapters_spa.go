@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 
 	"nuhabit/backend/internal/modules/hris/domain"
@@ -127,19 +128,28 @@ func (spaPOS) OpenBill(ctx context.Context, q database.Querier, b spa.Bill) (spa
 	if employee != "" {
 		cashier = employee
 	}
-	total := 0.0
+	subtotal := 0.0
 	for _, l := range b.Lines {
-		total += l.UnitPrice
+		subtotal += l.UnitPrice
+	}
+	// A deposit paid online comes off the bill as a discount line.
+	discount := b.Prepaid
+	if discount > subtotal {
+		discount = subtotal
+	}
+	breakdown := "[]"
+	if discount > 0 {
+		breakdown = `[{"type":"deposit","label":` + strconv.Quote(firstNonEmptyStr(b.PrepaidNote, "DP online")) + `,"amount":` + strconv.FormatFloat(discount, 'f', 2, 64) + `}]`
 	}
 	var id string
 	err := q.QueryRow(ctx, `INSERT INTO pos.pos_orders (order_number, order_type, status, payment_status, customer_id,
 	    cashier_id, guest_count, subtotal, discount_amount, tax_amount, service_charge_amount, other_charges_amount,
 	    charges_breakdown, total_amount, amount_paid, ark_coins_used, notes, contact_name, contact_phone,
 	    company_id, branch_id, warehouse_id, sold_from, ordered_at)
-	  VALUES ($1, 'dine_in', 'pending', 'unpaid', $2::uuid, $3::uuid, 1, $4, 0, 0, 0, 0, '[]'::jsonb, $4, 0, 0, $5,
+	  VALUES ($1, 'dine_in', 'pending', 'unpaid', $2::uuid, $3::uuid, 1, $4::numeric, $11::numeric, 0, 0, 0, $12::jsonb, $4::numeric - $11::numeric, 0, 0, $5,
 	    $6, NULLIF($7, ''), $8::uuid, $9, $10, 'stall', now())
-	  RETURNING id::text`, number, b.CustomerID, cashier, total, b.Notes, b.ContactName, b.ContactPhone,
-		b.CompanyID, b.BranchID, b.WarehouseID).Scan(&id)
+	  RETURNING id::text`, number, b.CustomerID, cashier, subtotal, b.Notes, b.ContactName, b.ContactPhone,
+		b.CompanyID, b.BranchID, b.WarehouseID, discount, breakdown).Scan(&id)
 	if err != nil {
 		return spa.OrderRef{}, err
 	}

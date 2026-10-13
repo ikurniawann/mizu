@@ -82,6 +82,10 @@ type Bill struct {
 	ContactPhone  string
 	Notes         string
 	Lines         []BillLine
+	// Prepaid is a deposit already collected online: the bill's total is
+	// reduced by it (PrepaidNote names it on the order).
+	Prepaid     float64
+	PrepaidNote string
 }
 
 // OrderRef identifies a POS order.

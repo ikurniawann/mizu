@@ -73,6 +73,32 @@ type BookingRef struct {
 	Customer  string `json:"customer"`
 	Paid      bool   `json:"paid,omitempty"`
 	When      string `json:"when,omitempty"`
+	// Deposit (DP) that holds the slot: amount, status, link and deadline.
+	DepositIDR    float64 `json:"deposit_idr,omitempty"`
+	DepositStatus string  `json:"deposit_status,omitempty"`
+	DepositURL    string  `json:"deposit_url,omitempty"`
+	DepositUntil  string  `json:"deposit_until,omitempty"` // "17.30"
+}
+
+// NeedsDeposit: at least one booking still waits for its DP.
+func (s *Session) NeedsDeposit() bool {
+	for _, b := range s.Bookings {
+		if b.DepositStatus == "pending" {
+			return true
+		}
+	}
+	return false
+}
+
+// DepositTotal sums the pending/paid deposits of the bookings.
+func (s *Session) DepositTotal() float64 {
+	t := 0.0
+	for _, b := range s.Bookings {
+		if b.DepositStatus == "pending" || b.DepositStatus == "paid" {
+			t += b.DepositIDR
+		}
+	}
+	return t
 }
 
 // OutletOpt is an outlet open for online booking.

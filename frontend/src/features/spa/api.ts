@@ -14,6 +14,7 @@ import type {
   BookingItemInput,
   BookingListParams,
   WaitlistCreateInput,
+  DepositSettings,
   WaitlistEntry,
   WaitlistListParams,
   BookingSummary,
@@ -161,6 +162,13 @@ export const spaApi = {
     remove<unknown>(withQuery(`${BASE}/outlet-pics`, input)),
 
   // Booking
+  // DP booking online
+  depositSettings: () => call<DepositSettings>(`${BASE}/settings/deposit`),
+  saveDepositSettings: (input: { amount_idr: number; hold_minutes: number }) =>
+    send<DepositSettings>(`${BASE}/settings/deposit`, input, "PUT"),
+  bookingDeposit: (id: string, action: "paid" | "waive", note?: string) =>
+    send<Booking>(`${BASE}/bookings/${enc(id)}/deposit`, { action, note }),
+
   // Daftar tunggu (EPIC-053 Fase 3)
   waitlist: (params: WaitlistListParams) => call<WaitlistEntry[]>(withQuery(`${BASE}/waitlist`, params)),
   createWaitlist: (input: WaitlistCreateInput) => send<WaitlistEntry>(`${BASE}/waitlist`, input),
@@ -227,6 +235,8 @@ export const publicSpaApi = {
   booking: (token: string) => call<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}`),
   pay: (token: string) => send<PublicPayment>(`${PUBLIC_BASE}/bookings/${enc(token)}/pay`, {}),
   mockPay: (token: string) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}/mock-pay`, {}),
+  payDeposit: (token: string) => send<PublicPayment>(`${PUBLIC_BASE}/bookings/${enc(token)}/deposit`, {}),
+  mockPayDeposit: (token: string) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}/mock-pay-deposit`, {}),
   createBooking: (input: PublicBookingInput) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings`, input),
   findBooking: (bookingCode: string, phone: string) =>
     send<PublicLookup>(`${PUBLIC_BASE}/bookings/find`, { booking_code: bookingCode, phone }),

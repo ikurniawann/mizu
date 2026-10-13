@@ -28,6 +28,11 @@ func (fakePayments) InvoiceStatus(context.Context, string) (string, error) { ret
 
 func TestPublicTherapistChoiceAndOnlinePayment(t *testing.T) {
 	e := setup(t)
+	// Full online payment is tested here; the deposit policy is off so the
+	// booking does not open a DP invoice first.
+	if _, err := e.tx.Exec(e.ctx, `UPDATE configuration.app_settings SET value = '0' WHERE key = 'spa_deposit_idr'`); err != nil {
+		t.Fatal(err)
+	}
 	created := 0
 	ports := app.SpaPorts()
 	ports.Payments = fakePayments{created: &created}

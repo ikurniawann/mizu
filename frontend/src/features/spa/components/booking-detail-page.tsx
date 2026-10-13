@@ -23,7 +23,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate, formatDateTime, formatRupiah, formatTime } from "@/lib/format";
-import { useAssignBooking, useBookingAction, useCancelBooking, useCheckoutBooking, useItemAction, useUpdateBooking } from "../mutations";
+import { useAssignBooking, useBookingAction, useCancelBooking, useCheckoutBooking, useItemAction, useUpdateBooking, useBookingDeposit } from "../mutations";
 import { useSpaBooking } from "../queries";
 import {
   anyStatusLabel,
@@ -132,6 +132,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
   const bookingAction = useBookingAction(booking.id);
   const assignment = useAssignBooking();
   const checkout = useCheckoutBooking(booking.id);
+  const depositAction = useBookingDeposit(booking.id);
   const close = () => setDialog(null);
 
   const items = booking.items;
@@ -272,6 +273,34 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
               <InfoRow label="Order POS">{booking.pos_order_number ? <span className="font-mono">{booking.pos_order_number}</span> : "Belum checkout"}</InfoRow>
               <InfoRow label="Checkout">{formatDateTime(booking.checked_out_at)}</InfoRow>
               <InfoRow label="Lunas">{formatDateTime(booking.paid_at)}</InfoRow>
+              {booking.deposit && booking.deposit.deposit_status !== "none" && (
+                <div className="col-span-2">
+                  <InfoRow label={`DP online ${formatRupiah(booking.deposit.deposit_idr)}`}>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <DepositBadge status={booking.deposit.deposit_status} />
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {booking.deposit.deposit_status === "pending" && booking.deposit.deposit_hold_until
+                          ? `menunggu sampai ${formatDateTime(booking.deposit.deposit_hold_until)}`
+                          : booking.deposit.deposit_status === "paid"
+                            ? `diterima ${formatDateTime(booking.deposit.deposit_paid_at)} · sisa di outlet ${formatRupiah(booking.deposit.remaining_idr)}`
+                            : booking.deposit.deposit_status === "waived"
+                              ? "dibebaskan"
+                              : "tidak dibayar — booking dibatalkan"}
+                      </span>
+                      {!readOnly && !closed && booking.deposit.deposit_status === "pending" && (
+                        <span className="flex gap-1">
+                          <Button size="sm" variant="outline" disabled={depositAction.isPending} onClick={() => depositAction.mutate({ action: "paid", note: "Diterima manual oleh FO" })}>
+                            Tandai DP diterima
+                          </Button>
+                          <Button size="sm" variant="ghost" disabled={depositAction.isPending} onClick={() => depositAction.mutate({ action: "waive", note: "Dibebaskan oleh FO" })}>
+                            Bebaskan DP
+                          </Button>
+                        </span>
+                      )}
+                    </span>
+                  </InfoRow>
+                </div>
+              )}
               {booking.cancelled_at && (
                 <div className="col-span-2">
                   <InfoRow label={`Dibatalkan ${formatDateTime(booking.cancelled_at)}`}>
@@ -653,5 +682,21 @@ function CancelBookingDialog({ booking, onClose }: { booking: Booking; onClose: 
         </DialogPanelForm>
       </DialogPanel>
     </Dialog>
+  );
+}
+
+const DEPOSIT_LABEL: Record<string, string> = { pending: "Menunggu DP", paid: "DP diterima", waived: "DP dibebaskan", expired: "DP tidak dibayar" };
+const DEPOSIT_STYLE: Record<string, string> = {
+  pending: "bg-amber-50 text-amber-700 border-amber-200",
+  paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  waived: "bg-slate-100 text-slate-600 border-slate-200",
+  expired: "bg-red-50 text-red-700 border-red-200",
+};
+
+function DepositBadge({ status }: { status: string }) {
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${DEPOSIT_STYLE[status] ?? DEPOSIT_STYLE.waived}`}>
+      {DEPOSIT_LABEL[status] ?? status}
+    </span>
   );
 }

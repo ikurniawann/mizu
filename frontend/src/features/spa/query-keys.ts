@@ -19,6 +19,7 @@ export const spaKeys = {
   booking: (id: string) => ["spa", "bookings", "detail", id] as const,
   availability: (params: AvailabilityParams) => ["spa", "availability", params] as const,
   waitlistAll: () => ["spa", "waitlist"] as const,
+  depositSettings: () => ["spa", "settings", "deposit"] as const,
   waitlist: (params: WaitlistListParams) => ["spa", "waitlist", params] as const,
   boardAll: () => ["spa", "board"] as const,
   board: (branchId: string, date: string) => ["spa", "board", branchId, date] as const,

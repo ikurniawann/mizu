@@ -38,6 +38,9 @@ export const useSpaAssists = (params: { branch_id?: string; from?: string; to?: 
 export const useSpaOutletPics = (branchId?: string) =>
   useQuery({ queryKey: spaKeys.outletPics(branchId), queryFn: () => spaApi.outletPics(branchId) });
 
+export const useDepositSettings = () =>
+  useQuery({ queryKey: spaKeys.depositSettings(), queryFn: () => spaApi.depositSettings() });
+
 export const useSpaWaitlist = (params: WaitlistListParams) =>
   useQuery({ queryKey: spaKeys.waitlist(params), queryFn: () => spaApi.waitlist(params) });
 

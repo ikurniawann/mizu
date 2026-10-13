@@ -136,7 +136,10 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const freeTherapists = usePublicSpaTherapists(outlet?.branch_id ?? "", slotValid ? slotIso : null, ids, pref);
   const therapist = freeTherapists.data?.find((t) => t.id === therapistId) ?? null;
   const onlineReady = !!outlet?.online_payment;
-  const payOnline = onlineReady && payMethod === "online";
+  // DP: booking online menahan jadwal setelah DP dibayar; sisa di outlet.
+  const depositIdr = outlet?.deposit_idr ?? 0;
+  const needsDeposit = onlineReady && depositIdr > 0;
+  const payOnline = onlineReady && !needsDeposit && payMethod === "online";
 
   // Langkah yang boleh dibuka; langkah yang diminta mundur sampai yang terpenuhi.
   const reach: Record<Step, boolean> = {
@@ -218,6 +221,18 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
           trackBookingStep("success", outlet.branch_id);
           resetBookingFunnel();
           const statusPath = `/booking/spa/status/${encodeURIComponent(res.access_token)}`;
+          if (res.deposit?.deposit_status === "pending") {
+            // DP: langsung ke halaman bayar DP; bila link belum ada, halaman
+            // status membuatkannya.
+            setRedirecting(true);
+            try {
+              const url = res.deposit.deposit_invoice_url ?? (await publicSpaApi.payDeposit(res.access_token)).invoice_url;
+              window.location.assign(url);
+            } catch {
+              router.replace(`${statusPath}?bayar=dp-gagal`);
+            }
+            return;
+          }
           if (!payOnline) return router.replace(statusPath);
           // Bayar online: langsung ke halaman bayar; bila gagal, halaman status
           // menyediakan tombol "Bayar online" untuk mencoba lagi.
@@ -254,7 +269,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
         : step === "waktu"
           ? { label: slotValid && slotIso ? `Lanjut · ${wibClockOf(slotIso)} WIB` : "Pilih jam dulu", disabled: !slotValid }
           : {
-              label: redirecting ? "Menuju pembayaran…" : create.isPending ? "Mengirim…" : payOnline ? "Konfirmasi & bayar" : "Konfirmasi booking",
+              label: redirecting ? "Menuju pembayaran…" : create.isPending ? "Mengirim…" : needsDeposit ? `Konfirmasi & bayar DP ${formatRupiah(depositIdr * Math.max(1, 1))}` : payOnline ? "Konfirmasi & bayar" : "Konfirmasi booking",
               disabled: create.isPending || redirecting,
             };
   const next = () => {
@@ -382,7 +397,19 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                     aria-describedby={fieldError === "phone" ? "spa-phone-error" : undefined}
                   />
                 </Field>
-                {onlineReady && (
+                {needsDeposit && (
+                  <div className="space-y-2 rounded-2xl border border-border bg-background p-4">
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      <CreditCard className="size-4 text-forest dark:text-accent" /> DP {formatRupiah(depositIdr)} untuk mengunci jadwal
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Setelah konfirmasi kamu diarahkan ke halaman pembayaran DP (VA, e-wallet, QRIS, kartu). Jadwal ditahan{" "}
+                      {outlet?.deposit_hold_minutes ?? 60} menit sampai DP dibayar; sisa{" "}
+                      <span className="font-semibold text-foreground">{formatRupiah(Math.max(0, totalPrice - depositIdr))}</span> dibayar di outlet setelah treatment.
+                    </p>
+                  </div>
+                )}
+                {onlineReady && !needsDeposit && (
                   <fieldset className="space-y-2">
                     <legend className="text-sm font-semibold">Pembayaran</legend>
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -447,7 +474,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               {!cta.disabled && !create.isPending ? <ArrowRight /> : null}
             </Button>
             <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <Wallet className="size-3.5" /> {payOnline ? "Bayar online lewat Xendit" : "Bayar di outlet atau online"}
+              <Wallet className="size-3.5" /> {needsDeposit ? `DP ${formatRupiah(depositIdr)} online · sisa di outlet` : payOnline ? "Bayar online lewat Xendit" : "Bayar di outlet atau online"}
             </p>
           </div>
         </aside>

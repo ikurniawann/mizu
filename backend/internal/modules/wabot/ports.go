@@ -34,6 +34,10 @@ type Spa interface {
 	MarkWaitlistNotified(ctx context.Context, id string) error
 	// UpcomingBookings feeds the reminders (website & chat bookings only).
 	UpcomingBookings(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error)
+	// DepositPolicy: the DP amount, hold window (minutes) and whether it applies.
+	DepositPolicy(ctx context.Context) (amount float64, holdMinutes int, enabled bool)
+	// ExpireDeposits cancels pending-DP bookings past their hold.
+	ExpireDeposits(ctx context.Context) (int, error)
 }
 
 // Sender delivers one bot reply to the customer and logs it on the

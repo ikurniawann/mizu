@@ -4142,7 +4142,17 @@
   {
     "module": "spa",
     "method": "POST",
+    "path": "/api/public/spa/bookings/{token}/deposit"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
     "path": "/api/public/spa/bookings/{token}/mock-pay"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/public/spa/bookings/{token}/mock-pay-deposit"
   },
   {
     "module": "spa",
@@ -6132,6 +6142,11 @@
   {
     "module": "spa",
     "method": "POST",
+    "path": "/api/spa/bookings/{id}/deposit"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
     "path": "/api/spa/bookings/{id}/items"
   },
   {
@@ -6268,6 +6283,16 @@
     "module": "spa",
     "method": "GET",
     "path": "/api/spa/reports/trend"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/settings/deposit"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/settings/deposit"
   },
   {
     "module": "spa",

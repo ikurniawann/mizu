@@ -327,3 +327,19 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   "Spa · n treatment" di hari ber-booking. Foto contoh di Lokasi/outlet/Suasana/Tentang/Treatment (lib/photos.ts).
   Halaman /booking/spa/ubah: ubah jadwal dengan kode booking + nomor WA sampai 1 jam sebelum (juga yang sudah dibayar
   online, selama belum dibuka di kasir); batal tetap 24 jam. Deploy `mizu:ubah-1`, `mizu-api:ubah-1`.
+
+## Automation Log (lanjutan)
+
+- 2026-10-13 — **DP booking online** (permintaan pemilik): booking dari website & WhatsApp menahan jadwal
+  setelah DP (bawaan Rp100.000 per booking, `spa_deposit_idr`) dibayar lewat invoice Xendit
+  (`external_id spa-dp-…`); jadwal ditahan `spa_deposit_hold_minutes` (60) — lewat itu booking dibatalkan
+  otomatis & slot dilepas (sweep di `maintain()` dan pengawas bot), dengan kabar WA ke customer. Sisa harga
+  dibayar di outlet: tagihan POS dibuat dengan `discount_amount` = DP (`charges_breakdown` type `deposit`).
+  FO: tandai DP diterima manual / bebaskan (`POST /api/spa/bookings/{id}/deposit`), pengaturan di Spa →
+  Outlet (`GET/PUT /api/spa/settings/deposit`). Booking FO tanpa DP. Bot: langkah pembayaran diganti link DP
+  + batas waktu; *sudah bayar* mengecek DP; notifikasi DP diterima / kedaluwarsa. Website: langkah
+  pembayaran menjadi info DP + redirect ke invoice DP; halaman status menampilkan DP (bayar / simulasi demo /
+  lunas + sisa). Migrasi `20261013010000_spa_booking_deposit.sql`. Bukti:
+  `TestDepositHoldsAndSettlesOnlineBookings`, `TestBotDepositFlow` (dijalankan dengan `XENDIT_MOCK=1`),
+  suite spa/wabot/app lulus tanpa mock; tsc/eslint/vitest frontend. Catatan: checkout grup FO (fitur sesi lain,
+  uncommitted) belum mengurangi DP.

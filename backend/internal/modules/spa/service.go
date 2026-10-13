@@ -81,6 +81,9 @@ func (s *Service) maintain(ctx context.Context) {
 	if err := s.tx(ctx, func(q Q) error { return s.st.expire(ctx, q, now.Add(-domain.ExpireGrace)) }); err != nil {
 		s.warn("spa: expire sweep failed", err)
 	}
+	if _, err := s.ExpireDeposits(ctx); err != nil {
+		s.warn("spa: deposit sweep failed", err)
+	}
 	pending, err := s.st.pendingPayments(ctx, s.db)
 	if err != nil || len(pending) == 0 {
 		if err != nil {
@@ -595,6 +598,17 @@ func (s *Service) visibleBooking(ctx context.Context, sc *scope.Scope, id string
 	b, err := s.st.bookingDetail(ctx, s.db, id)
 	if err != nil {
 		return nil, err
+	}
+	if b != nil {
+		total := 0.0
+		for _, it := range b.Items {
+			if it.Status != domain.ItemCancelled {
+				total += it.PriceIDR
+			}
+		}
+		if info, derr := s.st.depositInfo(ctx, s.db, id, total, s.clock()); derr == nil {
+			b.Deposit = info
+		}
 	}
 	if b == nil || (sc != nil && !inScope(sc, b.CompanyID, b.BranchID)) {
 		return nil, httpx.NotFound("Booking tidak ditemukan")
@@ -1250,10 +1264,18 @@ func (s *Service) Checkout(ctx context.Context, userID, id string, rating *int) 
 			lines = append(lines, BillLine{ProductID: pid, Name: it.TreatmentName + " (" + it.VariantName + ")",
 				SKU: "SPA-" + v.TreatmentCode, UnitPrice: it.PriceIDR, Note: note})
 		}
+		prepaid, err := s.st.paidDeposit(ctx, q, id)
+		if err != nil {
+			return err
+		}
+		notes := "Booking spa " + b.Code
+		if prepaid > 0 {
+			notes += " · DP " + domainRupiah(prepaid) + " sudah dibayar online"
+		}
 		ref, err = s.ports.POS.OpenBill(ctx, q, Bill{
 			CompanyID: b.CompanyID, BranchID: b.BranchID, WarehouseID: b.WarehouseID, CustomerID: b.CustomerID,
 			CashierUserID: userID, ContactName: b.CustomerName, ContactPhone: b.CustomerPhone,
-			Notes: "Booking spa " + b.Code, Lines: lines,
+			Notes: notes, Lines: lines, Prepaid: prepaid, PrepaidNote: "DP booking " + b.Code,
 		})
 		if err != nil {
 			return err
@@ -1606,8 +1628,12 @@ const tooManyOpenBookings = "Nomor ini sudah memiliki terlalu banyak booking akt
 func (s *Service) PublicOutlets(ctx context.Context) ([]PublicOutlet, error) {
 	list, err := s.st.publicOutlets(ctx, s.db)
 	online := s.onlinePaymentReady()
+	deposit, _ := s.depositSettings(ctx, s.db)
 	for i := range list {
 		list[i].OnlinePayment = online
+		if deposit.Enabled {
+			list[i].DepositIDR, list[i].DepositHoldMins = deposit.AmountIDR, deposit.HoldMinutes
+		}
 	}
 	return list, err
 }
@@ -1741,6 +1767,9 @@ func (s *Service) PublicBooking(ctx context.Context, token string) (*PublicBooki
 	result, err := s.st.publicBookingByToken(ctx, s.db, token, s.clock())
 	if result != nil {
 		result.OnlinePayment = s.onlinePaymentReady()
+		if info, derr := s.st.depositInfo(ctx, s.db, result.bookingID, result.TotalIDR, s.clock()); derr == nil {
+			result.Deposit = info
+		}
 	}
 	return result, err
 }
@@ -1924,7 +1953,20 @@ func (s *Service) PublicBook(ctx context.Context, in publicBookingInput) (*Publi
 	if err != nil {
 		return nil, err
 	}
+	s.prepareDeposit(ctx, token)
 	return s.PublicBooking(ctx, token)
+}
+
+// prepareDeposit makes the DP invoice right after booking so the guest gets
+// the link at once; a failure here is not fatal (the status page retries).
+func (s *Service) prepareDeposit(ctx context.Context, token string) {
+	var status string
+	if err := s.db.QueryRow(ctx, `SELECT deposit_status FROM spa.bookings WHERE public_token = $1::uuid`, token).Scan(&status); err != nil || status != DepositPending {
+		return
+	}
+	if _, err := s.PublicPayDeposit(ctx, token); err != nil {
+		s.warn("spa: deposit invoice", err)
+	}
 }
 
 // publicBookingChecks validates one public booking request before the
@@ -2017,6 +2059,10 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 		}
 		// A booking fulfils the guest's waitlist wish for that outlet and day.
 		if err := s.resolveWaitlistIn(ctx, q, o.BranchID, phone, domain.WIBDate(in.ScheduledAt)); err != nil {
+			return err
+		}
+		// Online bookings hold their slot against a deposit (DP).
+		if err := s.applyDeposit(ctx, q, id, now); err != nil {
 			return err
 		}
 		result = &PublicBookingResult{BookingCode: code, BranchID: o.BranchID, ScheduledAt: jsTime(in.ScheduledAt), BranchName: o.BranchName, Items: []PublicItem{}}

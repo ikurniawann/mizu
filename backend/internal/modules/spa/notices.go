@@ -29,19 +29,22 @@ type BookingNotice struct {
 	Source        string    `json:"source"`
 	Status        string    `json:"status"`
 	PaymentStatus string    `json:"payment_status"`
+	DepositIDR    float64   `json:"deposit_idr"`
+	DepositStatus string    `json:"deposit_status"`
 }
 
 const noticeSelect = `SELECT b.id::text, b.booking_code, b.customer_name, COALESCE(b.customer_phone, ''), COALESCE(br.name, ''),
 	    b.scheduled_at, COALESCE(b.public_token::text, ''), b.source, b.status, b.payment_status,
 	    COALESCE((SELECT array_agg(i.treatment_name || ' · ' || i.variant_name ORDER BY i.sort_order)
 	              FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled'), '{}'),
-	    COALESCE((SELECT sum(i.price_idr)::float8 FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled'), 0)
+	    COALESCE((SELECT sum(i.price_idr)::float8 FROM spa.booking_items i WHERE i.booking_id = b.id AND i.status <> 'cancelled'), 0),
+	    b.deposit_idr::float8, b.deposit_status
 	   FROM spa.bookings b LEFT JOIN configuration.branches br ON br.id = b.branch_id`
 
 func scanNotice(row interface{ Scan(...any) error }) (*BookingNotice, error) {
 	var n BookingNotice
 	if err := row.Scan(&n.ID, &n.Code, &n.CustomerName, &n.CustomerPhone, &n.BranchName, &n.ScheduledAt, &n.Token,
-		&n.Source, &n.Status, &n.PaymentStatus, &n.Items, &n.TotalIDR); err != nil {
+		&n.Source, &n.Status, &n.PaymentStatus, &n.Items, &n.TotalIDR, &n.DepositIDR, &n.DepositStatus); err != nil {
 		return nil, err
 	}
 	if n.Items == nil {
