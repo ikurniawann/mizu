@@ -94,12 +94,41 @@ func DetectIntent(text string, handoverKeywords []string) Intent {
 	if isWord(n, noWords) {
 		return IntentNo
 	}
+	// Short messages carry a command anywhere: "halo coba ulang ya",
+	// "bisa kembali?", "status booking saya dong".
+	if len(strings.Fields(n)) <= 6 {
+		for _, w := range backWords {
+			if containsPhrase(n, w) {
+				return IntentBack
+			}
+		}
+		for _, w := range restartWords {
+			if containsPhrase(n, w) {
+				return IntentRestart
+			}
+		}
+		for _, w := range statusWords {
+			if containsPhrase(n, w) {
+				return IntentStatus
+			}
+		}
+		for _, k := range handoverKeywords {
+			if k = Normalize(k); k != "" && containsPhrase(n, k) {
+				return IntentAdmin
+			}
+		}
+	}
 	for _, w := range greetingWords {
 		if n == w || strings.HasPrefix(n, w+" ") || strings.HasPrefix(n, w+",") {
 			return IntentGreeting
 		}
 	}
 	return IntentNone
+}
+
+// containsPhrase: phrase as whole words inside n.
+func containsPhrase(n, phrase string) bool {
+	return strings.Contains(" "+n+" ", " "+phrase+" ")
 }
 
 func isWord(n string, words []string) bool {

@@ -270,6 +270,11 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		applied = t.apply(ctx, &ext)
 	}
 	if !applied {
+		// Off-script: let the AI name the intent or answer briefly before
+		// this counts as "not understood".
+		if msgs, ok := t.converse(ctx, text, out); ok {
+			return msgs
+		}
 		s.Misses++
 		if s.Misses >= domain.MaxMisses {
 			t.handedOver = "lost"
@@ -395,6 +400,68 @@ func (t *turn) extract(ctx context.Context, text string) *Extraction {
 	t.e.log.Info("[wabot] ekstraksi AI", "ms", time.Since(started).Milliseconds(), "outlet", x.Outlet, "people", x.People,
 		"treatments", x.Treatments, "date", x.Date, "time", x.Time, "period", x.Period, "confirm", x.Confirm, "admin", x.WantAdmin)
 	return x
+}
+
+// converse is the last resort for a message nobody could read: the AI names
+// a command (restart/back/status/admin) or writes a short grounded reply;
+// the pending booking question follows. ok=false leaves the miss handling.
+func (t *turn) converse(ctx context.Context, text string, out []string) ([]string, bool) {
+	s := t.sess
+	l := s.Lang
+	c, ok := t.e.ports.Extractor.(Converser)
+	if !ok {
+		return nil, false
+	}
+	pending := ""
+	if prompts := t.promptPreview(ctx); len(prompts) > 0 {
+		pending = prompts[0]
+	}
+	cctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	started := time.Now()
+	res, err := c.Converse(cctx, t.db, text, t.facts(ctx), map[domain.L]string{domain.LangEN: "English", domain.LangID: "Bahasa Indonesia"}[l], pending)
+	if err != nil {
+		t.e.log.Warn("[wabot] percakapan AI gagal", "error", err)
+		return nil, false
+	}
+	t.e.log.Info("[wabot] percakapan AI", "ms", time.Since(started).Milliseconds(), "intent", res.Intent, "reply", res.Reply != "")
+	switch res.Intent {
+	case "restart":
+		s.ResetBooking()
+		return append(out, t.prompt(ctx)...), true
+	case "back":
+		if s.Back() {
+			prompts := t.prompt(ctx)
+			if len(prompts) > 0 {
+				prompts[0] = domain.BackOK(l) + " " + prompts[0]
+			}
+			return append(out, prompts...), true
+		}
+	case "status":
+		return append(out, domain.StatusOf(l, s.Bookings)), true
+	case "admin":
+		t.handedOver = "customer"
+		return append(out, domain.Handover(l, t.settings.Name)), true
+	}
+	if res.Reply == "" {
+		return nil, false
+	}
+	s.Misses = 0
+	prompts := t.prompt(ctx)
+	if len(prompts) > 0 && s.NextStep() != domain.StepDone {
+		prompts[0] = domain.ContinuePrompt(l, prompts[0])
+		return append(append(out, res.Reply), prompts...), true
+	}
+	return append(out, res.Reply), true
+}
+
+// promptPreview renders the pending question without changing the menu
+// state (the real prompt runs afterwards).
+func (t *turn) promptPreview(ctx context.Context) []string {
+	menu, step, failure := t.sess.Menu, t.sess.MenuStep, t.failure
+	prompts := t.promptSteps(ctx)
+	t.sess.Menu, t.sess.MenuStep, t.failure = menu, step, failure
+	return prompts
 }
 
 // answer replies to an information question from system data; a free

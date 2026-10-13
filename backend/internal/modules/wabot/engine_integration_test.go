@@ -559,7 +559,19 @@ func TestBotKeepsTreatmentsNamedBeforeOutlet(t *testing.T) {
 
 type fakeAnswerer struct {
 	fakeExtractor
-	facts string
+	facts   string
+	pending string
+}
+
+func (f *fakeAnswerer) Converse(_ context.Context, _ database.Querier, text, _, lang, pending string) (wabot.ConverseResult, error) {
+	f.pending = pending
+	switch {
+	case strings.Contains(text, "booking saya yang tadi"):
+		return wabot.ConverseResult{Intent: "status"}, nil
+	case strings.Contains(text, "makasih"):
+		return wabot.ConverseResult{Reply: "Sama-sama! (" + lang + ")"}, nil
+	}
+	return wabot.ConverseResult{}, nil
 }
 
 type fakeExtractor struct{}
@@ -723,4 +735,36 @@ func TestBotBackAndNewBooking(t *testing.T) {
 	e.wants(r, "Untuk berapa orang?") // name and language remembered: straight to the booking
 	r = e.say("kembali")
 	e.wants(r, "Tidak ada langkah")
+}
+
+// Commands are read anywhere in a short message; off-script messages go to
+// the AI fallback, which names an intent or answers briefly without
+// counting as a miss.
+func TestBotOffScriptMessages(t *testing.T) {
+	e := setupBot(t)
+	ai := &fakeAnswerer{}
+	e.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: e.sender, Extractor: ai, AppURL: "https://mizu.test"}, nil, func() time.Time { return fixedNow })
+	e.start()
+	e.say("2")
+	r := e.say("Halo coba ulang ya") // command inside a short sentence (no AI needed)
+	e.wants(r, "Untuk berapa orang?")
+	if strings.Contains(r, "belum paham") {
+		t.Fatalf("restart must not count as a miss: %s", r)
+	}
+	r = e.say("makasih ya kak") // chit-chat → AI reply + pending question, no miss
+	e.wants(r, "Sama-sama! (Bahasa Indonesia)", "Lanjut booking — Untuk berapa orang?")
+	if !strings.Contains(ai.pending, "Untuk berapa orang?") {
+		t.Fatalf("pending question given to the AI: %q", ai.pending)
+	}
+	r = e.say("eh booking saya yang tadi gimana") // AI names the intent
+	e.wants(r, "Belum ada booking di chat ini")
+	var misses int
+	if err := e.tx.QueryRow(e.ctx, `SELECT misses FROM crm.wa_bot_sessions WHERE conversation_id = $1::uuid`, e.conv).Scan(&misses); err != nil {
+		t.Fatal(err)
+	}
+	if misses != 0 {
+		t.Fatalf("misses = %d", misses)
+	}
+	r = e.say("xyzzy") // truly unknown: still a miss
+	e.wants(r, "belum paham")
 }

@@ -215,3 +215,13 @@ func TestParseTimeDaytimeDefault(t *testing.T) {
 		}
 	}
 }
+
+func TestIntentAnywhereInShortMessages(t *testing.T) {
+	cases := map[string]Intent{"Halo coba ulang ya": IntentRestart, "bisa kembali?": IntentBack, "status booking saya dong": IntentStatus,
+		"mau ngomong sama admin": IntentAdmin, "halo": IntentGreeting, "2 orang": IntentNone}
+	for in, want := range cases {
+		if got := DetectIntent(in, []string{"admin"}); got != want {
+			t.Fatalf("DetectIntent(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

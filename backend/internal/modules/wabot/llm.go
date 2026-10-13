@@ -218,3 +218,74 @@ func (o OpenAIExtractor) Answer(ctx context.Context, q database.Querier, questio
 	}
 	return answer, nil
 }
+
+const conversePrompt = `Kamu asisten WhatsApp spa Mizu di tengah alur booking. Pesan pelanggan tidak terbaca oleh sistem. Tentukan maksudnya dan isi JSON:
+- intent: "restart" bila ingin mengulang/membatalkan draf/mulai dari awal; "back" bila ingin kembali ke pertanyaan sebelumnya; "status" bila menanyakan booking yang sudah dibuat; "admin" bila ingin bicara dengan manusia/CS; selain itu "none".
+- reply: bila intent "none", balasan ramah dan singkat (maksimal 2 kalimat, bahasa sesuai BAHASA) HANYA berdasarkan FAKTA — misalnya menanggapi basa-basi, ucapan terima kasih, atau pertanyaan yang jawabannya ada di FAKTA; jangan mengarang. Jangan ulangi pertanyaan booking (PERTANYAAN TERTUNDA) karena sistem akan mengulanginya. Bila tidak perlu/tidak bisa dijawab, reply "".`
+
+var _ Converser = OpenAIExtractor{}
+
+// Converse runs one JSON completion for an off-script message.
+func (o OpenAIExtractor) Converse(ctx context.Context, q database.Querier, text, facts, lang, pending string) (ConverseResult, error) {
+	var out ConverseResult
+	stored, err := appSettings(ctx, q, "openai_api_key", "openai_base_url", "openai_model")
+	if err != nil {
+		return out, err
+	}
+	apiKey := strings.TrimSpace(firstSet(stored["openai_api_key"], o.Getenv("OPENAI_API_KEY")))
+	if apiKey == "" {
+		return out, errors.New("API key OpenAI belum tersedia")
+	}
+	model := strings.TrimPrefix(firstSet(stored["openai_model"], "gpt-4o-mini"), "openai:")
+	baseURL := strings.TrimSuffix(firstSet(stored["openai_base_url"], "https://api.openai.com/v1"), "/")
+	client := o.Client
+	if client == nil {
+		client = safehttp.FromEnv(o.Getenv).Client(0)
+	}
+	body := map[string]any{
+		"model": model, "temperature": 0.2, "max_tokens": 200,
+		"response_format": map[string]string{"type": "json_object"},
+		"messages": []map[string]string{
+			{"role": "system", "content": conversePrompt},
+			{"role": "user", "content": "BAHASA: " + lang + "\nPERTANYAAN TERTUNDA: " + truncate(pending, 200) + "\nFAKTA:\n" + facts + "\n\nPESAN: " + strings.TrimSpace(text)},
+		},
+	}
+	if strings.HasPrefix(model, "gpt-5") {
+		delete(body, "temperature")
+	}
+	raw, _ := json.Marshal(body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/chat/completions", bytes.NewReader(raw))
+	if err != nil {
+		return out, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	res, err := client.Do(req)
+	if err != nil {
+		return out, err
+	}
+	defer res.Body.Close()
+	payload, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return out, fmt.Errorf("OpenAI HTTP %d: %s", res.StatusCode, truncate(string(payload), 200))
+	}
+	var envelope struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(payload, &envelope); err != nil || len(envelope.Choices) == 0 {
+		return out, errors.New("jawaban OpenAI kosong")
+	}
+	if err := json.Unmarshal([]byte(envelope.Choices[0].Message.Content), &out); err != nil {
+		return out, fmt.Errorf("JSON percakapan tidak valid: %w", err)
+	}
+	out.Intent = strings.ToLower(strings.TrimSpace(out.Intent))
+	out.Reply = strings.TrimSpace(out.Reply)
+	if strings.Contains(strings.ToUpper(out.Reply), "TIDAK_TAHU") {
+		out.Reply = ""
+	}
+	return out, nil
+}

@@ -100,6 +100,20 @@ type ExtractContext struct {
 
 // Extractor turns a free-text message into an Extraction. A nil Extractor
 // means menu-only mode.
+// Converser is the fallback for a message neither the parser nor the
+// extractor could read: it names the customer's intent (restart | back |
+// status | admin | none) and/or writes a short grounded reply in the
+// session's language. An empty result means "still not understood".
+type Converser interface {
+	Converse(ctx context.Context, q database.Querier, text, facts, lang, pending string) (ConverseResult, error)
+}
+
+// ConverseResult is the fallback's reading of an off-script message.
+type ConverseResult struct {
+	Intent string `json:"intent"`
+	Reply  string `json:"reply"`
+}
+
 // Answerer answers a free question from the facts given (outlets, prices,
 // policies) and nothing else; "" means it does not know.
 type Answerer interface {

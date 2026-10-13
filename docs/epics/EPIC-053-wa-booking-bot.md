@@ -177,3 +177,8 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   ("halo"); pesan berisi langsung diproses dalam bahasa yang terdeteksi; jawaban tak jelas setelah menu
   bahasa = Indonesia; nama bebas diterima hanya bila ≥3 huruf dan bukan kata perintah/ya/tidak. Bukti:
   `TestBotEnglishFlow`, `TestBotLanguageMenu`, seluruh tes lama disesuaikan (helper `start()`).
+- 2026-10-13 — Pesan di luar alur ("Halo coba ulang ya" dijawab "belum paham"): perintah ulang/kembali/
+  status/admin dikenali di mana pun dalam kalimat ≤6 kata; sisanya ke AI *Converse* (JSON: intent
+  restart|back|status|admin|none + balasan singkat dari FAKTA dalam bahasa sesi) sebelum dihitung
+  "tidak paham"; pertanyaan tertunda diulang setelah balasan. Bukti: `TestBotOffScriptMessages`,
+  `TestIntentAnywhereInShortMessages`.
