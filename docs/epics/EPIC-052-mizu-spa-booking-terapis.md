@@ -429,3 +429,13 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   Payroll HRIS — menunggu arahan akuntan (opsi: kirim total komisi bulanan ke Payroll HRIS sebagai penghasilan).
   Data live: baru 2 dari 17 terapis punya data gaji aktif di HRIS. Tes: `TestTherapistPayrollSalaryViaHRIS`.
   Image: `mizu-api:wabot-28`, `mizu:wabot-18`.
+- 2026-10-13 — R6 lanjutan, room dipilih customer (`41bc273a`): keputusan owner — room dipilih juga oleh customer di
+  website dan WhatsApp. `GET /api/public/spa/outlets/{branchId}/rooms` (room aktif yang masih punya tempat);
+  aturan kapasitas berubah: `roomUse` menghitung booking terbuka yang tumpang tindih, room menolak bila jumlahnya ≥
+  kapasitas (couple room muat dua booking; berlaku juga untuk FO). `publicBookingInput.RoomID` + `roomPriceWaived`
+  (rombongan memakai satu room, harga dihitung sekali). Total publik (`publicBookingByToken`), link bayar
+  (`activeTotal`) dan sisa DP kini termasuk harga room. Bot: `StepRoom` sebelum konfirmasi (dilewati bila tidak ada
+  room kosong), `Session.Room*`, `TotalPrice` termasuk room, `kembali` dari ringkasan menanyakan room lagi. Web:
+  `RoomPicker` di langkah waktu, ringkasan & halaman status menampilkan room. Bukti: `TestGuestsChooseRoomOnline`,
+  `TestBotGuestChoosesRoom`, `TestSessionNextStep`; suite spa/wabot/app lulus dengan & tanpa XENDIT_MOCK; tsc,
+  eslint, vitest spa+site. Image: `mizu-api:wabot-29`, `mizu:wabot-19`.
