@@ -772,6 +772,13 @@ func TestBotBackAndNewBooking(t *testing.T) {
 	e.say("0")
 	r = e.say("ya")
 	e.wants(r, "Kode booking")
+	// The done message says "ketik *booking*": that starts a new booking
+	// instead of repeating the done message.
+	r = e.say("Booking")
+	e.wants(r, "Untuk berapa orang?")
+	if strings.Contains(r, "sudah selesai") {
+		t.Fatalf("\"booking\" after a finished booking repeated the done message:\n%s", r)
+	}
 	r = e.say("booking baru")
 	e.wants(r, "Untuk berapa orang?") // name and language remembered: straight to the booking
 	r = e.say("kembali")

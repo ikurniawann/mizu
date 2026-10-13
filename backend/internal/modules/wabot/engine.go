@@ -218,6 +218,18 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		if strings.Contains(n, "bayar") || strings.Contains(n, "lunas") || strings.Contains(n, "transfer") || strings.Contains(n, "paid") || strings.Contains(n, "payment") {
 			return []string{t.paymentCheck(ctx)}
 		}
+		// "booking", "mau booking", "book", "reservasi": the Done message tells
+		// the guest to type *booking* for a new one, so start it.
+		if domain.WantsNewBooking(text) {
+			s.ResetBooking()
+			// "booking besok jam 3 di Kemang": keep the details given.
+			if len(strings.Fields(text)) > 2 {
+				if ext := t.extract(ctx, text); ext != nil {
+					t.apply(ctx, ext)
+				}
+			}
+			return t.prompt(ctx)
+		}
 		if intent == domain.IntentGreeting || intent == domain.IntentYes {
 			return []string{domain.Done(l, t.settings.Name)}
 		}

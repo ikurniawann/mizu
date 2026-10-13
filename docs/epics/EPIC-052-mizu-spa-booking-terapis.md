@@ -439,3 +439,9 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   `RoomPicker` di langkah waktu, ringkasan & halaman status menampilkan room. Bukti: `TestGuestsChooseRoomOnline`,
   `TestBotGuestChoosesRoom`, `TestSessionNextStep`; suite spa/wabot/app lulus dengan & tanpa XENDIT_MOCK; tsc,
   eslint, vitest spa+site. Image: `mizu-api:wabot-29`, `mizu:wabot-19`.
+- 2026-10-13 — **Bug WA: "booking" setelah booking selesai mengulang pesan selesai.** Pesan selesai menyuruh tamu
+  mengetik *booking*, tetapi kata itu terbaca sebagai sapaan sehingga bot mengulang pesan yang sama. Kini
+  `domain.WantsNewBooking` (booking/book/mau booking/reservasi, abaikan tanda baca; bukan bila ada `?`, batal, status,
+  ubah jadwal, "booking saya…") memulai booking baru di langkah selesai; nama & bahasa tetap, detail yang ikut
+  disebut ("booking besok jam 3") langsung dipakai. Bukti: `TestWantsNewBooking`, `TestBotBackAndNewBooking`; suite
+  wabot lulus dengan & tanpa XENDIT_MOCK. Image: `mizu-api:wabot-32`.

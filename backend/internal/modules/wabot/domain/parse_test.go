@@ -229,3 +229,27 @@ func TestIntentAnywhereInShortMessages(t *testing.T) {
 		}
 	}
 }
+
+func TestWantsNewBooking(t *testing.T) {
+	for text, want := range map[string]bool{
+		"Booking":                       true,
+		"booking!":                      true,
+		"mau booking":                   true,
+		"saya mau booking lagi kak":     true,
+		"Book":                          true,
+		"reservasi":                     true,
+		"I want to book":                true,
+		"booking besok jam 3":           true,
+		"halo":                          false,
+		"facebook":                      false,
+		"batal booking":                 false,
+		"status booking":                false,
+		"booking saya jam berapa?":      false,
+		"booking saya yang tadi gimana": false,
+		"ubah jadwal booking":           false,
+	} {
+		if got := WantsNewBooking(text); got != want {
+			t.Errorf("WantsNewBooking(%q) = %v, want %v", text, got, want)
+		}
+	}
+}

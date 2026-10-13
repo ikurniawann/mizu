@@ -46,6 +46,38 @@ var (
 	waitlistWords = []string{"daftar tunggu", "waiting list", "waitlist", "masuk daftar tunggu", "kabari", "kabarin", "tunggu saja", "daftar tunggu saja", "notify me", "let me know", "put me on the list"}
 )
 
+// newBookingWords start another booking once one is finished.
+var newBookingWords = []string{"booking", "book", "mau booking", "booking lagi", "pesan lagi", "reservasi", "reservation", "pesan tempat", "mau pesan", "i want to book", "i'd like to book", "another booking"}
+
+// WantsNewBooking: a short reply asking for (another) booking.
+func WantsNewBooking(text string) bool {
+	// "Booking!", "booking ya." — punctuation does not change the ask.
+	n := Normalize(strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '\'' {
+			return r
+		}
+		return ' '
+	}, text))
+	if n == "" || len(strings.Fields(n)) > 8 {
+		return false
+	}
+	padded := " " + n + " "
+	if strings.Contains(text, "?") {
+		return false // "booking saya jam berapa?" asks about the one made
+	}
+	for _, w := range []string{"batal", "cancel", "ubah", "ganti", "reschedule", "status", "refund", "pindah", "booking saya", "booking aku", "bookingku", "bookingan", "my booking", "tadi", "gimana", "bagaimana", "kapan", "berapa"} {
+		if strings.Contains(padded, " "+w) {
+			return false
+		}
+	}
+	for _, w := range newBookingWords {
+		if strings.Contains(padded, " "+w+" ") {
+			return true
+		}
+	}
+	return false
+}
+
 // DetectIntent reads a whole short reply; handoverKeywords come from settings.
 func DetectIntent(text string, handoverKeywords []string) Intent {
 	n := Normalize(strings.Trim(text, " .!?,"))
