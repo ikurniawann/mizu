@@ -383,6 +383,7 @@ export interface BoardTherapist {
 
 /** Satu treatment di jadwal terapis (GET /api/spa/me/schedule). */
 export interface MyScheduleItem extends BoardItem {
+  branch_id: string;
   branch_name: string;
   payment_status: PaymentStatus;
   /** commission_idr masih perkiraan (treatment belum selesai). */

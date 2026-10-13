@@ -16,6 +16,7 @@ export interface MyBooking {
   booking_id: string;
   booking_code: string;
   customer_name: string;
+  branch_id: string;
   branch_name: string;
   starts_at: string;
   ends_at: string;
@@ -55,6 +56,7 @@ export function groupMySchedule(items: MyScheduleItem[], today: string): MySched
         booking_id: it.booking_id,
         booking_code: it.booking_code,
         customer_name: it.customer_name,
+        branch_id: it.branch_id,
         branch_name: it.branch_name,
         starts_at: it.starts_at,
         ends_at: it.ends_at,

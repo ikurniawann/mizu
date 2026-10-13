@@ -216,6 +216,10 @@ export const spaApi = {
   mySummary: (month: string) => call<MySummary>(withQuery(`${BASE}/me/summary`, { month })),
   myAssignmentAction: (itemId: string, action: "start" | "complete") =>
     send<BoardItem>(`${BASE}/me/assignments/${enc(itemId)}`, { action }, "PATCH"),
+  /** Terapis menambah treatment ke booking-nya sendiri (saat/setelah treatment). */
+  myAddItem: (bookingId: string, variantId: string) =>
+    send<BoardItem>(`${BASE}/me/bookings/${enc(bookingId)}/items`, { variant_id: variantId }),
+  myCatalog: (branchId: string) => call<PublicTreatment[]>(withQuery(`${BASE}/me/catalog`, { branch_id: branchId })),
   myCommissions: async (month: string) =>
     normalizeMyCommissions(await call<unknown>(withQuery(`${BASE}/me/commissions`, { month }))),
 };

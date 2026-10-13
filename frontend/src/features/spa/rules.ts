@@ -176,9 +176,18 @@ export function canRescheduleBooking(
     !booking.items?.some((item) => item.status === "in_treatment" || item.status === "completed");
 }
 
-export function canAddItem(booking: Pick<Booking, "status" | "payment_status"> & { items?: Pick<BookingItem, "status">[] }): boolean {
-  return (booking.status === "unassigned" || booking.status === "assigned") && booking.payment_status === "unpaid" &&
-    !booking.items?.some((item) => item.status === "in_treatment" || item.status === "completed");
+/**
+ * Treatment bisa ditambah sebelum, saat, maupun setelah treatment berjalan (revisi R4),
+ * selama booking belum dibayar dan belum dikirim ke kasir.
+ */
+export function canAddItem(
+  booking: Pick<Booking, "status" | "payment_status"> & { items?: Pick<BookingItem, "status">[]; pos_order_id?: string | null },
+): boolean {
+  return (
+    ["unassigned", "assigned", "in_treatment", "completed"].includes(booking.status) &&
+    booking.payment_status === "unpaid" &&
+    !booking.pos_order_id
+  );
 }
 
 type BookingWithItemStatus = Pick<Booking, "status" | "payment_status"> & { items: Pick<BookingItem, "status">[] };

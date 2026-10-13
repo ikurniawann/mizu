@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BellRing, CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Hourglass, Loader2, PlayCircle, StickyNote, Wallet } from "lucide-react";
+import { BellRing, CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Hourglass, Loader2, PlayCircle, Plus, StickyNote, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useMyCommissions, useMySchedule, useMySummary, useSpaMe } from "../quer
 import { isBookingClosed } from "../rules";
 import { currentMonthWib, wibDateOf } from "../time";
 import type { MyScheduleItem } from "../types";
+import { MyAddTreatmentDialog } from "./my-add-treatment-dialog";
 import { ItemStatusBadge, SPA_KICKER, TimeRange } from "./shared";
 
 /**
@@ -317,6 +318,9 @@ function ScheduleState({
 /** Satu booking: jam, tamu, treatment (dengan tombol Mulai/Selesai bila hari ini), catatan, komisi. */
 function BookingCard({ booking, isNew, actions }: { booking: MyBooking; isNew: boolean; actions: boolean }) {
   const closed = isBookingClosed({ status: booking.booking_status });
+  const [adding, setAdding] = useState(false);
+  // Tamu bisa minta treatment tambahan sebelum, saat, atau setelah treatment — selama belum dibayar (revisi R4).
+  const canAdd = actions && !closed && booking.payment_status === "unpaid";
   return (
     <li>
       <Card className={cn("gap-3 px-5", isNew && "ring-2 ring-accent-strong")}>
@@ -335,6 +339,14 @@ function BookingCard({ booking, isNew, actions }: { booking: MyBooking; isNew: b
             <TreatmentRow key={item.id} item={item} actions={actions && !closed} />
           ))}
         </ul>
+        {canAdd && (
+          <Button variant="outline" className="w-full" onClick={() => setAdding(true)}>
+            <Plus className="size-4" /> Tambah treatment
+          </Button>
+        )}
+        {adding && (
+          <MyAddTreatmentDialog bookingId={booking.booking_id} branchId={booking.branch_id} customerName={booking.customer_name} onClose={() => setAdding(false)} />
+        )}
         {booking.notes.trim() && (
           <p className="flex gap-2 rounded-xl bg-surface px-3 py-2 text-sm text-body">
             <StickyNote className="mt-0.5 size-4 shrink-0 text-muted-foreground" />

@@ -903,58 +903,102 @@ func (s *Service) AddItem(ctx context.Context, userID, id string, req itemReques
 		if err != nil {
 			return err
 		}
-		if err := domain.CanEditItems(b.Status, b.PaymentStatus, b.PosOrderID != nil && s.orderLive(ctx, q, *b.PosOrderID)); err != nil {
-			return ruleErr(err)
-		}
-		existing, err := s.st.itemRows(ctx, q, id, true)
-		if err != nil {
-			return err
-		}
-		if b.Status != domain.BookingUnassigned && b.Status != domain.BookingAssigned {
-			return httpx.Conflict("Treatment tidak dapat ditambah setelah booking dimulai")
-		}
-		if req.TherapistID != "" && req.TherapistID != deref(b.TherapistID) {
-			return httpx.BadRequest("Treatment mengikuti terapis booking; ubah penugasan pada booking")
-		}
-		start := b.EndsAt
-		items, err := s.planItems(ctx, q, b.BranchID, start, []itemRequest{req})
-		if err != nil {
-			return err
-		}
-		items[0].BookingID, items[0].SortOrder = id, len(existing)
-		items[0].TherapistID = b.TherapistID
-		if b.TherapistID != nil {
-			items[0].Status = domain.ItemAssigned
-		}
-		itemID, err := s.st.insertItem(ctx, q, items[0])
-		if err != nil {
-			return err
-		}
-		if err := s.st.event(ctx, q, id, &itemID, "add_item", nil, &items[0].Status, userID, productName(items[0].Variant)); err != nil {
-			return err
-		}
-		updated, err := s.st.itemRows(ctx, q, id, true)
-		if err != nil {
-			return err
-		}
-		interval, err := bookingInterval(b.ScheduledAt, updated)
-		if err != nil {
-			return err
-		}
-		if err := s.st.setBookingWindow(ctx, q, id, interval.Start, interval.End); err != nil {
-			return err
-		}
-		if b.TherapistID != nil {
-			if _, err := s.checkBookingTherapist(ctx, q, b, updated, *b.TherapistID); err != nil {
-				return err
-			}
-		}
-		return s.syncStatus(ctx, q, id, userID)
+		_, err = s.addItemIn(ctx, q, b, userID, req)
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 	return s.visibleBooking(ctx, nil, id)
+}
+
+// addItemIn appends one treatment to an open, unpaid booking that has not
+// been sent to the cashier — before it starts, while it runs, or after it
+// finished (revisi R4: guests add treatments on the table). The new item
+// follows the booking's therapist and starts after the last treatment (or
+// now, when that end is already past). It returns the new item's id.
+func (s *Service) addItemIn(ctx context.Context, q Q, b *bookingRow, userID string, req itemRequest) (string, error) {
+	id := b.ID
+	if err := domain.CanEditItems(b.Status, b.PaymentStatus, b.PosOrderID != nil && s.orderLive(ctx, q, *b.PosOrderID)); err != nil {
+		return "", ruleErr(err)
+	}
+	existing, err := s.st.itemRows(ctx, q, id, true)
+	if err != nil {
+		return "", err
+	}
+	if req.TherapistID != "" && req.TherapistID != deref(b.TherapistID) {
+		return "", httpx.BadRequest("Treatment mengikuti terapis booking; ubah penugasan pada booking")
+	}
+	start := b.EndsAt
+	if now := s.clock(); (b.Status == domain.BookingInTreatment || b.Status == domain.BookingCompleted) && now.After(start) {
+		start = now
+	}
+	items, err := s.planItems(ctx, q, b.BranchID, start, []itemRequest{req})
+	if err != nil {
+		return "", err
+	}
+	items[0].BookingID, items[0].SortOrder = id, len(existing)
+	items[0].TherapistID = b.TherapistID
+	if b.TherapistID != nil {
+		items[0].Status = domain.ItemAssigned
+	}
+	itemID, err := s.st.insertItem(ctx, q, items[0])
+	if err != nil {
+		return "", err
+	}
+	if err := s.st.event(ctx, q, id, &itemID, "add_item", nil, &items[0].Status, userID, productName(items[0].Variant)); err != nil {
+		return "", err
+	}
+	updated, err := s.st.itemRows(ctx, q, id, true)
+	if err != nil {
+		return "", err
+	}
+	interval, err := bookingInterval(b.ScheduledAt, updated)
+	if err != nil {
+		return "", err
+	}
+	if err := s.st.setBookingWindow(ctx, q, id, interval.Start, interval.End); err != nil {
+		return "", err
+	}
+	if b.TherapistID != nil {
+		if _, err := s.checkBookingTherapist(ctx, q, b, updated, *b.TherapistID); err != nil {
+			return "", err
+		}
+	}
+	return itemID, s.syncStatus(ctx, q, id, userID)
+}
+
+// MyAddItem lets the booking's therapist add a treatment the guest asks for
+// during or right after the session (revisi R4).
+func (s *Service) MyAddItem(ctx context.Context, userID, bookingID, variantID string) (*BoardItem, error) {
+	t, err := s.requireMe(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	var itemID string
+	err = s.tx(ctx, func(q Q) error {
+		b, err := s.lockBooking(ctx, q, nil, bookingID)
+		if err != nil {
+			return err
+		}
+		if b == nil || b.TherapistID == nil || *b.TherapistID != t.ID {
+			return httpx.NotFound("Booking tidak ditemukan")
+		}
+		itemID, err = s.addItemIn(ctx, q, b, userID, itemRequest{VariantID: variantID})
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.st.boardItem(ctx, s.db, itemID)
+}
+
+// MyCatalog is the outlet's active treatment list for the therapist app.
+func (s *Service) MyCatalog(ctx context.Context, userID, branchID string) ([]PublicTreatment, error) {
+	if _, err := s.requireMe(ctx, userID); err != nil {
+		return nil, err
+	}
+	return s.st.publicTreatments(ctx, s.db, branchID)
 }
 
 func (s *Service) orderLive(ctx context.Context, q Q, orderID string) bool {

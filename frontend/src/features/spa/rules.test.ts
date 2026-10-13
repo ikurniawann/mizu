@@ -91,7 +91,10 @@ describe("aksi booking", () => {
     expect(canAddItem({ status: "unassigned", payment_status: "unpaid" })).toBe(true);
     expect(canAddItem({ status: "assigned", payment_status: "paid" })).toBe(false);
     expect(canAddItem({ status: "expired", payment_status: "unpaid" })).toBe(false);
-    expect(canAddItem({ status: "in_treatment", payment_status: "unpaid", items: [item("assigned")] })).toBe(false);
+    expect(canAddItem({ status: "in_treatment", payment_status: "unpaid", items: [item("in_treatment")] })).toBe(true);
+    expect(canAddItem({ status: "completed", payment_status: "unpaid", items: [item("completed")] })).toBe(true);
+    expect(canAddItem({ status: "completed", payment_status: "unpaid", pos_order_id: "order-1" })).toBe(false);
+    expect(canAddItem({ status: "cancelled", payment_status: "unpaid" })).toBe(false);
   });
   it("checkout", () => {
     expect(checkoutState(booking("assigned"))).toEqual({ allowed: false, reason: "Selesaikan semua treatment sebelum checkout." });

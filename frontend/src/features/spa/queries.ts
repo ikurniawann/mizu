@@ -98,6 +98,9 @@ export const useMyCommissions = (month: string, enabled = true) =>
   });
 
 /** Jadwal terapis beberapa hari ke depan (booking yang ditugaskan ke dirinya). */
+export const useMyCatalog = (branchId: string, enabled = true) =>
+  useQuery({ queryKey: spaKeys.myCatalog(branchId), queryFn: () => spaApi.myCatalog(branchId), enabled: enabled && !!branchId });
+
 export const useMySchedule = (from: string, days: number, enabled = true) =>
   useQuery({
     queryKey: spaKeys.mySchedule(from, days),

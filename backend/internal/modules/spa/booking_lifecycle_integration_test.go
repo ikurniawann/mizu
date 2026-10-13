@@ -37,7 +37,11 @@ func TestBookingLifecycleChangesAllTreatmentsTogether(t *testing.T) {
 	e.call(&e.admin, "POST", path+"/status", map[string]any{"action": "start"}, http.StatusConflict)
 	e.call(&e.admin, "PATCH", path, map[string]any{"scheduled_at": "2026-10-08T04:00:00Z"}, http.StatusConflict)
 	e.call(&e.admin, "POST", path+"/cancel", map[string]any{"reason": "coba"}, http.StatusConflict)
-	e.call(&e.admin, "POST", path+"/items", map[string]any{"variant_id": variant}, http.StatusConflict)
+	// Revisi R4: a treatment may still be added while the session runs (it joins the same therapist, after the running ones).
+	withExtra := e.data(&e.admin, "POST", path+"/items", map[string]any{"variant_id": variant}, http.StatusOK)
+	if withExtra["status"] != "in_treatment" || len(items(withExtra)) != 3 || items(withExtra)[2]["status"] != "assigned" {
+		t.Fatalf("add during session: %v", withExtra["status"])
+	}
 	e.call(&e.admin, "PATCH", path+"/items/"+items(started)[0]["id"].(string), map[string]any{"action": "cancel"}, http.StatusConflict)
 	completed := e.data(&e.admin, "POST", path+"/status", map[string]any{"action": "complete"}, 200)
 	if completed["status"] != "completed" {

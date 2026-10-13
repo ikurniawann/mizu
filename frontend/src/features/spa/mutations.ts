@@ -256,6 +256,16 @@ export const useMyAssignmentAction = () => {
   });
 };
 
+export const useMyAddItem = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, variantId }: { bookingId: string; variantId: string }) => spaApi.myAddItem(bookingId, variantId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["spa", "me"] });
+    },
+  });
+};
+
 // ── Publik ───────────────────────────────────────────────────────────────────
 
 export const useCreatePublicBooking = () =>

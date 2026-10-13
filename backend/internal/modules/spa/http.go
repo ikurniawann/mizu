@@ -135,6 +135,8 @@ func (h *Handler) Routes() []module.Route {
 		self("GET "+p+"/me/schedule", h.mySchedule),
 		self("GET "+p+"/me/summary", h.mySummary),
 		self("PATCH "+p+"/me/assignments/{itemId}", h.myAction),
+		self("POST "+p+"/me/bookings/{id}/items", h.myAddItem),
+		self("GET "+p+"/me/catalog", h.myCatalog),
 		self("GET "+p+"/me/commissions", h.myCommissions),
 
 		public("GET "+publicPrefix+"/outlets", h.publicOutlets),
@@ -1116,6 +1118,37 @@ func (h *Handler) myAssignments(w http.ResponseWriter, r *http.Request, u *auth.
 		date = domain.WIBDate(h.svc.clock())
 	}
 	list, err := h.svc.MyAssignments(r.Context(), u.ID, date)
+	if err != nil {
+		return err
+	}
+	return ok(w, list)
+}
+
+// myAddItem: the booking's therapist adds a treatment ({"variant_id"}).
+func (h *Handler) myAddItem(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	f := body(r)
+	variantID := str(f.Str("variant_id", req, uuidOpts))
+	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+		return err
+	}
+	item, err := h.svc.MyAddItem(r.Context(), u.ID, id, variantID)
+	if err != nil {
+		return err
+	}
+	return ok(w, item)
+}
+
+// myCatalog lists an outlet's active treatments for the therapist app.
+func (h *Handler) myCatalog(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	branchID := strings.TrimSpace(r.URL.Query().Get("branch_id"))
+	if branchID == "" {
+		return httpx.BadRequest("branch_id wajib diisi")
+	}
+	list, err := h.svc.MyCatalog(r.Context(), u.ID, branchID)
 	if err != nil {
 		return err
 	}
