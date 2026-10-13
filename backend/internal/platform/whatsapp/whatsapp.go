@@ -132,6 +132,15 @@ func (c *Client) provider(ctx context.Context, q database.Querier) string {
 	return ""
 }
 
+// MayMessage: Meta (official) may message anyone; the unofficial gateway
+// only numbers that have chatted to it before.
+func (c *Client) MayMessage(ctx context.Context, q database.Querier, target string) bool {
+	if c.provider(ctx, q) != "gateway" {
+		return true
+	}
+	return KnownContact(ctx, q, target)
+}
+
 // Dispatch is dispatchText without the log.
 func (c *Client) Dispatch(ctx context.Context, q database.Querier, target, message string) Result {
 	switch c.provider(ctx, q) {
@@ -188,7 +197,9 @@ func (c *Client) SendOTP(ctx context.Context, q database.Querier, target, code, 
 			},
 		})
 	case "gateway":
-		res = c.LoadGateway(ctx, q).SendText(ctx, target, fallbackText)
+		// A login OTP is requested by the recipient themselves, so it is not
+		// held back like other first messages to new numbers.
+		res = c.LoadGateway(ctx, q).sendText(ctx, target, fallbackText)
 	case "fonnte":
 		res = c.sendFonnte(ctx, target, fallbackText)
 	default:

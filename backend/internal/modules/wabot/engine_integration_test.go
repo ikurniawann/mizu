@@ -91,6 +91,13 @@ func (a txSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.B
 type memSender struct {
 	sent   []string
 	images []memImage
+	// newNumbersBlocked mimics the unofficial gateway: proactive notices only
+	// to numbers that chatted before.
+	newNumbersBlocked bool
+}
+
+func (m *memSender) MayMessage(context.Context, database.Querier, string) bool {
+	return !m.newNumbersBlocked
 }
 
 type memImage struct {
@@ -952,5 +959,26 @@ func TestBotSendsBookingQRAfterPayment(t *testing.T) {
 	// Sent once per booking.
 	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil || len(e.sender.images) != 1 {
 		t.Fatalf("QR must be sent once: err=%v images=%d", err, len(e.sender.images))
+	}
+}
+
+// Proactive notices are skipped (not failed, so the outbox does not retry)
+// for numbers the provider may not write to first; nothing is claimed, so
+// they go out once the guest has chatted.
+func TestBotSkipsProactiveNoticesToNewNumbers(t *testing.T) {
+	e := setupBot(t)
+	n := spa.BookingNotice{ID: "0b6f1c2e-0000-4000-8000-0000000000ab", Code: "MZ-TEST-NEW", CustomerName: "Baru", CustomerPhone: "081377778888",
+		BranchName: "Mizu Uji", ScheduledAt: time.Date(2026, 10, 9, 3, 0, 0, 0, time.UTC), Items: []string{"Reflexology · 45 menit"}, TotalIDR: 150000,
+		Token: "tok", Source: "public", Status: "assigned", PaymentStatus: "paid"}
+	e.sender.newNumbersBlocked = true
+	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil || len(e.sender.sent) != 0 {
+		t.Fatalf("blocked: err=%v sent=%v", err, e.sender.sent)
+	}
+	if err := e.engine.DepositNotice(e.ctx, e.tx, e.tx, n, true); err != nil || len(e.sender.sent) != 0 {
+		t.Fatalf("blocked DP notice: err=%v sent=%v", err, e.sender.sent)
+	}
+	e.sender.newNumbersBlocked = false
+	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil || len(e.sender.sent) != 1 {
+		t.Fatalf("allowed later: err=%v sent=%v", err, e.sender.sent)
 	}
 }

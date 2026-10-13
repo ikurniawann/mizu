@@ -136,6 +136,7 @@ func TestSendTextProviders(t *testing.T) {
 	tx := testutil.Tx(t)
 	ctx := context.Background()
 	phone := "62899" + randDigits(7)
+	chatted(t, tx, phone)
 	customer := newCustomer(t, tx, "0"+phone[2:])
 
 	// Not configured.
@@ -208,6 +209,7 @@ func TestOwnerNotices(t *testing.T) {
 	gw := &fakeProvider{status: 200, body: `{}`}
 	srv := gw.server(t)
 	n := testNotifier(t, tx, map[string]string{"WA_GATEWAY_TOKEN": "t", "WA_GATEWAY_URL": srv.URL})
+	chatted(t, tx, compNotifTarget, "6281234567890", "6281230000001")
 	order := "POS-" + randDigits(8)
 	countLog := func(typ, key string) int {
 		var c int
@@ -250,8 +252,8 @@ func TestOwnerNotices(t *testing.T) {
 	// Gift card codes go to the buyer.
 	gw.requests = nil
 	n.NotifyGiftCardsSold(ctx, ports.GiftCardsSoldNotice{BuyerPhone: "", Cards: []ports.IssuedGiftCard{{Code: "A"}}})
-	n.NotifyGiftCardsSold(ctx, ports.GiftCardsSoldNotice{BuyerPhone: "628123", Cards: []ports.IssuedGiftCard{{Code: "ABC", InitialValue: 50000, ExpiresAt: json.RawMessage("null")}}})
-	if len(gw.requests) != 1 || gw.requests[0]["target"] != "628123" || !strings.Contains(gw.requests[0]["message"].(string), "*ABC*") {
+	n.NotifyGiftCardsSold(ctx, ports.GiftCardsSoldNotice{BuyerPhone: "6281230000001", Cards: []ports.IssuedGiftCard{{Code: "ABC", InitialValue: 50000, ExpiresAt: json.RawMessage("null")}}})
+	if len(gw.requests) != 1 || gw.requests[0]["target"] != "6281230000001" || !strings.Contains(gw.requests[0]["message"].(string), "*ABC*") {
 		t.Fatalf("gift requests = %v", gw.requests)
 	}
 }
@@ -263,7 +265,8 @@ func TestGatewayTimeout(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-release }))
 	t.Cleanup(func() { close(release); srv.Close() })
 	n := testNotifier(t, tx, map[string]string{"WA_GATEWAY_TOKEN": "t", "WA_GATEWAY_URL": srv.URL, "WA_GATEWAY_TIMEOUT_MS": "50"})
-	res := n.wa.LoadGateway(ctx, tx).SendText(ctx, "62811", "x")
+	chatted(t, tx, "6281100000001", compNotifTarget)
+	res := n.wa.LoadGateway(ctx, tx).SendText(ctx, "6281100000001", "x")
 	if res.Success || !res.TimedOut || res.Reason != "Gateway tidak merespons (timeout)" {
 		t.Fatalf("timeout = %+v", res)
 	}
@@ -274,5 +277,14 @@ func TestGatewayTimeout(t *testing.T) {
 	_ = tx.QueryRow(ctx, `SELECT count(*) FROM configuration.wa_notif_log WHERE dedup_key = $1`, "comp:foc_comp:"+order).Scan(&c)
 	if c != 1 {
 		t.Fatalf("claim after timeout = %d", c)
+	}
+}
+
+// chatted records an inbound message from each phone: the unofficial
+// gateway only messages numbers that chatted to the business number first.
+func chatted(t *testing.T, tx pgx.Tx, phones ...string) {
+	t.Helper()
+	for _, p := range phones {
+		mustExec(t, tx, `INSERT INTO crm.wa_messages (direction, phone, body) VALUES ('in', $1, '[uji] pesan masuk')`, p)
 	}
 }

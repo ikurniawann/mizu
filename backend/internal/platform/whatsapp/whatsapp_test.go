@@ -16,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"nuhabit/backend/internal/platform/database"
 	"nuhabit/backend/internal/platform/testutil"
 )
 
@@ -101,6 +102,7 @@ func TestSendTextProviders(t *testing.T) {
 	if err := tx.QueryRow(ctx, `INSERT INTO pos.pos_customers (name, phone) VALUES ('WA Test', $1) RETURNING id::text`, "0"+phone[2:]).Scan(&customer); err != nil {
 		t.Fatal(err)
 	}
+	chatted(t, tx, phone)
 
 	// Nothing configured.
 	c := newClient(t, tx, nil)
@@ -212,7 +214,8 @@ func TestGatewayTimeoutAndCache(t *testing.T) {
 	if g == nil || g.Timeout != 50*time.Millisecond || g.BaseURL != url {
 		t.Fatalf("gateway = %+v", g)
 	}
-	if res := g.SendText(ctx, "62811", "x"); res.Success || !res.TimedOut || res.Reason != timeoutReason {
+	chatted(t, tx, "6281100000001")
+	if res := g.SendText(ctx, "6281100000001", "x"); res.Success || !res.TimedOut || res.Reason != timeoutReason {
 		t.Fatalf("timeout = %+v", res)
 	}
 	// Cached: a token saved afterwards is seen only after 30 seconds.
@@ -299,6 +302,7 @@ func TestOwnerNotification(t *testing.T) {
 	if err := c.SendOwnerNotification(ctx, tx, "komplain", key, "pesan", nil); err != nil || len(gw.requests) != 0 || claims() != 0 {
 		t.Fatalf("disabled: %v, %d sent", err, len(gw.requests))
 	}
+	chatted(t, tx, "6281234567890", "6281298765432")
 	setting(t, tx, "wa_notif_config", `{"enabled":true,"recipients":["081234567890","081298765432"]}`)
 	for range 2 {
 		if err := c.SendOwnerNotification(ctx, tx, "komplain", key, "pesan", nil); err != nil {
@@ -333,5 +337,48 @@ func TestOwnerNotification(t *testing.T) {
 	}
 	if again, _ := Claim(ctx, tx, "cuti", key, "m", nil); again == "" {
 		t.Fatal("released key not claimable")
+	}
+}
+
+// chatted records an inbound message from each phone: the unofficial
+// gateway only messages numbers that wrote to the business number first.
+func chatted(t *testing.T, tx database.Querier, phones ...string) {
+	t.Helper()
+	for _, p := range phones {
+		if _, err := tx.Exec(context.Background(), `INSERT INTO crm.wa_messages (direction, phone, body) VALUES ('in', $1, 'halo')`, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// Owner decision 13 Oct 2026: on the unofficial gateway nothing goes to a
+// number that never chatted to the business number (block risk); a login
+// OTP the guest just requested is the exception. Meta has no such limit.
+func TestGatewayOnlyMessagesKnownContacts(t *testing.T) {
+	tx := testutil.Tx(t)
+	ctx := context.Background()
+	gw := &stub{status: 200, body: `{"messageId":"gw-x"}`}
+	c := newClient(t, tx, map[string]string{"WA_GATEWAY_TOKEN": "t", "WA_GATEWAY_URL": gw.start(t)})
+	fresh := "62899" + digits(7)
+	known := "62899" + digits(7)
+	chatted(t, tx, known)
+
+	if c.MayMessage(ctx, tx, "0"+fresh[2:]) || !c.MayMessage(ctx, tx, "0"+known[2:]) {
+		t.Fatal("MayMessage must allow only numbers that chatted before")
+	}
+	if res := c.SendText(ctx, tx, fresh, "promo", "", ""); res.Success || res.Reason != NotContacted || len(gw.requests) != 0 {
+		t.Fatalf("new number: %+v, %d requests", res, len(gw.requests))
+	}
+	if res := c.DispatchImage(ctx, tx, fresh, []byte("png"), "", "QR"); res.Success || len(gw.requests) != 0 {
+		t.Fatalf("image to new number: %+v", res)
+	}
+	if res := c.SendText(ctx, tx, "0"+known[2:], "pengingat", "", ""); !res.Success || len(gw.requests) != 1 {
+		t.Fatalf("known number: %+v", res)
+	}
+	if res := c.SendOTP(ctx, tx, fresh, "123456", "Kode 123456"); !res.Success || len(gw.requests) != 2 {
+		t.Fatalf("OTP the guest requested: %+v", res)
+	}
+	if contactDigits("0812-3456-7890") != "6281234567890" || contactDigits("+62 812 3456 7890") != "6281234567890" || contactDigits("812345") != "" {
+		t.Fatal("contactDigits")
 	}
 }

@@ -39,6 +39,8 @@ func TestUrgentPrSendsOwnerWhatsApp(t *testing.T) {
 	} {
 		e.exec(`INSERT INTO configuration.app_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, k, v)
 	}
+	// The unofficial gateway only messages numbers that chatted before.
+	e.exec(`INSERT INTO crm.wa_messages (direction, phone, body) VALUES ('in', '6281234567890', '[uji] pesan masuk')`)
 	bus := outbox.NewBus(nil, nil)
 	procurement.Subscribe(bus, app.ProcurementPorts(procurement.Location(""), nil))
 	if err := bus.Register(e.ctx, e.tx); err != nil {

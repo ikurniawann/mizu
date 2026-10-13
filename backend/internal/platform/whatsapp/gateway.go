@@ -21,6 +21,48 @@ type Gateway struct {
 	BaseURL string
 	Token   string
 	Timeout time.Duration
+	// knownContact (set by LoadGateway) guards against blocking: the
+	// unofficial gateway only messages numbers that have chatted to it
+	// before (owner decision 13 Oct 2026). nil = no check.
+	knownContact func(ctx context.Context, target string) bool
+}
+
+// NotContacted is the reason a gateway message to a number that never
+// chatted to the WhatsApp number is not sent.
+const NotContacted = "Nomor belum pernah chat ke nomor WhatsApp ini — pesan pertama tidak dikirim (mencegah blokir)"
+
+// KnownContact reports whether target (0812…, 62812…, +62…) has ever sent a
+// message to the business number.
+func KnownContact(ctx context.Context, q database.Querier, target string) bool {
+	phone := contactDigits(target)
+	if phone == "" {
+		return false
+	}
+	var ok bool
+	err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM crm.wa_messages WHERE direction = 'in' AND phone::text IN ($1::text, $2::text))`,
+		phone, "+"+phone).Scan(&ok)
+	return err == nil && ok
+}
+
+// contactDigits is the 62… form crm.wa_messages stores for inbound phones.
+func contactDigits(target string) string {
+	var b strings.Builder
+	for _, r := range target {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	d := b.String()
+	switch {
+	case strings.HasPrefix(d, "0"):
+		d = "62" + d[1:]
+	case strings.HasPrefix(d, "8"):
+		d = "62" + d
+	}
+	if len(d) < 10 {
+		return ""
+	}
+	return d
 }
 
 // DefaultGatewayURL is the gateway on the app's own host, used when neither
@@ -76,7 +118,7 @@ func (c *Client) LoadGateway(ctx context.Context, q database.Querier) *Gateway {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if !c.cachedAt.IsZero() && time.Since(c.cachedAt) < gatewayCacheTTL {
-		return c.cached
+		return guarded(c.cached, q)
 	}
 	stored := map[string]string{}
 	if rows, err := q.Query(ctx, `SELECT key, value FROM configuration.app_settings WHERE key = ANY($1)`,
@@ -103,7 +145,17 @@ func (c *Client) LoadGateway(ctx context.Context, q database.Querier) *Gateway {
 		}
 	}
 	c.cached, c.cachedAt = g, time.Now()
-	return g
+	return guarded(g, q)
+}
+
+// guarded is a copy of g that only messages known contacts, checked on q.
+func guarded(g *Gateway, q database.Querier) *Gateway {
+	if g == nil {
+		return nil
+	}
+	cp := *g
+	cp.knownContact = func(ctx context.Context, target string) bool { return KnownContact(ctx, q, target) }
+	return &cp
 }
 
 // timeoutReason is the gateway's reason for an uncertain send.
@@ -111,6 +163,9 @@ const timeoutReason = "Gateway tidak merespons (timeout)"
 
 // SendImage posts a PNG (base64) with a caption to {baseUrl}/send-image.
 func (g *Gateway) SendImage(ctx context.Context, target string, png []byte, caption string) Result {
+	if g.knownContact != nil && !g.knownContact(ctx, target) {
+		return Result{Provider: "gateway", Reason: NotContacted}
+	}
 	ctx, cancel := context.WithTimeout(ctx, g.Timeout*2)
 	defer cancel()
 	status, data, err := postJSON(ctx, g.HTTPClient(), g.BaseURL+"/send-image", map[string]string{
@@ -137,6 +192,15 @@ func (g *Gateway) SendImage(ctx context.Context, target string, png []byte, capt
 // SendText is sendGatewayText: POST {baseUrl}/send with x-gateway-token,
 // bounded by the gateway timeout. It does not log to crm.wa_messages.
 func (g *Gateway) SendText(ctx context.Context, target, message string) Result {
+	if g.knownContact != nil && !g.knownContact(ctx, target) {
+		return Result{Provider: "gateway", Reason: NotContacted}
+	}
+	return g.sendText(ctx, target, message)
+}
+
+// sendText posts without the known-contact check (login OTPs the guest
+// just requested themselves).
+func (g *Gateway) sendText(ctx context.Context, target, message string) Result {
 	ctx, cancel := context.WithTimeout(ctx, g.Timeout)
 	defer cancel()
 	status, data, err := postJSON(ctx, g.HTTPClient(), g.BaseURL+"/send", map[string]string{"target": target, "message": message},

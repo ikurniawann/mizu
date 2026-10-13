@@ -648,13 +648,14 @@ func TestWhatsAppGatewayAdapter(t *testing.T) {
 		c.Getenv = func(string) string { return "" }
 		return &WhatsAppGateway{Client: c}
 	}
+	crmtest.MustExec(t, tx, `INSERT INTO crm.wa_messages (direction, phone, body) VALUES ('in', '6281200000001', 'halo')`)
 	g := newGateway()
-	res := g.SendText(context.Background(), tx, "6281", "halo")
+	res := g.SendText(context.Background(), tx, "6281200000001", "halo")
 	if !res.Success || res.Provider != "gateway" || *res.MessageID != "m-1" || token != "tok" {
 		t.Fatalf("sent: %+v token=%q", res, token)
 	}
 	status = 400
-	if res := g.SendText(context.Background(), tx, "6281", "halo"); res.Success || res.Reason != "Nomor tidak terdaftar" {
+	if res := g.SendText(context.Background(), tx, "6281200000001", "halo"); res.Success || res.Reason != "Nomor tidak terdaftar" {
 		t.Fatalf("refused: %+v", res)
 	}
 	if res := newGateway().SendText(context.Background(), testutil.Tx(t), "1", "x"); res.Reason != whatsapp.NotConfigured {

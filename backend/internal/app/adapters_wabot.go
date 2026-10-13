@@ -24,7 +24,7 @@ import (
 func waBotPorts(d module.Deps) wabot.Ports {
 	return wabot.Ports{
 		Spa:       waBotSpa{svc: spa.NewService(d.DB, SpaPorts(), d)},
-		Sender:    waBotSender{gw: crmInboxGateway(d)},
+		Sender:    waBotSender{gw: crmInboxGateway(d), wa: whatsapp.New(d.Log)},
 		Recorder:  waBotRecorder{gw: crmInboxGateway(d)},
 		Extractor: wabot.OpenAIExtractor{Getenv: os.Getenv},
 		AppURL:    strings.TrimRight(firstNonEmptyStr(os.Getenv("NEXT_PUBLIC_APP_URL"), os.Getenv("NEXT_PUBLIC_BASE_URL")), "/"),
@@ -121,7 +121,18 @@ func (a waBotSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]sp
 
 /* ── WhatsApp ────────────────────────────────────────────────────────── */
 
-type waBotSender struct{ gw inbox.Gateway }
+type waBotSender struct {
+	gw inbox.Gateway
+	wa *whatsapp.Client
+}
+
+// MayMessage: only numbers that chatted before while on the unofficial gateway.
+func (s waBotSender) MayMessage(ctx context.Context, q database.Querier, phone string) bool {
+	if s.wa == nil {
+		return true
+	}
+	return s.wa.MayMessage(ctx, q, phone)
+}
 
 func (s waBotSender) Send(ctx context.Context, db database.DB, phone, conversationID, text string) error {
 	res := s.gw.SendText(ctx, db, phone, text, "bot", "", conversationID)

@@ -72,7 +72,7 @@ func (e *Engine) PaidNotice(ctx context.Context, q database.Querier, db database
 		return nil
 	}
 	phone := waPhone(n.CustomerPhone)
-	if phone == "" {
+	if phone == "" || !e.mayMessage(ctx, q, phone) {
 		return nil
 	}
 	at := n.ScheduledAt.In(domain.WIB)
@@ -166,7 +166,7 @@ func (e *Engine) DepositNotice(ctx context.Context, q database.Querier, db datab
 		return nil
 	}
 	phone := waPhone(n.CustomerPhone)
-	if phone == "" {
+	if phone == "" || !e.mayMessage(ctx, q, phone) {
 		return nil
 	}
 	at := n.ScheduledAt.In(domain.WIB)
@@ -211,7 +211,7 @@ func (e *Engine) RemindUpcoming(ctx context.Context, db database.DB) (int, error
 		}
 		for _, n := range list {
 			phone := waPhone(n.CustomerPhone)
-			if phone == "" || !allowedSource(n.Source) {
+			if phone == "" || !allowedSource(n.Source) || !e.mayMessage(ctx, db, phone) {
 				continue
 			}
 			at := n.ScheduledAt.In(domain.WIB)
@@ -262,7 +262,7 @@ func (e *Engine) RemindDeposits(ctx context.Context, db database.DB) (int, error
 	sent := 0
 	for _, n := range list {
 		phone := waPhone(n.CustomerPhone)
-		if phone == "" || !allowedSource(n.Source) {
+		if phone == "" || !allowedSource(n.Source) || !e.mayMessage(ctx, db, phone) {
 			continue
 		}
 		at := n.ScheduledAt.In(domain.WIB)
@@ -291,6 +291,15 @@ func (e *Engine) RemindDeposits(ctx context.Context, db database.DB) (int, error
 		sent++
 	}
 	return sent, nil
+}
+
+// mayMessage: proactive notices (payment, DP, reminders, QR) go only to
+// numbers the provider may write to (see ContactGuard).
+func (e *Engine) mayMessage(ctx context.Context, q database.Querier, phone string) bool {
+	if g, ok := e.ports.Sender.(ContactGuard); ok {
+		return g.MayMessage(ctx, q, phone)
+	}
+	return true
 }
 
 func (e *Engine) statusURL(token string) string {

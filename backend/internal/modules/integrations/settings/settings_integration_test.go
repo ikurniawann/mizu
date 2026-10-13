@@ -392,6 +392,8 @@ func TestWaNotificationsTestSend(t *testing.T) {
 	expect(t, f.staff("POST", "/api/settings/wa-notifications/test", nil), 400,
 		`{"success":false,"error":"Belum ada nomor penerima. Simpan nomornya dulu."}`)
 	f.exec(`INSERT INTO configuration.app_settings (key, value) VALUES ('wa_notif_config', '{"recipients":["6281200000001","6281200000002"]}')`)
+	// The unofficial gateway only messages numbers that chatted before.
+	f.exec(`INSERT INTO crm.wa_messages (direction, phone, body) VALUES ('in', '6281200000001', '[uji] pesan masuk'), ('in', '6281200000002', '[uji] pesan masuk')`)
 	expect(t, f.staff("POST", "/api/settings/wa-notifications/test", nil), 400,
 		`{"success":false,"error":"WA Gateway belum dikonfigurasi (Settings → Integrasi atau WA_GATEWAY_URL/TOKEN)"}`)
 	g := newFakeGateway(t)

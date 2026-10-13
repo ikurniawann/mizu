@@ -71,6 +71,13 @@ type NoticeSender interface {
 	SendNotice(ctx context.Context, db database.DB, phone, conversationID, text string, tpl Template) error
 }
 
+// ContactGuard is a Sender that knows whether a number may be messaged
+// first (the unofficial gateway only writes to numbers that chatted before,
+// to avoid a WhatsApp block). Senders without it may message anyone.
+type ContactGuard interface {
+	MayMessage(ctx context.Context, q database.Querier, phone string) bool
+}
+
 // ImageSender is a Sender that can send a picture with a caption (the
 // booking QR after payment); png for the gateway, link for Meta.
 type ImageSender interface {
