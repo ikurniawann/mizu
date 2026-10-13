@@ -551,9 +551,13 @@ func (t *turn) facts(ctx context.Context) string {
 	if amount, hold, enabled := t.e.ports.Spa.DepositPolicy(ctx); enabled {
 		b.WriteString("- Booking online memerlukan DP " + domain.Rupiah(amount) + " per booking, dibayar lewat link dalam " + strconv.Itoa(hold) + " menit agar jadwal terkunci; sisa harga dibayar di outlet setelah treatment. DP tidak dikembalikan bila booking dibatalkan sepihak (tanya admin untuk pengecualian).\n")
 	}
-	if t.e.ports.Spa.OnlinePayment() {
+	_, _, depositOn := t.e.ports.Spa.DepositPolicy(ctx)
+	switch {
+	case depositOn:
+		b.WriteString("- Sisa harga setelah DP dibayar di outlet setelah treatment (tunai/QRIS/kartu).\n")
+	case t.e.ports.Spa.OnlinePayment():
 		b.WriteString("- Pembayaran di outlet setelah treatment (tunai/QRIS/kartu) atau online lewat link (VA, QRIS, e-wallet, kartu); tanpa DP.\n")
-	} else {
+	default:
 		b.WriteString("- Pembayaran di outlet setelah treatment (tunai/QRIS/kartu); tanpa DP.\n")
 	}
 	b.WriteString("- Jadwal bisa diubah/dibatalkan sendiri lewat link status booking sampai 1 jam sebelum kunjungan; setelah itu lewat admin.\n")
@@ -1173,7 +1177,11 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 		case domain.StepConfirm:
 			yes, change := domain.ConfirmLabels(l)
 			s.SetMenu(domain.StepConfirm, []domain.MenuOption{{Key: "1", Label: yes, Value: "yes"}, {Key: "2", Label: change, Value: "no"}})
-			return []string{domain.Summary(l, s)}
+			depositEach := 0.0
+			if amount, _, enabled := t.e.ports.Spa.DepositPolicy(ctx); enabled {
+				depositEach = amount
+			}
+			return []string{domain.Summary(l, s, depositEach)}
 		case domain.StepPayment:
 			if s.NeedsDeposit() {
 				// The DP link is the payment step: nothing to choose.

@@ -260,8 +260,9 @@ func AskTherapist(l L, options []MenuOption, pref string) string {
 		"\n\nReply with the therapist's *number*, or *0* to let Mizu choose. You can also type *female* / *male*.")
 }
 
-// Summary lists everything before the guest confirms.
-func Summary(l L, s *Session) string {
+// Summary lists everything before the guest confirms. depositEach is the
+// booking fee (DP) per booking that online bookings must pay; 0 = no DP.
+func Summary(l L, s *Session, depositEach float64) string {
 	var b strings.Builder
 	b.WriteString(t(l, "Berikut ringkasan bookingnya:\n", "Here's your booking summary:\n"))
 	b.WriteString("• Outlet: *" + s.OutletName + "*\n")
@@ -293,7 +294,26 @@ func Summary(l L, s *Session) string {
 		b.WriteString(t(l, "• Terapis: dipilihkan oleh Mizu\n", "• Therapist: chosen by Mizu\n"))
 	}
 	b.WriteString(t(l, "• Atas nama: *", "• Name: *") + s.Name + "*\n")
-	b.WriteString("• Total: *" + Rupiah(s.TotalPrice()) + "*\n\n")
+	b.WriteString("• Total: *" + Rupiah(s.TotalPrice()) + "*\n")
+	if depositEach > 0 {
+		n := len(s.Persons)
+		if n < 1 {
+			n = 1
+		}
+		dp := depositEach * float64(n)
+		if dp > s.TotalPrice() {
+			dp = s.TotalPrice()
+		}
+		remaining := s.TotalPrice() - dp
+		per := ""
+		if n > 1 {
+			per = t(l, " ("+Rupiah(depositEach)+" × "+strconv.Itoa(n)+" booking)", " ("+Rupiah(depositEach)+" × "+strconv.Itoa(n)+" bookings)")
+		}
+		b.WriteString(t(l, "• Booking fee (DP): *"+Rupiah(dp)+"*"+per+" — dibayar online lewat link setelah konfirmasi, untuk mengunci jadwal\n",
+			"• Booking fee (deposit): *"+Rupiah(dp)+"*"+per+" — paid online via a link after you confirm, to secure the slot\n"))
+		b.WriteString(t(l, "• Sisa: *"+Rupiah(remaining)+"* dibayar di outlet setelah treatment\n", "• Balance: *"+Rupiah(remaining)+"* paid at the outlet after the treatment\n"))
+	}
+	b.WriteString("\n")
 	b.WriteString(t(l, "Sudah benar? Balas *ya* untuk membuat booking, atau *ubah* untuk mengulang.", "Is this correct? Reply *yes* to book, or *change* to start over."))
 	return b.String()
 }

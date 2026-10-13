@@ -791,8 +791,9 @@ func TestBotDepositFlow(t *testing.T) {
 	e.say("1")
 	e.say("1")
 	e.say("besok jam 10 pagi")
-	e.say("0")
-	r := e.say("ya")
+	r := e.say("0")
+	e.wants(r, "ringkasan", "Booking fee (DP): *Rp100.000*", "Sisa: *Rp50.000* dibayar di outlet")
+	r = e.say("ya")
 	e.wants(r, "Kode booking", "Jadwal dikunci setelah DP *Rp100.000* dibayar", "bayar=dp-simulasi", "Sisa *Rp50.000* dibayar di outlet")
 	if strings.Contains(r, "Mau bayar bagaimana?") {
 		t.Fatalf("no payment menu with a deposit:\n%s", r)
