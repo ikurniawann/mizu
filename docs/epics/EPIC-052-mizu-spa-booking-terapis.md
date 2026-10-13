@@ -382,3 +382,15 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   `TestRoomsHoldBookingsAndShowOnBoard`, `rooms.test.ts`, suite spa/app/wabot & vitest spa lulus; tsc/eslint.
   Belum dikerjakan: pilihan room di booking web & bot WA (room ditugaskan FO), harga room belum masuk
   `PublicBookingResult.total_idr`. Image: `mizu-api:wabot-23`, `mizu:wabot-13`.
+- 2026-10-13 — Revisi R3 antrian terapis (`38e36eee`): `queue.go` — `arrivals()` menggabungkan terapis yang
+  bertugas di outlet (logika `eligibleTherapists`) dengan `hris.attendance.clock_in` hari itu, jumlah booking &
+  waktu penugasan terakhir (event `assign`); `orderQueue` = belum ditugaskan hari ini dulu (absen paling awal),
+  lalu yang paling lama tidak ditugaskan (rotasi adil, keputusan owner). `autoAssign` memproses booking
+  `unassigned` urut jam, mencoba antrian lewat `checkBookingTherapist` (gender, shift, bentrok) + `assignBooking`;
+  yang belum absen tidak pernah dipilih. `AutoAssignLoop` (dijalankan di `spa.New`, bukan di tes) tiap 5 menit
+  untuk booking ≤3 jam ke depan di outlet aktif — penugasan terjadi di hari H setelah absen (keputusan owner).
+  Rute `GET /api/spa/arrival-queue`, `POST /api/spa/auto-assign` (menu Book Order); tab "Antrian".
+  Perbaikan: `go-routes.generated.json` belum memuat rute R4/R8/R6 → 404 di live; manifest kini digenerate
+  dari tree yang di-stage. Input harga room memakai `NumericInput` berawalan Rp. Bukti:
+  `TestArrivalQueueAssignsInClockInOrderWithRotation`; suite spa/app/wabot & vitest spa lulus; tsc/eslint.
+  Image: `mizu-api:wabot-24`, `mizu:wabot-14`.
