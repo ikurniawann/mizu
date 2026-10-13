@@ -18,6 +18,7 @@ function isLocalDatabaseUrl(url) {
 
 /** SSL for remote/managed Postgres; local installs usually skip SSL. */
 function sslForUrl(url) {
+  if (/sslmode=disable/i.test(url)) return false; // mis. Postgres di jaringan docker tanpa TLS
   if (/sslmode=require/i.test(url)) return { rejectUnauthorized: false };
   if (!isLocalDatabaseUrl(url)) return { rejectUnauthorized: false };
   return false;

@@ -12,6 +12,7 @@
     "db:seed:iam-roles": "node seeders/iam-role-permissions.js",
     "db:seed:iam": "pnpm run db:seed:iam-menus && pnpm run db:seed:iam-admin && pnpm run db:seed:iam-roles",
     "db:seed:demo-mizu": "node seeders/demo-mizu-user.js",
+    "db:seed:mizu-parkir": "node seeders/mizu-parkir.js",
     "db:seed:mizu-stall-purchasing": "node seeders/mizu-stall-purchasing-users.js",
     "db:seed:hris-master": "node seeders/hris-master-data.js",
     "db:seed:hris-from-xlsx": "node seeders/reset-hris-from-employee-xlsx.js",
