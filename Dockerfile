@@ -43,7 +43,7 @@ ARG NODE_OPTIONS=--max-old-space-size=4096
 # before the layer is committed. Runtime secrets reach the container at
 # `docker run --env-file` (see .gitlab/deploy-docker.sh). Without the secret
 # (plain local build) NEXT_PUBLIC_* bake in empty.
-RUN --mount=type=cache,target=/app/.next/cache \
+RUN --mount=type=cache,target=/app/.next/cache,id=mizu-next-cache \
     --mount=type=secret,id=dotenv \
     if [ -f /run/secrets/dotenv ]; then cp /run/secrets/dotenv .env; fi; \
     pnpm build; status=$?; \
