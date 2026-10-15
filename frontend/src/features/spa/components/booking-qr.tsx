@@ -26,7 +26,7 @@ export function BookingQr({ code, outlet, when }: { code: string; outlet: string
       const file = new File([blob], bookingQrFileName(code), { type: "image/png" });
       const nav = navigator as Navigator & { canShare?: (data: { files: File[] }) => boolean };
       if (window.matchMedia("(pointer: coarse)").matches && nav.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Booking Mizu ${code}` });
+        await navigator.share({ files: [file], title: `Booking Paddy Experience ${code}` });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -73,7 +73,7 @@ export function BookingQr({ code, outlet, when }: { code: string; outlet: string
   );
 }
 
-/** Gambar tiket 720×1000: latar krem, kartu putih, QR, kode, outlet dan jadwal. */
+/** Gambar tiket 720×1000: latar magenta Paddy, kartu cream, wordmark, QR, kode, toko dan jadwal. */
 async function composeTicket(qr: HTMLCanvasElement, code: string, outlet: string, when: string): Promise<Blob> {
   const W = 720;
   const H = 1000;
@@ -83,36 +83,55 @@ async function composeTicket(qr: HTMLCanvasElement, code: string, outlet: string
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas");
 
-  ctx.fillStyle = "#231a14";
+  ctx.fillStyle = "#e3066f";
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = "#fbf7f0";
+  // Bayangan stiker navy lalu kartu cream.
+  ctx.fillStyle = "#232c6b";
+  roundRect(ctx, 50, 50, W - 80, H - 80, 36);
+  ctx.fill();
+  ctx.fillStyle = "#fffdf9";
   roundRect(ctx, 40, 40, W - 80, H - 80, 36);
   ctx.fill();
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "#231a14";
-  ctx.font = "600 44px Georgia, 'Playfair Display', serif";
-  ctx.fillText("M I Z U", W / 2, 128);
-  ctx.fillStyle = "#8a6f52";
-  ctx.font = "500 20px system-ui, sans-serif";
-  ctx.fillText("Family Massage & Reflexology", W / 2, 162);
+  const wordmark = await loadImage("/brand/wordmark-black.png");
+  if (wordmark) {
+    ctx.drawImage(wordmark, (W - 320) / 2, 66, 320, 82.5);
+  } else {
+    ctx.fillStyle = "#e3066f";
+    ctx.font = "700 56px Roundo, Nunito, system-ui, sans-serif";
+    ctx.fillText("Paddy", W / 2, 128);
+  }
+  ctx.fillStyle = "#232c6b";
+  ctx.font = "700 20px Nunito, system-ui, sans-serif";
+  ctx.fillText("Paddy Experience · Your Adorable Companion", W / 2, 178);
 
   const size = 440;
   ctx.drawImage(qr, (W - size) / 2, 200, size, size);
 
-  ctx.fillStyle = "#231a14";
+  ctx.fillStyle = "#2a1024";
   ctx.font = "700 46px ui-monospace, 'JetBrains Mono', monospace";
   ctx.fillText(code, W / 2, 712);
   ctx.font = "600 26px system-ui, sans-serif";
   ctx.fillText(outlet, W / 2, 780);
-  ctx.fillStyle = "#5c4a3b";
+  ctx.fillStyle = "#58524c";
   ctx.font = "400 24px system-ui, sans-serif";
   wrapCentered(ctx, when, W / 2, 822, W - 160, 32);
-  ctx.fillStyle = "#8a6f52";
-  ctx.font = "400 20px system-ui, sans-serif";
-  ctx.fillText("Tunjukkan QR ini ke resepsionis saat tiba", W / 2, 910);
+  ctx.fillStyle = "#b8045a";
+  ctx.font = "600 20px Nunito, system-ui, sans-serif";
+  ctx.fillText("Tunjukkan QR ini ke crew Paddy Store saat tiba", W / 2, 910);
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob"))), "image/png"));
+}
+
+/** Muat gambar same-origin untuk kanvas; null bila gagal (tiket tetap jadi dengan teks). */
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {

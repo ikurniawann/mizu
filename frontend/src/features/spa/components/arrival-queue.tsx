@@ -54,19 +54,19 @@ export function ArrivalQueuePanel({ branchId, date }: { branchId: string; date: 
           <ListOrdered className="mr-1 inline size-4" />
           Urutan dari jam absen masuk; yang baru dapat booking pindah ke belakang. Berjalan otomatis di hari H untuk booking ≤ 3 jam ke depan.
         </p>
-        <Button onClick={run} disabled={auto.isPending || present.length === 0} title={present.length ? undefined : "Belum ada terapis yang absen masuk"}>
+        <Button onClick={run} disabled={auto.isPending || present.length === 0} title={present.length ? undefined : "Belum ada crew yang absen masuk"}>
           <Wand2 /> {auto.isPending ? "Memproses…" : "Tugaskan otomatis sekarang"}
         </Button>
       </div>
       <Card className="py-0">
         {present.length === 0 ? (
-          <TableNote>Belum ada terapis yang absen masuk pada tanggal ini. Antrian terbentuk begitu terapis absen di HRIS.</TableNote>
+          <TableNote>Belum ada crew yang absen masuk pada tanggal ini. Antrian terbentuk begitu crew absen di HRIS.</TableNote>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">#</TableHead>
-                <TableHead>Terapis</TableHead>
+                <TableHead>Crew</TableHead>
                 <TableHead>Absen masuk</TableHead>
                 <TableHead>Booking hari ini</TableHead>
                 <TableHead>Terakhir ditugaskan</TableHead>

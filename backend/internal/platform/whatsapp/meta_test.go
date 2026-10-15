@@ -49,12 +49,12 @@ func TestMetaMenusAndTemplates(t *testing.T) {
 		t.Fatalf(">10 options must fall back to text: %v", req)
 	}
 	// Template with ordered body parameters.
-	c.DispatchTemplate(ctx, tx, phone, "spa_reminder", "id", []string{"Fajar", "MZ-1\nx"}, "fallback")
+	c.DispatchTemplate(ctx, tx, phone, "spa_reminder", "id", []string{"Fajar", "PD-1\nx"}, "fallback")
 	req = meta.requests[len(meta.requests)-1]
 	tpl, _ := req["template"].(map[string]any)
 	comps, _ := tpl["components"].([]any)
 	params, _ := comps[0].(map[string]any)["parameters"].([]any)
-	if req["type"] != "template" || tpl["name"] != "spa_reminder" || len(params) != 2 || params[1].(map[string]any)["text"] != "MZ-1 x" {
+	if req["type"] != "template" || tpl["name"] != "spa_reminder" || len(params) != 2 || params[1].(map[string]any)["text"] != "PD-1 x" {
 		t.Fatalf("template: %v", req)
 	}
 	// The settings page's provider choice beats the env, and settings hold credentials too.

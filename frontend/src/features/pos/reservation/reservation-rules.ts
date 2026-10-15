@@ -175,7 +175,7 @@ export function whatsAppMessage(reservation: ReservationRow, kind: WhatsAppKind)
     return buildReservationQueueWaMessage({
       ...queueSlipFields(reservation),
       queueLabel: formatReservationQueueNumber(reservation.queue_number) ?? "-",
-      merchantName: "Mizu",
+      merchantName: "Paddy",
     });
   }
   const intro =

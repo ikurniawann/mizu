@@ -27,9 +27,12 @@ var selfieOpts = validate.StrOpts{Check: func(s string) (string, string, bool) {
 // the location object with only its schema keys (zod strips the rest).
 type clockInput struct {
 	EmployeeID, Date, AttendanceID *string
-	Photo                          string
-	Location                       *Row
-	Notes                          *string
+	// BranchID is the store picked at clock-in (one of the active
+	// placements); nil lets the server pick the default.
+	BranchID *string
+	Photo    string
+	Location *Row
+	Notes    *string
 }
 
 // location is locationSchema.optional() at key.
@@ -61,6 +64,7 @@ func parseClockIn(f *validate.Form) clockInput {
 	var in clockInput
 	in.EmployeeID = f.UUID("employee_id", optional)
 	in.Date = f.Str("date", optional, validate.StrOpts{})
+	in.BranchID = f.UUID("branch_id", nullish)
 	if p := f.Str("photo", validate.Rule{}, selfieOpts); p != nil {
 		in.Photo = *p
 	}
@@ -112,6 +116,13 @@ func (s *Service) ClockIn(ctx context.Context, a *Actor, in clockInput) (row *Ro
 	if existing, err = s.repo.AttendanceIDOn(ctx, *employeeID, date); err != nil || existing != nil {
 		return nil, existing, err
 	}
+	if err := s.ensureAttendanceOpen(ctx, date); err != nil {
+		return nil, nil, err
+	}
+	branch, err := s.clockBranch(ctx, a, *employeeID, date, in.BranchID)
+	if err != nil {
+		return nil, nil, err
+	}
 	photo, err := s.saveSelfie(in.Photo, *employeeID)
 	if err != nil {
 		return nil, nil, err
@@ -143,8 +154,9 @@ func (s *Service) ClockIn(ctx context.Context, a *Actor, in clockInput) (row *Ro
 	}
 	f.add("notes", nilIfEmpty(in.Notes))
 	f.add("status", "present")
+	f.add("branch_id", branch)
 	row, err = s.repo.InsertAttendance(ctx, f)
-	return row, nil, err
+	return row, nil, periodWriteError(err)
 }
 
 type shiftSnap struct {
@@ -197,6 +209,9 @@ func (s *Service) ClockOut(ctx context.Context, a *Actor, in clockInput) (*Row, 
 	if att.Get("clock_out") != nil {
 		return nil, httpx.BadRequest("Sudah clock-out untuk absensi ini")
 	}
+	if err := s.ensureAttendanceOpen(ctx, attendanceDate(att)); err != nil {
+		return nil, err
+	}
 	photo, err := s.saveSelfie(in.Photo, employeeID)
 	if err != nil {
 		return nil, err
@@ -210,5 +225,6 @@ func (s *Service) ClockOut(ctx context.Context, a *Actor, in clockInput) (*Row, 
 	f.add("clock_out_location", locationJSON(in.Location))
 	f.add("clock_out_photo_url", photo)
 	f.add("notes", notes)
-	return s.repo.UpdateAttendance(ctx, id, f)
+	row, err := s.repo.UpdateAttendance(ctx, id, f)
+	return row, periodWriteError(err)
 }

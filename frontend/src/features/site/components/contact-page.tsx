@@ -22,12 +22,12 @@ export function ContactPage({ social, branches }: { social: SocialContent; branc
     <LeadFormPage
       kicker="Kontak"
       title="Hubungi kami"
-      intro="Ada pertanyaan tentang treatment, booking atau hal lain? Tinggalkan pesan dan tim kami akan membalas pada jam operasional. Untuk booking, kamu bisa langsung memesan secara online."
+      intro="Ada pertanyaan soal produk, custom case, sesi Paddy Experience atau hal lain? Tinggalkan pesan dan crew Paddy akan membalas pada jam operasional. Untuk sesi experience, kamu bisa langsung booking online."
       slug="contact"
       aside={
         <>
           <Tile className="space-y-4">
-            <h2 className="font-display text-lg font-semibold">Mizu</h2>
+            <h2 className="font-display text-lg font-semibold">Paddy</h2>
             <dl className="space-y-3 text-sm">
               {hq ? (
                 <div className="flex gap-3">
@@ -48,7 +48,7 @@ export function ContactPage({ social, branches }: { social: SocialContent; branc
                   <div>
                     <dt className="sr-only">WhatsApp</dt>
                     <dd>
-                      <a href={waHref(social.whatsapp || hq?.phone || "")} className="text-forest hover:underline dark:text-accent" target="_blank" rel="noopener noreferrer">
+                      <a href={waHref(social.whatsapp || hq?.phone || "")} className="text-forest hover:underline dark:text-brand-text" target="_blank" rel="noopener noreferrer">
                         {social.whatsapp || hq?.phone}
                       </a>
                     </dd>
@@ -61,7 +61,7 @@ export function ContactPage({ social, branches }: { social: SocialContent; branc
                   <div>
                     <dt className="sr-only">Email</dt>
                     <dd>
-                      <a href={`mailto:${social.email}`} className="text-forest hover:underline dark:text-accent">
+                      <a href={`mailto:${social.email}`} className="text-forest hover:underline dark:text-brand-text">
                         {social.email}
                       </a>
                     </dd>
@@ -88,13 +88,13 @@ export function ContactPage({ social, branches }: { social: SocialContent; branc
             ) : null}
           </Tile>
           <Tile className="space-y-3">
-            <h2 className="font-display text-lg font-semibold">Mau booking treatment?</h2>
-            <p className="text-sm text-body">Pilih outlet, treatment dan jam secara online. Pembayaran dilakukan di outlet.</p>
+            <h2 className="font-display text-lg font-semibold">Mau booking Paddy Experience?</h2>
+            <p className="text-sm text-body">Pilih toko, layanan experience dan jam secara online. Pembayaran dilakukan di toko.</p>
             <BookingButton size="sm">Booking sekarang</BookingButton>
           </Tile>
           {branches.length > 1 ? (
             <Tile className="space-y-3">
-              <h2 className="font-display text-lg font-semibold">Outlet kami</h2>
+              <h2 className="font-display text-lg font-semibold">Paddy Store</h2>
               <ul className="space-y-2 text-sm">
                 {branches.map((b) => (
                   <li key={b.slug}>

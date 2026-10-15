@@ -22,6 +22,10 @@ type MappingPost struct {
 	Amounts      domain.Amounts
 	Description  string
 	SourceModule string // default PURCHASING, as in the TS
+	// DebitBranches, when it has a positive share, splits every DEBIT line
+	// per store (journal_entry_lines.branch_id) in proportion to the shares;
+	// CREDIT lines stay at company level.
+	DebitBranches []domain.BranchShare
 }
 
 type mappingHeader struct {
@@ -86,6 +90,7 @@ func PostFromMapping(ctx context.Context, db database.DB, in MappingPost) (domai
 	if reason != "" {
 		return domain.PostResult{Status: domain.PostDraft, Reason: reason}, nil
 	}
+	journal = domain.SplitLinesByBranch(journal, domain.Debit, in.DebitBranches)
 	module := in.SourceModule
 	if module == "" {
 		module = "PURCHASING"

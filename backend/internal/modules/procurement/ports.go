@@ -20,6 +20,17 @@ type Ports struct {
 	Production  Production
 	Owner       OwnerNotifier
 	Stock       StockAlerts
+	Settings    Settings
+}
+
+// Settings is configuration.app_settings (the key-value store the dashboard
+// settings write): the Pengaturan Pembelian rules live there. Every method
+// runs on the caller's querier so a write joins the caller's transaction.
+type Settings interface {
+	// GetMany returns every requested key, nil when missing or NULL.
+	GetMany(ctx context.Context, q database.Querier, keys []string) (map[string]*string, error)
+	// Put upserts key; nil stores NULL.
+	Put(ctx context.Context, q database.Querier, key string, value *string) error
 }
 
 // StockAlerts reads raw material stock (inventory's v_raw_materials_stock

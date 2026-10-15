@@ -88,17 +88,13 @@ function LoginContent() {
   };
 
   return (
-    <main className="min-h-dvh bg-surface p-3 lg:p-4">
+    <main className="relative isolate min-h-dvh bg-accent bg-[url('/brand/paddy-wallpaper.webp')] bg-cover bg-center p-3 lg:p-4">
       <div
         className="mx-auto grid min-h-[calc(100dvh-1.5rem)] max-w-6xl grid-cols-1 gap-4 transition-opacity duration-500 lg:min-h-[calc(100dvh-2rem)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]"
         style={{ opacity: transitioning ? 0 : 1 }}
       >
-        {/* Hero: ink + pola merek, wordmark putih, dan kalimat merek (brand guideline). */}
-        <section className="relative isolate flex min-h-64 flex-col justify-between overflow-hidden rounded-hero bg-ink p-6 text-on-ink shadow-float lg:p-10">
-          <div
-            aria-hidden
-            className="absolute inset-0 -z-10 bg-[url('/brand/pattern.png')] bg-[length:560px_auto] opacity-[0.13] mix-blend-screen"
-          />
+        {/* Hero: latar doodle Paddy (magenta), lockup putih, dan tagline merek. */}
+        <section className="relative isolate flex min-h-64 flex-col justify-between overflow-hidden rounded-hero p-6 text-white lg:p-10">
 
           <div className="flex items-start justify-between gap-4">
             <Image priority
@@ -109,29 +105,31 @@ function LoginContent() {
             />
             <div className="text-right" suppressHydrationWarning>
               <p className="font-display text-2xl leading-none font-semibold tabular-nums">{formattedTime}</p>
-              <p className="mt-1 text-xs text-on-ink-muted capitalize">{formattedDate}</p>
+              <p className="mt-1 text-xs font-semibold text-white/85 capitalize">{formattedDate}</p>
             </div>
           </div>
 
           <div className="mt-12">
-            <p className="font-display text-4xl leading-[1.05] font-normal tracking-tight lg:text-6xl">
-              Rest. Relax.
+            <p className="font-display text-4xl leading-[1.05] font-bold tracking-tight [text-shadow:4px_4px_0_var(--color-navy)] lg:text-6xl">
+              Your Adorable
             </p>
-            <p className="mt-2 font-display text-4xl leading-[1.05] font-semibold tracking-tight text-accent italic lg:text-6xl">
-              Rejuvenate.
+            <p className="mt-2 font-display text-4xl leading-[1.05] font-bold tracking-tight text-sunny [text-shadow:4px_4px_0_var(--color-navy)] lg:text-6xl">
+              Companion.
             </p>
-            <p className="mt-6 text-sm text-on-ink-muted">{brandOsName()} · operasional bisnis dalam satu akun</p>
+            <p className="mt-6 inline-flex rounded-full border-2 border-navy bg-white px-3 py-1 text-sm font-bold text-navy shadow-[3px_3px_0_0_var(--color-navy)]">
+              {brandOsName()} · Happy working, Paddy crew!
+            </p>
           </div>
         </section>
 
         {/* Form */}
         <section className="flex items-center justify-center py-4">
-          <div className="w-full max-w-md rounded-card bg-card p-6 shadow-card sm:p-8">
+          <div className="w-full max-w-md rounded-card border-2 border-navy bg-card p-6 shadow-[6px_6px_0_0_var(--color-navy)] sm:p-8">
             <Image priority
               src="/brand/wordmark-black.png" width={640} height={165}
               alt={brandName()}
               draggable={false}
-              className="block h-auto w-36 select-none"
+              className="block h-auto w-44 select-none"
             />
             <h1 className="mt-6 text-3xl font-bold tracking-tight text-foreground">
               Masuk<span className="text-brand-text">.</span>
@@ -194,7 +192,7 @@ function LoginContent() {
               </Button>
             </form>
 
-            <p className="mt-6 text-xs text-muted-foreground">Satu akun, satu sesi aktif.</p>
+            <p className="mt-6 text-xs text-muted-foreground">Satu akun, satu sesi aktif · paddy.id</p>
           </div>
         </section>
       </div>

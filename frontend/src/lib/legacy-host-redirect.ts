@@ -1,4 +1,4 @@
-/** Explicit host-to-origin map for domains retained after the Mizu rename. */
+/** Explicit host-to-origin map for domains retained after the Paddy rename. */
 export function legacyRedirectTarget(hostHeader: string, current: URL, mappings: string | undefined): URL | null {
   const host = hostHeader.split(":")[0].toLowerCase();
   if (!host || !mappings) return null;

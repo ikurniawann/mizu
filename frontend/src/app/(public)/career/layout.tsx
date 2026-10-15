@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Careers | Mizu",
+  title: "Careers | Paddy",
   description:
-    "Explore open roles and apply to join the Mizu team.",
+    "Explore open roles and apply to join the Paddy team.",
 };
 
 export default function CareerLayout({

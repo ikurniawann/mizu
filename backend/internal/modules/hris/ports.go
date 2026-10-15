@@ -31,6 +31,16 @@ type PayrollReads interface {
 	// LoanUpdatesSince counts the employee's decided loans updated after
 	// since (nil: ever).
 	LoanUpdatesSince(ctx context.Context, q database.Querier, employeeID string, since *time.Time) (int64, error)
+	// PeriodRuns are the payroll runs of a year (any status), for the
+	// attendance period closing rules.
+	PeriodRuns(ctx context.Context, q database.Querier, year int) ([]PeriodRun, error)
+}
+
+// PeriodRun is a payroll run's month and status (draft, processing,
+// completed = approved, paid).
+type PeriodRun struct {
+	ID, Name, Status string
+	Year, Month      int
 }
 
 // Payslip is a paid payroll detail. NetSalary is the numeric text.

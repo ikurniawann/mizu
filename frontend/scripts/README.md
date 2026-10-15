@@ -1,4 +1,4 @@
-# Scripts — Mizu In Wounderland OS
+# Scripts — Paddy OS
 
 Operational scripts for migrations, IAM, and dev utilities.
 

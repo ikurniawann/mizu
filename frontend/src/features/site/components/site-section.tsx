@@ -9,9 +9,13 @@ export function Section({ className, children }: { className?: string; children:
   return <section className={cn("py-12 md:py-16", className)}>{children}</section>;
 }
 
+/** Label kecil di atas judul, dengan sparkle khas Paddy. */
 export function Kicker({ children, onInk = false }: { children: ReactNode; onInk?: boolean }) {
   return (
-    <p className={cn("text-xs font-semibold tracking-wider uppercase", onInk ? "text-accent" : "text-forest dark:text-accent")}>
+    <p className={cn("flex items-center gap-1.5 text-xs font-extrabold tracking-wider uppercase", onInk ? "text-sunny" : "text-forest dark:text-brand-text")}>
+      <svg aria-hidden viewBox="0 0 40 40" className="size-3.5 shrink-0">
+        <path d="M20 2c2 11 7 16 18 18-11 2-16 7-18 18-2-11-7-16-18-18 11-2 16-7 18-18z" fill="currentColor" />
+      </svg>
       {children}
     </p>
   );

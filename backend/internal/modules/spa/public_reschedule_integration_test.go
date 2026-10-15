@@ -126,7 +126,7 @@ func TestStaffReschedulePaidBooking(t *testing.T) {
 		}, http.StatusCreated)
 	}
 	paid := create("Lina", "2026-10-09T03:00:00.000Z") // 10:00 WIB
-	create("Maya", "2026-10-09T06:00:00.000Z")          // 13:00 WIB, same therapist
+	create("Maya", "2026-10-09T06:00:00.000Z")         // 13:00 WIB, same therapist
 	id := paid["id"].(string)
 	if _, err := e.tx.Exec(e.ctx, `UPDATE spa.bookings SET payment_status = 'paid', payment_method = 'online' WHERE id = $1`, id); err != nil {
 		t.Fatal(err)

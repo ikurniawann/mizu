@@ -1,6 +1,6 @@
 /**
  * Nama merek instance (owner 2026-09-06). Satu basis kode dipakai beberapa
- * perusahaan (NüHabit, Mizu in Wounderland, …) lewat deployment
+ * perusahaan (NüHabit, Paddy, …) lewat deployment
  * terpisah, jadi nama merek TIDAK boleh ditulis langsung di komponen/dokumen.
  *
  * Sumber (paling spesifik dulu): nama perusahaan di DB (lihat
@@ -8,14 +8,14 @@
  * env NEXT_PUBLIC_APP_NAME → default di bawah.
  */
 
-export const DEFAULT_BRAND_NAME = "Mizu";
+export const DEFAULT_BRAND_NAME = "Paddy";
 
 /** Aman dipanggil di client & server (hanya membaca env build-time). */
 export function brandName(): string {
   return (process.env.NEXT_PUBLIC_APP_NAME || "").trim() || DEFAULT_BRAND_NAME;
 }
 
-/** Nama produk desktop/ERP, mis. "NüHabit OS". */
+/** Nama produk desktop/ERP, mis. "Paddy OS". */
 export function brandOsName(): string {
   return `${brandName()} OS`;
 }

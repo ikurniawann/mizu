@@ -98,9 +98,9 @@ export function GeoMap({
       source.addFeature(line);
       if (track.markers ?? current.length === 1) {
         const start = new Feature(new Point(coords[0]!));
-        start.setStyle(dotStyle(6, "#c49a5c", 2));
+        start.setStyle(dotStyle(6, "#f4529a", 2));
         const end = new Feature(new Point(coords[coords.length - 1]!));
-        end.setStyle(dotStyle(6, "#241b16", 2));
+        end.setStyle(dotStyle(6, "#2a1024", 2));
         source.addFeatures([start, end]);
       }
     }

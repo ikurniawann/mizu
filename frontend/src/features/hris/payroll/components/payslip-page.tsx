@@ -11,6 +11,7 @@ import { loanInstallmentLabel } from "@/lib/payroll/loans";
 import { formatShareOfGross } from "@/lib/payroll/share";
 import { prorateNote } from "@/lib/payroll/prorate-note";
 import { usePayslip } from "../queries";
+import { SlipStoreBreakdown } from "./store-breakdown";
 
 export function PayslipPage() {
   const params = useParams();
@@ -223,6 +224,8 @@ export function PayslipPage() {
               </div>
             </div>
           </div>
+
+          <SlipStoreBreakdown allocations={detail.allocations} />
 
           {/* Attendance Summary */}
           <div className="grid grid-cols-4 gap-4 text-center">

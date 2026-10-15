@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"nuhabit/backend/internal/modules/configuration"
 	"nuhabit/backend/internal/modules/inventory/ledger"
 	"nuhabit/backend/internal/modules/procurement"
 	pdomain "nuhabit/backend/internal/modules/procurement/domain"
@@ -34,6 +35,7 @@ func ProcurementPorts(loc *time.Location, now func() time.Time) procurement.Port
 		Production:  procurementProduction{rr: rr},
 		Owner:       procurementOwnerNotifier{wa: whatsapp.New(nil)},
 		Stock:       procurementStock{rr: rr},
+		Settings:    configuration.AppSettings{},
 	}
 }
 

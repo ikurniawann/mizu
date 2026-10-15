@@ -18,20 +18,20 @@ function showDetail(history: unknown[], customer: Record<string, unknown> = {}) 
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-it("menampilkan profil dan treatment selesai dari riwayat customer", async () => {
-  showDetail([{ id: "i1", booking_id: "b1", booking_code: "SPA-001", branch_name: "Dago", treatment_name: "Balinese Massage", variant_name: "60 menit", therapist_name: "Sari", completed_at: "2026-10-11T03:00:00Z" }]);
+it("menampilkan profil dan layanan selesai dari riwayat customer", async () => {
+  showDetail([{ id: "i1", booking_id: "b1", booking_code: "SPA-001", branch_name: "Dago", treatment_name: "Custom Case Design", variant_name: "60 menit", therapist_name: "Sari", completed_at: "2026-10-11T03:00:00Z" }]);
   expect(await screen.findByText("Perempuan")).toBeInTheDocument();
   expect(screen.getByText("08123456789")).toBeInTheDocument();
-  expect(screen.getByText("Balinese Massage")).toBeInTheDocument();
+  expect(screen.getByText("Custom Case Design")).toBeInTheDocument();
   expect(screen.getByText("SPA-001")).toBeInTheDocument();
   expect(screen.queryByText("Tanggal lahir")).not.toBeInTheDocument();
   expect(screen.queryByText("Kota")).not.toBeInTheDocument();
   expect(screen.queryByText("Email")).not.toBeInTheDocument();
 });
 
-it("menjelaskan saat customer belum punya treatment selesai", async () => {
+it("menjelaskan saat customer belum punya layanan selesai", async () => {
   showDetail([]);
-  expect(await screen.findByText("Belum ada treatment spa yang selesai.")).toBeInTheDocument();
+  expect(await screen.findByText("Belum ada layanan experience yang selesai.")).toBeInTheDocument();
 });
 
 it("menandai member yang diblokir beserta alasannya dan menawarkan buka blokir", async () => {

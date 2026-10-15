@@ -2,7 +2,13 @@
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import type { POListParams } from "@/types/purchasing";
-import { listPurchaseOrders, getPurchaseOrder, getPurchaseOrderPaymentTerms, getPOFormData } from "./api";
+import {
+  listPurchaseOrders,
+  getPurchaseOrder,
+  getPurchaseOrderPaymentTerms,
+  getPOFormData,
+  listApprovedPRsForPO,
+} from "./api";
 import { poQueryKeys } from "./query-keys";
 
 export const usePurchaseOrderList = (params: POListParams, enabled = true) =>
@@ -31,4 +37,11 @@ export const usePOFormData = () =>
   useQuery({
     queryKey: poQueryKeys.formData,
     queryFn: getPOFormData,
+  });
+
+export const useApprovedPRsForPO = (enabled = true) =>
+  useQuery({
+    queryKey: poQueryKeys.approvedPRs,
+    queryFn: listApprovedPRsForPO,
+    enabled,
   });

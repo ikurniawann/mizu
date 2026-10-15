@@ -142,6 +142,16 @@ export const useMySummary = (month: string, enabled = true) =>
 export const usePublicSpaOutlets = () =>
   useQuery({ queryKey: spaKeys.publicOutlets(), queryFn: publicSpaApi.outlets, staleTime: 5 * 60_000 });
 
+/** Katalog desain custom case; statis, jadi disimpan lama di cache. */
+export const useExperienceCatalog = (enabled = true) =>
+  useQuery({
+    queryKey: spaKeys.experienceCatalog(),
+    queryFn: publicSpaApi.experienceCatalog,
+    enabled,
+    staleTime: 60 * 60_000,
+    gcTime: 2 * 60 * 60_000,
+  });
+
 export const usePublicSpaTreatments = (branchId: string) =>
   useQuery({
     queryKey: spaKeys.publicTreatments(branchId),

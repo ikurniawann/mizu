@@ -33,7 +33,7 @@ const booking = (status: BookingStatus, payment_status: PaymentStatus = "unpaid"
 
 describe("badge status", () => {
   it("memetakan status layanan dan pembayaran secara terpisah", () => {
-    expect(itemStatusBadge("in_treatment")).toEqual({ label: "Sedang treatment", variant: "accent" });
+    expect(itemStatusBadge("in_treatment")).toEqual({ label: "Sedang dikerjakan", variant: "accent" });
     expect(bookingStatusBadge("expired")).toEqual({ label: "Kedaluwarsa", variant: "destructive" });
     expect(bookingStatusBadge("completed").label).toBe("Selesai");
     expect(paymentStatusBadge("paid")).toEqual({ label: "Lunas", variant: "success" });
@@ -44,7 +44,7 @@ describe("badge status", () => {
     expect(itemStatusBadge(null).label).toBe("-");
   });
   it("label event", () => {
-    expect(eventLabel("assign")).toBe("Terapis ditugaskan");
+    expect(eventLabel("assign")).toBe("Crew ditugaskan");
     expect(eventLabel("custom_thing")).toBe("custom thing");
     expect(anyStatusLabel("assigned")).toBe("Ditugaskan");
     expect(anyStatusLabel("expired")).toBe("Kedaluwarsa");
@@ -97,7 +97,7 @@ describe("aksi booking", () => {
     expect(canAddItem({ status: "cancelled", payment_status: "unpaid" })).toBe(false);
   });
   it("checkout", () => {
-    expect(checkoutState(booking("assigned"))).toEqual({ allowed: false, reason: "Selesaikan semua treatment sebelum checkout." });
+    expect(checkoutState(booking("assigned"))).toEqual({ allowed: false, reason: "Selesaikan semua layanan sebelum checkout." });
     expect(checkoutState(booking("completed", "unpaid", [item("completed"), item("cancelled")])).allowed).toBe(true);
     expect(checkoutState(booking("unassigned", "unpaid", [item("unassigned")])).allowed).toBe(false);
     expect(checkoutState(booking("cancelled")).reason).toBe("Booking dibatalkan.");
@@ -159,7 +159,7 @@ describe("lain-lain", () => {
 
 describe("treatment", () => {
   const variant = { price_idr: 200000, outlet_prices: [{ branch_id: "b2", price_idr: 250000 }] };
-  it("harga outlet menimpa harga dasar", () => {
+  it("harga toko menimpa harga dasar", () => {
     expect(variantPrice(variant, "b2")).toBe(250000);
     expect(variantPrice(variant, "b1")).toBe(200000);
     expect(variantPrice(variant, null)).toBe(200000);

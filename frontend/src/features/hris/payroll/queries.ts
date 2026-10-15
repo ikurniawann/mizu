@@ -7,6 +7,7 @@ import {
   fetchPayrollRun,
   fetchPayslip,
   fetchPayrollSettings,
+  fetchStoreCosts,
 } from "./api";
 
 export const usePayrollRuns = () =>
@@ -27,6 +28,13 @@ export const usePayslip = (payrollRunId: string, employeeId: string) =>
     queryKey: payrollQueryKeys.payslip(payrollRunId, employeeId),
     queryFn: () => fetchPayslip(payrollRunId, employeeId),
     enabled: !!payrollRunId && !!employeeId,
+  });
+
+export const useStoreCosts = (runId: string) =>
+  useQuery({
+    queryKey: payrollQueryKeys.storeCosts(runId),
+    queryFn: () => fetchStoreCosts(runId),
+    enabled: !!runId,
   });
 
 export const usePayrollSettings = (taxYear?: number) =>

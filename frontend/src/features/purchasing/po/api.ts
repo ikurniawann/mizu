@@ -1,6 +1,8 @@
 import { listSuppliers } from "@/lib/purchasing/api-client/suppliers";
 import { listRawMaterials } from "@/lib/purchasing/api-client/raw-materials";
 import { listUnits } from "@/lib/purchasing/api-client/units";
+import { BASE, fetchApi } from "@/lib/purchasing/api-client/http";
+import type { POFormPRItem } from "@/lib/purchasing/po-form-items";
 import type { Supplier, RawMaterialWithStock, Unit } from "@/types/purchasing";
 
 export {
@@ -29,7 +31,7 @@ export interface POFormData {
 export async function getPOFormData(): Promise<POFormData> {
   const [suppliers, materialsRes, unitsRes] = await Promise.all([
     listSuppliers().catch(() => [] as Supplier[]),
-    listRawMaterials({ limit: 100, is_active: undefined }).catch(() => ({ data: [] as RawMaterialWithStock[] })),
+    listRawMaterials({ limit: 500, is_active: undefined }).catch(() => ({ data: [] as RawMaterialWithStock[] })),
     listUnits().catch(() => ({ data: [] as Unit[] })),
   ]);
 
@@ -38,4 +40,17 @@ export async function getPOFormData(): Promise<POFormData> {
     materials: materialsRes.data || [],
     units: unitsRes?.data || [],
   };
+}
+
+/** PR bahan baku disetujui yang belum punya PO (pilihan "Ambil dari PR" pada PO langsung). */
+export interface ApprovedPRForPO {
+  id: string;
+  pr_number: string;
+  department_name?: string | null;
+  items?: POFormPRItem[];
+}
+
+export async function listApprovedPRsForPO(): Promise<ApprovedPRForPO[]> {
+  const res = await fetchApi<{ data: ApprovedPRForPO[] }>(`${BASE}/pr/for-po?module_type=raw_material`);
+  return res.data ?? [];
 }

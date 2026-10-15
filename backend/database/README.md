@@ -73,6 +73,21 @@ npm run db:migrate:apply
 npm run db:seed:super-admin
 ```
 
+### Data demo Paddy (DB baru)
+
+Database kosong butuh role `authenticated` dan `service_role` (NOLOGIN) sebelum migrasi.
+Urutan seed (env: `DATABASE_URL`/`MIGRATE_DATABASE_URL`, `SUPER_USER_PASSWORD`,
+`PADDY_DEMO_PASSWORD`, `PADDY_STALL_PASSWORD`; tanpa env password dibuat acak dan dicetak sekali):
+
+```bash
+pnpm db:seed:super-admin   # super@paddy.id
+pnpm db:seed:paddy-full    # IAM + toko/layanan Paddy Studio + katalog + transaksi + branding + parkir
+                           # + demo@paddy.id + user purchasing per stall + supplier + COA
+```
+
+`db:seed:paddy-demo` saja = `paddy-spa` → `paddy-products` → `paddy-spa-transactions` → `paddy-branding`.
+Foto katalog: `frontend/public/products/paddy/pdy-*.webp` (data `seeders/data/paddy-catalog.json`).
+
 `generate-from-db.js` introspeksi schema `public` + `iam`, lalu menulis file per-tabel ke
 `schemas/<domain>/` + functions/fk/views/triggers ke `bootstrap/`. Setiap pull **menghapus &
 menulis ulang** file generated di `schemas/` dan band bootstrap (kecuali file manual

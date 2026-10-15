@@ -36,7 +36,7 @@ function toDraft(settings: CrmSettings | undefined): Draft {
     cs_csat_enabled: settings?.cs_csat_enabled ?? true,
     cs_csat_text: settings?.cs_csat_text ?? "",
     bot_enabled: settings?.bot_enabled ?? false,
-    bot_name: settings?.bot_name ?? "Mizu Assistant",
+    bot_name: settings?.bot_name ?? "Paddy Assistant",
     bot_greeting: settings?.bot_greeting ?? "",
     bot_handover_keywords: settings?.bot_handover_keywords ?? "admin, cs, manusia, operator",
     bot_notify_customer: settings?.bot_notify_customer ?? true,
@@ -79,7 +79,7 @@ export function CsSettingsSection({
       cs_csat_enabled: draft.cs_csat_enabled,
       cs_csat_text: draft.cs_csat_text.trim() || undefined,
       bot_enabled: draft.bot_enabled,
-      bot_name: draft.bot_name.trim() || "Mizu Assistant",
+      bot_name: draft.bot_name.trim() || "Paddy Assistant",
       bot_greeting: draft.bot_greeting.trim() || undefined,
       bot_handover_keywords: draft.bot_handover_keywords.trim() || undefined,
       bot_notify_customer: draft.bot_notify_customer,
@@ -323,7 +323,7 @@ export function CsSettingsSection({
               value={draft.bot_greeting}
               onChange={(event) => setDraft((current) => ({ ...current, bot_greeting: event.target.value }))}
               disabled={disabled || !draft.bot_enabled}
-              placeholder="Halo! Saya asisten booking Mizu. Saya bantu pilih outlet, treatment dan jamnya ya 🙏"
+              placeholder="Halo Paddy Besties! Saya asisten booking Paddy. Saya bantu pilih toko, layanan experience dan jamnya ya ✨"
               className={`w-full resize-y rounded-lg px-3 py-2 text-sm ${inputClass} h-auto min-h-[72px]`}
             />
           </div>

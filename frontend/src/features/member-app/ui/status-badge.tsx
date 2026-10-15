@@ -1,14 +1,14 @@
 export type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'brand';
 
-/* NüHabit palette: Lettuce / Golden Ochre tints for fills, deepened for text on beige;
-   the brand tone is Pale Lime with Deep Forest Green. */
+/* Paddy palette: soft tints for fills, deepened for text on cream;
+   the brand tone is Sunny with Berry text. */
 const TONE_STYLES: Record<Tone, { background: string; color: string }> = {
   ok: { background: 'rgb(171 222 103 / 0.28)', color: '#3e7314' },
   warn: { background: 'rgb(201 162 39 / 0.2)', color: '#8a6a10' },
   danger: { background: 'rgb(209 59 64 / 0.14)', color: '#c2363b' },
-  info: { background: 'rgb(32 59 50 / 0.12)', color: '#5a4334' },
-  neutral: { background: 'rgb(95 107 98 / 0.15)', color: '#75665a' },
-  brand: { background: 'rgb(218 255 89 / 0.5)', color: '#3d2b20' },
+  info: { background: 'rgb(109 75 216 / 0.12)', color: '#5a3cc4' },
+  neutral: { background: 'rgb(95 107 98 / 0.15)', color: '#716a63' },
+  brand: { background: 'rgb(255 207 63 / 0.45)', color: '#b8045a' },
 };
 
 /** Maps every entity state in the system to a visual tone. */

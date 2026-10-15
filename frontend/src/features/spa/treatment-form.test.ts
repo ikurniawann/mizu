@@ -13,7 +13,7 @@ import type { Treatment } from "./types";
 const treatment: Treatment = {
   id: "t1",
   code: "BAL",
-  name: "Balinese Massage",
+  name: "Custom Case Design",
   category: "Massage",
   description: null,
   is_active: true,
@@ -32,16 +32,17 @@ const treatment: Treatment = {
   ],
 };
 
-describe("form treatment", () => {
+describe("form layanan", () => {
   it("form baru valid setelah diisi", () => {
     const form = initialTreatmentForm(null);
-    expect(validateTreatmentForm(form)).toContain("Kode treatment wajib diisi.");
+    expect(validateTreatmentForm(form)).toContain("Kode layanan wajib diisi.");
     form.code = "ref";
     form.name = "Refleksi";
     form.variants[0] = { ...form.variants[0], name: "45 menit", duration_min: "45", price_idr: "150000" };
     expect(validateTreatmentForm(form)).toEqual([]);
     const input = toTreatmentInput(form);
     expect(input.code).toBe("REF");
+    expect(input.customizable).toBe(false);
     expect(input.variants).toEqual([
       { name: "45 menit", duration_min: 45, price_idr: 150000, is_active: true, sort_order: 0 },
     ]);
@@ -99,7 +100,7 @@ describe("form treatment", () => {
   });
 });
 
-describe("harga per outlet", () => {
+describe("harga per toko", () => {
   const outlets = [{ branch_id: "b1" }, { branch_id: "b2" }];
 
   it("grid awal dari override yang ada", () => {
@@ -123,7 +124,7 @@ describe("harga per outlet", () => {
     expect(() => toPriceInputs(treatment, grid)).toThrow(/tidak valid/);
   });
 
-  it.each(["-1", "1.5", "teks", "1000000000000", "999999999999999999999"])("menolak harga outlet %s", (raw) => {
+  it.each(["-1", "1.5", "teks", "1000000000000", "999999999999999999999"])("menolak harga toko %s", (raw) => {
     expect(() => toPriceInputs(treatment, { v1: { b1: raw } })).toThrow(/tidak valid/);
   });
 
@@ -136,7 +137,7 @@ describe("harga per outlet", () => {
     ]);
   });
 
-  it("memisahkan request per treatment maksimal 500 sel dan memvalidasi semua draft", () => {
+  it("memisahkan request per layanan maksimal 500 sel dan memvalidasi semua draft", () => {
     const grid = { v1: Object.fromEntries(Array.from({ length: 501 }, (_, i) => [`outlet-${i}`, "1"])) };
     const batches = buildPriceBatches([treatment], grid);
     expect(batches.map((batch) => [batch.id, batch.prices.length])).toEqual([["t1", 500], ["t1", 1]]);

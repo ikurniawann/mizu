@@ -53,19 +53,19 @@ export function SpaTreatmentsPage() {
     <div className="space-y-4">
       <PageHeader
         kicker={SPA_KICKER}
-        title="Treatment"
-        description="Treatment dan varian durasinya. Harga per outlet menimpa harga dasar; produk POS diperbarui lewat Sinkron produk POS di Outlet Spa."
+        title="Layanan"
+        description="Layanan dan varian durasinya. Harga per toko menimpa harga dasar; produk POS diperbarui lewat Sinkron produk POS di Toko Experience."
         actions={
-          tab === "list" ? <Button onClick={() => setEditing("new")}><Plus /> Treatment baru</Button> : undefined
+          tab === "list" ? <Button onClick={() => setEditing("new")}><Plus /> Layanan baru</Button> : undefined
         }
       />
 
       {treatments.error && <FormError>{treatments.error.message}</FormError>}
       {categories.error && <FormError>{categories.error.message}</FormError>}
       <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
-        <TabsList variant="line" aria-label="Pengelolaan treatment">
-          <TabsTrigger value="list">Daftar Treatment</TabsTrigger>
-          <TabsTrigger value="prices">Harga Outlet</TabsTrigger>
+        <TabsList variant="line" aria-label="Pengelolaan layanan">
+          <TabsTrigger value="list">Daftar Layanan</TabsTrigger>
+          <TabsTrigger value="prices">Harga Toko</TabsTrigger>
         </TabsList>
         <TabsContent value="list">
           <Card className="py-0">
@@ -74,14 +74,14 @@ export function SpaTreatmentsPage() {
                 <SkeletonTable columns={4} rows={5} />
               </div>
             ) : !treatments.data && treatments.error ? (
-              <TableNote tone="danger">Daftar treatment belum dapat dimuat.</TableNote>
+              <TableNote tone="danger">Daftar layanan belum dapat dimuat.</TableNote>
             ) : rows.length === 0 ? (
-              <TableNote>Belum ada treatment. Tambahkan treatment pertama.</TableNote>
+              <TableNote>Belum ada layanan. Tambahkan layanan pertama.</TableNote>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Treatment</TableHead>
+                    <TableHead>Layanan</TableHead>
                     <TableHead>Varian</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
@@ -116,7 +116,10 @@ export function SpaTreatmentsPage() {
                         </ul>
                       </TableCell>
                       <TableCell className="align-top">
-                        <Badge variant={t.is_active ? "success" : "muted"}>{t.is_active ? "Aktif" : "Nonaktif"}</Badge>
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge variant={t.is_active ? "success" : "muted"}>{t.is_active ? "Aktif" : "Nonaktif"}</Badge>
+                          {t.customizable && <Badge variant="accent">Custom case</Badge>}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right align-top">
                         <Button size="sm" variant="ghost" onClick={() => setEditing(t)}>
@@ -166,12 +169,12 @@ function TreatmentDialog({ treatment, categories, onClose }: { treatment: Treatm
       { id: treatment?.id, input: toTreatmentInput(form) },
       {
         onSuccess: (saved) => {
-          toast.success(treatment ? "Treatment diperbarui" : "Treatment dibuat", { description: saved.name });
+          toast.success(treatment ? "Layanan diperbarui" : "Layanan dibuat", { description: saved.name });
           onClose();
         },
         onError: (err) => {
           setErrors([err.message]);
-          toast.error("Treatment gagal disimpan", { description: err.message });
+          toast.error("Layanan gagal disimpan", { description: err.message });
         },
       }
     );
@@ -187,7 +190,7 @@ function TreatmentDialog({ treatment, categories, onClose }: { treatment: Treatm
           }}
         >
           <DialogPanelHeader>
-            <DialogPanelTitle>{treatment ? `Ubah ${treatment.name}` : "Treatment baru"}</DialogPanelTitle>
+            <DialogPanelTitle>{treatment ? `Ubah ${treatment.name}` : "Layanan baru"}</DialogPanelTitle>
             <DialogPanelDescription>
               Varian yang dihapus dari daftar dinonaktifkan (riwayat booking tetap utuh). Harga dalam rupiah; durasi dalam menit.
             </DialogPanelDescription>
@@ -197,7 +200,7 @@ function TreatmentDialog({ treatment, categories, onClose }: { treatment: Treatm
               <Input maxLength={20} value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="BAL" required />
             </Field>
             <Field label="Nama" className="sm:col-span-2">
-              <Input maxLength={120} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Balinese Massage" required />
+              <Input maxLength={120} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Custom Case Design" required />
             </Field>
             <Field label="Urutan">
               <Input type="number" min={0} max={9999} step={1} value={form.sort_order} onChange={(e) => set("sort_order", e.target.value)} />
@@ -209,8 +212,17 @@ function TreatmentDialog({ treatment, categories, onClose }: { treatment: Treatm
               </select>
             </Field>
             <label className="flex items-center gap-3 self-end pb-2 text-sm sm:col-span-2">
-              <Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} aria-label="Treatment aktif" />
+              <Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} aria-label="Layanan aktif" />
               Aktif (tampil di booking)
+            </label>
+            <label className="flex items-start gap-3 rounded-2xl bg-surface-2 p-3 text-sm sm:col-span-4">
+              <Switch checked={form.customizable} onCheckedChange={(v) => set("customizable", v)} aria-label="Bisa didesain (custom case)" className="mt-0.5" />
+              <span>
+                <span className="font-medium">Bisa didesain (custom case)</span>
+                <span className="block text-xs text-muted-foreground">
+                  Booking online wajib mengisi desain case (tipe HP, stiker, nama, background). Booking dari kasir atau WhatsApp bisa diisi crew di toko.
+                </span>
+              </span>
             </label>
             <Field label="Deskripsi" className="sm:col-span-4">
               <textarea maxLength={2000} className={TEXTAREA} value={form.description} onChange={(e) => set("description", e.target.value)} />

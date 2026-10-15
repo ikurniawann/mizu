@@ -68,6 +68,7 @@ import type {
   TreatmentInput,
 } from "./types";
 import { normalizeMyCommissions } from "./rules";
+import type { CaseDesign, ExperienceCatalog } from "./experience";
 
 type QueryValue = string | number | boolean | null | undefined;
 
@@ -212,6 +213,9 @@ export const spaApi = {
   updateBooking: (id: string, input: BookingUpdateInput) =>
     send<Booking>(`${BASE}/bookings/${enc(id)}`, input, "PATCH"),
   addItem: (id: string, input: BookingItemInput) => send<Booking>(`${BASE}/bookings/${enc(id)}/items`, input),
+  /** Desain custom case satu layanan (null = hapus); hanya untuk layanan customizable. */
+  setItemDesign: (id: string, itemId: string, design: CaseDesign | null) =>
+    send<Booking>(`${BASE}/bookings/${enc(id)}/items/${enc(itemId)}/design`, { design }, "PUT"),
   itemAction: (id: string, itemId: string, input: ItemActionInput) =>
     send<Booking>(`${BASE}/bookings/${enc(id)}/items/${enc(itemId)}`, input, "PATCH"),
   cancelBooking: (id: string, reason: string) => send<Booking>(`${BASE}/bookings/${enc(id)}/cancel`, { reason }),
@@ -269,6 +273,8 @@ export const spaApi = {
 
 export const publicSpaApi = {
   outlets: () => call<PublicOutlet[]>(`${PUBLIC_BASE}/outlets`),
+  /** Katalog desain custom case (merk/tipe HP, layout, tema stiker, font, background). */
+  experienceCatalog: () => call<ExperienceCatalog>(`${PUBLIC_BASE}/experience-catalog`),
   treatments: (branchId: string) => call<PublicTreatment[]>(`${PUBLIC_BASE}/outlets/${enc(branchId)}/treatments`),
   slots: (branchId: string, date: string, variantIds: string[], pref: string) =>
     call<PublicSlot[]>(withQuery(`${PUBLIC_BASE}/outlets/${enc(branchId)}/slots`, {

@@ -30,8 +30,10 @@ type AttendanceRepo interface {
 // attendanceListParams is AttendanceListParams.
 type attendanceListParams struct {
 	EmployeeID, Date, StartDate, EndDate, Status *string
-	LateOnly                                     bool
-	Page, Limit                                  int
+	// BranchID filters by store; "none" is the rows without a store.
+	BranchID    *string
+	LateOnly    bool
+	Page, Limit int
 }
 
 // resolveAttendanceListParams: employee_id=me is the actor's record; non-HR
@@ -61,7 +63,8 @@ func resolveAttendanceListParams(q domain.Query, a *Actor) (*attendanceListParam
 	late, _ := q("is_late")
 	return &attendanceListParams{
 		EmployeeID: employeeID, Date: get("date"), StartDate: get("start_date"), EndDate: get("end_date"),
-		Status: get("status"), LateOnly: late == "true",
+		BranchID: get("branch_id"),
+		Status:   get("status"), LateOnly: late == "true",
 		Page: max(1, domain.IntOr(page, 1)), Limit: domain.Clamp(domain.IntOr(limit, 20), 1, 1000),
 	}, nil
 }
@@ -81,20 +84,6 @@ func (s *Service) Attendance(ctx context.Context, id string, a *Actor) (*Row, er
 		return nil, httpx.NotFound("Attendance not found")
 	}
 	return row, nil
-}
-
-// UpdateAttendance applies an HR correction; validated=true stamps the
-// validator's employee record (validated_by references hris.employees).
-func (s *Service) UpdateAttendance(ctx context.Context, id string, f fields, validated bool, a *Actor) (*Row, error) {
-	if validated {
-		f.add("validated_by", a.EmployeeID)
-		f.add("validated_at", s.clock())
-	}
-	return s.repo.UpdateAttendance(ctx, id, f)
-}
-
-func (s *Service) DeleteAttendance(ctx context.Context, id string) error {
-	return s.repo.DeleteAttendance(ctx, id)
 }
 
 /* ── Daily roster ────────────────────────────────────────────────────── */

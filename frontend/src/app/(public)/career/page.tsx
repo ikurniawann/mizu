@@ -62,15 +62,15 @@ export default function CareerPage() {
   }, [jobs]);
 
   return (
-    <div id="top" lang="en" className="min-h-screen bg-[#f8f4ee] text-[#241b16] career-roundo">
-      <nav className="fixed top-0 z-50 w-full border-b border-[#e3dbcc] bg-[#f8f4ee]/95 backdrop-blur">
+    <div id="top" lang="en" className="min-h-screen bg-[#fdf9f3] text-[#2a1024] career-roundo">
+      <nav className="fixed top-0 z-50 w-full border-b border-[#ece5da] bg-[#fdf9f3]/95 backdrop-blur">
         <div className="mx-auto flex h-20 max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-10">
-          <Link href="/career" className="flex h-full items-center" aria-label="Mizu careers">
-            <img src={logoUrl} alt="Mizu" className="h-7 w-auto sm:h-8" />
+          <Link href="/career" className="flex h-full items-center" aria-label="Paddy careers">
+            <img src={logoUrl} alt="Paddy" className="h-7 w-auto sm:h-8" />
           </Link>
           <a
             href="#open-roles"
-            className="rounded-full bg-[#3d2b20] px-6 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#5a4334] active:scale-95"
+            className="rounded-full bg-[#b8045a] px-6 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#5b2a4d] active:scale-95"
           >
             Open Roles
           </a>
@@ -82,9 +82,9 @@ export default function CareerPage() {
           <h1 className="mb-6 text-4xl font-semibold leading-tight tracking-normal sm:text-5xl lg:text-6xl">
             Join our team
           </h1>
-          <div className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-[#3a302a]">
+          <div className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-[#403b37]">
             <p>
-              Mizu is growing a team that builds warm, imaginative, and precise experiences across hospitality,
+              Paddy is growing a team that builds warm, imaginative, and precise experiences across hospitality,
               media, design, and technology.
             </p>
             <p>
@@ -96,14 +96,14 @@ export default function CareerPage() {
 
         <section className="mb-20 w-full overflow-hidden">
           <div className="mx-auto mb-6 max-w-[1280px] px-4 sm:px-6 lg:px-10">
-            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[#3a302a]">Our Studio Space</h2>
+            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[#403b37]">Our Studio Space</h2>
           </div>
           <div className="relative flex w-full overflow-hidden">
             <div className="career-marquee flex whitespace-nowrap">
               {[...studioImages, ...studioImages].map((src, index) => (
                 <div key={`${src}-${index}`} className="group relative mx-2 aspect-[3/4] w-[58vw] shrink-0 cursor-crosshair sm:w-[35vw] md:w-[25vw]">
                   <img src={src} alt={`Studio ${index + 1}`} className="h-full w-full object-cover grayscale" />
-                  <div className="absolute inset-0 bg-[#3d2b20] opacity-60 mix-blend-multiply transition-opacity duration-700 group-hover:opacity-20" />
+                  <div className="absolute inset-0 bg-[#b8045a] opacity-60 mix-blend-multiply transition-opacity duration-700 group-hover:opacity-20" />
                 </div>
               ))}
             </div>
@@ -113,23 +113,23 @@ export default function CareerPage() {
         <section id="open-roles" className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
           <div className="space-y-3">
             {jobsLoading && (
-              <div className="border-y border-[#e3dbcc] py-10 text-center text-[#3a302a]">
+              <div className="border-y border-[#ece5da] py-10 text-center text-[#403b37]">
                 Loading open roles...
               </div>
             )}
 
             {!jobsLoading && departments.length === 0 && (
-              <div className="border-y border-[#e3dbcc] py-10 text-center text-[#3a302a]">
+              <div className="border-y border-[#ece5da] py-10 text-center text-[#403b37]">
                 No open positions at this time. Check back later.
               </div>
             )}
 
             {!jobsLoading && departments.map((department) => (
-              <details key={department.name} className="group border-b border-[#e3dbcc] open:pb-6" open={department.roles.length > 0}>
+              <details key={department.name} className="group border-b border-[#ece5da] open:pb-6" open={department.roles.length > 0}>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6">
                   <h2 className="text-2xl font-medium leading-tight tracking-normal">{department.name}</h2>
                   <div className="flex items-center gap-4">
-                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#3a302a]">
+                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#403b37]">
                       {department.roles.length} Positions
                     </span>
                     <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
@@ -137,20 +137,20 @@ export default function CareerPage() {
                 </summary>
 
                 {department.roles.length === 0 ? (
-                  <div className="py-6 text-center italic text-[#3a302a]">No open positions at this time. Check back later.</div>
+                  <div className="py-6 text-center italic text-[#403b37]">No open positions at this time. Check back later.</div>
                 ) : (
                   <div className="space-y-2 px-1">
                     {department.roles.map((job) => (
                       <Link
                         key={job.id}
                         href={`/portal?job_opening_id=${job.id}&position_id=${job.position_id || ""}&brand_id=${job.brand_id || ""}`}
-                        className="group/item flex flex-col justify-between gap-4 rounded-lg border border-[#e3dbcc] bg-white p-6 transition-all duration-300 hover:border-[#5a4334] md:flex-row md:items-center"
+                        className="group/item flex flex-col justify-between gap-4 rounded-lg border border-[#ece5da] bg-white p-6 transition-all duration-300 hover:border-[#5b2a4d] md:flex-row md:items-center"
                       >
                         <div>
-                          <h3 className="text-2xl font-medium leading-tight transition-colors group-hover/item:text-[#5a4334]">
+                          <h3 className="text-2xl font-medium leading-tight transition-colors group-hover/item:text-[#5b2a4d]">
                             {job.title}
                           </h3>
-                          <div className="mt-3 flex flex-wrap items-center gap-6 text-sm font-medium text-[#3a302a]">
+                          <div className="mt-3 flex flex-wrap items-center gap-6 text-sm font-medium text-[#403b37]">
                             <span className="flex items-center gap-1.5">
                               <MapPin className="h-4 w-4" />
                               {job.location}
@@ -161,19 +161,19 @@ export default function CareerPage() {
                             </span>
                           </div>
                           {job.description && (
-                            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#3a302a]">
+                            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#403b37]">
                               {job.description}
                             </p>
                           )}
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="rounded-full border border-[#e3dbcc] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition-colors hover:bg-[#f3ece2]">
+                          <span className="rounded-full border border-[#ece5da] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition-colors hover:bg-[#fbf5ec]">
                             View Details
                           </span>
-                          <span className="hidden rounded-full border border-[#e3dbcc] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] md:inline-block">
+                          <span className="hidden rounded-full border border-[#ece5da] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] md:inline-block">
                             {job.work_mode}
                           </span>
-                          <ArrowRight className="h-5 w-5 -translate-x-2 text-[#5a4334] opacity-0 transition-all duration-300 group-hover/item:translate-x-0 group-hover/item:opacity-100" />
+                          <ArrowRight className="h-5 w-5 -translate-x-2 text-[#5b2a4d] opacity-0 transition-all duration-300 group-hover/item:translate-x-0 group-hover/item:opacity-100" />
                         </div>
                       </Link>
                     ))}
@@ -185,20 +185,20 @@ export default function CareerPage() {
         </section>
 
         <section className="mx-auto mt-20 max-w-[1280px] px-4 sm:px-6 lg:px-10">
-          <div className="flex flex-col items-center justify-between gap-10 rounded-lg border border-[#e3dbcc] bg-[#f3ece2] p-8 text-center md:flex-row md:p-16 md:text-left">
+          <div className="flex flex-col items-center justify-between gap-10 rounded-lg border border-[#ece5da] bg-[#fbf5ec] p-8 text-center md:flex-row md:p-16 md:text-left">
             <div className="max-w-xl">
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#5a4334]">
+              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#5b2a4d]">
                 <BriefcaseBusiness className="h-5 w-5" />
               </div>
               <h2 className="mb-3 text-3xl font-semibold leading-tight">Don&apos;t see a role for you?</h2>
-              <p className="text-base leading-relaxed text-[#3a302a]">
+              <p className="text-base leading-relaxed text-[#403b37]">
                 We are always on the lookout for exceptional talent. Send us your profile and let&apos;s start a conversation
                 about future possibilities.
               </p>
             </div>
             <Link
               href="/portal"
-              className="whitespace-nowrap rounded-full border border-[#241b16] px-10 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-[#241b16] transition-colors hover:bg-[#241b16] hover:text-white"
+              className="whitespace-nowrap rounded-full border border-[#2a1024] px-10 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-[#2a1024] transition-colors hover:bg-[#2a1024] hover:text-white"
             >
               General Application
             </Link>
@@ -206,30 +206,30 @@ export default function CareerPage() {
         </section>
       </main>
 
-      <footer className="w-full border-t border-[#e3dbcc] bg-[#f8f4ee] py-20">
+      <footer className="w-full border-t border-[#ece5da] bg-[#fdf9f3] py-20">
         <div className="mx-auto grid max-w-[1280px] grid-cols-1 gap-10 px-4 sm:px-6 md:grid-cols-2 lg:px-10">
           <div className="space-y-6">
             <div className="flex h-12 items-center">
-              <img src={logoUrl} alt="Mizu" className="h-7 w-auto sm:h-8" />
+              <img src={logoUrl} alt="Paddy" className="h-7 w-auto sm:h-8" />
             </div>
-            <p className="max-w-sm text-base leading-relaxed text-[#3a302a]">
+            <p className="max-w-sm text-base leading-relaxed text-[#403b37]">
               Designing emotional experiences at the intersection of technology, art, and service.
             </p>
-            <p className="text-base text-[#3a302a]">© 2026 Mizu. All rights reserved.</p>
+            <p className="text-base text-[#403b37]">© 2026 Paddy. All rights reserved.</p>
           </div>
           <div className="flex flex-col justify-between gap-10 md:items-end">
             <div className="flex flex-wrap gap-6">
               {["LinkedIn", "Instagram", "Vimeo", "Privacy Policy", "Terms"].map((item) => (
-                <a key={item} href="#" className="text-base text-[#3a302a] transition-colors hover:text-[#5a4334]">
+                <a key={item} href="#" className="text-base text-[#403b37] transition-colors hover:text-[#5b2a4d]">
                   {item}
                 </a>
               ))}
             </div>
-            <a href="#top" className="group flex items-center gap-1 text-[#3a302a]">
-              <span className="text-sm font-semibold uppercase tracking-[0.12em] transition-colors group-hover:text-[#5a4334]">
+            <a href="#top" className="group flex items-center gap-1 text-[#403b37]">
+              <span className="text-sm font-semibold uppercase tracking-[0.12em] transition-colors group-hover:text-[#5b2a4d]">
                 Back to top
               </span>
-              <ArrowUp className="h-4 w-4 text-[#5a4334]" />
+              <ArrowUp className="h-4 w-4 text-[#5b2a4d]" />
             </a>
           </div>
         </div>
@@ -237,7 +237,7 @@ export default function CareerPage() {
 
       {showNotice && (
         <div className="fixed bottom-4 right-4 z-50 max-w-sm px-2 sm:bottom-6 sm:right-6">
-          <div className="rounded-lg border border-[#2e3132] bg-[#241b16] p-6 text-white shadow-2xl">
+          <div className="rounded-lg border border-[#2e3132] bg-[#2a1024] p-6 text-white shadow-2xl">
             <p className="mb-5 text-xs font-semibold leading-relaxed opacity-80">
               All current job openings are posted first on our official website. Please avoid filling out forms on
               third-party platforms, downloading apps, or sharing personal information outside official channels.
@@ -245,7 +245,7 @@ export default function CareerPage() {
             <button
               type="button"
               onClick={() => setShowNotice(false)}
-              className="w-full rounded-full border border-[#e3dbcc] py-3 text-sm font-semibold uppercase tracking-[0.12em] transition-colors hover:bg-[#e3dbcc] hover:text-[#241b16]"
+              className="w-full rounded-full border border-[#ece5da] py-3 text-sm font-semibold uppercase tracking-[0.12em] transition-colors hover:bg-[#ece5da] hover:text-[#2a1024]"
             >
               OK
             </button>

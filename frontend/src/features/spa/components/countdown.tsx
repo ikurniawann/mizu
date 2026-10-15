@@ -22,7 +22,7 @@ export function Countdown({ startedAt, durationMin, className, size = "md" }: { 
     <span
       role="timer"
       aria-live="off"
-      title={tone === "over" ? "Lewat dari durasi treatment" : "Sisa waktu treatment"}
+      title={tone === "over" ? "Lewat dari durasi layanan" : "Sisa waktu layanan"}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono font-semibold tabular-nums",
         size === "lg" ? "text-2xl" : "text-sm",

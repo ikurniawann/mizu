@@ -386,7 +386,7 @@ func (t *turn) localExtract(ctx context.Context, text string) Extraction {
 	}
 	if step == domain.StepPayment {
 		switch {
-		case strings.Contains(n, "outlet") || strings.Contains(n, "tempat") || strings.Contains(n, "tunai") || strings.Contains(n, "cash") || strings.Contains(n, "nanti"):
+		case strings.Contains(n, "outlet") || strings.Contains(n, "toko") || strings.Contains(n, "store") || strings.Contains(n, "tempat") || strings.Contains(n, "tunai") || strings.Contains(n, "cash") || strings.Contains(n, "nanti"):
 			x.Payment = "outlet"
 		case strings.Contains(n, "online") || strings.Contains(n, "transfer") || strings.Contains(n, "qris") || strings.Contains(n, "link") || strings.Contains(n, "sekarang") || strings.Contains(n, "bayar dulu"):
 			x.Payment = "online"
@@ -543,7 +543,7 @@ func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string
 func (t *turn) facts(ctx context.Context) string {
 	s := t.sess
 	var b strings.Builder
-	b.WriteString("OUTLET:\n")
+	b.WriteString("TOKO PADDY:\n")
 	for _, o := range s.Outlets {
 		b.WriteString("- " + o.Name + ": " + firstNonBlank(o.Address, "alamat belum tercantum"))
 		if o.City != "" {
@@ -562,26 +562,26 @@ func (t *turn) facts(ctx context.Context) string {
 		outlet = s.Outlets[0].Name
 	}
 	if len(catalog) > 0 {
-		b.WriteString("TREATMENT & HARGA (" + outlet + "):\n")
+		b.WriteString("LAYANAN PADDY EXPERIENCE & HARGA (" + outlet + "):\n")
 		for _, v := range catalog {
 			b.WriteString("- " + v.Label() + " (" + strconv.Itoa(v.DurationMin) + " menit): " + domain.Rupiah(v.Price) + "\n")
 		}
 	}
 	b.WriteString("KEBIJAKAN:\n- Booking lewat chat maksimal " + strconv.Itoa(domain.MaxPeople) + " orang per booking, untuk 60 hari ke depan.\n")
 	if amount, hold, enabled := t.e.ports.Spa.DepositPolicy(ctx); enabled {
-		b.WriteString("- Booking online memerlukan DP " + domain.Rupiah(amount) + " per booking, dibayar lewat link dalam " + strconv.Itoa(hold) + " menit agar jadwal terkunci; sisa harga dibayar di outlet setelah treatment. DP tidak dikembalikan bila booking dibatalkan sepihak (tanya admin untuk pengecualian).\n")
+		b.WriteString("- Booking online memerlukan DP " + domain.Rupiah(amount) + " per booking, dibayar lewat link dalam " + strconv.Itoa(hold) + " menit agar jadwal terkunci; sisa harga dibayar di toko setelah layanan. DP tidak dikembalikan bila booking dibatalkan sepihak (tanya admin untuk pengecualian).\n")
 	}
 	_, _, depositOn := t.e.ports.Spa.DepositPolicy(ctx)
 	switch {
 	case depositOn:
-		b.WriteString("- Sisa harga setelah DP dibayar di outlet setelah treatment (tunai/QRIS/kartu).\n")
+		b.WriteString("- Sisa harga setelah DP dibayar di toko setelah layanan (tunai/QRIS/kartu).\n")
 	case t.e.ports.Spa.OnlinePayment():
-		b.WriteString("- Pembayaran di outlet setelah treatment (tunai/QRIS/kartu) atau online lewat link (VA, QRIS, e-wallet, kartu); tanpa DP.\n")
+		b.WriteString("- Pembayaran di toko setelah layanan (tunai/QRIS/kartu) atau online lewat link (VA, QRIS, e-wallet, kartu); tanpa DP.\n")
 	default:
-		b.WriteString("- Pembayaran di outlet setelah treatment (tunai/QRIS/kartu); tanpa DP.\n")
+		b.WriteString("- Pembayaran di toko setelah layanan (tunai/QRIS/kartu); tanpa DP.\n")
 	}
 	b.WriteString("- Jadwal bisa diubah/dibatalkan sendiri lewat link status booking sampai 1 jam sebelum kunjungan; setelah itu lewat admin.\n")
-	b.WriteString("- Terapis bisa dipilih sendiri (yang kosong di jam itu) atau dipilihkan Mizu; ada terapis wanita dan pria.\n")
+	b.WriteString("- Crew experience bisa dipilih sendiri (yang kosong di jam itu) atau dipilihkan Paddy; ada crew wanita dan pria.\n")
 	b.WriteString("- Untuk hal lain (parkir, fasilitas, promo, grup lebih dari " + strconv.Itoa(domain.MaxPeople) + " orang) pelanggan diminta ketik admin.\n")
 	return b.String()
 }
@@ -1601,9 +1601,9 @@ func (t *turn) bookingFailed(err error, made []domain.BookingRef) {
 		if s.Lang == domain.LangEN {
 			msg = "This number already has too many active bookings. Cancel the ones you no longer need via the status link, or type *status* / *admin*."
 		} else {
-			msg += " Ketik *status* untuk melihat booking terakhir Anda, atau *admin* untuk dibantu tim Mizu."
+			msg += " Ketik *status* untuk melihat booking terakhir Anda, atau *admin* untuk dibantu tim Paddy."
 		}
-	case strings.Contains(msg, "Terapis pilihanmu"):
+	case strings.Contains(msg, "pilihanmu baru saja terisi"):
 		s.TherapistID, s.TherapistName = "", ""
 	case strings.Contains(msg, "penuh") || strings.Contains(msg, "lewat"):
 		s.ClearSlot()

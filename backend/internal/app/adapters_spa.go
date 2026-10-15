@@ -107,7 +107,7 @@ func (spaPOS) EnsureTreatmentProduct(ctx context.Context, q database.Querier, p 
 	}
 	err := q.QueryRow(ctx, `INSERT INTO pos.pos_products (sku, name, description, category_id, base_price, cost_price,
 	    is_active, is_available, inventory_tracking, station, source_product_id, sales_channels)
-	  VALUES ($1, $2, 'Treatment spa', $3::uuid, $4, 0, $5, true, false, 'spa', $6::uuid, ARRAY['pos'])
+	  VALUES ($1, $2, 'Layanan Paddy Experience', $3::uuid, $4, 0, $5, true, false, 'spa', $6::uuid, ARRAY['pos'])
 	  RETURNING id::text`, p.SKU, p.Name, categoryID, p.Price, p.Active, *masterID).Scan(&id)
 	return id, err
 }

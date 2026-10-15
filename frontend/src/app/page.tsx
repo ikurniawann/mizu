@@ -5,7 +5,7 @@ import { SiteLayout } from "@/features/site/site-layout";
 export const dynamic = "force-dynamic";
 
 /**
- * The public Mizu home for everyone, signed in or not. Customers must never
+ * The public Paddy home for everyone, signed in or not. Customers must never
  * land on the staff desktop from here; staff open it at /os (OS_PATH), which
  * is also where login sends them.
  */

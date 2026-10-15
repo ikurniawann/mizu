@@ -10,6 +10,8 @@ export type FormLine = {
   credit: number;
   memo: string;
   sort_order: number;
+  /** Toko/cost center (hanya tampil; jurnal otomatis payroll per toko) */
+  branch_name?: string | null;
 };
 
 export type JournalFormState = {
@@ -47,6 +49,7 @@ export function journalFormFromEntry(entry: JournalEntryItem): JournalFormState 
       credit: l.entry_side === "CREDIT" ? l.amount : 0,
       memo: l.memo ?? "",
       sort_order: l.sort_order ?? (idx + 1) * 10,
+      branch_name: l.branch_name ?? null,
     })),
   };
 }

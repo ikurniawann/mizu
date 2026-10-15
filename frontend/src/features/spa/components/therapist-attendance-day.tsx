@@ -48,7 +48,7 @@ export function TherapistAttendanceDay({ date, start, end }: { date: string; sta
           {bookings.length > 1 ? ` +${bookings.length - 1} booking` : ` ${first.customer_name}`}
         </p>
       </Link>
-      <span className="h-1.5 w-1.5 rounded-full bg-pink-500 sm:hidden" aria-label={`${treatments} treatment spa`} />
+      <span className="h-1.5 w-1.5 rounded-full bg-pink-500 sm:hidden" aria-label={`${treatments} layanan experience`} />
     </>
   );
 }

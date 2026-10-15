@@ -137,7 +137,7 @@ function UserEmployeeForm({
         <FormSectionCard
           icon={ShieldCheck}
           title="App Access"
-          description="Mizu login, role, business scope, and approval permissions."
+          description="Paddy login, role, business scope, and approval permissions."
           bodyClassName="p-0"
         >
           <div className="px-5 py-5">

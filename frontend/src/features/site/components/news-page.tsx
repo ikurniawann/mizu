@@ -35,10 +35,10 @@ function CategoryChips({ active }: { active: ArticleCategory | null }) {
 export function ArticleCard({ article }: { article: Article }) {
   return (
     <Link href={`/news/${article.slug}`} className="group block">
-      <article className="h-full overflow-hidden rounded-card bg-card shadow-card transition-shadow group-hover:shadow-float">
+      <article className="h-full overflow-hidden rounded-card border-2 border-navy bg-card shadow-[4px_4px_0_0_var(--color-navy)] transition-transform group-hover:-translate-y-1">
         <Picture src={article.cover_image_url} alt="" className="aspect-[16/10] w-full" />
         <div className="space-y-2 p-5">
-          <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-accent">
+          <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-brand-text">
             {CATEGORY_LABELS[article.category]}
             {article.published_at ? <span className="ml-2 font-normal text-muted-foreground normal-case">{formatSiteDate(article.published_at)}</span> : null}
           </p>
@@ -54,7 +54,7 @@ export function NewsPage({ articles, category }: { articles: Article[]; category
   return (
     <Section>
       <Container className="space-y-8">
-        <SectionHeading as="h1" kicker="Berita" title="Kabar, tips dan promo dari Mizu" />
+        <SectionHeading as="h1" kicker="Kabar Paddy" title="Koleksi baru, tips dan promo dari Paddy" />
         <CategoryChips active={category} />
         {articles.length === 0 ? (
           <EmptyNote>Belum ada artikel{category ? ` di kategori ${CATEGORY_LABELS[category]}` : ""}.</EmptyNote>
@@ -75,7 +75,7 @@ export function ArticlePage({ article }: { article: Article }) {
     <article>
       <Section className="pb-6">
         <Container className="max-w-3xl space-y-4">
-          <Link href={`/news?category=${article.category}`} className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-accent">
+          <Link href={`/news?category=${article.category}`} className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-brand-text">
             {CATEGORY_LABELS[article.category]}
           </Link>
           <h1 className="font-display text-3xl font-bold tracking-tight text-balance md:text-5xl">{article.title}</h1>

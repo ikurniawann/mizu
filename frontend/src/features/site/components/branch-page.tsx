@@ -22,10 +22,10 @@ function instagramHref(handle: string): string {
 function BranchActions({ outlet }: { outlet: string }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <BookingButton size="lg" outlet={outlet}>Booking di outlet ini</BookingButton>
+      <BookingButton size="lg" variant="sticker" outlet={outlet}>Booking di toko ini</BookingButton>
       <Button asChild size="lg" variant="onInk">
         <Link href="/treatments">
-          <Sparkles /> Lihat treatment
+          <Sparkles /> Lihat layanan experience
         </Link>
       </Button>
     </div>
@@ -52,7 +52,7 @@ export function BranchPage({ branch }: { branch: BranchProfile }) {
         <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/90 via-ink/55 to-ink/30" />
         <Container className="flex min-h-[52dvh] flex-col justify-end gap-6 py-14 md:py-20">
           <div className="space-y-3">
-            <Kicker onInk>Mizu Family Massage & Reflexology{branch.city ? ` · ${branch.city}` : ""}</Kicker>
+            <Kicker onInk>Paddy Store{branch.city ? ` · ${branch.city}` : ""}</Kicker>
             <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-6xl">{branch.name}</h1>
             {address ? <p className="max-w-xl text-on-ink-muted">{address}</p> : null}
           </div>
@@ -63,7 +63,7 @@ export function BranchPage({ branch }: { branch: BranchProfile }) {
       {branch.benefits.length > 0 ? (
         <Section>
           <Container className="space-y-6">
-            <SectionHeading kicker="Kenapa di sini" title="Yang kamu dapat di outlet ini" />
+            <SectionHeading kicker="Kenapa di sini" title="Yang seru di toko ini" />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {branch.benefits.map((b, i) => (
                 <Tile key={`${b.title}-${i}`} className="space-y-2">
@@ -79,7 +79,7 @@ export function BranchPage({ branch }: { branch: BranchProfile }) {
       <Section className="pt-0">
         <Container className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <Tile className="space-y-4">
-            <h2 className="font-display text-xl font-semibold">Info outlet</h2>
+            <h2 className="font-display text-xl font-semibold">Info toko</h2>
             <ul className="space-y-3 text-sm">
               {address ? (
                 <li className="flex gap-3">
@@ -89,7 +89,7 @@ export function BranchPage({ branch }: { branch: BranchProfile }) {
                     {mapsHref ? (
                       <>
                         {" "}
-                        <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-forest hover:underline dark:text-accent">
+                        <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-forest hover:underline dark:text-brand-text">
                           Buka peta
                         </a>
                       </>
@@ -174,7 +174,7 @@ export function BranchPage({ branch }: { branch: BranchProfile }) {
       {branch.testimonials.length > 0 ? (
         <Section className="bg-surface">
           <Container className="space-y-6">
-            <SectionHeading kicker="Kata tamu" title="Cerita dari tamu kami" />
+            <SectionHeading kicker="Kata Paddy Besties" title="Cerita dari Paddy Besties" />
             <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {branch.testimonials.map((t, i) => (
                 <li key={`${t.name}-${i}`}>

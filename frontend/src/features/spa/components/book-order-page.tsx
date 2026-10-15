@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type DragEvent } from "react";
-import { CalendarDays, DoorOpen, GripVertical, LayoutGrid, List, ListOrdered, Plus, RefreshCw, UserRoundX } from "lucide-react";
+import { CalendarDays, DoorOpen, GripVertical, LayoutGrid, List, ListOrdered, Palette, Plus, RefreshCw, UserRoundX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,13 +15,16 @@ import { formatDateLong } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { isDraggable } from "../calendar";
 import { useSpaBoard, useSpaOutlets } from "../queries";
-import { genderLabel, isBookingClosed, sortByStart } from "../rules";
+import { canEditDesign, genderLabel, isBookingClosed, sortByStart } from "../rules";
 import type { BoardItem, BoardTherapist } from "../types";
 import { BookOrderCalendar, type CalendarSlot } from "./book-order-calendar";
 import { BookOrderList } from "./book-order-list";
 import { BookingCreateDialog } from "./booking-create-dialog";
 import { BookingDetailDialog } from "./booking-detail-page";
 import { AssignTherapistDialog } from "./item-dialogs";
+import { CaseThumb } from "./case-design/case-preview";
+import { CaseDesignBadge } from "./case-design/case-design-card";
+import { CaseDesignDialog } from "./case-design/case-design-dialog";
 import { ArrivalQueuePanel } from "./arrival-queue";
 import { RoomBoard } from "./room-board";
 import { ItemStatusBadge, OutletSelect, SELECT, SPA_KICKER, TableNote, TimeRange } from "./shared";
@@ -78,6 +81,7 @@ export function SpaBookOrderPage() {
   const board = useSpaBoard(branchId, date);
   const view = useSyncExternalStore(subscribeView, readView, () => "calendar" as BoardView);
   const [assigning, setAssigning] = useState<BoardItem | null>(null);
+  const [designing, setDesigning] = useState<BoardItem | null>(null);
   const [creating, setCreating] = useState<CalendarSlot | "blank" | null>(null);
   const [therapistSearch, setTherapistSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -104,7 +108,7 @@ export function SpaBookOrderPage() {
       <PageHeader
         kicker={SPA_KICKER}
         title="Book Order"
-        description="Papan harian per outlet: satu booking ditangani satu terapis untuk seluruh treatment. Diperbarui otomatis setiap 30 detik."
+        description="Papan harian per toko: satu booking ditangani satu crew untuk seluruh layanan. Diperbarui otomatis setiap 30 detik."
         actions={
           <>
             <Button variant="outline" onClick={() => void board.refetch()} disabled={!branchId || board.isFetching}>
@@ -138,8 +142,8 @@ export function SpaBookOrderPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <label className="space-y-1.5 text-sm font-medium">
-          <span>Cari terapis</span>
-          <Input type="search" value={therapistSearch} onChange={(e) => setTherapistSearch(e.target.value)} placeholder="Nama terapis…" aria-label="Cari terapis" />
+          <span>Cari crew</span>
+          <Input type="search" value={therapistSearch} onChange={(e) => setTherapistSearch(e.target.value)} placeholder="Nama crew…" aria-label="Cari crew" />
         </label>
         <label className="space-y-1.5 text-sm font-medium">
           <span>Cari pelanggan</span>
@@ -150,7 +154,7 @@ export function SpaBookOrderPage() {
       {searching && board.data && !board.isLoading && !board.error && (
         <p role="status" className="text-sm text-muted-foreground">
           {allItems.length ? `${allItems.length} booking ditampilkan.` : "Tidak ada booking yang cocok dengan pencarian."}
-          {therapistQuery && " Pencarian terapis menyaring kolom terapis; booking belum ditugaskan tetap ditampilkan."}
+          {therapistQuery && " Pencarian crew menyaring kolom crew; booking belum ditugaskan tetap ditampilkan."}
         </p>
       )}
 
@@ -158,7 +162,7 @@ export function SpaBookOrderPage() {
         <Skeleton className="h-64 w-full rounded-card" />
       ) : configured.length === 0 ? (
         <Card className="py-0 shadow-none!">
-          <TableNote>Belum ada outlet spa. Atur di menu Outlet Spa.</TableNote>
+          <TableNote>Belum ada toko experience. Atur di menu Toko Experience.</TableNote>
         </Card>
       ) : board.isLoading ? (
         <Skeleton className="h-64 w-full rounded-card" />
@@ -178,7 +182,7 @@ export function SpaBookOrderPage() {
           unassignedEmptyMessage={customerQuery ? "Tidak ada pelanggan yang cocok di Belum ditugaskan." : undefined}
         />
       ) : view === "list" ? (
-        <BookOrderList items={allItems} onOpenItem={openBooking} />
+        <BookOrderList items={allItems} onOpenItem={openBooking} onDesign={setDesigning} />
       ) : view === "room" ? (
         <RoomBoard branchId={branchId} onOpenBooking={setOpenedBookingId} />
       ) : view === "queue" ? (
@@ -191,10 +195,20 @@ export function SpaBookOrderPage() {
           customerQuery={customerQuery}
           onOpenItem={openBooking}
           onAssign={setAssigning}
+          onDesign={setDesigning}
         />
       )}
 
       {openedBookingId && <BookingDetailDialog id={openedBookingId} onClose={() => setOpenedBookingId(null)} />}
+      {designing && (
+        <CaseDesignDialog
+          bookingId={designing.booking_id}
+          item={designing}
+          customerName={designing.customer_name}
+          editable={canEditDesign({ status: designing.booking_status, payment_status: designing.payment_status ?? "unpaid" }, designing)}
+          onClose={() => setDesigning(null)}
+        />
+      )}
       {assigning && (
         <AssignTherapistDialog
           bookingId={assigning.booking_id}
@@ -227,7 +241,7 @@ function startBookingDrag(event: DragEvent, item: BoardItem) {
 }
 
 function BookOrderCards({
-  therapists, unassigned, therapistQuery, customerQuery, onOpenItem, onAssign,
+  therapists, unassigned, therapistQuery, customerQuery, onOpenItem, onAssign, onDesign,
 }: {
   therapists: BoardTherapist[];
   unassigned: BoardItem[];
@@ -235,6 +249,7 @@ function BookOrderCards({
   customerQuery: string;
   onOpenItem: (item: BoardItem) => void;
   onAssign: (item: BoardItem) => void;
+  onDesign: (item: BoardItem) => void;
 }) {
   const dnd = useBookingDnd(unassigned, therapists);
 
@@ -252,9 +267,9 @@ function BookOrderCards({
           <h2 className="text-base font-semibold">Belum ditugaskan</h2>
           <Badge variant={unassigned.length ? "warning" : "muted"}>{unassigned.length}</Badge>
         </div>
-        <p className="text-xs text-muted-foreground">Seret kartu ke terapis untuk menugaskan; seret kembali ke sini untuk melepas terapis.</p>
+        <p className="text-xs text-muted-foreground">Seret kartu ke crew untuk menugaskan; seret kembali ke sini untuk melepas crew.</p>
         {unassigned.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">{customerQuery ? "Tidak ada pelanggan yang cocok di Belum ditugaskan." : "Semua booking sudah punya terapis."}</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">{customerQuery ? "Tidak ada pelanggan yang cocok di Belum ditugaskan." : "Semua booking sudah punya crew."}</p>
         ) : (
           <ul className="space-y-2">
             {unassigned.map((item) => (
@@ -264,14 +279,14 @@ function BookOrderCards({
                 onDragStart={(event) => startBookingDrag(event, item)}
                 className={cn("rounded-2xl bg-surface-2 p-3", isDraggable(item) && "cursor-grab active:cursor-grabbing")}
               >
-                <BoardItemBody item={item} onOpenItem={onOpenItem} />
+                <BoardItemBody item={item} onOpenItem={onOpenItem} onDesign={onDesign} />
                 <Button
                   size="sm"
                   className="mt-2 w-full"
                   disabled={item.assignment_locked || isBookingClosed({ status: item.booking_status })}
                   onClick={() => onAssign(item)}
                 >
-                  Tugaskan terapis
+                  Tugaskan crew
                 </Button>
               </li>
             ))}
@@ -281,12 +296,12 @@ function BookOrderCards({
 
       {therapists.length === 0 ? (
         <Card className="py-0 shadow-none!">
-          <TableNote>{therapistQuery ? "Tidak ada terapis yang cocok dengan pencarian." : "Tidak ada terapis yang bertugas di outlet ini pada tanggal tersebut."}</TableNote>
+          <TableNote>{therapistQuery ? "Tidak ada crew yang cocok dengan pencarian." : "Tidak ada crew yang bertugas di toko ini pada tanggal tersebut."}</TableNote>
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {therapists.map((row) => (
-            <TherapistColumn key={row.therapist.id} row={row} onOpenItem={onOpenItem} dnd={dnd} />
+            <TherapistColumn key={row.therapist.id} row={row} onOpenItem={onOpenItem} onDesign={onDesign} dnd={dnd} />
           ))}
         </div>
       )}
@@ -295,7 +310,7 @@ function BookOrderCards({
   );
 }
 
-function BoardItemBody({ item, onOpenItem }: { item: BoardItem; onOpenItem: (item: BoardItem) => void }) {
+function BoardItemBody({ item, onOpenItem, onDesign }: { item: BoardItem; onOpenItem: (item: BoardItem) => void; onDesign: (item: BoardItem) => void }) {
   return (
     <div className="space-y-1">
       <div className="flex items-start justify-between gap-2">
@@ -312,13 +327,27 @@ function BoardItemBody({ item, onOpenItem }: { item: BoardItem; onOpenItem: (ite
           {item.booking_code}
         </button>
       </p>
+      {item.customizable && (
+        <button
+          type="button"
+          onClick={() => onDesign(item)}
+          className="mt-1 flex w-full items-center gap-2 rounded-xl bg-background/70 p-1.5 text-left transition hover:bg-background"
+        >
+          {item.design ? <CaseThumb design={item.design} className="w-7" /> : <Palette className="mx-1 size-5 text-warning" />}
+          <span className="min-w-0 flex-1">
+            <CaseDesignBadge design={item.design} />
+            {item.design ? <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{item.design.model} · {item.design.background_name}</span> : null}
+          </span>
+        </button>
+      )}
     </div>
   );
 }
 
-function TherapistColumn({ row, onOpenItem, dnd }: {
+function TherapistColumn({ row, onOpenItem, onDesign, dnd }: {
   row: BoardTherapist;
   onOpenItem: (item: BoardItem) => void;
+  onDesign: (item: BoardItem) => void;
   dnd: ReturnType<typeof useBookingDnd>;
 }) {
   const items = visible(row.items);
@@ -327,7 +356,7 @@ function TherapistColumn({ row, onOpenItem, dnd }: {
   return (
     <Card
       role="region"
-      aria-label={`Terapis ${t.full_name}`}
+      aria-label={`Crew ${t.full_name}`}
       className={cn("gap-3 px-4 shadow-none!", row.on_leave && "opacity-70", dnd.dropTarget === t.id && "bg-accent/10 ring-2 ring-accent ring-inset")}
       onDragOver={(event) => dnd.onDragOver(event, t.id)}
       onDragLeave={(event) => dnd.onDragLeave(event, t.id)}
@@ -368,7 +397,7 @@ function TherapistColumn({ row, onOpenItem, dnd }: {
                 isDraggable(item) && "cursor-grab active:cursor-grabbing"
               )}
             >
-              <BoardItemBody item={item} onOpenItem={onOpenItem} />
+              <BoardItemBody item={item} onOpenItem={onOpenItem} onDesign={onDesign} />
               <Button size="xs" variant="soft" className="mt-2" onClick={() => onOpenItem(item)}>Detail booking</Button>
             </li>
           ))}

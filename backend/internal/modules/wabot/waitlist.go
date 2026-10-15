@@ -81,7 +81,7 @@ func (e *Engine) NotifyWaitlist(ctx context.Context, db database.DB) (int, error
 		}
 		outlet := entry.BranchName
 		if outlet == "" {
-			outlet = "Mizu"
+			outlet = "Paddy"
 		}
 		msg := domain.WaitlistAvailable(e.st.sessionLang(ctx, db, conv.ID), entry.CustomerName, outlet, entry.VisitDate, clocks)
 		if err := e.ports.Sender.Send(ctx, db, conv.Phone, conv.ID, msg); err != nil {

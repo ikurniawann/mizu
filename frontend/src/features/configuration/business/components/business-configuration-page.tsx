@@ -446,7 +446,7 @@ export function BusinessConfigurationPage() {
         description="Holding berisi Company, Company berisi Branch, dan setiap Branch wajib memiliki minimal 1 Outlet (Main Storage sebagai default)."
         toolbar={
           <p className="text-xs text-gray-400">
-            Contoh: Prologe → Mizu → Mizu Bandung → Main Storage, Outlet 1, …
+            Contoh: Prologe → Paddy → Paddy Bandung → Main Storage, Outlet 1, …
           </p>
         }
       >

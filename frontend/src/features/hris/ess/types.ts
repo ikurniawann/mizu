@@ -1,4 +1,4 @@
-import type { PayslipAmounts } from "@/features/hris/payroll/types";
+import type { PayslipAmounts, SlipAllocation } from "@/features/hris/payroll/types";
 
 export interface EssTodayShift {
   name: string;
@@ -34,6 +34,8 @@ export interface EssTodayAttendance {
   clock_out: string | null;
   is_late: boolean;
   late_minutes: number;
+  /** Toko tempat clock-in (payroll multi-toko), null bila tidak tercatat */
+  branch?: { id: string; code: string; name: string } | null;
 }
 
 export interface EssClockLocation {
@@ -46,6 +48,8 @@ export interface EssClockPayload {
   action: "clock-in" | "clock-out";
   photo: string;
   attendance_id?: string;
+  /** Toko clock-in: salah satu penempatan aktif; kosong = server memakai penempatan utama */
+  branch_id?: string;
   clock_in_location?: EssClockLocation;
   clock_out_location?: EssClockLocation;
 }
@@ -114,6 +118,8 @@ export interface EssLoanPayload {
 
 export interface EssPayslip extends PayslipAmounts {
   overtime_hours?: number;
+  /** Rincian biaya per toko (karyawan multi-toko) */
+  allocations?: SlipAllocation[];
   payroll_run?: {
     id: string;
     period_month: number;

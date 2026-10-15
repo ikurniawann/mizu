@@ -23,7 +23,22 @@ import (
 
 func payrollPorts() payroll.Ports {
 	return payroll.Ports{Employees: payrollEmployees{}, Departments: payrollDepartmentsSQL{}, Workforce: payrollWorkforceSQL{},
-		Settings: kit.AppSettings{}, KPI: payrollKPISQL{}}
+		Settings: kit.AppSettings{}, KPI: payrollKPISQL{}, AttendancePeriods: payrollAttendancePeriods{}}
+}
+
+// payrollAttendancePeriods reads the HRIS attendance period of a payroll
+// month through hris.AttendancePeriods (cut-off range and closing status).
+type payrollAttendancePeriods struct{ hris hris.AttendancePeriods }
+
+var _ payroll.AttendancePeriods = payrollAttendancePeriods{}
+
+func (a payrollAttendancePeriods) ForMonth(ctx context.Context, q database.Querier, year, month int) (*payroll.AttendancePeriod, error) {
+	p, err := a.hris.ForMonth(ctx, q, year, month)
+	if err != nil || p == nil {
+		return nil, err
+	}
+	return &payroll.AttendancePeriod{ID: p.ID, Start: p.Start, End: p.End, ClosingDate: p.Closing,
+		Label: p.Label(), Closed: p.Closed()}, nil
 }
 
 type payrollEmployees struct{ hris hris.Employees }
@@ -182,7 +197,8 @@ var _ payroll.Workforce = payrollWorkforceSQL{}
 
 func (payrollWorkforceSQL) PeriodRecords(ctx context.Context, q database.Querier, employeeID, start, end string) (domain.WorkforceRecords, error) {
 	var rec domain.WorkforceRecords
-	rows, err := q.Query(ctx, `SELECT date::text, status::text, clock_out IS NOT NULL, is_late, late_minutes::text, overtime_hours::text
+	rows, err := q.Query(ctx, `SELECT date::text, status::text, clock_out IS NOT NULL, is_late, late_minutes::text, overtime_hours::text,
+		branch_id::text, work_hours::float8
 		FROM hris.attendance WHERE date >= $1 AND date <= $2 AND employee_id = $3`, start, end, employeeID)
 	if err != nil {
 		return rec, err
@@ -190,7 +206,7 @@ func (payrollWorkforceSQL) PeriodRecords(ctx context.Context, q database.Querier
 	if rec.Attendance, err = pgx.CollectRows(rows, func(r pgx.CollectableRow) (domain.AttendanceRow, error) {
 		var a domain.AttendanceRow
 		var date, status, late, overtime *string
-		err := r.Scan(&date, &status, &a.HasClockOut, &a.IsLate, &late, &overtime)
+		err := r.Scan(&date, &status, &a.HasClockOut, &a.IsLate, &late, &overtime, &a.BranchID, &a.WorkHours)
 		if d := domain.DateText(date); d != nil {
 			a.Date = *d
 		}
@@ -288,6 +304,22 @@ func (payrollWorkforceSQL) Holidays(ctx context.Context, q database.Querier, sta
 		out[d] = true
 	}
 	return out, err
+}
+
+// Placements reads hris.employee_placements (HRIS people) running on any
+// day of [start, end].
+func (payrollWorkforceSQL) Placements(ctx context.Context, q database.Querier, employeeID, start, end string) ([]domain.Placement, error) {
+	rows, err := q.Query(ctx, `SELECT branch_id::text, is_primary, start_date::text, end_date::text
+		FROM hris.employee_placements
+		WHERE employee_id = $1 AND start_date <= $3::date AND (end_date IS NULL OR end_date >= $2::date)
+		ORDER BY start_date, branch_id`, employeeID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (domain.Placement, error) {
+		var p domain.Placement
+		return p, r.Scan(&p.BranchID, &p.IsPrimary, &p.Start, &p.End)
+	})
 }
 
 func payrollText(s *string) any {

@@ -1,5 +1,11 @@
-import { apiGet, buildListUrl } from "@/lib/api-client";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, buildListUrl } from "@/lib/api-client";
 import type {
+  AttendanceAdjustment,
+  AttendanceAdjustPayload,
+  AttendancePeriod,
+  AttendancePeriodList,
+  AttendancePeriodPreview,
+  AttendanceSettingsData,
   AttendanceExportParams,
   AttendanceListParams,
   AttendanceListResponse,
@@ -46,10 +52,69 @@ export const fetchAttendanceList = (params: AttendanceListParams) =>
       start_date: params.start_date,
       end_date: params.end_date,
       is_late: params.is_late ? "true" : undefined,
+      branch_id: params.branch_id,
       page: params.page ?? 1,
       limit: params.limit ?? 20,
     })
   );
+
+// ── Penyesuaian manual HRD (wajib alasan; ditolak bila periode sudah closing) ──
+
+export const createManualAttendance = (payload: AttendanceAdjustPayload) =>
+  apiPost<{ message?: string; data: unknown }>("/api/hris/attendance/manual", payload);
+
+export const adjustAttendance = (id: string, payload: AttendanceAdjustPayload) =>
+  apiPut<{ message?: string; data: unknown }>(`/api/hris/attendance/${id}`, payload);
+
+export const deleteAttendance = (id: string, reason: string) =>
+  apiDelete(`/api/hris/attendance/${id}?reason=${encodeURIComponent(reason)}`);
+
+export const fetchAttendanceAdjustments = (attendanceId: string) =>
+  apiGet<{ data: AttendanceAdjustment[] }>(
+    buildListUrl("/api/hris/attendance-adjustments", { attendance_id: attendanceId })
+  ).then((res) => res.data ?? []);
+
+// ── Periode absensi (closing) ──────────────────────────────────────────
+
+export const fetchAttendancePeriods = (year?: number) =>
+  apiGet<{ data: AttendancePeriodList }>(buildListUrl("/api/hris/attendance-periods", { year })).then(
+    (res) => res.data
+  );
+
+export const fetchAttendancePeriod = (id: string) =>
+  apiGet<{ data: AttendancePeriod }>(`/api/hris/attendance-periods/${id}`).then((res) => res.data);
+
+export const closeAttendancePeriod = (id: string) =>
+  apiPost<{ data: AttendancePeriod; message?: string }>(`/api/hris/attendance-periods/${id}/close`, {});
+
+export const reopenAttendancePeriod = (id: string, reason: string, closingDate?: string) =>
+  apiPost<{ data: AttendancePeriod; message?: string }>(`/api/hris/attendance-periods/${id}/reopen`, {
+    reason,
+    ...(closingDate ? { closing_date: closingDate } : {}),
+  });
+
+export const updateAttendancePeriodClosing = (id: string, closingDate: string, reason?: string) =>
+  apiPatch<{ data: AttendancePeriod; message?: string }>(`/api/hris/attendance-periods/${id}`, {
+    closing_date: closingDate,
+    ...(reason ? { reason } : {}),
+  });
+
+export const fetchAttendanceSettings = () =>
+  apiGet<{ data: AttendanceSettingsData }>("/api/hris/attendance-settings").then((res) => res.data);
+
+export const previewAttendanceSettings = (cutoffDay: number, closingOffsetDays: number) =>
+  apiGet<{ data: { preview: AttendancePeriodPreview } }>(
+    buildListUrl("/api/hris/attendance-settings", {
+      preview_cutoff: cutoffDay,
+      preview_offset: closingOffsetDays,
+    })
+  ).then((res) => res.data.preview);
+
+export const saveAttendanceSettings = (cutoffDay: number, closingOffsetDays: number) =>
+  apiPut<{ data: AttendanceSettingsData; message?: string }>("/api/hris/attendance-settings", {
+    cutoff_day: cutoffDay,
+    closing_offset_days: closingOffsetDays,
+  });
 
 export interface EmployeeOption {
   id: string;

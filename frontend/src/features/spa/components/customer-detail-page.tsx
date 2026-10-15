@@ -76,7 +76,7 @@ export function SpaCustomerDetailPage({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <Link href="/dashboard/spa/customer" className="text-sm text-brand-text hover:underline">← Kembali ke Customer</Link>
-      <PageHeader kicker="Spa · Customer" title={customer?.name || "Detail Customer"} description="Profil pelanggan dan riwayat treatment spa yang selesai." />
+      <PageHeader kicker="Studio · Customer" title={customer?.name || "Detail Customer"} description="Profil pelanggan dan riwayat layanan experience yang selesai." />
       {customer?.banned_at && (
         <TableNote tone="danger">
           Member ini diblokir sejak {formatDate(customer.banned_at)}. Booking lewat website dan WhatsApp selalu dijawab &quot;jadwal tidak tersedia&quot;.
@@ -103,13 +103,13 @@ export function SpaCustomerDetailPage({ id }: { id: string }) {
           </Card>
           <BanCard customer={customer} />
           <Card className="py-0">
-            <div className="px-5 pt-5"><h2 className="text-base font-semibold">Riwayat Treatment</h2><p className="mt-1 text-sm text-muted-foreground">Treatment yang sudah selesai, terbaru lebih dulu.</p></div>
+            <div className="px-5 pt-5"><h2 className="text-base font-semibold">Riwayat Layanan</h2><p className="mt-1 text-sm text-muted-foreground">Layanan yang sudah selesai, terbaru lebih dulu.</p></div>
             {history.length === 0 ? (
-              <TableNote>Belum ada treatment spa yang selesai.</TableNote>
+              <TableNote>Belum ada layanan experience yang selesai.</TableNote>
             ) : (
               <>
                 <Table>
-                  <TableHeader><TableRow><TableHead>Selesai</TableHead><TableHead>Treatment</TableHead><TableHead>Booking</TableHead><TableHead>Outlet</TableHead><TableHead>Terapis</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Selesai</TableHead><TableHead>Layanan</TableHead><TableHead>Booking</TableHead><TableHead>Toko</TableHead><TableHead>Crew</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {history.map((item) => (
                       <TableRow key={item.id}>

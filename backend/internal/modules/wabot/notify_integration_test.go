@@ -15,7 +15,7 @@ func TestBotRemindsUpcomingBookingsOnce(t *testing.T) {
 	e.say("1")
 	e.say("1")
 	r := e.say("besok jam 10 pagi") // 2026-10-09 10:00 WIB = 25h after fixedNow (09:00 WIB on the 8th)
-	e.wants(r, "Pilihkan oleh Mizu")
+	e.wants(r, "Pilihkan oleh Paddy")
 	e.say("0")
 	r = e.say("ya")
 	e.wants(r, "Kode booking")
@@ -46,13 +46,13 @@ func TestBotRemindsUpcomingBookingsOnce(t *testing.T) {
 // A settled online payment produces a WhatsApp confirmation, once.
 func TestBotPaidNoticeOnce(t *testing.T) {
 	e := setupBot(t)
-	n := spa.BookingNotice{ID: "0b6f1c2e-0000-4000-8000-000000000001", Code: "MZ-TEST-PAID", CustomerName: "Fajar", CustomerPhone: "0812" + e.phone[4:],
-		BranchName: "Mizu Uji", ScheduledAt: time.Date(2026, 10, 9, 3, 0, 0, 0, time.UTC), Items: []string{"Reflexology · 45 menit"}, TotalIDR: 150000,
+	n := spa.BookingNotice{ID: "0b6f1c2e-0000-4000-8000-000000000001", Code: "PD-TEST-PAID", CustomerName: "Fajar", CustomerPhone: "0812" + e.phone[4:],
+		BranchName: "Paddy Uji", ScheduledAt: time.Date(2026, 10, 9, 3, 0, 0, 0, time.UTC), Items: []string{"Personalisasi Nama & Inisial · 30 menit"}, TotalIDR: 150000,
 		Token: "tok", Source: "whatsapp", Status: "assigned", PaymentStatus: "paid"}
 	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil {
 		t.Fatal(err)
 	}
-	if len(e.sender.sent) != 1 || !strings.Contains(e.sender.sent[0], "Pembayaran diterima ✅ Terima kasih, Fajar!") || !strings.Contains(e.sender.sent[0], "MZ-TEST-PAID") || !strings.Contains(e.sender.sent[0], "Rp 150.000") {
+	if len(e.sender.sent) != 1 || !strings.Contains(e.sender.sent[0], "Pembayaran diterima ✅ Terima kasih, Fajar!") || !strings.Contains(e.sender.sent[0], "PD-TEST-PAID") || !strings.Contains(e.sender.sent[0], "Rp 150.000") {
 		t.Fatalf("paid notice: %v", e.sender.sent)
 	}
 	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil || len(e.sender.sent) != 1 {

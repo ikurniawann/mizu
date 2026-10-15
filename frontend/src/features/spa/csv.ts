@@ -25,13 +25,13 @@ export function toCsv(rows: CsvCell[][]): string {
 }
 
 export const COMMISSION_CSV_HEADER = [
-  "Terapis",
+  "Crew",
   "NIP",
   "Kode booking",
-  "Outlet",
+  "Toko",
   "Tanggal selesai",
   "Jam selesai",
-  "Treatment",
+  "Layanan",
   "Varian",
   "Harga (Rp)",
   "Aturan komisi",
@@ -57,7 +57,7 @@ export function commissionReportCsv(report: CommissionReport): string {
         line.commission_idr,
       ]);
     }
-    rows.push([`Subtotal ${t.full_name}`, t.nip, "", "", "", "", `${t.treatment_count} treatment`, "", t.revenue_idr, "", t.commission_idr]);
+    rows.push([`Subtotal ${t.full_name}`, t.nip, "", "", "", "", `${t.treatment_count} layanan`, "", t.revenue_idr, "", t.commission_idr]);
   }
   rows.push(["Total", "", "", "", "", "", "", "", "", "", report.total_idr]);
   return toCsv(rows);

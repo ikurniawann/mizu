@@ -81,6 +81,8 @@ func (h *handler) routes() []module.Route {
 		route("PUT /api/hris/payroll/{id}", h.updateRun),
 		route("DELETE /api/hris/payroll/{id}", h.deleteRun),
 		route("POST /api/hris/payroll/{id}/calculate", h.calculateRun),
+		route("GET /api/hris/payroll/{id}/store-costs", h.storeCosts),
+		route("GET /api/hris/payroll/{id}/store-costs/export", h.exportStoreCosts),
 
 		route("GET /api/hris/payslips", h.listPayslips),
 		route("POST /api/hris/payslips/notify", h.notifyPayslip),

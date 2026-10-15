@@ -8,7 +8,7 @@ vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; chil
 const entry = {
   id: "w1",
   branch_id: "b1",
-  branch_name: "Mizu Signature",
+  branch_name: "Paddy Store Kopo",
   customer_name: "Tamu Dua",
   customer_phone: "081255500202",
   conversation_id: "c1",

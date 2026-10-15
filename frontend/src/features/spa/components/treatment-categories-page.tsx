@@ -23,8 +23,8 @@ export function SpaTreatmentCategoriesPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader kicker={SPA_KICKER} title="Kategori Treatment"
-        description="Kelola kategori untuk mengelompokkan treatment. Mengubah nama kategori juga memperbarui treatment yang sudah memakai kategori tersebut."
+      <PageHeader kicker={SPA_KICKER} title="Kategori Layanan"
+        description="Kelola kategori untuk mengelompokkan layanan. Mengubah nama kategori juga memperbarui layanan yang sudah memakai kategori tersebut."
         actions={<Button onClick={() => setEditing("new")}><Plus /> Kategori baru</Button>} />
       <Card className="py-0">
         {categories.isLoading ? <div className="p-4"><SkeletonTable columns={3} rows={5} /></div>
@@ -33,7 +33,7 @@ export function SpaTreatmentCategoriesPage() {
           : <Table>
             <TableHeader><TableRow>
               <TableHead>Kategori</TableHead>
-              <TableHead>Jumlah treatment</TableHead>
+              <TableHead>Jumlah layanan</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow></TableHeader>
             <TableBody>{categories.data.map((category) => <TableRow key={category.id}>
@@ -43,7 +43,7 @@ export function SpaTreatmentCategoriesPage() {
                 <div className="flex flex-wrap justify-end gap-1">
                   <Button size="sm" variant="ghost" onClick={() => setEditing(category)}><Pencil /> Ubah</Button>
                   <Button size="sm" variant="ghost" disabled={category.treatment_count > 0}
-                    title={category.treatment_count > 0 ? "Kategori masih dipakai oleh treatment" : undefined}
+                    title={category.treatment_count > 0 ? "Kategori masih dipakai oleh layanan" : undefined}
                     onClick={() => setDeleting(category)}><Trash2 /> Hapus</Button>
                 </div>
               </TableCell>

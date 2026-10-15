@@ -3,13 +3,15 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttendanceMonitoringTab } from "./attendance-monitoring-tab";
 import { AttendanceRecapTab } from "./attendance-recap-tab";
+import { AttendancePeriodsTab } from "./attendance-periods-tab";
 
 /**
  * Halaman Absensi HRD/super admin — dua tab:
  * - Monitoring: roster harian per shift (siapa sudah/belum absen, cuti,
  *   libur, tanpa jadwal) dari /api/hris/attendance/daily-roster.
- * - Rekap: tabel absensi berpagination + filter + export CSV + kalender
- *   per-karyawan.
+ * - Rekap: tabel absensi per periode absensi (cut-off) + filter + export +
+ *   kalender per-karyawan; HRD bisa menambah/mengoreksi absensi sebelum closing.
+ * - Periode: pengaturan cut-off & closing, daftar periode, closing/buka ulang.
  * Absen dilakukan karyawan via ESS (/dashboard/me/absensi) dengan selfie +
  * GPS — halaman ini murni monitoring & rekap utk HRD.
  */
@@ -24,15 +26,19 @@ export function AttendancePage() {
       </div>
 
       <Tabs defaultValue="monitoring" className="w-full flex-col">
-        <TabsList className="grid h-9 w-full max-w-md grid-cols-2">
+        <TabsList className="grid h-9 w-full max-w-md grid-cols-3">
           <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
           <TabsTrigger value="rekap">Rekap</TabsTrigger>
+          <TabsTrigger value="periode">Periode Absensi</TabsTrigger>
         </TabsList>
         <TabsContent value="monitoring" className="mt-4">
           <AttendanceMonitoringTab />
         </TabsContent>
         <TabsContent value="rekap" className="mt-4">
           <AttendanceRecapTab />
+        </TabsContent>
+        <TabsContent value="periode" className="mt-4">
+          <AttendancePeriodsTab />
         </TabsContent>
       </Tabs>
     </div>

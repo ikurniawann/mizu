@@ -14,11 +14,11 @@ import { useSitePanels } from "./panels";
 /** The main navigation of the public site. */
 export const SITE_NAV = [
   { href: "/", label: "Beranda" },
-  { href: "/treatments", label: "Treatment" },
-  { href: "/locations", label: "Lokasi" },
+  { href: "/treatments", label: "Paddy Experience" },
+  { href: "/locations", label: "Toko" },
   { href: "/space", label: "Suasana" },
   { href: "/brand", label: "Tentang" },
-  { href: "/news", label: "Berita" },
+  { href: "/news", label: "Kabar" },
   { href: "/contact", label: "Kontak" },
 ] as const;
 
@@ -27,11 +27,11 @@ export const SECONDARY_NAV = [{ href: "/career", label: "Karier" }] as const;
 
 function Wordmark({ onDark = false }: { onDark?: boolean }) {
   return (
-    <Link href="/" className="flex shrink-0 items-center" aria-label="Mizu, ke beranda">
+    <Link href="/" className="flex shrink-0 items-center" aria-label="Paddy, ke beranda">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/wordmark-black.png" alt="" className={cn("h-6 w-auto", onDark ? "hidden" : "dark:hidden")} />
+      <img src="/brand/wordmark-black.png" alt="" className={cn("h-8 w-auto", onDark ? "hidden" : "dark:hidden")} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/wordmark-white.png" alt="" className={cn("h-6 w-auto", onDark ? "block" : "hidden dark:block")} />
+      <img src="/brand/wordmark-white.png" alt="" className={cn("h-8 w-auto", onDark ? "block" : "hidden dark:block")} />
     </Link>
   );
 }
@@ -90,7 +90,7 @@ export function SiteHeader({ memberLinked }: { memberLinked: boolean }) {
   // visitor scrolls, then turns solid like on every other page.
   const overlay = pathname === "/" && !scrolled && !menuOpen;
 
-  // The shop is not part of the spa site; the cart stays reachable only
+  // The shop is not part of the studio booking site; the cart stays reachable only
   // for a visitor who still has items in it.
   const cartButton = cartCount > 0 ? (
     <Button
@@ -117,9 +117,9 @@ export function SiteHeader({ memberLinked }: { memberLinked: boolean }) {
           : "bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75"
       )}
     >
-      <div className={cn("hidden md:block", overlay ? "border-b border-white/10" : "border-b border-border/60")}>
+      <div className={cn("hidden md:block", overlay ? "border-b border-white/15" : "border-b-2 border-dashed border-bubblegum/60")}>
         <div className="mx-auto flex h-9 max-w-6xl items-center justify-end gap-1 px-4 text-xs lg:px-6">
-          <p className={cn("mr-auto", overlay ? "text-white/70" : "text-muted-foreground")}>Rest. Relax. Rejuvenate. · Bandung</p>
+          <p className={cn("mr-auto font-semibold", overlay ? "text-white/85" : "text-muted-foreground")}>Your Adorable Companion · Happy shopping, Paddy Besties! · Bandung</p>
           <NavLinks items={SECONDARY_NAV} current={pathname} className="px-2.5 py-1" onDark={overlay} />
           {memberLinked ? (
             <Link href="/member" className="ml-2 rounded-full bg-ink px-3 py-1 font-semibold text-on-ink">
@@ -175,10 +175,10 @@ export function SiteHeader({ memberLinked }: { memberLinked: boolean }) {
             <Button asChild size="lg">
               <Link href={BOOKING_HREF} onClick={() => setMenuOpen(false)}>
                 <CalendarCheck />
-                Booking treatment
+                Booking Paddy Experience
               </Link>
             </Button>
-            <p className="text-center text-xs text-muted-foreground">Pembayaran dilakukan di outlet.</p>
+            <p className="text-center text-xs text-muted-foreground">Pembayaran dilakukan di toko.</p>
           </div>
         </SheetContent>
       </Sheet>

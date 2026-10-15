@@ -99,14 +99,14 @@ func PeopleLabel(l L, n int) string {
 	return strconv.Itoa(n) + " orang"
 }
 
-func SystemPickLabel(l L) string { return t(l, "Pilihkan oleh Mizu", "Let Mizu choose") }
+func SystemPickLabel(l L) string { return t(l, "Pilihkan oleh Paddy", "Let Paddy choose") }
 
 func ConfirmLabels(l L) (yes, change string) {
 	return t(l, "Ya, buat booking", "Yes, book it"), t(l, "Ubah", "Change")
 }
 
 func PaymentLabels(l L) (outlet, online string) {
-	return t(l, "Bayar di outlet", "Pay at the outlet"), t(l, "Bayar online", "Pay online")
+	return t(l, "Bayar di toko", "Pay at the store"), t(l, "Bayar online", "Pay online")
 }
 
 func SlotsAvailableLabel(l L, date string, n int) string {
@@ -139,7 +139,7 @@ func GenderSuffix(l L, gender string) string {
 
 // AskLang is the first message: a bilingual welcome and the language menu.
 func AskLang(botName string) string {
-	return "Halo! Selamat datang di Mizu 🌿 / Hello! Welcome to Mizu 🌿\n\n" +
+	return "Halo! Selamat datang di Paddy 💛 / Hello! Welcome to Paddy 💛\n\n" +
 		"Pilih bahasa / choose a language:\n" + NumberedMenu(LangMenu()) + "\n\nBalas *1* atau *2* / reply *1* or *2*."
 }
 
@@ -147,8 +147,8 @@ func Greeting(l L, botName, greeting string) string {
 	if l == LangID && strings.TrimSpace(greeting) != "" {
 		return greeting
 	}
-	return t(l, "Halo! Saya "+botName+", asisten booking Mizu. Saya bantu pilih outlet, treatment, dan jamnya ya 🙏",
-		"Hi! I'm "+botName+", Mizu's booking assistant. I'll help you pick an outlet, a treatment and a time 🙏")
+	return t(l, "Halo! Saya "+botName+", asisten booking Paddy Experience. Saya bantu pilih toko, layanan, dan jamnya ya 🙏",
+		"Hi! I'm "+botName+", Paddy Experience's booking assistant. I'll help you pick a store, a service and a time 🙏")
 }
 
 // AskName opens the booking: the profile name is offered as option 1.
@@ -161,8 +161,8 @@ func AskName(l L, profileName string) string {
 }
 
 func AskOutlet(l L, options []MenuOption) string {
-	return t(l, "Mau datang ke outlet mana?\n", "Which outlet would you like to visit?\n") + NumberedMenu(options) +
-		t(l, "\n\nBalas dengan *nomor* atau nama outletnya.", "\n\nReply with the *number* or the outlet name.")
+	return t(l, "Mau datang ke toko Paddy mana?\n", "Which Paddy store would you like to visit?\n") + NumberedMenu(options) +
+		t(l, "\n\nBalas dengan *nomor* atau nama tokonya.", "\n\nReply with the *number* or the store name.")
 }
 
 func AskPeople(l L) string {
@@ -171,12 +171,12 @@ func AskPeople(l L) string {
 }
 
 func AskTreatment(l L, outlet string, people int, options []MenuOption) string {
-	head := t(l, "Pilih treatment di *"+outlet+"*:\n", "Choose a treatment at *"+outlet+"*:\n") + NumberedMenu(options)
+	head := t(l, "Pilih layanan Paddy Experience di *"+outlet+"*:\n", "Choose a Paddy Experience service at *"+outlet+"*:\n") + NumberedMenu(options)
 	if people > 1 {
 		return head + t(l, "\n\nBalas *satu nomor* kalau semua orang sama, atau beberapa nomor dipisah koma sesuai urutan orang, mis. *1, 3*.",
 			"\n\nReply with *one number* if everyone takes the same, or several numbers separated by commas in guest order, e.g. *1, 3*.")
 	}
-	return head + t(l, "\n\nBalas dengan *nomor* treatmentnya.", "\n\nReply with the treatment *number*.")
+	return head + t(l, "\n\nBalas dengan *nomor* layanannya.", "\n\nReply with the service *number*.")
 }
 
 func AskDate(l L, options []MenuOption) string {
@@ -249,8 +249,8 @@ func WaitlistAvailable(l L, name, outlet, date string, clocks []string) string {
 		greet += ", " + strings.TrimSpace(name)
 	}
 	return greet + t(l, "! Di *"+outlet+"* pada *"+LongDate(l, date)+"* sekarang ada jam kosong: ", "! At *"+outlet+"* on *"+LongDate(l, date)+"* these times are now free: ") +
-		strings.Join(clocks, ", ") + t(l, " WIB.\n\nBalas *ambil* untuk lanjut booking (pilihan treatment sudah saya simpan), atau *batal* kalau tidak jadi.",
-		" WIB.\n\nReply *take it* to continue booking (your treatment choice is saved), or *cancel* if you no longer need it.")
+		strings.Join(clocks, ", ") + t(l, " WIB.\n\nBalas *ambil* untuk lanjut booking (pilihan layanan sudah saya simpan), atau *batal* kalau tidak jadi.",
+		" WIB.\n\nReply *take it* to continue booking (your service choice is saved), or *cancel* if you no longer need it.")
 }
 
 func WaitlistCancelled(l L) string {
@@ -264,9 +264,9 @@ func WaitlistNeedsDate(l L) string {
 }
 
 func AskTherapist(l L, options []MenuOption, pref string) string {
-	head := t(l, "Terapis yang kosong di jam itu", "Therapists free at that time") + GenderSuffix(l, pref)
-	return head + ":\n" + NumberedMenu(options) + t(l, "\n\nBalas *nomor* terapis, atau *0* kalau mau dipilihkan oleh Mizu. Bisa juga tulis *wanita* / *pria*.",
-		"\n\nReply with the therapist's *number*, or *0* to let Mizu choose. You can also type *female* / *male*.")
+	head := t(l, "Crew experience yang kosong di jam itu", "Studio crew free at that time") + GenderSuffix(l, pref)
+	return head + ":\n" + NumberedMenu(options) + t(l, "\n\nBalas *nomor* crew, atau *0* kalau mau dipilihkan oleh Paddy. Bisa juga tulis *wanita* / *pria*.",
+		"\n\nReply with the crew member's *number*, or *0* to let Paddy choose. You can also type *female* / *male*.")
 }
 
 // NoRoomLabel is the "no particular room" choice.
@@ -296,7 +296,7 @@ func AskRoom(l L, options []MenuOption, people int) string {
 func Summary(l L, s *Session, depositEach float64) string {
 	var b strings.Builder
 	b.WriteString(t(l, "Berikut ringkasan bookingnya:\n", "Here's your booking summary:\n"))
-	b.WriteString("• Outlet: *" + s.OutletName + "*\n")
+	b.WriteString(t(l, "• Toko: *", "• Store: *") + s.OutletName + "*\n")
 	if s.Staggered() {
 		b.WriteString(t(l, "• Jadwal: *"+LongDate(l, s.Date)+"*, bergantian\n", "• Schedule: *"+LongDate(l, s.Date)+"*, in turns\n"))
 	} else {
@@ -312,17 +312,17 @@ func Summary(l L, s *Session, depositEach float64) string {
 			b.WriteString(line + "\n")
 		}
 	} else if len(s.Persons) > 0 {
-		b.WriteString("• Treatment: *" + s.Persons[0].Label + "* — " + Rupiah(s.Persons[0].Price) + "\n")
+		b.WriteString(t(l, "• Layanan: *", "• Service: *") + s.Persons[0].Label + "* — " + Rupiah(s.Persons[0].Price) + "\n")
 	}
 	switch {
 	case s.TherapistName != "":
-		b.WriteString(t(l, "• Terapis: *", "• Therapist: *") + s.TherapistName + "*\n")
+		b.WriteString("• Crew: *" + s.TherapistName + "*\n")
 	case s.Pref == "female":
-		b.WriteString(t(l, "• Terapis: wanita (dipilihkan Mizu)\n", "• Therapist: female (chosen by Mizu)\n"))
+		b.WriteString(t(l, "• Crew: wanita (dipilihkan Paddy)\n", "• Crew: female (chosen by Paddy)\n"))
 	case s.Pref == "male":
-		b.WriteString(t(l, "• Terapis: pria (dipilihkan Mizu)\n", "• Therapist: male (chosen by Mizu)\n"))
+		b.WriteString(t(l, "• Crew: pria (dipilihkan Paddy)\n", "• Crew: male (chosen by Paddy)\n"))
 	default:
-		b.WriteString(t(l, "• Terapis: dipilihkan oleh Mizu\n", "• Therapist: chosen by Mizu\n"))
+		b.WriteString(t(l, "• Crew: dipilihkan oleh Paddy\n", "• Crew: chosen by Paddy\n"))
 	}
 	if s.RoomID != "" {
 		price := t(l, "gratis", "free")
@@ -349,7 +349,7 @@ func Summary(l L, s *Session, depositEach float64) string {
 		}
 		b.WriteString(t(l, "• Booking fee (DP): *"+Rupiah(dp)+"*"+per+" — dibayar online lewat link setelah konfirmasi, untuk mengunci jadwal\n",
 			"• Booking fee (deposit): *"+Rupiah(dp)+"*"+per+" — paid online via a link after you confirm, to secure the slot\n"))
-		b.WriteString(t(l, "• Sisa: *"+Rupiah(remaining)+"* dibayar di outlet setelah treatment\n", "• Balance: *"+Rupiah(remaining)+"* paid at the outlet after the treatment\n"))
+		b.WriteString(t(l, "• Sisa: *"+Rupiah(remaining)+"* dibayar di toko setelah layanan\n", "• Balance: *"+Rupiah(remaining)+"* paid at the store after the service\n"))
 	}
 	b.WriteString("\n")
 	b.WriteString(t(l, "Sudah benar? Balas *ya* untuk membuat booking, atau *ubah* untuk mengulang.", "Is this correct? Reply *yes* to book, or *change* to start over."))
@@ -358,11 +358,11 @@ func Summary(l L, s *Session, depositEach float64) string {
 
 func AskPayment(l L, total float64, online bool) string {
 	if !online {
-		return t(l, "Booking tercatat ✅ Pembayaran *"+Rupiah(total)+"* dilakukan di outlet setelah treatment.\n\nBalas *1* untuk konfirmasi.",
-			"Booking noted ✅ Payment of *"+Rupiah(total)+"* is made at the outlet after the treatment.\n\nReply *1* to confirm.")
+		return t(l, "Booking tercatat ✅ Pembayaran *"+Rupiah(total)+"* dilakukan di toko setelah layanan.\n\nBalas *1* untuk konfirmasi.",
+			"Booking noted ✅ Payment of *"+Rupiah(total)+"* is made at the store after the service.\n\nReply *1* to confirm.")
 	}
-	return t(l, "Mau bayar bagaimana? Total *"+Rupiah(total)+"*\n1. Bayar di outlet (setelah treatment)\n2. Bayar online sekarang (VA, QRIS, e-wallet, kartu)\n\nBalas *nomor* pilihannya.",
-		"How would you like to pay? Total *"+Rupiah(total)+"*\n1. At the outlet (after the treatment)\n2. Online now (bank transfer, QRIS, e-wallet, card)\n\nReply with the *number*.")
+	return t(l, "Mau bayar bagaimana? Total *"+Rupiah(total)+"*\n1. Bayar di toko (setelah layanan)\n2. Bayar online sekarang (VA, QRIS, e-wallet, kartu)\n\nBalas *nomor* pilihannya.",
+		"How would you like to pay? Total *"+Rupiah(total)+"*\n1. At the store (after the service)\n2. Online now (bank transfer, QRIS, e-wallet, card)\n\nReply with the *number*.")
 }
 
 func Confirmed(l L, s *Session, botName string) string {
@@ -380,9 +380,9 @@ func Confirmed(l L, s *Session, botName string) string {
 		}
 	}
 	if s.Staggered() {
-		b.WriteString("Outlet: " + s.OutletName + t(l, "\nJadwal: "+LongDate(l, s.Date)+" (bergantian, lihat jam tiap tamu)\n", "\nSchedule: "+LongDate(l, s.Date)+" (in turns, see each guest's time)\n"))
+		b.WriteString(t(l, "Toko: ", "Store: ") + s.OutletName + t(l, "\nJadwal: "+LongDate(l, s.Date)+" (bergantian, lihat jam tiap tamu)\n", "\nSchedule: "+LongDate(l, s.Date)+" (in turns, see each guest's time)\n"))
 	} else {
-		b.WriteString("Outlet: " + s.OutletName + t(l, "\nJadwal: ", "\nSchedule: ") + LongDate(l, s.Date) + ", " + clockOfISO(s.SlotISO) + " WIB\n")
+		b.WriteString(t(l, "Toko: ", "Store: ") + s.OutletName + t(l, "\nJadwal: ", "\nSchedule: ") + LongDate(l, s.Date) + ", " + clockOfISO(s.SlotISO) + " WIB\n")
 	}
 	if s.PayMethod == "deposit" {
 		until := ""
@@ -406,8 +406,8 @@ func Confirmed(l L, s *Session, botName string) string {
 		if remaining < 0 {
 			remaining = 0
 		}
-		b.WriteString(t(l, "Sisa *"+Rupiah(remaining)+"* dibayar di outlet setelah treatment. Setelah DP terbayar, balas *sudah bayar* dan saya cek ya.",
-			"The remaining *"+Rupiah(remaining)+"* is paid at the outlet after the treatment. Once the deposit is paid, reply *paid* and I'll check."))
+		b.WriteString(t(l, "Sisa *"+Rupiah(remaining)+"* dibayar di toko setelah layanan. Setelah DP terbayar, balas *sudah bayar* dan saya cek ya.",
+			"The remaining *"+Rupiah(remaining)+"* is paid at the store after the service. Once the deposit is paid, reply *paid* and I'll check."))
 	} else if s.PayMethod == "online" {
 		b.WriteString(t(l, "\nSilakan bayar lewat link berikut (berlaku 2 jam):\n", "\nPlease pay through this link (valid for 2 hours):\n"))
 		for _, bk := range s.Bookings {
@@ -417,22 +417,22 @@ func Confirmed(l L, s *Session, botName string) string {
 		}
 		b.WriteString(t(l, "\nSetelah lunas, balas *sudah bayar* dan saya cek ya.", "\nOnce paid, reply *paid* and I'll check."))
 	} else {
-		b.WriteString(t(l, "\nPembayaran di outlet setelah treatment.", "\nPayment at the outlet after the treatment."))
+		b.WriteString(t(l, "\nPembayaran di toko setelah layanan.", "\nPayment at the store after the service."))
 	}
 	b.WriteString(t(l, "\n\nStatus & QR booking:\n", "\n\nBooking status & QR:\n"))
 	for _, bk := range s.Bookings {
 		b.WriteString(bk.StatusURL + "\n")
 	}
-	b.WriteString(t(l, "\nTunjukkan kode/QR ke resepsionis saat tiba. Jadwal bisa diubah sendiri sampai 1 jam sebelum kunjungan lewat link di atas.\nTerima kasih, sampai jumpa di Mizu 🌿",
-		"\nShow the code/QR at the reception when you arrive. You can reschedule yourself up to 1 hour before the visit through the link above.\nThank you, see you at Mizu 🌿"))
+	b.WriteString(t(l, "\nTunjukkan kode/QR ke kasir saat tiba. Jadwal bisa diubah sendiri sampai 1 jam sebelum kunjungan lewat link di atas.\nTerima kasih, sampai jumpa di Paddy 💛",
+		"\nShow the code/QR at the cashier when you arrive. You can reschedule yourself up to 1 hour before the visit through the link above.\nThank you, see you at Paddy 💛"))
 	return b.String()
 }
 
 // DepositSeen answers "sudah bayar" for a DP booking.
 func DepositSeen(l L, paid bool, code string, remaining float64) string {
 	if paid {
-		return t(l, "DP untuk booking *"+code+"* sudah kami terima ✅ Jadwal terkunci. Sisa *"+Rupiah(remaining)+"* dibayar di outlet. Sampai jumpa di Mizu!",
-			"Deposit for booking *"+code+"* received ✅ Your slot is secured. The remaining *"+Rupiah(remaining)+"* is paid at the outlet. See you at Mizu!")
+		return t(l, "DP untuk booking *"+code+"* sudah kami terima ✅ Jadwal terkunci. Sisa *"+Rupiah(remaining)+"* dibayar di toko. Sampai jumpa di Paddy!",
+			"Deposit for booking *"+code+"* received ✅ Your slot is secured. The remaining *"+Rupiah(remaining)+"* is paid at the store. See you at Paddy!")
 	}
 	return t(l, "DP *"+code+"* belum terlihat di sistem. Kalau baru saja bayar, tunggu 1–2 menit lalu balas *sudah bayar* lagi. Link DP ada di pesan konfirmasi.",
 		"The deposit for *"+code+"* hasn't shown up yet. If you just paid, wait 1–2 minutes and reply *paid* again. The deposit link is in the confirmation message.")
@@ -444,8 +444,8 @@ func DepositPaidNotice(l L, name, code, outlet, date, clock string, deposit, rem
 	if strings.TrimSpace(name) != "" {
 		greet += t(l, " Terima kasih, ", " Thank you, ") + strings.TrimSpace(name) + "!"
 	}
-	return greet + t(l, "\n\nBooking *"+code+"* di "+outlet+" pada "+LongDate(l, date)+", "+clock+" WIB sudah terkunci.\nDP: "+Rupiah(deposit)+" · Sisa di outlet: *"+Rupiah(remaining)+"*\n\nStatus & QR booking:\n"+statusURL+"\n\nSampai jumpa di Mizu 🌿",
-		"\n\nBooking *"+code+"* at "+outlet+" on "+LongDate(l, date)+", "+clock+" WIB is secured.\nDeposit: "+Rupiah(deposit)+" · Remaining at the outlet: *"+Rupiah(remaining)+"*\n\nBooking status & QR:\n"+statusURL+"\n\nSee you at Mizu 🌿")
+	return greet + t(l, "\n\nBooking *"+code+"* di "+outlet+" pada "+LongDate(l, date)+", "+clock+" WIB sudah terkunci.\nDP: "+Rupiah(deposit)+" · Sisa di toko: *"+Rupiah(remaining)+"*\n\nStatus & QR booking:\n"+statusURL+"\n\nSampai jumpa di Paddy 💛",
+		"\n\nBooking *"+code+"* at "+outlet+" on "+LongDate(l, date)+", "+clock+" WIB is secured.\nDeposit: "+Rupiah(deposit)+" · Remaining at the store: *"+Rupiah(remaining)+"*\n\nBooking status & QR:\n"+statusURL+"\n\nSee you at Paddy 💛")
 }
 
 // DepositReminderNotice nudges the guest shortly before the DP hold ends.
@@ -470,8 +470,8 @@ func DepositReminderNotice(l L, name, code, outlet, date, clock string, deposit 
 
 // QRCaption goes with the booking QR picture sent after payment.
 func QRCaption(l L, code, outlet, date, clock string) string {
-	return t(l, "QR booking *"+code+"* — "+outlet+", "+LongDate(l, date)+" "+clock+" WIB. Tunjukkan QR ini ke resepsionis saat tiba 🌿",
-		"Booking QR *"+code+"* — "+outlet+", "+LongDate(l, date)+" "+clock+" WIB. Show this QR at the reception when you arrive 🌿")
+	return t(l, "QR booking *"+code+"* — "+outlet+", "+LongDate(l, date)+" "+clock+" WIB. Tunjukkan QR ini ke kasir saat tiba 💛",
+		"Booking QR *"+code+"* — "+outlet+", "+LongDate(l, date)+" "+clock+" WIB. Show this QR at the cashier when you arrive 💛")
 }
 
 func DepositExpiredNotice(l L, name, code, outlet, date, clock string) string {
@@ -485,33 +485,33 @@ func DepositExpiredNotice(l L, name, code, outlet, date, clock string) string {
 
 func PaymentSeen(l L, paid bool, code string) string {
 	if paid {
-		return t(l, "Pembayaran untuk booking *"+code+"* sudah kami terima ✅ Sampai jumpa di Mizu!", "Payment for booking *"+code+"* received ✅ See you at Mizu!")
+		return t(l, "Pembayaran untuk booking *"+code+"* sudah kami terima ✅ Sampai jumpa di Paddy!", "Payment for booking *"+code+"* received ✅ See you at Paddy!")
 	}
-	return t(l, "Pembayaran *"+code+"* belum terlihat di sistem. Kalau baru saja bayar, tunggu 1–2 menit lalu balas *sudah bayar* lagi, atau bayar di outlet saat datang.",
-		"Payment for *"+code+"* hasn't shown up yet. If you just paid, wait 1–2 minutes and reply *paid* again, or pay at the outlet when you arrive.")
+	return t(l, "Pembayaran *"+code+"* belum terlihat di sistem. Kalau baru saja bayar, tunggu 1–2 menit lalu balas *sudah bayar* lagi, atau bayar di toko saat datang.",
+		"Payment for *"+code+"* hasn't shown up yet. If you just paid, wait 1–2 minutes and reply *paid* again, or pay at the store when you arrive.")
 }
 
 func Done(l L, botName string) string {
-	return t(l, "Booking Anda sudah selesai. Ketik *booking* untuk booking baru, *status* untuk melihat booking terakhir, atau *admin* untuk bicara dengan tim Mizu.",
-		"Your booking is complete. Type *book* for a new booking, *status* to see your latest booking, or *admin* to talk to the Mizu team.")
+	return t(l, "Booking Anda sudah selesai. Ketik *booking* untuk booking baru, *status* untuk melihat booking terakhir, atau *admin* untuk bicara dengan tim Paddy.",
+		"Your booking is complete. Type *book* for a new booking, *status* to see your latest booking, or *admin* to talk to the Paddy team.")
 }
 
 func NotUnderstood(l L, prompt string, misses int) string {
 	if misses >= 2 {
 		return t(l, "Maaf, saya masih belum paham 🙏 ", "Sorry, I still didn't get that 🙏 ") + prompt +
-			t(l, "\n\nKetik *admin* kalau mau dibantu tim Mizu langsung.", "\n\nType *admin* to get help from the Mizu team directly.")
+			t(l, "\n\nKetik *admin* kalau mau dibantu tim Paddy langsung.", "\n\nType *admin* to get help from the Paddy team directly.")
 	}
 	return t(l, "Maaf, saya belum paham. ", "Sorry, I didn't get that. ") + prompt
 }
 
 func Handover(l L, botName string) string {
-	return t(l, "Baik, saya sambungkan ke tim Mizu ya. Mohon tunggu sebentar, admin akan membalas di chat ini 🙏",
-		"Sure, I'm connecting you to the Mizu team. Please hold on, an admin will reply in this chat 🙏")
+	return t(l, "Baik, saya sambungkan ke tim Paddy ya. Mohon tunggu sebentar, admin akan membalas di chat ini 🙏",
+		"Sure, I'm connecting you to the Paddy team. Please hold on, an admin will reply in this chat 🙏")
 }
 
 func TooManyPeople(l L) string {
-	return t(l, "Untuk lebih dari "+strconv.Itoa(MaxPeople)+" orang, tim Mizu bantu atur langsung ya. Ketik *admin* untuk dihubungkan, atau balas angka 1–"+strconv.Itoa(MaxPeople)+".",
-		"For more than "+strconv.Itoa(MaxPeople)+" people the Mizu team will arrange it for you. Type *admin* to be connected, or reply with a number 1–"+strconv.Itoa(MaxPeople)+".")
+	return t(l, "Untuk lebih dari "+strconv.Itoa(MaxPeople)+" orang, tim Paddy bantu atur langsung ya. Ketik *admin* untuk dihubungkan, atau balas angka 1–"+strconv.Itoa(MaxPeople)+".",
+		"For more than "+strconv.Itoa(MaxPeople)+" people the Paddy team will arrange it for you. Type *admin* to be connected, or reply with a number 1–"+strconv.Itoa(MaxPeople)+".")
 }
 
 func StatusOf(l L, refs []BookingRef) string {
@@ -543,12 +543,12 @@ func PaidNotice(l L, name, code, outlet, date, clock string, items []string, tot
 	if strings.TrimSpace(name) != "" {
 		b.WriteString(t(l, " Terima kasih, ", " Thank you, ") + strings.TrimSpace(name) + "!")
 	}
-	b.WriteString(t(l, "\n\nKode booking: *", "\n\nBooking code: *") + code + "*\nOutlet: " + outlet + t(l, "\nJadwal: ", "\nSchedule: ") + LongDate(l, date) + ", " + clock + " WIB\n")
+	b.WriteString(t(l, "\n\nKode booking: *", "\n\nBooking code: *") + code + "*\n" + t(l, "Toko: ", "Store: ") + outlet + t(l, "\nJadwal: ", "\nSchedule: ") + LongDate(l, date) + ", " + clock + " WIB\n")
 	if len(items) > 0 {
-		b.WriteString("Treatment: " + strings.Join(items, ", ") + "\n")
+		b.WriteString(t(l, "Layanan: ", "Service: ") + strings.Join(items, ", ") + "\n")
 	}
 	b.WriteString("Total: *" + Rupiah(total) + "*" + t(l, " (lunas)\n\nStatus & QR booking:\n", " (paid)\n\nBooking status & QR:\n") + statusURL +
-		t(l, "\n\nTunjukkan kode/QR ke resepsionis saat tiba. Sampai jumpa di Mizu 🌿", "\n\nShow the code/QR at the reception when you arrive. See you at Mizu 🌿"))
+		t(l, "\n\nTunjukkan kode/QR ke kasir saat tiba. Sampai jumpa di Paddy 💛", "\n\nShow the code/QR at the cashier when you arrive. See you at Paddy 💛"))
 	return b.String()
 }
 
@@ -567,15 +567,15 @@ func ReminderNotice(l L, kind, name, code, outlet, date, clock string, items []s
 	}
 	b.WriteString(".\n")
 	if len(items) > 0 {
-		b.WriteString("Treatment: " + strings.Join(items, ", ") + "\n")
+		b.WriteString(t(l, "Layanan: ", "Service: ") + strings.Join(items, ", ") + "\n")
 	}
 	b.WriteString(t(l, "Kode booking: *", "Booking code: *") + code + "*\n")
 	if paid {
 		b.WriteString(t(l, "Pembayaran: lunas ✅\n", "Payment: paid ✅\n"))
 	} else {
-		b.WriteString(t(l, "Pembayaran: di outlet setelah treatment\n", "Payment: at the outlet after the treatment\n"))
+		b.WriteString(t(l, "Pembayaran: di toko setelah layanan\n", "Payment: at the store after the service\n"))
 	}
-	b.WriteString(t(l, "\nStatus, QR & ubah jadwal (sampai 1 jam sebelum):\n", "\nStatus, QR & reschedule (up to 1 hour before):\n") + statusURL + t(l, "\n\nSampai jumpa di Mizu 🌿", "\n\nSee you at Mizu 🌿"))
+	b.WriteString(t(l, "\nStatus, QR & ubah jadwal (sampai 1 jam sebelum):\n", "\nStatus, QR & reschedule (up to 1 hour before):\n") + statusURL + t(l, "\n\nSampai jumpa di Paddy 💛", "\n\nSee you at Paddy 💛"))
 	return b.String()
 }
 
@@ -632,7 +632,7 @@ func AnswerHours(l L, outlets []OutletOpt, chosen string) string {
 // AnswerPrices lists the catalog with prices (up to 15 rows).
 func AnswerPrices(l L, outlet string, catalog []VariantOpt) string {
 	if len(catalog) == 0 {
-		return t(l, "Daftar harga belum tersedia untuk outlet itu, tanya *admin* ya.", "No price list for that outlet yet, please ask *admin*.")
+		return t(l, "Daftar harga belum tersedia untuk toko itu, tanya *admin* ya.", "No price list for that store yet, please ask *admin*.")
 	}
 	var b strings.Builder
 	b.WriteString(t(l, "Daftar harga *", "Price list *") + outlet + "*:\n")
@@ -648,21 +648,21 @@ func AnswerPrices(l L, outlet string, catalog []VariantOpt) string {
 
 func AnswerPayment(l L, online bool) string {
 	if online {
-		return t(l, "Pembayaran bisa *di outlet setelah treatment* (tunai/QRIS/kartu) atau *online sekarang* lewat link (VA, QRIS, e-wallet, kartu). Pilihannya ditawarkan setelah booking dibuat.",
-			"You can pay *at the outlet after the treatment* (cash/QRIS/card) or *online now* through a link (bank transfer, QRIS, e-wallet, card). You'll be asked after the booking is made.")
+		return t(l, "Pembayaran bisa *di toko setelah layanan* (tunai/QRIS/kartu) atau *online sekarang* lewat link (VA, QRIS, e-wallet, kartu). Pilihannya ditawarkan setelah booking dibuat.",
+			"You can pay *at the store after the service* (cash/QRIS/card) or *online now* through a link (bank transfer, QRIS, e-wallet, card). You'll be asked after the booking is made.")
 	}
-	return t(l, "Pembayaran dilakukan *di outlet setelah treatment* (tunai/QRIS/kartu). Tidak perlu DP.",
-		"Payment is made *at the outlet after the treatment* (cash/QRIS/card). No deposit needed.")
+	return t(l, "Pembayaran dilakukan *di toko setelah layanan* (tunai/QRIS/kartu). Tidak perlu DP.",
+		"Payment is made *at the store after the service* (cash/QRIS/card). No deposit needed.")
 }
 
 func AnswerReschedule(l L) string {
-	return t(l, "Jadwal bisa diubah atau dibatalkan sendiri lewat link status booking (ada di pesan konfirmasi) sampai *1 jam sebelum* kunjungan. Kalau sudah lewat batas itu, ketik *admin* dan tim Mizu bantu.",
-		"You can reschedule or cancel yourself through the booking status link (in the confirmation message) up to *1 hour before* the visit. Past that, type *admin* and the Mizu team will help.")
+	return t(l, "Jadwal bisa diubah atau dibatalkan sendiri lewat link status booking (ada di pesan konfirmasi) sampai *1 jam sebelum* kunjungan. Kalau sudah lewat batas itu, ketik *admin* dan tim Paddy bantu.",
+		"You can reschedule or cancel yourself through the booking status link (in the confirmation message) up to *1 hour before* the visit. Past that, type *admin* and the Paddy team will help.")
 }
 
 func AnswerUnknown(l L) string {
-	return t(l, "Untuk pertanyaan itu saya belum punya jawabannya 🙏 Ketik *admin* supaya tim Mizu membalas di chat ini, atau lanjutkan booking.",
-		"I don't have an answer for that yet 🙏 Type *admin* so the Mizu team can reply in this chat, or continue booking.")
+	return t(l, "Untuk pertanyaan itu saya belum punya jawabannya 🙏 Ketik *admin* supaya tim Paddy membalas di chat ini, atau lanjutkan booking.",
+		"I don't have an answer for that yet 🙏 Type *admin* so the Paddy team can reply in this chat, or continue booking.")
 }
 
 // ContinuePrompt prefixes the pending booking question after an answer.

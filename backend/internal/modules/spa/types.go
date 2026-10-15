@@ -50,14 +50,16 @@ type Variant struct {
 
 // Treatment is a catalog entry with its variants.
 type Treatment struct {
-	ID          string    `json:"id"`
-	Code        string    `json:"code"`
-	Name        string    `json:"name"`
-	Category    string    `json:"category"`
-	Description string    `json:"description"`
-	IsActive    bool      `json:"is_active"`
-	SortOrder   int       `json:"sort_order"`
-	Variants    []Variant `json:"variants"`
+	ID          string `json:"id"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	IsActive    bool   `json:"is_active"`
+	SortOrder   int    `json:"sort_order"`
+	// Customizable: a custom case service; its items carry a case design.
+	Customizable bool      `json:"customizable"`
+	Variants     []Variant `json:"variants"`
 }
 
 // Therapist is a therapist with the employee's display data.
@@ -156,11 +158,11 @@ type BookingSummary struct {
 	TotalIDR       float64      `json:"total_idr"` // treatments + room
 	TherapistNames []string     `json:"therapist_names"`
 	// Room (revisi R6): the room held for the booking's window, price snapshotted.
-	RoomID       *string `json:"room_id"`
-	RoomName     *string `json:"room_name"`
-	RoomPriceIDR float64 `json:"room_price_idr"`
-	PosOrderID     *string      `json:"pos_order_id"`
-	CreatedAt      httpx.JSTime `json:"created_at"`
+	RoomID       *string      `json:"room_id"`
+	RoomName     *string      `json:"room_name"`
+	RoomPriceIDR float64      `json:"room_price_idr"`
+	PosOrderID   *string      `json:"pos_order_id"`
+	CreatedAt    httpx.JSTime `json:"created_at"`
 }
 
 // Item is one treatment of a booking.
@@ -177,6 +179,10 @@ type Item struct {
 	StartedAt     *httpx.JSTime `json:"started_at"`
 	CompletedAt   *httpx.JSTime `json:"completed_at"`
 	CommissionIDR *float64      `json:"commission_idr"`
+	// Customizable: the treatment takes a case design; Design is the saved
+	// one (nil until the guest or the crew fills it in).
+	Customizable bool    `json:"customizable"`
+	Design       *Design `json:"design"`
 }
 
 // Event is one line of a booking's history.
@@ -355,11 +361,13 @@ type PublicVariant struct {
 
 // PublicTreatment is a treatment on the public booking page.
 type PublicTreatment struct {
-	ID          string          `json:"id"`
-	Name        string          `json:"name"`
-	Category    string          `json:"category"`
-	Description string          `json:"description"`
-	Variants    []PublicVariant `json:"variants"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	// Customizable: booking it online requires a case design.
+	Customizable bool            `json:"customizable"`
+	Variants     []PublicVariant `json:"variants"`
 }
 
 // PublicItem is a booked treatment in the public confirmation.
@@ -369,6 +377,8 @@ type PublicItem struct {
 	VariantName   string  `json:"variant_name"`
 	DurationMin   int     `json:"duration_min"`
 	PriceIDR      float64 `json:"price_idr"`
+	Customizable  bool    `json:"customizable"`
+	Design        *Design `json:"design"`
 }
 
 // PublicSlot is a start time with enough therapist capacity for the request.

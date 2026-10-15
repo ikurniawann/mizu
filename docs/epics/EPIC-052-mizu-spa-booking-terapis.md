@@ -445,3 +445,17 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
   ubah jadwal, "booking saya…") memulai booking baru di langkah selesai; nama & bahasa tetap, detail yang ikut
   disebut ("booking besok jam 3") langsung dipakai. Bukti: `TestWantsNewBooking`, `TestBotBackAndNewBooking`; suite
   wabot lulus dengan & tanpa XENDIT_MOCK. Image: `mizu-api:wabot-32`.
+- 2026-10-14 — **Paddy Experience: desainer custom case** (keputusan pemilik: booking + desain; hanya satu layanan
+  "Custom Case" Rp119.000). Katalog The Experience Room (`spa/catalog/experience.json`, di-`go:embed`, publik di
+  `GET /api/public/spa/experience-catalog`; gambar `frontend/public/experience/**`, prefix `/experience/` dibuka di
+  gate auth Go + middleware Next). Migrasi `20261014100000_spa_experience_design.sql`: `spa.treatments.customizable`
+  dan `spa.booking_items.design jsonb` (snapshot ternormalisasi: kode + nama + gambar, divalidasi server terhadap
+  katalog — merk/tipe, jumlah stiker = slot layout, stiker milik temanya, background, font wajib bila ada nama,
+  nama ≤ 12). Website wajib desain untuk layanan customizable (`designs[]` sejajar `variant_ids`); staf & bot WA
+  boleh kosong, crew mengisi lewat `PUT /api/spa/bookings/{id}/items/{itemId}/design` (dialog "Desain" di Book
+  Order kartu/daftar/kalender dan detail booking; terkunci setelah lunas/batal). Ringkasan desain masuk catatan
+  baris POS (`kitchen_notes` "Desain: … · Crew: …") dan riwayat booking (event `design`). Seeder: layanan `CUSTOM`
+  (varian "Sesi desain" 30 mnt), 12 layanan lama `is_active=false` (riwayat utuh), produk POS & aturan komisinya
+  dinonaktifkan, transaksi demo memakai desain acak deterministik. Diterapkan ke DB dev (migrasi + `db:seed:paddy-demo`).
+  Bukti: `TestCustomCaseDesign` (DB uji sementara), `TestNormalizeDesign*`, `experience.test.ts`, go vet/test,
+  tsc, eslint, vitest; cek visual 390 px & desktop (wizard, status, Book Order, dialog desain).

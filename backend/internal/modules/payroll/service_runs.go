@@ -23,6 +23,13 @@ func (s *service) listRuns(ctx context.Context, year *int, status *string) ([]*o
 	if err != nil {
 		return nil, opaque(err)
 	}
+	for _, row := range rows {
+		period, err := s.attendancePeriod(ctx, row.Int("period_month"), row.Int("period_year"))
+		if err != nil {
+			return nil, err
+		}
+		row.Set("attendance_period", period.info())
+	}
 	return rows, s.stitch(ctx, s.db, rows, runPeople...)
 }
 
@@ -70,7 +77,20 @@ func (s *service) getRun(ctx context.Context, id string) (*obj, error) {
 			rows = append(rows, o)
 		}
 	}
-	return row, s.stitch(ctx, s.db, rows, embed{"employee", "employee_id", runDetailEmp})
+	if err := s.stitch(ctx, s.db, rows, embed{"employee", "employee_id", runDetailEmp}); err != nil {
+		return nil, err
+	}
+	summary, err := s.runAllocationSummary(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	row.Set("store_allocation", summary)
+	period, err := s.attendancePeriod(ctx, row.Int("period_month"), row.Int("period_year"))
+	if err != nil {
+		return nil, err
+	}
+	row.Set("attendance_period", period.info())
+	return row, nil
 }
 
 // runUpdate is updateRunSchema: status (empty means none) and notes
@@ -100,6 +120,11 @@ func (s *service) updateRun(ctx context.Context, userID, id string, in runUpdate
 	if in.Status != "" && in.Status != existing.Status {
 		if !domain.CanTransitionRun(existing.Status, in.Status) {
 			return nil, httpx.BadRequest(fmt.Sprintf("Transisi status '%s' → '%s' tidak diizinkan", existing.Status, in.Status))
+		}
+		if in.Status == "processing" || in.Status == "completed" {
+			if err := s.requireClosedPeriod(ctx, existing, in.Status); err != nil {
+				return nil, err
+			}
 		}
 		if in.Status == "paid" {
 			settled, err := s.markRunPaid(ctx, userID, existing, in.Notes)
@@ -233,6 +258,11 @@ func (s *service) splitByCompany(ctx context.Context, q database.Querier, event 
 	if err != nil {
 		return err
 	}
+	allocations, err := branchCosts(ctx, q, event.RunID)
+	if err != nil {
+		return err
+	}
+	branches := domain.SplitCostsByCompany(allocations, companies)
 	for _, g := range domain.SplitRunByCompany(slips, deducted, companies) {
 		var company *string
 		if g.CompanyID != "" {
@@ -248,7 +278,8 @@ func (s *service) splitByCompany(ctx context.Context, q database.Querier, event 
 			TotalNet: g.Net, TotalPph21: g.Pph21, TotalLoanDeduction: g.LoanDeduction,
 			TotalBpjsTkEmployer: g.BpjsTkEmployer, TotalBpjsKesEmployer: g.BpjsKesEmployer,
 			TotalBpjsTkEmployee: g.BpjsTkEmployee, TotalBpjsKesEmployee: g.BpjsKesEmployee,
-			TotalTaperaEmployer: g.TaperaEmployer, TotalTaperaEmployee: g.TaperaEmployee})
+			TotalTaperaEmployer: g.TaperaEmployer, TotalTaperaEmployee: g.TaperaEmployee,
+			Branches: runBranches(branches[g.CompanyID])})
 	}
 	for _, v := range []*float64{&event.TotalBpjsTkEmployer, &event.TotalBpjsKesEmployer, &event.TotalBpjsTkEmployee,
 		&event.TotalBpjsKesEmployee, &event.TotalTaperaEmployer, &event.TotalTaperaEmployee} {
@@ -281,6 +312,9 @@ type calcSummary struct {
 	TotalEmployees int       `json:"total_employees"`
 	EmployeeNames  []string  `json:"employee_names"`
 	Skipped        []skipped `json:"skipped"`
+	// AllocationWarnings are the slips whose cost (or part of it) has no
+	// store: no placement and no store on attendance ("Tanpa toko").
+	AllocationWarnings []allocationWarning `json:"allocation_warnings"`
 	domain.RunTotals
 }
 
@@ -288,6 +322,10 @@ type calcResult struct {
 	Data    []*obj      `json:"data"`
 	Summary calcSummary `json:"summary"`
 	Message string      `json:"message"`
+	// AttendancePeriod is the period the run was calculated over; Warning
+	// is set while it is still open.
+	AttendancePeriod *periodInfo `json:"attendance_period"`
+	Warning          string      `json:"warning,omitempty"`
 }
 
 // calculateRun recalculates every active employee of a draft run: old
@@ -318,19 +356,27 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 	if len(employees) == 0 {
 		return nil, httpx.BadRequest("Tidak ada karyawan aktif ditemukan")
 	}
-	start, end := domain.PeriodBounds(run.PeriodMonth, run.PeriodYear)
+	period, err := s.attendancePeriod(ctx, run.PeriodMonth, run.PeriodYear)
+	if err != nil {
+		return nil, err
+	}
+	start, end := period.Start, period.End
 	holidays, err := s.ports.Workforce.Holidays(ctx, s.db, start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	out := &calcResult{Data: []*obj{}, Summary: calcSummary{EmployeeNames: []string{}, Skipped: []skipped{}}}
+	out := &calcResult{Data: []*obj{}, Summary: calcSummary{EmployeeNames: []string{}, Skipped: []skipped{},
+		AllocationWarnings: []allocationWarning{}}, AttendancePeriod: period.info()}
+	if !period.Closed {
+		out.Warning = openPeriodWarning(period)
+	}
 	var results []domain.Result
 	for _, e := range employees {
 		skip := func(reason string) {
 			out.Summary.Skipped = append(out.Summary.Skipped, skipped{e.ID, e.FullName, reason})
 		}
-		in, err := s.payrollInput(ctx, e, run.PeriodMonth, run.PeriodYear, includeThr, holidays)
+		in, records, err := s.payrollInput(ctx, e, run.PeriodMonth, run.PeriodYear, start, end, includeThr, holidays)
 		if err != nil {
 			return nil, err
 		}
@@ -338,17 +384,31 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 			skip("Belum ada struktur gaji aktif")
 			continue
 		}
+		placements, err := s.ports.Workforce.Placements(ctx, s.db, e.ID, start, end)
+		if err != nil {
+			return nil, err
+		}
 		result := domain.Calculate(*in, config)
 		var detail *obj
+		var allocation domain.SlipAllocation
 		err = database.WithTx(ctx, s.db, func(tx pgx.Tx) error {
 			var err error
 			detail, err = insertDetail(ctx, tx, runID, e.ID, result, *in)
-			return err
+			if err != nil || detail == nil {
+				return err
+			}
+			// The store split reads the stored (numeric(12,2)) amounts so the
+			// shares add up to the slip exactly.
+			allocation = domain.AllocateSlip(slipAmounts(detail), branchDays(records.Attendance), placements, start, end)
+			return insertAllocations(ctx, tx, runID, detail.Str("id"), e.ID, allocation)
 		})
 		if err != nil || detail == nil {
 			s.log.ErrorContext(ctx, "payroll: gagal menyimpan detail", "employee_id", e.ID, "error", err)
 			skip("Gagal menyimpan detail")
 			continue
+		}
+		if w := warningFor(e, allocation); w != nil {
+			out.Summary.AllocationWarnings = append(out.Summary.AllocationWarnings, *w)
 		}
 		detail.Set("employee", object("id", e.ID, "full_name", e.FullName, "nip", e.NIP))
 		out.Data = append(out.Data, detail)
@@ -369,22 +429,24 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 	return out, nil
 }
 
-// payrollInput loads one employee's period input; nil without an active salary.
-func (s *service) payrollInput(ctx context.Context, e EmployeeBrief, month, year int, includeThr bool, holidays map[string]bool) (*domain.Input, error) {
+// payrollInput loads one employee's period input and the attendance-side
+// records it was built from; nil without an active salary.
+func (s *service) payrollInput(ctx context.Context, e EmployeeBrief, month, year int, start, end string, includeThr bool,
+	holidays map[string]bool) (*domain.Input, domain.WorkforceRecords, error) {
+	var records domain.WorkforceRecords
 	salary, err := activeSalary(ctx, s.db, e.ID)
 	if err != nil || salary == nil {
-		return nil, err
+		return nil, records, err
 	}
-	start, end := domain.PeriodBounds(month, year)
-	records, err := s.ports.Workforce.PeriodRecords(ctx, s.db, e.ID, start, end)
+	records, err = s.ports.Workforce.PeriodRecords(ctx, s.db, e.ID, start, end)
 	if err != nil {
-		return nil, err
+		return nil, records, err
 	}
 	loans, err := openLoans(ctx, s.db, e.ID)
 	if err != nil {
-		return nil, err
+		return nil, records, err
 	}
 	emp := domain.Employee{ID: e.ID, EmploymentStatus: e.EmploymentStatus, JoinDate: e.JoinDate}
-	in := domain.BuildInput(emp, *salary, records, loans, holidays, month, year, includeThr)
-	return &in, nil
+	in := domain.BuildInputRange(emp, *salary, records, loans, holidays, month, year, start, end, includeThr)
+	return &in, records, nil
 }

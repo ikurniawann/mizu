@@ -102,7 +102,7 @@ export function YouPage() {
             textAnchor="middle"
             fontSize="16"
             fontWeight="800"
-            fill="#241b16"
+            fill="#2a1024"
           >
             {Math.round(goalPct * 100)}%
           </text>

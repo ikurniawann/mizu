@@ -27,7 +27,7 @@ function priceState(variant: Variant | undefined, branchId: string, draft?: stri
   }
 }
 
-const outletLink = <a className="font-medium text-brand-text underline" href="/dashboard/spa/outlets" target="_blank" rel="noopener noreferrer">Buka Outlet Spa</a>;
+const outletLink = <a className="font-medium text-brand-text underline" href="/dashboard/spa/outlets" target="_blank" rel="noopener noreferrer">Buka Toko Experience</a>;
 
 /** Tetap terpasang saat tab berubah agar draft dan proses simpan bertahan. */
 export function OutletPricesEditor({ treatments, outlets, loading, ready, outletError, search, onSearchChange, category, onCategoryChange }: {
@@ -112,7 +112,7 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
           return next;
         });
       }
-      toast.success("Harga outlet disimpan", { description: `${savedCount} perubahan tersimpan. Sinkronkan produk POS dari Outlet Spa.` });
+      toast.success("Harga toko disimpan", { description: `${savedCount} perubahan tersimpan. Sinkronkan produk POS dari Toko Experience.` });
     } catch (err) {
       const message = `${savedCount} perubahan sudah tersimpan. Perubahan lainnya belum tersimpan: ${(err as Error).message}`;
       setError(message);
@@ -127,20 +127,20 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Harga berlaku untuk pemilihan treatment pada booking berikutnya. Produk kasir diperbarui melalui <strong>Sinkron produk POS</strong> di Outlet Spa (memerlukan akses Outlet Spa). {outletLink}
+        Harga berlaku untuk pemilihan layanan pada booking berikutnya. Produk kasir diperbarui melalui <strong>Sinkron produk POS</strong> di Outlet Spa (memerlukan akses Outlet Spa). {outletLink}
       </p>
       <FormError>{outletError}</FormError>
       {loading ? <Card className="p-4"><SkeletonTable columns={4} rows={5} /></Card>
         : !ready ? <Card><TableNote tone="danger">Katalog harga belum dapat dimuat.</TableNote></Card>
         : !selected ? <Card><TableNote>Belum ada outlet spa yang dikonfigurasi. {outletLink}</TableNote></Card>
-        : allVariants.length === 0 ? <Card><TableNote>Belum ada treatment atau varian. Tambahkan master melalui tab Daftar Treatment.</TableNote></Card>
+        : allVariants.length === 0 ? <Card><TableNote>Belum ada layanan atau varian. Tambahkan master melalui tab Daftar Layanan.</TableNote></Card>
         : <>
           <Card className="gap-4 p-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Field label="Outlet">
+              <Field label="Toko">
                 <OutletSelect outlets={configured} value={selectedId} onChange={setBranchId} className={SELECT} />
               </Field>
-              <Field label="Cari treatment">
+              <Field label="Cari layanan">
                 <Input value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Nama, kode, kategori, atau varian" />
               </Field>
               <Field label="Kategori">
@@ -156,10 +156,10 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
               <Badge variant="muted">{allVariants.length - custom - invalid} mengikuti harga dasar</Badge>
               {invalid > 0 && <Badge variant="destructive">{invalid} harga tidak valid</Badge>}
             </div>
-            <p className="text-xs text-muted-foreground">Kosongkan input untuk kembali mengikuti harga dasar. Semua perubahan disimpan sekaligus, termasuk dari outlet lain.</p>
+            <p className="text-xs text-muted-foreground">Kosongkan input untuk kembali mengikuti harga dasar. Semua perubahan disimpan sekaligus, termasuk dari toko lain.</p>
           </Card>
           <Card className="py-0">
-            {groups.length === 0 ? <TableNote>Tidak ada treatment yang cocok dengan pencarian atau kategori.</TableNote> :
+            {groups.length === 0 ? <TableNote>Tidak ada layanan yang cocok dengan pencarian atau kategori.</TableNote> :
               <Table className="table-fixed">
                 <TableHeader><TableRow>
                   <TableHead>Varian</TableHead>
@@ -187,8 +187,8 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
       <FormError>{error}</FormError>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
         <div aria-live="polite">
-          <p className="text-sm font-medium">{changed.length ? `${changed.length} perubahan di ${changedOutlets} outlet belum disimpan` : "Tidak ada perubahan yang belum disimpan"}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Penyimpanan dilakukan per treatment dan batch; sebagian perubahan dapat berhasil lebih dahulu.</p>
+          <p className="text-sm font-medium">{changed.length ? `${changed.length} perubahan di ${changedOutlets} toko belum disimpan` : "Tidak ada perubahan yang belum disimpan"}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Penyimpanan dilakukan per layanan dan batch; sebagian perubahan dapat berhasil lebih dahulu.</p>
         </div>
         <Button onClick={() => void submit()} disabled={!ready || !changed.length || saving}>{saving ? "Menyimpan…" : "Simpan perubahan"}</Button>
       </div>

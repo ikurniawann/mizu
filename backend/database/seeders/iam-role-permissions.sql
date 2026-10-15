@@ -17,7 +17,7 @@ INSERT INTO iam.roles (code, name, description, is_system, is_active) VALUES
   ('pos',                'POS Cashier',        'Kasir POS',                     false, true),
   ('pos_supervisor',     'POS Supervisor',     'Supervisor POS',                false, true),
   ('qc_staff',           'QC Staff',           'Quality control',               false, true),
-  ('mizu_bandung_demo',  'Mizu Bandung Demo',  'Demo cabang Mizu Bandung: Items, Inventory, POS', false, true)
+  ('mizu_bandung_demo',  'Paddy Bandung Demo',  'Demo cabang Paddy Bandung: Items, Inventory, POS', false, true)
 ON CONFLICT (code) DO UPDATE SET
   name        = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -51,6 +51,8 @@ FROM iam.roles r CROSS JOIN iam.menus m
 WHERE r.code IN ('purchasing_admin', 'purchasing_manager', 'purchasing_staff', 'warehouse_staff', 'warehouse_admin', 'qc_staff')
   AND m.deleted_at IS NULL AND m.is_active = true
   AND (m.code = 'dashboard' OR m.module IN ('items', 'purchasing'))
+  -- Pengaturan Pembelian (aturan PO wajib dari PR) hanya untuk pengelola pembelian.
+  AND (m.code NOT LIKE 'items.%.purchasing.settings' OR r.code IN ('purchasing_admin', 'purchasing_manager'))
 ON CONFLICT (role_id, menu_id) DO UPDATE SET is_active = true, granted_actions = EXCLUDED.granted_actions, updated_at = now();
 
 -- finance_staff -> dashboard only
@@ -88,7 +90,7 @@ WHERE r.code = 'mizu_bandung_demo' AND m.deleted_at IS NULL AND m.is_active = tr
   AND (
     m.code = 'dashboard'
     OR m.module = 'pos'
-    OR (m.module = 'items' AND m.code NOT LIKE 'items.reports%')
+    OR (m.module = 'items' AND m.code NOT LIKE 'items.reports%' AND m.code NOT LIKE 'items.%.purchasing.settings')
   )
 ON CONFLICT (role_id, menu_id) DO UPDATE SET is_active = true, granted_actions = EXCLUDED.granted_actions, updated_at = now();
 

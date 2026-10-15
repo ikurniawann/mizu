@@ -147,7 +147,11 @@ func TestSpaRatingReportGroupsRatedBookingsInWIB(t *testing.T) {
 		}
 		therapists = append(therapists, id)
 	}
-	for i, row := range []struct{ at string; rating int; therapist string }{
+	for i, row := range []struct {
+		at        string
+		rating    int
+		therapist string
+	}{
 		{"2031-01-14T17:00:00Z", 5, therapists[0]},
 		{"2031-01-15T02:00:00Z", 3, therapists[0]},
 		{"2031-01-15T17:00:00Z", 4, therapists[1]},
@@ -173,7 +177,9 @@ func TestSpaRatingReportGroupsRatedBookingsInWIB(t *testing.T) {
 		t.Fatalf("summary = %v", report)
 	}
 	bookings := report["bookings"].([]any)
-	if len(bookings) != 3 { t.Fatalf("bookings = %v", bookings) }
+	if len(bookings) != 3 {
+		t.Fatalf("bookings = %v", bookings)
+	}
 	if _, exists := report["periods"]; exists {
 		t.Fatalf("rating report still contains trend periods: %v", report)
 	}

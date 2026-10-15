@@ -30,7 +30,7 @@ describe("toCsv & commissionReportCsv", () => {
     expect(toCsv([["a", "b"], [1, null]])).toBe("a,b\r\n1,");
   });
 
-  it("menulis baris item, subtotal per terapis, dan total", () => {
+  it("menulis baris item, subtotal per crew, dan total", () => {
     const report: CommissionReport = {
       from: "2026-10-01",
       to: "2026-10-31",
@@ -48,9 +48,9 @@ describe("toCsv & commissionReportCsv", () => {
               item_id: "i1",
               booking_id: "b1",
               booking_code: "SPA-001",
-              branch_name: "Mizu Kemang",
+              branch_name: "Paddy Kemang",
               completed_at: "2026-10-07T17:30:00.000Z",
-              treatment_name: "Balinese Massage",
+              treatment_name: "Custom Case Design",
               variant_name: "90 menit",
               price_idr: 300000,
               commission_type: "percent",
@@ -63,10 +63,10 @@ describe("toCsv & commissionReportCsv", () => {
     };
     const lines = commissionReportCsv(report).split("\r\n");
     expect(lines).toHaveLength(4);
-    expect(lines[0]).toContain("Terapis,NIP,Kode booking");
+    expect(lines[0]).toContain("Crew,NIP,Kode booking");
     // completed_at 17:30Z = 8 Okt 00:30 WIB
-    expect(lines[1]).toBe('"Sari, A.",M-01,SPA-001,Mizu Kemang,2026-10-08,00:30,Balinese Massage,90 menit,300000,10%,30000');
-    expect(lines[2]).toBe('"Subtotal Sari, A.",M-01,,,,,1 treatment,,300000,,30000');
+    expect(lines[1]).toBe('"Sari, A.",M-01,SPA-001,Paddy Kemang,2026-10-08,00:30,Custom Case Design,90 menit,300000,10%,30000');
+    expect(lines[2]).toBe('"Subtotal Sari, A.",M-01,,,,,1 layanan,,300000,,30000');
     expect(lines[3]).toBe("Total,,,,,,,,,,30000");
   });
 });

@@ -6,7 +6,6 @@ import { AttendanceCalendar } from "@/components/hris/AttendanceCalendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import {
   Select,
@@ -15,43 +14,78 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock, Download } from "lucide-react";
+import { Clock, Download, Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import { useStoreBranches } from "@/features/hris/placements/queries";
 import { formatDate, formatTime } from "@/lib/format";
-import { currentMonthWib, monthRange } from "@/lib/hris/attendance-calendar";
+import { todayWib } from "@/lib/hris/attendance-period";
 import { SelfiePhotoDialog } from "./selfie-photo-dialog";
+import { AttendancePeriodBanner } from "./attendance-period-banner";
+import { AttendanceAdjustDialog, STATUS_OPTIONS } from "./attendance-adjust-dialog";
+import { AdjustmentBadge, DeleteAttendanceDialog } from "./attendance-adjustment-history";
 import { exportAttendanceCsv, type AttendanceExportFormat } from "../api";
-import { useActiveEmployees, useAttendanceList, useAttendanceMonthStats } from "../queries";
+import { useActiveEmployees, useAttendanceList, useAttendancePeriods } from "../queries";
+import type { AttendanceListRow } from "../types";
+
+const ALL_STORES = "all";
+const NO_STORE = "none";
 
 /**
  * Tab "Rekap" absensi HRD: tabel absensi berpagination dengan filter
- * karyawan/bulan/keterlambatan + export CSV. Saat satu karyawan dipilih,
- * kalender bulanan per-karyawan ikut ditampilkan.
+ * karyawan/periode absensi/keterlambatan/toko + export. Periode mengikuti
+ * cut-off di pengaturan (bukan sekadar bulan kalender) dan menampilkan status
+ * closing-nya. Selama periode terbuka HRD bisa menambah, mengoreksi, dan
+ * menghapus absensi (wajib alasan, tercatat di riwayat); setelah closing
+ * semua kontrol edit nonaktif. Saat satu karyawan dipilih, kalender bulanan
+ * per-karyawan ikut ditampilkan.
  */
 
 const PAGE_LIMIT = 20;
 
 export function AttendanceRecapTab() {
   const [filterEmployee, setFilterEmployee] = useState("all");
-  const [month, setMonth] = useState(() => currentMonthWib());
+  const [periodYear, setPeriodYear] = useState<number | undefined>(undefined);
+  const [periodId, setPeriodId] = useState<string | null>(null);
   const [lateOnly, setLateOnly] = useState(false);
+  const [store, setStore] = useState(ALL_STORES);
+  const branches = useStoreBranches().data ?? [];
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState<AttendanceExportFormat | null>(null);
+  const [editing, setEditing] = useState<AttendanceListRow | "new" | null>(null);
+  const [deleting, setDeleting] = useState<AttendanceListRow | null>(null);
 
   const employees = useActiveEmployees().data;
-  const stats = useAttendanceMonthStats(month).data ?? null;
-  const range = useMemo(() => monthRange(month), [month]);
+  const periodsQuery = useAttendancePeriods(periodYear);
+  const periodList = periodsQuery.data;
+  const periods = periodList?.periods ?? [];
+  const period =
+    periods.find((p) => p.id === periodId) ??
+    periods.find((p) => p.id === periodList?.current.id) ??
+    periods[0] ??
+    null;
+  const today = periodList?.today ?? todayWib();
+  const canManage = periodList?.permissions.can_manage ?? false;
+  const editable = canManage && period?.status === "open";
+  const stats = period?.stats ?? null;
+  const range = useMemo(
+    () => ({ start: period?.start_date ?? "", end: period?.end_date ?? "" }),
+    [period?.start_date, period?.end_date]
+  );
+  const shownYear = periodYear ?? periodList?.year ?? new Date().getFullYear();
+  const years = Array.from({ length: 3 }, (_, i) => (periodList?.year ?? new Date().getFullYear()) - i);
   const listQuery = useAttendanceList({
     employee_id: filterEmployee === "all" ? undefined : filterEmployee,
     start_date: range.start,
     end_date: range.end,
     is_late: lateOnly || undefined,
+    branch_id: store === ALL_STORES ? undefined : store,
     page,
     limit: PAGE_LIMIT,
-  });
-  const rows = listQuery.data?.data ?? [];
+  }, range.start !== "");
+  const listEnabled = range.start !== "";
+  const rows = listEnabled ? listQuery.data?.data ?? [] : [];
   const total = listQuery.data?.pagination.total ?? 0;
   const totalPages = Math.max(1, listQuery.data?.pagination.totalPages ?? 1);
-  const loading = listQuery.isLoading;
+  const loading = (listEnabled && listQuery.isLoading) || periodsQuery.isLoading;
   const error = listQuery.error ? listQuery.error.message || "Gagal memuat data absensi" : null;
 
   // Filter berubah → kembali ke halaman 1.
@@ -77,7 +111,7 @@ export function AttendanceRecapTab() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `rekap-absensi_${month}.${format}`;
+      a.download = `rekap-absensi_${period ? `${period.period_year}-${String(period.period_month).padStart(2, "0")}` : "periode"}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -119,8 +153,47 @@ export function AttendanceRecapTab() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Bulan</label>
-              <Input type="month" value={month} onChange={(e) => changeFilter(setMonth)(e.target.value)} />
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Periode absensi</label>
+              <div className="flex gap-2">
+                <Select
+                  value={String(shownYear)}
+                  onValueChange={(v) => {
+                    setPeriodYear(Number(v));
+                    setPeriodId(null);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-24 shrink-0" aria-label="Tahun periode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={period?.id ?? ""}
+                  onValueChange={(v) => changeFilter(setPeriodId)(v ?? null)}
+                  disabled={periods.length === 0}
+                >
+                  <SelectTrigger className="min-w-0 flex-1" aria-label="Periode absensi">
+                    <SelectValue placeholder="Pilih periode">
+                      {period ? `${period.name}${period.status === "closed" ? " 🔒" : ""}` : "Pilih periode"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {periods.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} · {p.label}
+                        {p.status === "closed" ? " · closed" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
@@ -139,53 +212,76 @@ export function AttendanceRecapTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end">
-              <div className="flex w-full gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleExport("xlsx")}
-                  disabled={exporting !== null}
-                  title="Unduh rekap sebagai Excel yang rapi"
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  {exporting === "xlsx" ? "Mengekspor…" : "Excel"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleExport("pdf")}
-                  disabled={exporting !== null}
-                  title="Unduh rekap sebagai PDF berikut foto selfie"
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  {exporting === "pdf" ? "Mengekspor…" : "PDF + Foto"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="flex-none px-3"
-                  onClick={() => handleExport("csv")}
-                  disabled={exporting !== null}
-                  title="Unduh data mentah CSV"
-                >
-                  {exporting === "csv" ? "…" : "CSV"}
-                </Button>
-              </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Toko</label>
+              <Select value={store} onValueChange={(value) => changeFilter(setStore)(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_STORES}>Semua toko</SelectItem>
+                  {branches.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={NO_STORE}>Tanpa toko</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleExport("xlsx")}
+                disabled={exporting !== null}
+                title="Unduh rekap sebagai Excel yang rapi"
+              >
+                <Download className="w-4 h-4 mr-1.5" />
+                {exporting === "xlsx" ? "Mengekspor…" : "Excel"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExport("pdf")}
+                disabled={exporting !== null}
+                title="Unduh rekap sebagai PDF berikut foto selfie"
+              >
+                <Download className="w-4 h-4 mr-1.5" />
+                {exporting === "pdf" ? "Mengekspor…" : "PDF + Foto"}
+              </Button>
+              <Button
+                variant="ghost"
+                className="flex-none px-3"
+                onClick={() => handleExport("csv")}
+                disabled={exporting !== null}
+                title="Unduh data mentah CSV"
+              >
+                {exporting === "csv" ? "…" : "CSV"}
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Statistik bulan terpilih */}
+      {/* Status closing periode terpilih */}
+      {period && (
+        <AttendancePeriodBanner
+          key={period.id}
+          period={period}
+          canManage={canManage}
+          canReopen={periodList?.permissions.can_reopen ?? false}
+          offsetDays={periodList?.settings.closing_offset_days}
+        />
+      )}
+
+      {/* Statistik periode terpilih */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Rekaman Absensi", value: stats ? String(stats.month_records) : "…" },
-          { label: "Terlambat", value: stats ? String(stats.month_late) : "…" },
-          { label: "Di Luar Jadwal", value: stats ? String(stats.month_off_schedule) : "…" },
-          {
-            label: "Rata-rata Jam Kerja",
-            value: stats ? (stats.avg_work_hours != null ? `${stats.avg_work_hours} jam` : "—") : "…",
-          },
+          { label: "Rekaman Absensi", value: stats ? String(stats.rows) : "…" },
+          { label: "Terlambat", value: stats ? String(stats.late) : "…" },
+          { label: "Tanpa Jam Pulang", value: stats ? String(stats.without_clock_out) : "…" },
+          { label: "Disesuaikan Manual", value: stats ? String(stats.adjusted) : "…" },
         ].map((item) => (
           <Card key={item.label}>
             <CardContent className="pt-4 pb-3">
@@ -203,6 +299,24 @@ export function AttendanceRecapTab() {
 
       {/* Tabel */}
       <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
+          <p className="text-sm text-gray-500">
+            {period ? `${period.name} · ${period.label}` : "Periode absensi"}
+            {period?.status === "closed" && " — terkunci"}
+          </p>
+          {canManage && (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-pink-600 text-white hover:bg-pink-700"
+              disabled={!editable || !period}
+              title={editable ? undefined : "Periode sudah di-closing — absensi tidak bisa ditambah"}
+              onClick={() => setEditing("new")}
+            >
+              <Plus className="h-4 w-4" />
+              Tambah absensi
+            </Button>
+          )}
+        </div>
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center py-12">
@@ -222,12 +336,14 @@ export function AttendanceRecapTab() {
                   <tr className="border-b border-gray-100 bg-gray-50 text-left text-gray-600">
                     <th className="p-3">Tanggal</th>
                     <th className="p-3">Karyawan</th>
+                    <th className="p-3">Toko</th>
                     <th className="p-3">Shift</th>
                     <th className="p-3">Masuk</th>
                     <th className="p-3">Pulang</th>
                     <th className="p-3">Jam Kerja</th>
                     <th className="p-3">Status</th>
                     <th className="p-3">Selfie</th>
+                    {canManage && <th className="p-3 text-right">Aksi</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -244,6 +360,13 @@ export function AttendanceRecapTab() {
                           <p className="text-xs text-gray-400">{row.employee.nip}</p>
                         )}
                       </td>
+                      <td className="p-3">
+                        {row.branch ? (
+                          <span className="text-gray-700">{row.branch.name}</span>
+                        ) : (
+                          <span className="text-xs text-amber-700">Tanpa toko</span>
+                        )}
+                      </td>
                       <td className="p-3 text-gray-600">
                         {row.shift?.name ?? (
                           <span className="text-orange-600 text-xs">Di luar jadwal</span>
@@ -255,13 +378,27 @@ export function AttendanceRecapTab() {
                         {row.work_hours != null ? `${Number(row.work_hours).toFixed(1)} jam` : "—"}
                       </td>
                       <td className="p-3">
-                        {row.is_late ? (
-                          <Badge className="bg-yellow-100 text-yellow-700">
-                            Terlambat +{row.late_minutes} mnt
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-green-100 text-green-700">Hadir</Badge>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1">
+                          {row.status === "absent" ? (
+                            <Badge className="bg-red-100 text-red-700">Tidak hadir</Badge>
+                          ) : row.is_late ? (
+                            <Badge className="bg-yellow-100 text-yellow-700">
+                              Terlambat +{row.late_minutes} mnt
+                            </Badge>
+                          ) : row.status !== "present" && row.status !== "late" ? (
+                            <Badge className="bg-sky-100 text-sky-700">
+                              {STATUS_OPTIONS.find((s) => s.value === row.status)?.label ?? row.status}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-green-100 text-green-700">Hadir</Badge>
+                          )}
+                          {Number(row.overtime_hours ?? 0) > 0 && (
+                            <Badge className="bg-indigo-50 text-indigo-700">
+                              Lembur {Number(row.overtime_hours)} jam
+                            </Badge>
+                          )}
+                          <AdjustmentBadge row={row} />
+                        </div>
                       </td>
                       <td className="p-3">
                         <div className="flex gap-2">
@@ -279,6 +416,36 @@ export function AttendanceRecapTab() {
                           />
                         </div>
                       </td>
+                      {canManage && (
+                        <td className="p-3 text-right whitespace-nowrap">
+                          {editable ? (
+                            <>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                title="Sesuaikan absensi"
+                                aria-label="Sesuaikan absensi"
+                                onClick={() => setEditing(row)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600 hover:text-red-700"
+                                title="Hapus absensi"
+                                aria-label="Hapus absensi"
+                                onClick={() => setDeleting(row)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Lock className="ml-auto h-4 w-4 text-gray-300" aria-label="Periode sudah di-closing" />
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -314,6 +481,18 @@ export function AttendanceRecapTab() {
           </div>
         </div>
       )}
+
+      {editing && period && (
+        <AttendanceAdjustDialog
+          key={editing === "new" ? "new" : editing.id}
+          open
+          onOpenChange={(open) => !open && setEditing(null)}
+          row={editing === "new" ? null : editing}
+          period={period}
+          today={today}
+        />
+      )}
+      <DeleteAttendanceDialog row={deleting} onOpenChange={(open) => !open && setDeleting(null)} />
     </div>
   );
 }

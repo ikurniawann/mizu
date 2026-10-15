@@ -137,7 +137,8 @@ export function legacyPacks(material: LegacyUnitMaterial): ItemPack[] {
 
 /** Pack milik item, jatuh ke satuan besar/kecil lama bila belum ada barisnya. */
 export function resolvePacks(material: LegacyUnitMaterial, rows: ItemPack[] | null | undefined): ItemPack[] {
-  const active = (rows || []).filter(isActive);
+  // API mengirim NUMERIC sebagai string ("50"); safeFactor menganggap string = 1.
+  const active = (rows || []).filter(isActive).map((pack) => ({ ...pack, qty_in_base_unit: Number(pack.qty_in_base_unit) }));
   if (active.length === 0) return legacyPacks(material);
   const known = new Set(active.map((pack) => pack.satuan_id));
   const missing = legacyPacks(material).filter((pack) => !known.has(pack.satuan_id));
@@ -154,7 +155,7 @@ export function packFactor(
   satuanId: string | null | undefined
 ): number {
   if (!material) return 1;
-  const usable = (rows || []).filter((pack) => pack.qty_in_base_unit > 0);
+  const usable = (rows || []).filter((pack) => Number(pack.qty_in_base_unit) > 0);
   const pack = findPack(resolvePacks(material, usable), satuanId);
   if (pack) return pack.qty_in_base_unit;
   return legacyPacks(material).find((p) => p.is_purchase_default)?.qty_in_base_unit ?? 1;

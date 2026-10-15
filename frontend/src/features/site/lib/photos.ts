@@ -1,16 +1,18 @@
 /**
- * Sample photos for the public site (CC0 stock, see public/site/photos/CREDITS.md).
- * Every page prefers the photo set in the CMS; these fill the gaps until real
- * Mizu photos are uploaded, chosen so the same subject always gets the same photo.
+ * Sample photos for the public site (see public/site/photos/CREDITS.md):
+ * Paddy products stuck like stickers on the Paddy doodle backgrounds. Every
+ * page prefers the photo set in the CMS; these fill the gaps until real
+ * Paddy Store photos are uploaded, chosen so the same subject always gets the
+ * same photo.
  */
 export const SITE_PHOTOS = {
-  hero: "/site/photos/mizu-hero.webp",
-  hotStone: "/site/photos/mizu-hot-stone.webp",
-  reflexology: "/site/photos/mizu-reflexology.webp",
-  stonesOrchid: "/site/photos/mizu-stones-orchid.webp",
-  relax: "/site/photos/mizu-relax.webp",
-  backMassage: "/site/photos/mizu-back-massage.webp",
-  headMassage: "/site/photos/mizu-head-massage.webp",
+  hero: "/site/photos/paddy-hero.webp",
+  cases: "/site/photos/paddy-cases.webp",
+  bags: "/site/photos/paddy-bags.webp",
+  pods: "/site/photos/paddy-pods.webp",
+  accessories: "/site/photos/paddy-accessories.webp",
+  watch: "/site/photos/paddy-watch.webp",
+  studio: "/site/photos/paddy-studio.webp",
 } as const;
 
 /** The CMS photo when set, otherwise the sample. */
@@ -18,7 +20,7 @@ export function photoOr(src: string | null | undefined, fallback: string): strin
   return src?.trim() ? src : fallback;
 }
 
-const OUTLET_PHOTOS = [SITE_PHOTOS.stonesOrchid, SITE_PHOTOS.hotStone, SITE_PHOTOS.relax, SITE_PHOTOS.hero] as const;
+const OUTLET_PHOTOS = [SITE_PHOTOS.cases, SITE_PHOTOS.accessories, SITE_PHOTOS.pods, SITE_PHOTOS.bags] as const;
 
 function hash(text: string): number {
   let h = 0;
@@ -26,7 +28,7 @@ function hash(text: string): number {
   return h;
 }
 
-/** A stable photo per outlet (by slug), so the list and the outlet page match. */
+/** A stable photo per store (by slug), so the list and the store page match. */
 export function outletPhoto(slug: string): string {
   return OUTLET_PHOTOS[hash(slug) % OUTLET_PHOTOS.length];
 }
@@ -34,21 +36,22 @@ export function outletPhoto(slug: string): string {
 /** A photo for a "Suasana" section, picked from its title, else by position. */
 export function spacePhoto(title: string, index: number): string {
   const t = title.toLowerCase();
-  if (/refleks|kaki|foot/.test(t)) return SITE_PHOTOS.reflexology;
-  if (/couple|keluarga|pasangan|berdua|family/.test(t)) return SITE_PHOTOS.relax;
-  if (/ganti|loker|mandi|shower|locker/.test(t)) return SITE_PHOTOS.hero;
-  if (/tunggu|lobi|lobby|resepsi/.test(t)) return SITE_PHOTOS.stonesOrchid;
-  if (/treatment|pijat|massage|ruang/.test(t)) return SITE_PHOTOS.backMassage;
-  const rotation = [SITE_PHOTOS.backMassage, SITE_PHOTOS.reflexology, SITE_PHOTOS.relax, SITE_PHOTOS.hero];
+  if (/workshop|kelas|class|charm|beads|rangkai/.test(t)) return SITE_PHOTOS.accessories;
+  if (/studio|experience|custom|desain|design|cetak|print/.test(t)) return SITE_PHOTOS.studio;
+  if (/case|etalase|display|rak|koleksi/.test(t)) return SITE_PHOTOS.cases;
+  if (/tas|bag|foto|photo|spot|selfie/.test(t)) return SITE_PHOTOS.bags;
+  if (/kasir|tunggu|lounge|santai|kopi/.test(t)) return SITE_PHOTOS.pods;
+  const rotation = [SITE_PHOTOS.cases, SITE_PHOTOS.studio, SITE_PHOTOS.accessories, SITE_PHOTOS.bags];
   return rotation[index % rotation.length];
 }
 
-/** A photo for a treatment category heading. */
+/** A photo for a studio-service category heading. */
 export function categoryPhoto(category: string): string {
   const c = category.toLowerCase();
-  if (/refleks|reflex|kaki/.test(c)) return SITE_PHOTOS.reflexology;
-  if (/signature|ritual|stone|batu/.test(c)) return SITE_PHOTOS.stonesOrchid;
-  if (/facial|wajah|kepala|head|totok/.test(c)) return SITE_PHOTOS.headMassage;
-  if (/body|lulur|scrub|spa/.test(c)) return SITE_PHOTOS.hero;
-  return SITE_PHOTOS.backMassage;
+  if (/workshop|kelas|class|craft/.test(c)) return SITE_PHOTOS.accessories;
+  if (/case|desain|design/.test(c)) return SITE_PHOTOS.cases;
+  if (/personal|nama|engrav|grafir/.test(c)) return SITE_PHOTOS.pods;
+  if (/gadget|care|watch|servis|service/.test(c)) return SITE_PHOTOS.watch;
+  if (/signature|party|paket|package/.test(c)) return SITE_PHOTOS.studio;
+  return SITE_PHOTOS.bags;
 }

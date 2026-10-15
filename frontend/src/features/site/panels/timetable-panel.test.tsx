@@ -13,8 +13,8 @@ function renderPanel(branchSlug?: string) {
 }
 
 const branches = [
-  { slug: "kemang", name: "Mizu Kemang" },
-  { slug: "bsd", name: "Mizu BSD" },
+  { slug: "kemang", name: "Paddy Kemang" },
+  { slug: "bsd", name: "Paddy BSD" },
 ];
 
 function timetable(slug: string, week: string) {

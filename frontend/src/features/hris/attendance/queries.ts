@@ -4,6 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchHolidayIndex } from "@/lib/hris/holidays-client";
 import { attendanceQueryKeys } from "./query-keys";
 import {
+  fetchAttendanceAdjustments,
+  fetchAttendancePeriod,
+  fetchAttendancePeriods,
+  fetchAttendanceSettings,
+  previewAttendanceSettings,
   fetchActiveEmployees,
   fetchAttendanceList,
   fetchAttendanceMonthStats,
@@ -16,10 +21,11 @@ import type { AttendanceListParams } from "./types";
 export const useActiveEmployees = () =>
   useQuery({ queryKey: attendanceQueryKeys.employees(), queryFn: fetchActiveEmployees });
 
-export const useAttendanceList = (params: AttendanceListParams) =>
+export const useAttendanceList = (params: AttendanceListParams, enabled = true) =>
   useQuery({
     queryKey: attendanceQueryKeys.list(params),
     queryFn: () => fetchAttendanceList(params),
+    enabled,
   });
 
 /** month = "YYYY-MM". */
@@ -58,4 +64,34 @@ export const useHolidayIndex = (start: string, end: string, enabled = true) =>
     queryKey: attendanceQueryKeys.holidays(start, end),
     queryFn: () => fetchHolidayIndex(start, end),
     enabled,
+  });
+
+export const useAttendanceAdjustments = (attendanceId: string, enabled = true) =>
+  useQuery({
+    queryKey: attendanceQueryKeys.adjustments(attendanceId),
+    queryFn: () => fetchAttendanceAdjustments(attendanceId),
+    enabled: enabled && !!attendanceId,
+  });
+
+/** Periode absensi satu tahun (default: tahun periode berjalan). */
+export const useAttendancePeriods = (year?: number) =>
+  useQuery({ queryKey: attendanceQueryKeys.periods(year), queryFn: () => fetchAttendancePeriods(year) });
+
+export const useAttendancePeriod = (id: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: attendanceQueryKeys.period(id ?? ""),
+    queryFn: () => fetchAttendancePeriod(id ?? ""),
+    enabled: enabled && !!id,
+  });
+
+export const useAttendanceSettings = () =>
+  useQuery({ queryKey: attendanceQueryKeys.settings(), queryFn: fetchAttendanceSettings });
+
+/** Pratinjau periode berjalan & berikutnya untuk pengaturan yang belum disimpan. */
+export const useAttendanceSettingsPreview = (cutoff: number, offset: number, enabled: boolean) =>
+  useQuery({
+    queryKey: attendanceQueryKeys.settingsPreview(cutoff, offset),
+    queryFn: () => previewAttendanceSettings(cutoff, offset),
+    enabled,
+    staleTime: 30_000,
   });

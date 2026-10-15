@@ -91,13 +91,13 @@ func (h *Handler) view(ctx context.Context, conversationID string) (*SessionView
 	s := row.Session
 	v.Step, v.LastBotAt, v.LastLatencyMs = s.NextStep(), row.LastBotAt, row.LatencyMs
 	if s.OutletName != "" {
-		v.Summary = append(v.Summary, "Outlet: "+s.OutletName)
+		v.Summary = append(v.Summary, "Toko: "+s.OutletName)
 	}
 	if s.People > 0 {
 		v.Summary = append(v.Summary, strings.TrimSpace(strings.Repeat(" ", 0)+itoa(s.People)+" orang"))
 	}
 	for _, p := range s.Persons {
-		v.Summary = append(v.Summary, "Treatment: "+p.Label+" — "+domain.Rupiah(p.Price))
+		v.Summary = append(v.Summary, "Layanan: "+p.Label+" — "+domain.Rupiah(p.Price))
 	}
 	if s.Date != "" {
 		line := "Tanggal: " + domain.LongDate(domain.LangID, s.Date)
@@ -110,9 +110,9 @@ func (h *Handler) view(ctx context.Context, conversationID string) (*SessionView
 	}
 	switch {
 	case s.TherapistName != "":
-		v.Summary = append(v.Summary, "Terapis: "+s.TherapistName)
+		v.Summary = append(v.Summary, "Crew: "+s.TherapistName)
 	case s.SystemPick:
-		v.Summary = append(v.Summary, "Terapis: dipilihkan Mizu")
+		v.Summary = append(v.Summary, "Crew: dipilihkan Paddy")
 	}
 	if s.Name != "" {
 		v.Summary = append(v.Summary, "Nama: "+s.Name)

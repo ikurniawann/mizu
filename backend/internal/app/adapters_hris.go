@@ -91,6 +91,21 @@ func (hrisPayrollSQL) LoanUpdatesSince(ctx context.Context, q database.Querier, 
 	return n, err
 }
 
+// PeriodRuns are the payroll runs of a year (attendance period closing:
+// a run past draft blocks reopening its month, an open period blocks
+// processing/approving its run).
+func (hrisPayrollSQL) PeriodRuns(ctx context.Context, q database.Querier, year int) ([]hris.PeriodRun, error) {
+	rows, err := q.Query(ctx, `SELECT id::text, COALESCE(run_name, ''), status, period_year, period_month
+		FROM hris.payroll_runs WHERE period_year = $1 ORDER BY period_month, created_at`, year)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (hris.PeriodRun, error) {
+		var p hris.PeriodRun
+		return p, r.Scan(&p.ID, &p.Name, &p.Status, &p.Year, &p.Month)
+	})
+}
+
 /* ── Salary structure (payroll module table) ─────────────────────────── */
 
 type hrisSalarySQL struct{}

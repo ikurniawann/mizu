@@ -7,7 +7,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
 beforeEach(() => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(JSON.stringify({ success: true, data: [{ slug: "bandung", name: "Mizu Bandung" }] }), { status: 200 }),
+    new Response(JSON.stringify({ success: true, data: [{ slug: "bandung", name: "Paddy Bandung" }] }), { status: 200 }),
   );
 });
 
@@ -24,7 +24,7 @@ describe("panel registry", () => {
   });
 
   it("reads the remembered branch from the cookie", () => {
-    expect(readBranchCookie("a=1; nh_branch=mizu-bandung; b=2")).toBe("mizu-bandung");
+    expect(readBranchCookie("a=1; nh_branch=paddy-bandung; b=2")).toBe("paddy-bandung");
     expect(readBranchCookie("nh_branch=")).toBeUndefined();
     expect(readBranchCookie("")).toBeUndefined();
   });
@@ -60,7 +60,7 @@ describe("SitePanelsProvider", () => {
     fireEvent.click(screen.getByText("open trial"));
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent("Start a trial");
-    expect(await screen.findByRole("option", { name: "Mizu Bandung" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Paddy Bandung" })).toBeInTheDocument();
     expect(screen.getByLabelText("Branch")).toHaveValue("bandung");
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));

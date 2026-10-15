@@ -40,18 +40,18 @@ export function MyAddTreatmentDialog({
   const add = useMyAddItem();
 
   const submit = () => {
-    if (!variantId) return setError("Pilih treatment.");
+    if (!variantId) return setError("Pilih layanan.");
     setError(null);
     add.mutate(
       { bookingId, variantId },
       {
         onSuccess: () => {
-          toast.success("Treatment ditambahkan", { description: customerName });
+          toast.success("Layanan ditambahkan", { description: customerName });
           onClose();
         },
         onError: (err) => {
           setError(err.message);
-          toast.error("Treatment gagal ditambahkan", { description: err.message });
+          toast.error("Layanan gagal ditambahkan", { description: err.message });
         },
       },
     );
@@ -67,15 +67,15 @@ export function MyAddTreatmentDialog({
           }}
         >
           <DialogPanelHeader>
-            <DialogPanelTitle>Tambah treatment</DialogPanelTitle>
+            <DialogPanelTitle>Tambah layanan</DialogPanelTitle>
             <DialogPanelDescription>
-              Untuk {customerName}. Treatment baru dikerjakan kamu juga, setelah treatment yang sedang berjalan, dan masuk ke tagihan di kasir.
+              Untuk {customerName}. Layanan baru dikerjakan kamu juga, setelah layanan yang sedang berjalan, dan masuk ke tagihan di kasir.
             </DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="space-y-4">
-            <Field label="Treatment">
-              <select className={SELECT} value={variantId} onChange={(e) => setVariantId(e.target.value)} required aria-label="Treatment tambahan">
-                <option value="">{catalog.isLoading ? "Memuat…" : "Pilih treatment…"}</option>
+            <Field label="Layanan">
+              <select className={SELECT} value={variantId} onChange={(e) => setVariantId(e.target.value)} required aria-label="Layanan tambahan">
+                <option value="">{catalog.isLoading ? "Memuat…" : "Pilih layanan…"}</option>
                 {(catalog.data ?? []).flatMap((t) =>
                   t.variants.map((v) => (
                     <option key={v.id} value={v.id}>

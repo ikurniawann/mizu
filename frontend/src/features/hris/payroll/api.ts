@@ -5,6 +5,7 @@ import type {
   CalculatePayrollResult,
   PayrollRunDetail,
   PayslipDetail,
+  StoreCostReport,
 } from "./types";
 
 export const fetchPayrollRuns = () =>
@@ -36,6 +37,20 @@ export const fetchPayslip = (payrollRunId: string, employeeId: string) =>
   apiGet<{ data: PayslipDetail[] }>(
     `/api/hris/payslips?payroll_run_id=${payrollRunId}&employee_id=${employeeId}`
   ).then((res) => res.data?.[0] ?? null);
+
+// ---- Laporan Biaya Gaji per Toko ----
+
+export const fetchStoreCosts = (runId: string) =>
+  apiGet<{ data: StoreCostReport }>(`/api/hris/payroll/${runId}/store-costs`).then((res) => res.data);
+
+export async function downloadStoreCosts(runId: string, format: "csv" | "xlsx"): Promise<Blob> {
+  const res = await fetch(`/api/hris/payroll/${runId}/store-costs/export?format=${format}`);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || "Export gagal");
+  }
+  return res.blob();
+}
 
 // ---- Pengaturan payroll (payroll_settings + payroll_tax_config) ----
 

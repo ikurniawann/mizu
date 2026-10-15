@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PurchasingFormHeader } from "@/features/purchasing/components/shared/purchasing-page-header";
+import { usePurchasingSettings } from "@/features/purchasing/settings/queries";
 import { PRODUCT_ROUTES } from "@/lib/purchasing/item-routes";
 import { useCreateProductPurchaseOrder } from "../mutations";
 import { useApprovedProductPRsForPO, useProductPOFormData } from "../queries";
@@ -14,6 +15,7 @@ export function NewProductPOPage() {
   const formQuery = useProductPOFormData();
   const prsQuery = useApprovedProductPRsForPO();
   const createMutation = useCreateProductPurchaseOrder();
+  const prRequired = usePurchasingSettings().data?.po_requires_pr_product === true;
 
   // Tunggu daftar PR bila ?pr_id= ada, supaya item PR terisi saat form pertama kali dibuat.
   if (formQuery.isLoading || (initialPRId && prsQuery.isLoading)) {
@@ -29,12 +31,17 @@ export function NewProductPOPage() {
       <PurchasingFormHeader
         backHref={PRODUCT_ROUTES.purchasingPo}
         title="Buat Purchase Order"
-        description="Buat purchase order produk ke vendor"
+        description={
+          prRequired
+            ? "Buat purchase order produk ke vendor dari purchase request yang disetujui"
+            : "Buat purchase order produk ke vendor"
+        }
       />
       <ProductPOForm
         lookups={formQuery.data}
         approvedPRs={prsQuery.data ?? []}
         initialPRId={initialPRId}
+        prRequired={prRequired}
         isLoading={createMutation.isPending}
         cancelHref={PRODUCT_ROUTES.purchasingPo}
         onSubmit={async (payload) => {

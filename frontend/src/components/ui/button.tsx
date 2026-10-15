@@ -21,6 +21,9 @@ const buttonVariants = cva(
         ghost:
           "text-foreground hover:bg-muted aria-expanded:bg-muted",
         onInk: "bg-white/10 text-white hover:bg-white/20",
+        /** Tombol "stiker" Paddy: kuning cerah, garis navy, bayangan offset. */
+        sticker:
+          "border-2 border-navy bg-sunny text-navy shadow-[3px_3px_0_0_var(--color-navy)] transition-transform hover:-translate-y-0.5 hover:bg-sunny hover:shadow-[4px_4px_0_0_var(--color-navy)]",
         destructive:
           "bg-danger-soft text-danger hover:bg-danger hover:text-white dark:hover:text-ink focus-visible:ring-danger/30",
         link: "text-brand-text underline-offset-4 hover:underline",

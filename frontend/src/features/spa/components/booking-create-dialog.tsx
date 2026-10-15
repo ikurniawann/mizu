@@ -131,12 +131,12 @@ export function BookingCreateDialog({
     setError(null);
     const scheduledIso = wibLocalInputToIso(scheduled);
     const chosen = items.filter((r) => r.variant_id);
-    if (!branchId) return setError("Pilih outlet.");
+    if (!branchId) return setError("Pilih toko.");
     if (!scheduledIso) return setError("Isi waktu booking.");
     if (!name.trim()) return setError("Nama pelanggan wajib diisi.");
     if (!isValidPhone(phone)) return setError("Nomor HP tidak valid (8–15 digit).");
     if (!customerGender) return setError("Pilih gender pelanggan.");
-    if (chosen.length === 0) return setError("Pilih minimal satu treatment.");
+    if (chosen.length === 0) return setError("Pilih minimal satu layanan.");
     create.mutate(
       {
         branch_id: branchId,
@@ -179,11 +179,11 @@ export function BookingCreateDialog({
           <DialogPanelHeader>
             <DialogPanelTitle>Booking baru</DialogPanelTitle>
             <DialogPanelDescription>
-              Treatment dijadwalkan berurutan dan ditangani satu terapis. Terapis boleh ditugaskan nanti.
+              Layanan dijadwalkan berurutan dan ditangani satu crew. Crew boleh ditugaskan nanti.
             </DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Outlet">
+            <Field label="Toko">
               <OutletSelect
                 outlets={usable}
                 value={branchId}
@@ -204,7 +204,7 @@ export function BookingCreateDialog({
             <Field label="Waktu mulai (WIB)">
               <Input type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} required />
             </Field>
-            <Field label="Preferensi terapis">
+            <Field label="Preferensi crew">
               <select className={SELECT} value={genderPref} onChange={(e) => setGenderPref(e.target.value as GenderPref)}>
                 {(Object.keys(GENDER_PREF_LABEL) as GenderPref[]).map((g) => (
                   <option key={g} value={g}>
@@ -276,14 +276,14 @@ export function BookingCreateDialog({
               </select>
             </Field>
 
-            <Field label="Terapis booking" className="sm:col-span-2" hint="Satu terapis menangani seluruh treatment dalam booking ini.">
-              <select className={SELECT} aria-label="Terapis booking" value={therapistId} onChange={(e) => setTherapistId(e.target.value)}>
+            <Field label="Crew booking" className="sm:col-span-2" hint="Satu crew menangani seluruh layanan dalam booking ini.">
+              <select className={SELECT} aria-label="Crew booking" value={therapistId} onChange={(e) => setTherapistId(e.target.value)}>
                 <option value="">Tugaskan nanti</option>
                 {(therapists.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
               </select>
             </Field>
             <div className="space-y-2 sm:col-span-2">
-              <p className="text-sm font-medium">Treatment</p>
+              <p className="text-sm font-medium">Layanan</p>
               {treatments.error && <p className="text-xs text-danger">{treatments.error.message}</p>}
               {items.map((row) => (
                 <div
@@ -293,10 +293,10 @@ export function BookingCreateDialog({
                   <select
                     className={SELECT}
                     value={row.variant_id}
-                    aria-label="Treatment"
+                    aria-label="Layanan"
                     onChange={(e) => updateItem(row.key, { variant_id: e.target.value })}
                   >
-                    <option value="">{treatments.isLoading ? "Memuat treatment…" : "Pilih treatment…"}</option>
+                    <option value="">{treatments.isLoading ? "Memuat layanan…" : "Pilih layanan…"}</option>
                     {options.map((o) => (
                       <option key={o.variant.id} value={o.variant.id}>
                         {o.label} · {formatRupiah(variantPrice(o.variant, branchId))}
@@ -307,7 +307,7 @@ export function BookingCreateDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="Hapus treatment"
+                    aria-label="Hapus layanan"
                     disabled={items.length === 1}
                     onClick={() => setItems((rows) => rows.filter((r) => r.key !== row.key))}
                   >
@@ -324,7 +324,7 @@ export function BookingCreateDialog({
                     setItems((rows) => [...rows, { key: Math.max(0, ...rows.map((r) => r.key)) + 1, variant_id: "" }])
                   }
                 >
-                  <Plus /> Tambah treatment
+                  <Plus /> Tambah layanan
                 </Button>
                 <p className="text-sm">
                   Total <span className="font-semibold tabular-nums">{formatRupiah(total)}</span>
@@ -334,7 +334,7 @@ export function BookingCreateDialog({
 
             <Field label="Room" className="sm:col-span-2" hint="Room ditahan selama jadwal booking; harganya masuk ke tagihan kasir.">
               <select className={SELECT} aria-label="Room" value={roomId} onChange={(e) => setRoomId(e.target.value)}>
-                <option value="">{!branchId ? "Pilih outlet dulu" : rooms.isLoading ? "Memuat…" : (rooms.data ?? []).length ? "Tanpa room" : "Outlet ini belum punya room"}</option>
+                <option value="">{!branchId ? "Pilih toko dulu" : rooms.isLoading ? "Memuat…" : (rooms.data ?? []).length ? "Tanpa room" : "Toko ini belum punya room"}</option>
                 {(rooms.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} · {r.capacity} orang{r.price_idr > 0 ? ` · ${formatRupiah(r.price_idr)}` : ""}
@@ -348,7 +348,7 @@ export function BookingCreateDialog({
             <div className="sm:col-span-2">
               <FormError>{error}</FormError>
               {usable.length === 0 && (
-                <FormError>Belum ada outlet spa aktif. Atur dulu di menu Outlet Spa.</FormError>
+                <FormError>Belum ada toko experience aktif. Atur dulu di menu Toko Experience.</FormError>
               )}
             </div>
           </DialogPanelBody>

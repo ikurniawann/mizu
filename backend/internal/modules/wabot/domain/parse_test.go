@@ -197,7 +197,7 @@ func TestMatchNameScoresDistinctiveWords(t *testing.T) {
 
 func TestDetectQuestion(t *testing.T) {
 	cases := map[string]QuestionKind{
-		"Kalau alamat mizu 1.0 itu dimana?": QuestionAddress, "lokasinya di mana kak": QuestionAddress,
+		"Kalau alamat paddy 1.0 itu dimana?": QuestionAddress, "lokasinya di mana kak": QuestionAddress,
 		"jam buka sampai jam berapa": QuestionHours, "masih buka ga malam ini?": QuestionHours,
 		"harga reflexology berapa?": QuestionPrice, "ada promo?": QuestionPrice,
 		"bisa bayar pakai qris?": QuestionPayment, "kalau mau ubah jadwal gimana": QuestionReschedule,

@@ -49,6 +49,14 @@ type WorkforceRecords struct {
 // clamped to the period and due loan installments.
 func BuildInput(emp Employee, salary Salary, rec WorkforceRecords, loans []LoanRow, holidays map[string]bool, month, year int, includeThr bool) Input {
 	start, end := PeriodBounds(month, year)
+	return BuildInputRange(emp, salary, rec, loans, holidays, month, year, start, end, includeThr)
+}
+
+// BuildInputRange is BuildInput over the attendance period [start, end] of
+// the payroll month (the cut-off period from the attendance settings; the
+// calendar month by default). Loans stay keyed by month/year.
+func BuildInputRange(emp Employee, salary Salary, rec WorkforceRecords, loans []LoanRow, holidays map[string]bool, month, year int,
+	start, end string, includeThr bool) Input {
 
 	var schedule []ShiftRow
 	for _, r := range rec.Schedule {

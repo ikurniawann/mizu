@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 
 const CONTROL_BASE =
-  "flex h-10 w-full rounded-md border bg-transparent py-2 text-sm outline-none transition-colors focus:border-[#3d2b20] disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-10 w-full rounded-md border bg-transparent py-2 text-sm outline-none transition-colors focus:border-[#b8045a] disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Input and select classes for the careers form; `withIcon` leaves room for an icon on the left. */
 export function controlClass(hasError = false, withIcon = false) {
-  return `${CONTROL_BASE} ${withIcon ? "pl-9" : "px-3"} ${hasError ? "border-[#3d2b20]" : "border-[#e3dbcc]"}`;
+  return `${CONTROL_BASE} ${withIcon ? "pl-9" : "px-3"} ${hasError ? "border-[#b8045a]" : "border-[#ece5da]"}`;
 }
 
 interface FormFieldProps {
@@ -19,18 +19,18 @@ interface FormFieldProps {
 export function FormField({ id, label, required, error, children }: FormFieldProps) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="text-xs font-bold uppercase tracking-[0.12em] text-[#3a302a]">
-        {label} {required && <span className="text-[#3d2b20]">*</span>}
+      <label htmlFor={id} className="text-xs font-bold uppercase tracking-[0.12em] text-[#403b37]">
+        {label} {required && <span className="text-[#b8045a]">*</span>}
       </label>
       {children}
-      {error && <p className="text-xs text-[#3d2b20]">{error}</p>}
+      {error && <p className="text-xs text-[#b8045a]">{error}</p>}
     </div>
   );
 }
 
 export function FormSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-[#e3dbcc] bg-white p-5 sm:p-6">
+    <div className="rounded-lg border border-[#ece5da] bg-white p-5 sm:p-6">
       <h2 className="mb-4 text-base font-medium leading-tight">{title}</h2>
       {children}
     </div>

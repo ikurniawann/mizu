@@ -26,6 +26,9 @@ type Line struct {
 	Amount    float64
 	Memo      *string
 	SortOrder *int
+	// BranchID is the store/cost center (configuration.branches) of the
+	// line; nil is company level.
+	BranchID *string
 }
 
 // Rejection is a business-rule failure with the TS status and message.

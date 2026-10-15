@@ -11,4 +11,11 @@ export const attendanceQueryKeys = {
     ["hris", "attendance", "calendar", employeeId ?? "", start, end] as const,
   schedule: (employeeId: string) => ["hris", "attendance", "schedule", employeeId] as const,
   holidays: (start: string, end: string) => ["hris", "holiday-index", start, end] as const,
+  adjustments: (attendanceId: string) => ["hris", "attendance", "adjustments", attendanceId] as const,
+  periodsAll: () => ["hris", "attendance-periods"] as const,
+  periods: (year?: number) => ["hris", "attendance-periods", "list", year ?? "current"] as const,
+  period: (id: string) => ["hris", "attendance-periods", "detail", id] as const,
+  settings: () => ["hris", "attendance-periods", "settings"] as const,
+  settingsPreview: (cutoff: number, offset: number) =>
+    ["hris", "attendance-periods", "settings-preview", cutoff, offset] as const,
 };

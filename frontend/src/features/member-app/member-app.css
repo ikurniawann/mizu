@@ -1,4 +1,4 @@
-/* Aplikasi member 1:1 (apps/member NüHabit). Warna memakai token
+/* Aplikasi member Paddy (1:1 dengan apps/member lama). Warna memakai token
    --color-nh-* dari globals.css. */
 
 .nh-app {
@@ -19,20 +19,20 @@
 /* Kartu lembut: hairline + bayangan berlapis yang nyaris tak terlihat. */
 .nh-card {
   background: var(--color-nh-cream);
-  border: 1px solid rgb(61 43 32 / 0.04);
+  border: 1px solid rgb(42 16 36 / 0.04);
   border-radius: 1.5rem;
   padding: 1.25rem;
-  box-shadow: 0 1px 2px rgb(61 43 32 / 0.03), 0 10px 30px rgb(61 43 32 / 0.05);
+  box-shadow: 0 1px 2px rgb(42 16 36 / 0.03), 0 10px 30px rgb(42 16 36 / 0.05);
 }
 
-/* Permukaan gelap premium: Dark Jungle ke Deep Forest Green. */
+/* Permukaan gelap Paddy: Plum Ink ke Berry. */
 .nh-surface-ink {
-  background: linear-gradient(150deg, #33271f 0%, #3d2b20 55%, #1a1310 100%);
+  background: linear-gradient(150deg, #2a1024 0%, #6a0f45 55%, #1a0614 100%);
 }
 
-/* Gradien lime khas (tombol tengah, tile utama). Selalu dengan teks gelap. */
+/* Gradien Sunny khas (tombol tengah, tile utama). Selalu dengan teks gelap. */
 .nh-surface-brand {
-  background: linear-gradient(140deg, #f2e3c6 0%, #d6b47a 45%, #c49a5c 100%);
+  background: linear-gradient(140deg, #fff1c2 0%, #ffcf3f 45%, #ffb020 100%);
 }
 
 .nh-btn-brand,
@@ -50,7 +50,7 @@
 .nh-btn-brand {
   background: var(--color-nh-lime);
   color: var(--color-nh-ink);
-  box-shadow: 0 10px 24px rgb(61 43 32 / 0.14);
+  box-shadow: 0 10px 24px rgb(42 16 36 / 0.14);
 }
 .nh-btn-ghost {
   background: var(--color-nh-raised);
@@ -108,7 +108,7 @@ input.nh-input.nh-input::placeholder {
   color: var(--color-nh-muted);
 }
 
-/* Fokus keyboard: cincin lettuce, hanya untuk pengguna keyboard. */
+/* Fokus keyboard: cincin bubblegum Paddy, hanya untuk pengguna keyboard. */
 .nh-app button:focus-visible,
 .nh-app a:focus-visible,
 .nh-app [role="button"]:focus-visible {
@@ -145,7 +145,7 @@ input.nh-input.nh-input::placeholder {
   }
 }
 
-/* Aksi sekunder: Deep Forest Green dengan teks lime. */
+/* Aksi sekunder: Berry dengan teks Sunny. */
 .nh-btn-forest {
   display: inline-flex;
   align-items: center;
@@ -157,7 +157,7 @@ input.nh-input.nh-input::placeholder {
   color: var(--color-nh-lime);
   font-weight: 800;
   text-align: center;
-  box-shadow: 0 10px 24px rgb(61 43 32 / 0.18);
+  box-shadow: 0 10px 24px rgb(42 16 36 / 0.18);
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nh-btn-forest:active {
@@ -186,7 +186,7 @@ select.nh-input:focus {
   background: var(--color-nh-cream);
 }
 
-/* Logo merek dicat Pale Lime: PNG putih dipakai sebagai mask. */
+/* Logo merek dicat Sunny: PNG putih dipakai sebagai mask. */
 .nh-logo-lime {
   background-color: var(--color-nh-lime);
   mask: url("/member-assets/brand/wordmark-white.png") left center / contain no-repeat;
@@ -218,7 +218,7 @@ select.nh-input:focus {
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 50%;
-  border: 3px solid rgb(61 43 32 / 0.15);
+  border: 3px solid rgb(42 16 36 / 0.15);
   border-top-color: currentColor;
   animation: hx-spin 0.7s linear infinite;
 }

@@ -1,4 +1,4 @@
-// Package spa is the spa (Mizu) bounded context: spa outlets, treatments and
+// Package spa is the spa (Paddy Experience) bounded context: spa outlets, treatments and
 // their duration variants, therapists with loans to other outlets, bookings
 // whose treatments are assigned to therapists, checkout into a POS open bill,
 // and therapist commissions. EPIC-052.

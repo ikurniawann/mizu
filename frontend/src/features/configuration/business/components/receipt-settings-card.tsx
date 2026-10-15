@@ -193,7 +193,7 @@ export function ReceiptSettingsCard() {
                 rows={4}
                 className={textareaClass}
                 placeholder={
-                  "MIZU\nJl. Westhoff No. 1, Bandung\nIG @mizufamily.id"
+                  "PADDY STORE PVJ\nParis Van Java Mall, Jl. Sukajadi No. 131–139, Bandung\nIG @paddy.id"
                 }
                 value={headerText}
                 onChange={(e) => edit({ headerText: e.target.value })}
@@ -207,7 +207,7 @@ export function ReceiptSettingsCard() {
                 rows={3}
                 className={textareaClass}
                 placeholder={
-                  "Terima kasih atas kunjungan Anda\nWiFi: MIZU-GUEST"
+                  "Terima kasih atas kunjungan Anda\nWiFi: PADDY-GUEST"
                 }
                 value={footerText}
                 onChange={(e) => edit({ footerText: e.target.value })}

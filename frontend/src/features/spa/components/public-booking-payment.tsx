@@ -29,7 +29,7 @@ export function PublicBookingPayment({
   const router = useRouter();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(notice === "gagal" ? "Link pembayaran belum berhasil dibuat. Coba lagi, atau bayar di outlet." : null);
+  const [error, setError] = useState<string | null>(notice === "gagal" ? "Link pembayaran belum berhasil dibuat. Coba lagi, atau bayar di toko." : null);
   const [simMethod, setSimMethod] = useState<(typeof SIM_METHODS)[number]>("QRIS");
 
   const upcoming = booking.status === "unassigned" || booking.status === "assigned";
@@ -71,11 +71,11 @@ export function PublicBookingPayment({
         <section className="overflow-hidden rounded-card bg-card shadow-float ring-2 ring-accent-strong">
           <div className="flex items-center justify-between gap-3 bg-ink px-5 py-4 text-on-ink">
             <div>
-              <p className="text-xs font-semibold tracking-wider text-accent uppercase">Pembayaran DP</p>
-              <p className="font-display text-lg font-semibold">Xendit · Mizu {booking.booking_code}</p>
+              <p className="text-xs font-semibold tracking-wider text-sunny uppercase">Pembayaran DP</p>
+              <p className="font-display text-lg font-semibold">Xendit · Paddy {booking.booking_code}</p>
             </div>
             <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
-              <FlaskConical className="size-3.5 text-accent" /> Mode demo
+              <FlaskConical className="size-3.5 text-sunny" /> Mode demo
             </span>
           </div>
           <div className="space-y-4 p-5">
@@ -103,12 +103,12 @@ export function PublicBookingPayment({
     return (
       <section className="space-y-4 rounded-card bg-card p-6 shadow-card ring-2 ring-accent-strong">
         <div className="flex items-start gap-3">
-          <Hourglass className="mt-0.5 size-5 shrink-0 text-forest dark:text-accent" />
+          <Hourglass className="mt-0.5 size-5 shrink-0 text-forest dark:text-brand-text" />
           <div className="space-y-1">
             <p className="font-display text-xl font-semibold">Bayar DP {dp} untuk mengunci jadwal</p>
             <p className="text-sm text-body">
               {deadline ? `Jadwal ditahan sampai ${deadline} WIB. ` : ""}Lewat batas itu booking dibatalkan otomatis dan jamnya dilepas. Sisa{" "}
-              <span className="font-semibold">{formatRupiah(Math.max(0, booking.total_idr - deposit.deposit_idr))}</span> dibayar di outlet setelah treatment.
+              <span className="font-semibold">{formatRupiah(Math.max(0, booking.total_idr - deposit.deposit_idr))}</span> dibayar di toko setelah sesi selesai.
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ export function PublicBookingPayment({
         <BadgeCheck className="size-6 shrink-0 text-success" />
         <div>
           <p className="font-semibold">DP {formatRupiah(deposit.deposit_idr)} diterima · jadwal terkunci</p>
-          <p className="text-sm text-body">Sisa {formatRupiah(deposit.remaining_idr)} dibayar di outlet setelah treatment.</p>
+          <p className="text-sm text-body">Sisa {formatRupiah(deposit.remaining_idr)} dibayar di toko setelah sesi selesai.</p>
         </div>
       </div>
     );
@@ -139,7 +139,7 @@ export function PublicBookingPayment({
         <BadgeCheck className="size-6 shrink-0 text-success" />
         <div>
           <p className="font-semibold">Lunas · {total}</p>
-          <p className="text-sm text-body">{booking.paid_online ? "Dibayar online. Tidak perlu bayar lagi di outlet." : "Dibayar di outlet."}</p>
+          <p className="text-sm text-body">{booking.paid_online ? "Dibayar online. Tidak perlu bayar lagi di toko." : "Dibayar di toko."}</p>
         </div>
       </div>
     );
@@ -178,11 +178,11 @@ export function PublicBookingPayment({
       <section className="overflow-hidden rounded-card bg-card shadow-float ring-2 ring-accent-strong">
         <div className="flex items-center justify-between gap-3 bg-ink px-5 py-4 text-on-ink">
           <div>
-            <p className="text-xs font-semibold tracking-wider text-accent uppercase">Pembayaran</p>
-            <p className="font-display text-lg font-semibold">Xendit · Mizu {booking.booking_code}</p>
+            <p className="text-xs font-semibold tracking-wider text-sunny uppercase">Pembayaran</p>
+            <p className="font-display text-lg font-semibold">Xendit · Paddy {booking.booking_code}</p>
           </div>
           <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
-            <FlaskConical className="size-3.5 text-accent" /> Mode demo
+            <FlaskConical className="size-3.5 text-sunny" /> Mode demo
           </span>
         </div>
         <div className="space-y-4 p-5">
@@ -221,8 +221,8 @@ export function PublicBookingPayment({
   if (!booking.online_payment) {
     return (
       <div className="flex items-center gap-3 rounded-card bg-surface p-5">
-        <Wallet className="size-5 shrink-0 text-forest dark:text-accent" />
-        <p className="text-sm text-body">Bayar {total} di outlet setelah treatment.</p>
+        <Wallet className="size-5 shrink-0 text-forest dark:text-brand-text" />
+        <p className="text-sm text-body">Bayar {total} di toko setelah sesi selesai.</p>
       </div>
     );
   }
@@ -231,15 +231,15 @@ export function PublicBookingPayment({
   return (
     <section className="space-y-4 rounded-card bg-card p-6 shadow-card">
       <div className="flex items-start gap-3">
-        <CreditCard className="mt-0.5 size-5 shrink-0 text-forest dark:text-accent" />
+        <CreditCard className="mt-0.5 size-5 shrink-0 text-forest dark:text-brand-text" />
         <div className="space-y-1">
           <p className="font-display text-xl font-semibold">
             {booking.payment_method === "online" ? "Selesaikan pembayaran" : "Mau bayar sekarang?"}
           </p>
           <p className="text-sm text-body">
             {booking.payment_method === "online"
-              ? `Booking tercatat. Bayar ${total} lewat VA, e-wallet, QRIS atau kartu. Belum sempat? Kamu tetap bisa bayar di outlet.`
-              : `Booking ini dibayar di outlet. Bisa juga bayar ${total} online sekarang supaya check-in lebih cepat.`}
+              ? `Booking tercatat. Bayar ${total} lewat VA, e-wallet, QRIS atau kartu. Belum sempat? Kamu tetap bisa bayar di toko.`
+              : `Booking ini dibayar di toko. Bisa juga bayar ${total} online sekarang supaya check-in lebih cepat.`}
           </p>
         </div>
       </div>

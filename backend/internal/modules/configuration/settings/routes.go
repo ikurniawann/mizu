@@ -179,7 +179,7 @@ func brandName() string {
 	if name := strings.TrimSpace(os.Getenv("NEXT_PUBLIC_APP_NAME")); name != "" {
 		return name
 	}
-	return "Mizu"
+	return "Paddy"
 }
 
 // appOrigin is appOrigin(request) (lib/app-origin.ts). Behind the Next

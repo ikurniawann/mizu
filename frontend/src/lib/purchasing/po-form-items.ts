@@ -1,4 +1,12 @@
 /** Logika murni form PO bahan baku: baris item, satuan, total, validasi, dan payload API. */
+import {
+  basePack,
+  defaultPurchasePackFor,
+  packLabel,
+  resolvePacks,
+  wholePacksFor,
+  type ItemPack,
+} from "@/lib/purchasing/packs";
 import { computePoTotals, type PoTotals } from "@/lib/purchasing/po-totals";
 import type {
   PurchaseOrderFormData,
@@ -105,6 +113,99 @@ export function mapPRItemToForm(item: POFormPRItem, materials: RawMaterialWithSt
   };
 }
 
+/* ── PO langsung (tanpa PR): baris yang bisa ditambah, dipilih, dan dihapus ── */
+
+export interface POUnitOption {
+  value: string;
+  label: string;
+  /** Isi satuan ini dalam satuan dasar bahan baku. */
+  factor: number;
+}
+
+let draftRowSeq = 0;
+
+/** API mengirim kolom numeric sebagai string ("50"); konversi pack butuh angka. */
+function withNumericPacks(material: RawMaterialWithStock): RawMaterialWithStock {
+  return {
+    ...material,
+    konversi_factor: material.konversi_factor == null ? undefined : Number(material.konversi_factor),
+    unit_conversions: material.unit_conversions?.map((conversion) => ({
+      ...conversion,
+      qty_in_base_unit: Number(conversion.qty_in_base_unit),
+    })),
+  };
+}
+
+/** Baris kosong form PO langsung (qty 1, harga menunggu saran). */
+export function emptyPOItem(id = `new-${++draftRowSeq}`): POItemForm {
+  return { id, raw_material_id: "", qty_ordered: 1, harga_satuan: 0, notes: "", subtotal: 0 };
+}
+
+/**
+ * Satuan beli sebuah bahan baku: pack aktif (atau satuan besar/kecil lama) dengan
+ * label "KARTON (24 PCS)"; urutan mengikuti data pack (pack dasar dulu).
+ */
+export function purchaseUnitOptions(raw: RawMaterialWithStock | undefined, units: Unit[]): POUnitOption[] {
+  if (!raw) return [];
+  const material = withNumericPacks(raw);
+  const conversions: ItemPack[] = (material.unit_conversions ?? []).map((conversion) => ({
+    ...conversion,
+    unit_name: conversion.satuan?.nama,
+  }));
+  const unitName = (pack: ItemPack) =>
+    pack.unit_name || units.find((unit) => unit.id === pack.satuan_id)?.nama || "";
+  const packs = resolvePacks(material, conversions).map((pack) => ({ ...pack, unit_name: unitName(pack) }));
+  const base = basePack(packs);
+  const baseName = (base && unitName(base)) || material.satuan_kecil_nama || material.satuan_besar_nama || "";
+  const seen = new Set<string>();
+  return packs.flatMap((pack) => {
+    if (!pack.unit_name || seen.has(pack.satuan_id)) return [];
+    seen.add(pack.satuan_id);
+    return [{ value: pack.satuan_id, label: packLabel(pack, baseName), factor: pack.qty_in_base_unit }];
+  });
+}
+
+/** Pilih bahan baku: satuan = pack beli bawaan, harga direset sampai saran harga masuk. */
+export function withMaterial(item: POItemForm, material: RawMaterialWithStock, units: Unit[]): POItemForm {
+  const unitId = defaultPurchasePackFor(withNumericPacks(material))?.satuan_id ?? material.satuan_besar_id ?? undefined;
+  const option = purchaseUnitOptions(material, units).find((entry) => entry.value === unitId);
+  return {
+    ...item,
+    raw_material_id: material.id,
+    raw_material_name: material.nama,
+    pr_item_id: undefined,
+    satuan_id: unitId,
+    requested_satuan_id: unitId,
+    raw_material_unit: option?.label || units.find((unit) => unit.id === unitId)?.nama || "",
+    harga_satuan: 0,
+    subtotal: 0,
+  };
+}
+
+/** Ganti satuan baris; harga direset karena harga per satuan ikut berubah. */
+export function withUnit(item: POItemForm, unitId: string, label: string): POItemForm {
+  return { ...item, satuan_id: unitId, requested_satuan_id: unitId, raw_material_unit: label, harga_satuan: 0, subtotal: 0 };
+}
+
+/**
+ * Baris dari laporan stok rendah (?material_id=&qty=, qty dalam satuan dasar):
+ * pack beli bawaan, qty dibulatkan ke pack utuh (minimal 1).
+ */
+export function lowStockPOItem(material: RawMaterialWithStock, baseQty: number, units: Unit[]): POItemForm {
+  const row = withMaterial(emptyPOItem(`low-stock-${material.id}`), material, units);
+  const factor = defaultPurchasePackFor(withNumericPacks(material))?.qty_in_base_unit ?? 1;
+  return withQtyOrPrice(row, "qty_ordered", Math.max(1, wholePacksFor(baseQty, factor)));
+}
+
+/** Item PR disetujui untuk PO langsung ("Ambil dari PR"): nama dari master bahan baku bila ada. */
+export function prItemsToPOItems(items: POFormPRItem[], materials: RawMaterialWithStock[], units: Unit[]): POItemForm[] {
+  return items.map((item) => {
+    const row = mapPRItemToForm(item, materials, units);
+    const material = materials.find((entry) => entry.id === row.raw_material_id);
+    return material ? { ...row, raw_material_name: material.nama } : row;
+  });
+}
+
 /** Ubah qty atau harga satu baris dan hitung ulang subtotalnya. */
 export function withQtyOrPrice(item: POItemForm, field: "qty_ordered" | "harga_satuan", value: number): POItemForm {
   const next = { ...item, [field]: value };
@@ -175,13 +276,25 @@ export function poFormTotals(items: POItemForm[], form: Pick<PurchaseOrderFormDa
   return computePoTotals(subtotal, form);
 }
 
-/** Pesan galat validasi sebelum simpan, atau null bila valid. */
-export function validatePOForm(form: PurchaseOrderFormData, items: POItemForm[], isEditMode: boolean): string | null {
-  if (!isEditMode && !form.pr_id) return "Purchase order harus dibuat dari purchase request yang disetujui";
+/**
+ * Pesan galat validasi sebelum simpan, atau null bila valid. `requirePr` = aturan
+ * "PO Bahan Baku wajib dari PR" (bawaan aktif); baris baru (bukan dari PR) wajib bersatuan.
+ */
+export function validatePOForm(
+  form: PurchaseOrderFormData,
+  items: POItemForm[],
+  isEditMode: boolean,
+  { requirePr = true }: { requirePr?: boolean } = {}
+): string | null {
+  if (!isEditMode && requirePr && !form.pr_id) return "Purchase order harus dibuat dari purchase request yang disetujui";
   if (!form.supplier_id) return "Pilih supplier terlebih dahulu";
   if (items.length === 0) return "Tambahkan minimal 1 item";
-  if (items.some((item) => !item.raw_material_id || item.qty_ordered <= 0 || item.harga_satuan < 0)) {
-    return "Lengkapi bahan baku, jumlah, dan harga untuk semua item";
+  if (items.some((item) => !item.raw_material_id)) return "Pilih bahan baku untuk semua item";
+  if (!isEditMode && items.some((item) => !item.pr_item_id && !item.satuan_id)) {
+    return "Pilih satuan untuk semua item";
+  }
+  if (items.some((item) => item.qty_ordered <= 0 || item.harga_satuan < 0)) {
+    return "Lengkapi jumlah dan harga untuk semua item";
   }
   return null;
 }

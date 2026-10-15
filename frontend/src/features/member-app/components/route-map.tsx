@@ -67,7 +67,7 @@ export function RouteMap({
       <path
         d={path}
         fill="none"
-        stroke="#3d2b20"
+        stroke="#b8045a"
         strokeWidth={3.5}
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -76,7 +76,7 @@ export function RouteMap({
         cx={sx}
         cy={sy}
         r={5}
-        fill="#c49a5c"
+        fill="#f4529a"
         stroke="#fff"
         strokeWidth={1.5}
       />
@@ -84,7 +84,7 @@ export function RouteMap({
         cx={ex}
         cy={ey}
         r={5}
-        fill="#241b16"
+        fill="#2a1024"
         stroke="#fff"
         strokeWidth={1.5}
       />

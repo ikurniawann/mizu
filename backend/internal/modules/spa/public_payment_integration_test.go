@@ -93,7 +93,7 @@ func TestPublicTherapistChoiceAndOnlinePayment(t *testing.T) {
 	}
 	// Ayu is now taken at that time: the next guest cannot pick her, and the list drops her.
 	out := e.call(nil, "POST", "/api/public/spa/bookings", book("0813 2222 0002", ayu, "outlet"), http.StatusConflict)
-	if msg, _ := out["error"].(string); !strings.Contains(msg, "Terapis pilihanmu") || strings.Contains(msg, "MZ-") {
+	if msg, _ := out["error"].(string); !strings.Contains(msg, "Crew pilihanmu") || strings.Contains(msg, "PD-") {
 		t.Fatalf("taken therapist error leaks or is unclear: %v", out)
 	}
 	if left := e.list(nil, q); len(left) != 1 || left[0].(map[string]any)["name"] != "Budi S." {

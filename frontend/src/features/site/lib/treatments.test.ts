@@ -16,7 +16,7 @@ const MENU = [
   t("Totok Wajah", null, [[45, 130000]]),
   t("Thai Massage", "Massage", [[60, 195000]]),
   t("Draft", "Massage", []),
-  t("Mizu Signature Ritual", "Signature", [[150, 595000]]),
+  t("Paddy Signature Party", "Signature", [[150, 595000]]),
 ];
 
 describe("treatment menu helpers", () => {
@@ -43,7 +43,7 @@ describe("treatment menu helpers", () => {
 
   it("puts signature treatments first and caps the pick", () => {
     const pick = featured(MENU, 3);
-    expect(pick.map((x) => x.name)).toEqual(["Mizu Signature Ritual", "Balinese Massage", "Refleksi Kaki"]);
+    expect(pick.map((x) => x.name)).toEqual(["Paddy Signature Party", "Balinese Massage", "Refleksi Kaki"]);
   });
 
   it("formats opening hours", () => {

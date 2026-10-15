@@ -268,7 +268,7 @@ func (s *Service) ensureProduct(ctx context.Context, q Q, o *outletRow, v varian
 	}
 	id, err := s.ports.POS.EnsureTreatmentProduct(ctx, q, TreatmentProduct{
 		CompanyID: o.CompanyID, BranchID: o.BranchID, WarehouseID: o.WarehouseID, ExistingID: deref(v.PosProductID),
-		Code: code, SKU: "SPA-" + v.TreatmentCode + "-" + variant[:8] + "-" + branch, Name: name, Category: "Spa Treatment",
+		Code: code, SKU: "SPA-" + v.TreatmentCode + "-" + variant[:8] + "-" + branch, Name: name, Category: "Paddy Experience",
 		Price: v.Price, Active: v.IsActive && v.TreatmentOn,
 	})
 	if err != nil {
@@ -658,6 +658,7 @@ type itemRequest struct {
 	VariantID   string
 	StartsAt    *time.Time
 	TherapistID string
+	Design      *Design // case design for a customizable treatment (optional)
 }
 
 type createBookingInput struct {
@@ -696,6 +697,16 @@ func (s *Service) planItems(ctx context.Context, q Q, branchID string, start tim
 			return nil, httpx.BadRequest("Treatment tidak ditemukan atau tidak aktif")
 		}
 		out[i] = newItem{Variant: v, StartsAt: cursor, Status: domain.ItemUnassigned, SortOrder: i}
+		if r.Design != nil {
+			if !v.Customizable {
+				return nil, httpx.BadRequest(v.TreatmentName + " tidak memakai desain case")
+			}
+			d, err := Experience().NormalizeDesign(r.Design)
+			if err != nil {
+				return nil, err
+			}
+			out[i].Design = d
+		}
 		cursor = cursor.Add(time.Duration(v.DurationMin) * time.Minute)
 	}
 	return out, nil
@@ -923,6 +934,65 @@ func (s *Service) AddItem(ctx context.Context, userID, id string, req itemReques
 		return nil, err
 	}
 	return s.visibleBooking(ctx, nil, id)
+}
+
+// SetItemDesign saves (or, with nil, clears) the case design of a
+// customizable item. The crew fills it in store for bookings made by phone
+// or chat; it stays editable until the booking is paid or closed.
+func (s *Service) SetItemDesign(ctx context.Context, userID, bookingID, itemID string, in *Design) (*Booking, error) {
+	sc, err := s.scope(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	var design *Design
+	if in != nil {
+		if design, err = Experience().NormalizeDesign(in); err != nil {
+			return nil, err
+		}
+	}
+	err = s.tx(ctx, func(q Q) error {
+		b, err := s.lockBooking(ctx, q, sc, bookingID)
+		if err != nil {
+			return err
+		}
+		if !domain.IsOpenBooking(b.Status) {
+			return httpx.Conflict("Booking sudah " + domain.BookingLabel(b.Status))
+		}
+		if b.PaymentStatus != domain.PaymentUnpaid {
+			return httpx.Conflict("Desain tidak dapat diubah setelah booking dibayar")
+		}
+		items, err := s.st.items(ctx, q, bookingID)
+		if err != nil {
+			return err
+		}
+		var item *Item
+		for i := range items {
+			if items[i].ID == itemID {
+				item = &items[i]
+			}
+		}
+		if item == nil {
+			return httpx.NotFound("Treatment tidak ditemukan pada booking ini")
+		}
+		if item.Status == domain.ItemCancelled {
+			return httpx.Conflict("Treatment sudah dibatalkan")
+		}
+		if !item.Customizable {
+			return httpx.BadRequest(item.TreatmentName + " tidak memakai desain case")
+		}
+		if err := s.st.setItemDesign(ctx, q, itemID, design); err != nil {
+			return err
+		}
+		note := "Desain dihapus"
+		if design != nil {
+			note = "Desain: " + DesignSummary(design)
+		}
+		return s.st.event(ctx, q, bookingID, &itemID, "design", nil, nil, userID, note)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.visibleBooking(ctx, nil, bookingID)
 }
 
 // addItemIn appends one treatment to an open, unpaid booking that has not
@@ -1348,10 +1418,14 @@ func (s *Service) Checkout(ctx context.Context, userID, id string, rating *int) 
 				}
 				products[v.ID] = pid
 			}
-			note := ""
-			if it.TherapistName != nil {
-				note = "Terapis: " + *it.TherapistName
+			notes := []string{}
+			if it.Design != nil {
+				notes = append(notes, "Desain: "+DesignSummary(it.Design))
 			}
+			if it.TherapistName != nil {
+				notes = append(notes, "Crew: "+*it.TherapistName)
+			}
+			note := strings.Join(notes, " · ")
 			lines = append(lines, BillLine{ProductID: pid, Name: it.TreatmentName + " (" + it.VariantName + ")",
 				SKU: "SPA-" + v.TreatmentCode, UnitPrice: it.PriceIDR, Note: note})
 		}
@@ -2032,6 +2106,10 @@ type publicBookingInput struct {
 	RoomID string
 	// roomPriceWaived: a later guest of a party sharing the room (charged once).
 	roomPriceWaived bool
+	// Designs[i] is the case design of VariantIDs[i] (nil for services that
+	// take none). The website requires one for every customizable service;
+	// other channels (WhatsApp) may leave it to the crew in store.
+	Designs []*Design
 }
 
 // PublicBookingInput is the self-service booking request for other
@@ -2124,10 +2202,20 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 		reqs := make([]itemRequest, len(in.VariantIDs))
 		for i, v := range in.VariantIDs {
 			reqs[i] = itemRequest{VariantID: v}
+			if i < len(in.Designs) {
+				reqs[i].Design = in.Designs[i]
+			}
 		}
 		items, err := s.planItems(ctx, q, o.BranchID, in.ScheduledAt, reqs)
 		if err != nil {
 			return err
+		}
+		if in.Source == "public" {
+			for _, it := range items {
+				if it.Variant.Customizable && it.Design == nil {
+					return httpx.BadRequest("Lengkapi desain case untuk " + it.Variant.TreatmentName)
+				}
+			}
 		}
 		total := 0
 		for _, it := range items {
@@ -2200,7 +2288,7 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 			}
 			v := items[i].Variant
 			result.Items = append(result.Items, PublicItem{VariantID: v.ID, TreatmentName: v.TreatmentName, VariantName: v.Name,
-				DurationMin: v.DurationMin, PriceIDR: v.Price})
+				DurationMin: v.DurationMin, PriceIDR: v.Price, Customizable: v.Customizable, Design: items[i].Design})
 			result.TotalIDR += v.Price
 		}
 		if in.PaymentMethod == PaymentOnline {
@@ -2220,7 +2308,7 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 		if err := s.assignBooking(ctx, q, "", b, in.TherapistID); err != nil {
 			var rule *httpx.Error
 			if errors.As(err, &rule) && rule.Status == http.StatusConflict {
-				return httpx.Conflict("Terapis pilihanmu baru saja terisi. Pilih terapis lain, atau biarkan Mizu memilihkan.")
+				return httpx.Conflict("Crew pilihanmu baru saja terisi. Pilih crew lain, atau biarkan Paddy memilihkan.")
 			}
 			return err
 		}

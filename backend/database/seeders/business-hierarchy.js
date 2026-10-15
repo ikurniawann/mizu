@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Seeder: Business hierarchy — Prologe → Mizu → Mizu Bandung
+ * Seeder: Business hierarchy kantor pusat — PROLOGE → MIZU → MIZU-BANDUNG (kode warisan migrasi,
+ * dipertahankan); nama tampil Paddy: CV Cipta Kreasi Kreatif → Paddy Kantor Pusat.
+ * Toko Paddy (PADDY → PADDY-RETAIL → PD-PVJ / PD-KOPO) dibuat seeders/paddy-spa.js.
  *
  * Usage:
  *   node database/seeders/business-hierarchy.js
@@ -62,7 +64,7 @@ async function main() {
 
     await client.query(
       `INSERT INTO configuration.holdings (name, code)
-       VALUES ('Prologe', $1)
+       VALUES ('CV Cipta Kreasi Kreatif', $1)
        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()`,
       [HOLDING_CODE]
     );
@@ -75,7 +77,7 @@ async function main() {
 
     await client.query(
       `INSERT INTO configuration.companies (holding_id, name, code)
-       VALUES ($1, 'Mizu', $2)
+       VALUES ($1, 'Paddy Kantor Pusat', $2)
        ON CONFLICT (holding_id, code) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()`,
       [holdingId, COMPANY_CODE]
     );

@@ -15,20 +15,39 @@ import (
 
 // payrollJournals are the journals a paid run posts per company, in order,
 // with the amount source each mapping's seeded lines read.
+// branch is set for the expense journals: their DEBIT (expense) lines are
+// split per store by that amount of each RunBranch.
 var payrollJournals = []struct {
 	event, source, label string
 	amount               func(payroll.RunCompany) float64
+	branch               func(payroll.RunBranch) float64
 }{
-	{"PAYROLL_ACCRUAL", "TOTAL", "beban gaji", func(r payroll.RunCompany) float64 { return r.TotalGross }},
-	{"PAYROLL_PPH21_WITHHOLDING", "TAX", "potongan PPh 21", func(r payroll.RunCompany) float64 { return r.TotalPph21 }},
-	{"PAYROLL_LOAN_DEDUCTION", "PAID", "potongan cicilan pinjaman", func(r payroll.RunCompany) float64 { return r.TotalLoanDeduction }},
-	{"PAYROLL_BPJS_TK_EMPLOYEE", "TOTAL", "potongan BPJS Ketenagakerjaan karyawan", func(r payroll.RunCompany) float64 { return r.TotalBpjsTkEmployee }},
-	{"PAYROLL_BPJS_KES_EMPLOYEE", "TOTAL", "potongan BPJS Kesehatan karyawan", func(r payroll.RunCompany) float64 { return r.TotalBpjsKesEmployee }},
-	{"PAYROLL_TAPERA_EMPLOYEE", "TOTAL", "potongan Tapera karyawan", func(r payroll.RunCompany) float64 { return r.TotalTaperaEmployee }},
-	{"PAYROLL_PAYMENT", "PAID", "pembayaran gaji bersih", func(r payroll.RunCompany) float64 { return r.TotalNet }},
-	{"PAYROLL_BPJS_TK_EMPLOYER", "TOTAL", "BPJS Ketenagakerjaan pemberi kerja", func(r payroll.RunCompany) float64 { return r.TotalBpjsTkEmployer }},
-	{"PAYROLL_BPJS_KES_EMPLOYER", "TOTAL", "BPJS Kesehatan pemberi kerja", func(r payroll.RunCompany) float64 { return r.TotalBpjsKesEmployer }},
-	{"PAYROLL_TAPERA_EMPLOYER", "TOTAL", "Tapera pemberi kerja", func(r payroll.RunCompany) float64 { return r.TotalTaperaEmployer }},
+	{"PAYROLL_ACCRUAL", "TOTAL", "beban gaji", func(r payroll.RunCompany) float64 { return r.TotalGross },
+		func(b payroll.RunBranch) float64 { return b.TotalGross }},
+	{"PAYROLL_PPH21_WITHHOLDING", "TAX", "potongan PPh 21", func(r payroll.RunCompany) float64 { return r.TotalPph21 }, nil},
+	{"PAYROLL_LOAN_DEDUCTION", "PAID", "potongan cicilan pinjaman", func(r payroll.RunCompany) float64 { return r.TotalLoanDeduction }, nil},
+	{"PAYROLL_BPJS_TK_EMPLOYEE", "TOTAL", "potongan BPJS Ketenagakerjaan karyawan", func(r payroll.RunCompany) float64 { return r.TotalBpjsTkEmployee }, nil},
+	{"PAYROLL_BPJS_KES_EMPLOYEE", "TOTAL", "potongan BPJS Kesehatan karyawan", func(r payroll.RunCompany) float64 { return r.TotalBpjsKesEmployee }, nil},
+	{"PAYROLL_TAPERA_EMPLOYEE", "TOTAL", "potongan Tapera karyawan", func(r payroll.RunCompany) float64 { return r.TotalTaperaEmployee }, nil},
+	{"PAYROLL_PAYMENT", "PAID", "pembayaran gaji bersih", func(r payroll.RunCompany) float64 { return r.TotalNet }, nil},
+	{"PAYROLL_BPJS_TK_EMPLOYER", "TOTAL", "BPJS Ketenagakerjaan pemberi kerja", func(r payroll.RunCompany) float64 { return r.TotalBpjsTkEmployer },
+		func(b payroll.RunBranch) float64 { return b.TotalBpjsTkEmployer }},
+	{"PAYROLL_BPJS_KES_EMPLOYER", "TOTAL", "BPJS Kesehatan pemberi kerja", func(r payroll.RunCompany) float64 { return r.TotalBpjsKesEmployer },
+		func(b payroll.RunBranch) float64 { return b.TotalBpjsKesEmployer }},
+	{"PAYROLL_TAPERA_EMPLOYER", "TOTAL", "Tapera pemberi kerja", func(r payroll.RunCompany) float64 { return r.TotalTaperaEmployer },
+		func(b payroll.RunBranch) float64 { return b.TotalTaperaEmployer }},
+}
+
+// branchShares is the per-store split of one expense journal of a group.
+func branchShares(g payroll.RunCompany, amount func(payroll.RunBranch) float64) []domain.BranchShare {
+	if amount == nil || len(g.Branches) == 0 {
+		return nil
+	}
+	out := make([]domain.BranchShare, len(g.Branches))
+	for i, b := range g.Branches {
+		out[i] = domain.BranchShare{BranchID: b.BranchID, Amount: amount(b)}
+	}
+	return out
 }
 
 func numeric(s *string) float64 {
@@ -93,7 +112,8 @@ func (s *Service) PostPayrollRun(ctx context.Context, db database.DB, in payroll
 				}
 				r, err := PostFromMapping(ctx, tx, MappingPost{CompanyID: g.CompanyID, UserID: in.UserID, EventCode: j.event,
 					DocumentType: "payroll_run", DocumentID: in.RunID, EntryDate: date, Amounts: domain.Amounts{j.source: amount},
-					Description: "Payroll " + period + " — " + j.label, SourceModule: "PAYROLL"})
+					Description: "Payroll " + period + " — " + j.label, SourceModule: "PAYROLL",
+					DebitBranches: branchShares(g, j.branch)})
 				if err != nil {
 					return err
 				}
@@ -134,6 +154,7 @@ func payrollGroups(ctx context.Context, q database.Querier, in payroll.RunPaid) 
 		}
 		i := slices.IndexFunc(merged, func(m payroll.RunCompany) bool { return sameCompany(m.CompanyID, g.CompanyID) })
 		if i < 0 {
+			g.Branches = slices.Clone(g.Branches)
 			merged = append(merged, g)
 			continue
 		}
@@ -148,8 +169,25 @@ func payrollGroups(ctx context.Context, q database.Querier, in payroll.RunPaid) 
 		m.TotalBpjsKesEmployee += g.TotalBpjsKesEmployee
 		m.TotalTaperaEmployer += g.TotalTaperaEmployer
 		m.TotalTaperaEmployee += g.TotalTaperaEmployee
+		m.Branches = mergeBranches(m.Branches, g.Branches)
 	}
 	return merged, skipped, nil
+}
+
+// mergeBranches adds the store split of a merged group into into.
+func mergeBranches(into, more []payroll.RunBranch) []payroll.RunBranch {
+	for _, b := range more {
+		i := slices.IndexFunc(into, func(x payroll.RunBranch) bool { return sameCompany(x.BranchID, b.BranchID) })
+		if i < 0 {
+			into = append(into, b)
+			continue
+		}
+		into[i].TotalGross += b.TotalGross
+		into[i].TotalBpjsTkEmployer += b.TotalBpjsTkEmployer
+		into[i].TotalBpjsKesEmployer += b.TotalBpjsKesEmployer
+		into[i].TotalTaperaEmployer += b.TotalTaperaEmployer
+	}
+	return into
 }
 
 func sameCompany(a, b *string) bool {

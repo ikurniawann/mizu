@@ -17,6 +17,7 @@ var PublicAuthPrefixes = []string{
 	"/qris/",
 	"/site/sample/",
 	"/site/photos/",
+	"/experience/",
 	"/arkiv-os",
 	"/qa",
 	"/login",

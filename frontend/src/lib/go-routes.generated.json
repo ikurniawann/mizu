@@ -1712,12 +1712,57 @@
   {
     "module": "hris",
     "method": "GET",
+    "path": "/api/hris/attendance-adjustments"
+  },
+  {
+    "module": "hris",
+    "method": "GET",
+    "path": "/api/hris/attendance-periods"
+  },
+  {
+    "module": "hris",
+    "method": "GET",
+    "path": "/api/hris/attendance-periods/{id}"
+  },
+  {
+    "module": "hris",
+    "method": "PATCH",
+    "path": "/api/hris/attendance-periods/{id}"
+  },
+  {
+    "module": "hris",
+    "method": "POST",
+    "path": "/api/hris/attendance-periods/{id}/close"
+  },
+  {
+    "module": "hris",
+    "method": "POST",
+    "path": "/api/hris/attendance-periods/{id}/reopen"
+  },
+  {
+    "module": "hris",
+    "method": "GET",
+    "path": "/api/hris/attendance-settings"
+  },
+  {
+    "module": "hris",
+    "method": "PUT",
+    "path": "/api/hris/attendance-settings"
+  },
+  {
+    "module": "hris",
+    "method": "GET",
     "path": "/api/hris/attendance/daily-roster"
   },
   {
     "module": "hris",
     "method": "GET",
     "path": "/api/hris/attendance/export"
+  },
+  {
+    "module": "hris",
+    "method": "POST",
+    "path": "/api/hris/attendance/manual"
   },
   {
     "module": "hris",
@@ -1748,6 +1793,11 @@
     "module": "hris",
     "method": "PUT",
     "path": "/api/hris/attendance/{id}"
+  },
+  {
+    "module": "hris",
+    "method": "GET",
+    "path": "/api/hris/branches"
   },
   {
     "module": "hris",
@@ -1813,6 +1863,26 @@
     "module": "payroll",
     "method": "PATCH",
     "path": "/api/hris/dept-tasks/{id}"
+  },
+  {
+    "module": "hris",
+    "method": "GET",
+    "path": "/api/hris/employee-placements"
+  },
+  {
+    "module": "hris",
+    "method": "POST",
+    "path": "/api/hris/employee-placements/bulk"
+  },
+  {
+    "module": "hris",
+    "method": "DELETE",
+    "path": "/api/hris/employee-placements/{id}"
+  },
+  {
+    "module": "hris",
+    "method": "PATCH",
+    "path": "/api/hris/employee-placements/{id}"
   },
   {
     "module": "payroll",
@@ -2217,6 +2287,11 @@
   {
     "module": "hris",
     "method": "GET",
+    "path": "/api/hris/me/placements"
+  },
+  {
+    "module": "hris",
+    "method": "GET",
     "path": "/api/hris/me/team"
   },
   {
@@ -2323,6 +2398,16 @@
     "module": "payroll",
     "method": "POST",
     "path": "/api/hris/payroll/{id}/calculate"
+  },
+  {
+    "module": "payroll",
+    "method": "GET",
+    "path": "/api/hris/payroll/{id}/store-costs"
+  },
+  {
+    "module": "payroll",
+    "method": "GET",
+    "path": "/api/hris/payroll/{id}/store-costs/export"
   },
   {
     "module": "payroll",
@@ -4167,6 +4252,11 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/public/spa/experience-catalog"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/public/spa/outlets"
   },
   {
@@ -4923,6 +5013,16 @@
     "module": "procurement",
     "method": "POST",
     "path": "/api/purchasing/returns/{id}/revise"
+  },
+  {
+    "module": "procurement",
+    "method": "GET",
+    "path": "/api/purchasing/settings"
+  },
+  {
+    "module": "procurement",
+    "method": "PUT",
+    "path": "/api/purchasing/settings"
   },
   {
     "module": "procurement",
@@ -6173,6 +6273,11 @@
     "module": "spa",
     "method": "PATCH",
     "path": "/api/spa/bookings/{id}/items/{itemId}"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/bookings/{id}/items/{itemId}/design"
   },
   {
     "module": "spa",

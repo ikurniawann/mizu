@@ -113,8 +113,8 @@ export function orderedTreatments(treatments: PublicTreatment[], focusId: string
   return focus ? [focus, ...list.filter((t) => t !== focus)] : list;
 }
 
-/** Nama file gambar QR yang disimpan pelanggan: "mizu-booking-MZ-261009-VXL3.png". */
+/** Nama file gambar QR yang disimpan pelanggan: "paddy-booking-PD-261009-VXL3.png". */
 export function bookingQrFileName(code: string): string {
   const safe = code.replace(/[^A-Za-z0-9-]/g, "").slice(0, 40) || "booking";
-  return `mizu-booking-${safe}.png`;
+  return `paddy-booking-${safe}.png`;
 }

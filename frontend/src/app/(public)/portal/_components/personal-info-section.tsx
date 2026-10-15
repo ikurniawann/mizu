@@ -22,7 +22,7 @@ const SOURCES: [ApplicationFormValues["source"], string][] = [
   ["other", "Other"],
 ];
 
-const ICON = "absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#3a302a]";
+const ICON = "absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#403b37]";
 
 /** Outlet, position, identity, contact, residence and how the applicant heard of us. */
 export function PersonalInfoSection({ form, options, optionsLoading, brandLocked }: PersonalInfoSectionProps) {
@@ -67,9 +67,9 @@ export function PersonalInfoSection({ form, options, optionsLoading, brandLocked
               </option>
             ))}
           </select>
-          {optionsLoading && <p className="text-xs text-[#3a302a]">Loading positions...</p>}
+          {optionsLoading && <p className="text-xs text-[#403b37]">Loading positions...</p>}
           {!optionsLoading && positions.length === 0 && (
-            <p className="text-xs text-[#3d2b20]">No open positions right now</p>
+            <p className="text-xs text-[#b8045a]">No open positions right now</p>
           )}
         </FormField>
 

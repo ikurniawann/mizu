@@ -6,10 +6,10 @@ export type ThemePreset = {
   secondary: string;
 };
 
-export const DEFAULT_PRESET_ID = "mizu";
+export const DEFAULT_PRESET_ID = "paddy";
 
 export const THEME_PRESETS: readonly ThemePreset[] = [
-  { id: "mizu", label: "Mizu", primary: "#d6b47a", secondary: "#3d2b20" },
+  { id: "paddy", label: "Paddy", primary: "#e3066f", secondary: "#8b6ae6" },
   { id: "lime", label: "Lime", primary: "#daff59", secondary: "#00281a" },
   { id: "wonderland", label: "Biru", primary: "#1d1dcc", secondary: "#2941d3" },
   { id: "ocean", label: "Ocean", primary: "#0ea5e9", secondary: "#6366f1" },
@@ -18,8 +18,8 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   { id: "sunset", label: "Sunset", primary: "#f97316", secondary: "#ef4444" },
 ] as const;
 
-/** Preset id lama yang disimpan di browser sebelum rebrand Mizu (2026-10). */
-const LEGACY_PRESET_IDS: Record<string, string> = { nuhabit: "mizu" };
+/** Preset id lama yang mungkin masih tersimpan di browser (NüHabit, lalu Mizu) → Paddy. */
+const LEGACY_PRESET_IDS: Record<string, string> = { nuhabit: "paddy", mizu: "paddy" };
 
 export function getPreset(id: string): ThemePreset | undefined {
   const resolved = LEGACY_PRESET_IDS[id] ?? id;

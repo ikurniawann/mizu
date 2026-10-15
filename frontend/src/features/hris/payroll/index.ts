@@ -7,3 +7,4 @@ export { PayrollPage } from "./components/payroll-page";
 export { PayrollDetailPage } from "./components/payroll-detail-page";
 export { PayslipPage } from "./components/payslip-page";
 export { PayrollSettingsPage } from "./components/payroll-settings-page";
+export { StoreCostReportPage } from "./components/store-cost-report-page";

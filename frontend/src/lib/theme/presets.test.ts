@@ -4,11 +4,17 @@ import { normalizeHex } from "./palette";
 import { DEFAULT_PRESET_ID, getPreset, THEME_PRESETS } from "./presets";
 
 describe("THEME_PRESETS", () => {
-  it("defaults to the Mizu preset (Pale Lime + Deep Forest Green)", () => {
-    const nuhabit = getPreset(DEFAULT_PRESET_ID);
-    expect(nuhabit).toBeDefined();
-    expect(nuhabit!.primary).toBe("#d6b47a");
-    expect(nuhabit!.secondary).toBe("#3d2b20");
+  it("defaults to the Paddy preset (Paddy Magenta + Lilac)", () => {
+    expect(DEFAULT_PRESET_ID).toBe("paddy");
+    const paddy = getPreset(DEFAULT_PRESET_ID);
+    expect(paddy).toBeDefined();
+    expect(paddy!.label).toBe("Paddy");
+    expect(paddy!.primary).toBe("#e3066f");
+    expect(paddy!.secondary).toBe("#8b6ae6");
+  });
+  it("maps legacy stored preset ids (nuhabit, mizu) to Paddy", () => {
+    expect(getPreset("mizu")?.id).toBe("paddy");
+    expect(getPreset("nuhabit")?.id).toBe("paddy");
   });
   it("has unique ids and valid hex values", () => {
     const ids = new Set<string>();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { UseQueryResult } from "@tanstack/react-query";
@@ -36,10 +36,18 @@ interface VendorPOListPageProps {
   routes: { purchasingPoInsert: string; purchasingPoDetail: (id: string) => string };
   description: string;
   sectionDescription: string;
+  /** Tombol tambahan di header, sebelum "Buat Purchase Order". */
+  extraActions?: ReactNode;
 }
 
 /** Daftar PO ke vendor (produk & barang operasional): cari, filter status, paginasi. */
-export function VendorPOListPage({ useList, routes, description, sectionDescription }: VendorPOListPageProps) {
+export function VendorPOListPage({
+  useList,
+  routes,
+  description,
+  sectionDescription,
+  extraActions,
+}: VendorPOListPageProps) {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,12 +75,15 @@ export function VendorPOListPage({ useList, routes, description, sectionDescript
   }, [searchQuery]);
 
   const createButton = (
-    <Link href={routes.purchasingPoInsert}>
-      <Button className="purchasing-main-button w-full sm:w-auto">
-        <Plus className="mr-2 h-4 w-4" />
-        Buat Purchase Order
-      </Button>
-    </Link>
+    <>
+      {extraActions}
+      <Link href={routes.purchasingPoInsert}>
+        <Button className="purchasing-main-button w-full sm:w-auto">
+          <Plus className="mr-2 h-4 w-4" />
+          Buat Purchase Order
+        </Button>
+      </Link>
+    </>
   );
 
   return (

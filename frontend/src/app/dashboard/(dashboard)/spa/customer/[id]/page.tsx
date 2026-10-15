@@ -2,7 +2,7 @@ import { requireIamPage } from "@/lib/auth/require-user";
 import { IAM } from "@/lib/iam/prefixes";
 import { SpaCustomerDetailPage } from "@/features/spa";
 
-export const metadata = { title: "Detail Customer Spa" };
+export const metadata = { title: "Detail Customer Experience" };
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   await requireIamPage(IAM.spaCustomer);

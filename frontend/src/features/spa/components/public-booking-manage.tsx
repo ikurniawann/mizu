@@ -85,7 +85,7 @@ export function PublicBookingManage({ booking }: { booking: PublicBookingResult 
         <h2 className="font-display text-xl font-semibold">Ubah atau batalkan booking</h2>
         <p className="text-sm text-body">
           Ubah jadwal sampai 1 jam sebelum kunjungan.
-          {canCancel ? " Pembatalan sampai 24 jam sebelum kunjungan, dengan kode verifikasi WhatsApp." : " Pembatalan sudah lewat batas 24 jam; hubungi outlet bila perlu."}
+          {canCancel ? " Pembatalan sampai 24 jam sebelum kunjungan, dengan kode verifikasi WhatsApp." : " Pembatalan sudah lewat batas 24 jam; hubungi toko bila perlu."}
         </p>
       </div>
       {success && <p role="status" className="rounded-2xl bg-success-soft px-4 py-3 text-sm">{success}</p>}
@@ -94,7 +94,7 @@ export function PublicBookingManage({ booking }: { booking: PublicBookingResult 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {canReschedule && (
             <Button asChild size="lg" variant="outline">
-              <Link href={`/booking/spa/ubah?kode=${encodeURIComponent(booking.booking_code)}`}>
+              <Link href={`/booking/studio/ubah?kode=${encodeURIComponent(booking.booking_code)}`}>
                 <CalendarClock /> Ubah jadwal
               </Link>
             </Button>

@@ -263,7 +263,7 @@ func (s *Service) PublicPay(ctx context.Context, token string) (*PublicPayment, 
 		ExternalID:  spaInvoicePrefix + b.ID,
 		Amount:      total,
 		PayerName:   b.CustomerName,
-		Description: "Booking Mizu " + b.Code,
+		Description: "Booking Paddy Experience " + b.Code,
 		RedirectURL: statusURL,
 	})
 	if err != nil {

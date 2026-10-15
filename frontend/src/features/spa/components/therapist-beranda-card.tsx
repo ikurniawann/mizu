@@ -39,7 +39,7 @@ export function TherapistBerandaCard() {
     <section className="overflow-hidden rounded-2xl border border-gray-200/70 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-5 py-4">
         <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
-          <Sparkles className="h-5 w-5 text-pink-600" /> Terapis
+          <Sparkles className="h-5 w-5 text-pink-600" /> Crew Experience
           {fresh > 0 && (
             <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-semibold text-pink-700">{fresh} booking baru</span>
           )}

@@ -37,6 +37,9 @@ func (h handlers) getAttendance(w http.ResponseWriter, r *http.Request, a *Actor
 	return ok(w, dataOf(row))
 }
 
+// PUT /api/hris/attendance/{id}: HR validation (validated,
+// validation_notes) and manual adjustment (clock_in/clock_out "HH:MM" WIB,
+// status, branch_id, late_minutes, overtime_hours, notes) with a reason.
 func (h handlers) updateAttendance(w http.ResponseWriter, r *http.Request, a *Actor) error {
 	if !a.IsHR {
 		return httpx.Forbidden("Forbidden: Only HRD or managers can update attendance")
@@ -47,31 +50,24 @@ func (h handlers) updateAttendance(w http.ResponseWriter, r *http.Request, a *Ac
 		return err
 	}
 	var c fields
-	for _, field := range []struct {
-		key  string
-		rule validate.Rule
-		max  int
-	}{{"status", optional, 30}, {"notes", nullish, 5000}, {"validation_notes", nullish, 5000}} {
-		if v := str(f, field.key, field.rule, validate.StrOpts{Max: field.max}); v.Sent {
-			c.add(field.key, v.Val)
-		}
+	if v := str(f, "validation_notes", nullish, validate.StrOpts{Max: 5000}); v.Sent {
+		c.add("validation_notes", v.Val)
 	}
 	validated := f.Bool("validated", optional)
-	if err := formErr(f, message); err != nil {
+	in := parseAdjustment(f, false)
+	if err := formErr(f, ""); err != nil {
 		return err
 	}
-	row, err := h.svc.UpdateAttendance(r.Context(), r.PathValue("id"), c, validated != nil && *validated, a)
+	row, err := h.svc.AdjustAttendance(r.Context(), a, r.PathValue("id"), in, c, validated != nil && *validated, auditMeta(r))
 	if err != nil {
 		return err
 	}
 	return ok(w, obj("message", "Attendance updated successfully", "data", row))
 }
 
+// DELETE /api/hris/attendance/{id}?reason=… (or {reason} body)
 func (h handlers) deleteAttendance(w http.ResponseWriter, r *http.Request, a *Actor) error {
-	if a.Role != "super_admin" && a.Role != "admin" && a.Role != "hrd" {
-		return httpx.Forbidden("Forbidden: Only HRD can delete attendance records")
-	}
-	if err := h.svc.DeleteAttendance(r.Context(), r.PathValue("id")); err != nil {
+	if err := h.svc.DeleteAttendanceWithReason(r.Context(), a, r.PathValue("id"), deleteReason(r), auditMeta(r)); err != nil {
 		return err
 	}
 	return ok(w, msgOf("Attendance deleted successfully"))

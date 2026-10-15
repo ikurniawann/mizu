@@ -9,7 +9,7 @@ import { call, withQuery } from "../api";
 
 type Stage = { step: string; reached: number; abandoned: number };
 const LABEL: Record<string, string> = {
-  open: "Buka booking", outlet: "Pilih outlet", treatment: "Pilih treatment",
+  open: "Buka booking", outlet: "Pilih toko", treatment: "Pilih layanan",
   time: "Pilih waktu", contact: "Isi kontak", submit: "Kirim booking", success: "Berhasil",
 };
 

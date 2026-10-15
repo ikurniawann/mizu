@@ -47,14 +47,14 @@ export function SpaTherapistsPage() {
     <div className="space-y-4">
       <PageHeader
         kicker={SPA_KICKER}
-        title="Terapis"
-        description="Terapis berasal dari data karyawan HRIS. Terapis boleh ditugaskan di outlet asalnya, atau di outlet lain selama ada perbantuan aktif pada tanggal itu."
+        title="Crew"
+        description="Crew berasal dari data karyawan HRIS. Crew boleh ditugaskan di toko asalnya, atau di toko lain selama ada perbantuan aktif pada tanggal itu."
       />
       <Tabs defaultValue="therapists" className="w-full flex-col">
         <TabsList>
-          <TabsTrigger value="therapists">Terapis</TabsTrigger>
+          <TabsTrigger value="therapists">Crew</TabsTrigger>
           <TabsTrigger value="assists">Perbantuan</TabsTrigger>
-          <TabsTrigger value="pics">PIC Outlet</TabsTrigger>
+          <TabsTrigger value="pics">PIC Toko</TabsTrigger>
           <TabsTrigger value="day-offs">Jadwal Libur</TabsTrigger>
         </TabsList>
         <TabsContent value="therapists" className="mt-4">
@@ -135,7 +135,7 @@ function EmployeeSearch({
                       {e.position_title ? ` · ${e.position_title}` : ""}
                     </span>
                   </span>
-                  {e.is_therapist && <Badge variant="muted">Sudah terapis</Badge>}
+                  {e.is_therapist && <Badge variant="muted">Sudah crew</Badge>}
                 </button>
               );
             })
@@ -159,14 +159,14 @@ function TherapistsTab({ outlets }: { outlets: Outlet[] }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-full sm:w-64">
-          <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua outlet" onlyConfigured={false} />
+          <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua toko" onlyConfigured={false} />
         </div>
         <label className="flex items-center gap-2 text-sm">
           <Switch checked={showInactive} onCheckedChange={setShowInactive} aria-label="Tampilkan nonaktif" />
           Tampilkan nonaktif
         </label>
         <Button className="ml-auto" onClick={() => setEditing("new")}>
-          <Plus /> Tambah terapis
+          <Plus /> Tambah crew
         </Button>
       </div>
       <Card className="py-0">
@@ -177,13 +177,13 @@ function TherapistsTab({ outlets }: { outlets: Outlet[] }) {
         ) : therapists.error ? (
           <TableNote tone="danger">{therapists.error.message}</TableNote>
         ) : rows.length === 0 ? (
-          <TableNote>Belum ada terapis{branchId ? " di outlet ini" : ""}.</TableNote>
+          <TableNote>Belum ada crew{branchId ? " di toko ini" : ""}.</TableNote>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Terapis</TableHead>
-                <TableHead>Outlet asal</TableHead>
+                <TableHead>Crew</TableHead>
+                <TableHead>Toko asal</TableHead>
                 <TableHead className="hidden sm:table-cell">Gender</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
@@ -234,15 +234,15 @@ function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist
 
   const submit = () => {
     if (!therapist && !employee) return setError("Pilih karyawan.");
-    if (!homeBranch) return setError("Pilih outlet asal.");
+    if (!homeBranch) return setError("Pilih toko asal.");
     setError(null);
     const done = (name: string) => {
-      toast.success(therapist ? "Terapis diperbarui" : "Terapis ditambahkan", { description: name });
+      toast.success(therapist ? "Crew diperbarui" : "Crew ditambahkan", { description: name });
       onClose();
     };
     const fail = (err: Error) => {
       setError(err.message);
-      toast.error("Terapis gagal disimpan", { description: err.message });
+      toast.error("Crew gagal disimpan", { description: err.message });
     };
     if (therapist) {
       update.mutate(
@@ -267,8 +267,8 @@ function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist
           }}
         >
           <DialogPanelHeader>
-            <DialogPanelTitle>{therapist ? `Ubah ${therapist.full_name}` : "Tambah terapis"}</DialogPanelTitle>
-            <DialogPanelDescription>Gender dipakai untuk mencocokkan preferensi terapis pelanggan.</DialogPanelDescription>
+            <DialogPanelTitle>{therapist ? `Ubah ${therapist.full_name}` : "Tambah crew"}</DialogPanelTitle>
+            <DialogPanelDescription>Gender dipakai untuk mencocokkan preferensi crew pelanggan.</DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="space-y-4">
             {!therapist && (
@@ -277,7 +277,7 @@ function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist
                 <EmployeeSearch selected={employee} onPick={setEmployee} disableTherapists />
               </div>
             )}
-            <Field label="Outlet asal">
+            <Field label="Toko asal">
               <OutletSelect outlets={outlets} value={homeBranch} onChange={setHomeBranch} className={SELECT} onlyConfigured={false} required />
             </Field>
             <Field label="Gender">
@@ -291,7 +291,7 @@ function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist
               </select>
             </Field>
             <label className="flex items-center gap-3 text-sm">
-              <Switch checked={active} onCheckedChange={setActive} aria-label="Terapis aktif" />
+              <Switch checked={active} onCheckedChange={setActive} aria-label="Crew aktif" />
               Aktif (dapat ditugaskan)
             </label>
             <FormError>{error}</FormError>
@@ -326,7 +326,7 @@ function AssistsTab({ outlets }: { outlets: Outlet[] }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-full sm:w-64">
-          <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua outlet tujuan" />
+          <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua toko tujuan" />
         </div>
         <label className="flex items-center gap-2 text-sm">
           <Switch checked={includePast} onCheckedChange={setIncludePast} aria-label="Termasuk yang sudah lewat" />
@@ -349,8 +349,8 @@ function AssistsTab({ outlets }: { outlets: Outlet[] }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Terapis</TableHead>
-                <TableHead>Outlet tujuan</TableHead>
+                <TableHead>Crew</TableHead>
+                <TableHead>Toko tujuan</TableHead>
                 <TableHead>Periode</TableHead>
                 <TableHead className="hidden md:table-cell">Catatan</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
@@ -417,9 +417,9 @@ function AssistDialog({ outlets, defaultBranch, onClose }: { outlets: Outlet[]; 
   const therapist = (therapists.data ?? []).find((t) => t.id === therapistId);
 
   const submit = () => {
-    if (!therapistId) return setError("Pilih terapis.");
-    if (!branchId) return setError("Pilih outlet tujuan.");
-    if (therapist && therapist.home_branch_id === branchId) return setError("Outlet tujuan sama dengan outlet asal terapis.");
+    if (!therapistId) return setError("Pilih crew.");
+    if (!branchId) return setError("Pilih toko tujuan.");
+    if (therapist && therapist.home_branch_id === branchId) return setError("Toko tujuan sama dengan toko asal crew.");
     if (!start || !end || end < start) return setError("Tanggal selesai harus sama atau setelah tanggal mulai.");
     setError(null);
     create.mutate(
@@ -448,12 +448,12 @@ function AssistDialog({ outlets, defaultBranch, onClose }: { outlets: Outlet[]; 
         >
           <DialogPanelHeader>
             <DialogPanelTitle>Tambah perbantuan</DialogPanelTitle>
-            <DialogPanelDescription>Terapis dapat ditugaskan di outlet tujuan selama periode ini.</DialogPanelDescription>
+            <DialogPanelDescription>Crew dapat ditugaskan di toko tujuan selama periode ini.</DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Terapis" className="sm:col-span-2">
+            <Field label="Crew" className="sm:col-span-2">
               <select className={SELECT} value={therapistId} onChange={(e) => setTherapistId(e.target.value)} required>
-                <option value="">{therapists.isLoading ? "Memuat…" : "Pilih terapis…"}</option>
+                <option value="">{therapists.isLoading ? "Memuat…" : "Pilih crew…"}</option>
                 {(therapists.data ?? []).map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.full_name}
@@ -462,7 +462,7 @@ function AssistDialog({ outlets, defaultBranch, onClose }: { outlets: Outlet[]; 
                 ))}
               </select>
             </Field>
-            <Field label="Outlet tujuan" className="sm:col-span-2">
+            <Field label="Toko tujuan" className="sm:col-span-2">
               <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} required />
             </Field>
             <Field label="Mulai">
@@ -506,7 +506,7 @@ function PicsTab({ outlets }: { outlets: Outlet[] }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-full sm:w-64">
-          <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua outlet" />
+          <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua toko" />
         </div>
         <Button className="ml-auto" onClick={() => setAdding(true)}>
           <Plus /> Tambah PIC
@@ -520,12 +520,12 @@ function PicsTab({ outlets }: { outlets: Outlet[] }) {
         ) : pics.error ? (
           <TableNote tone="danger">{pics.error.message}</TableNote>
         ) : rows.length === 0 ? (
-          <TableNote>Belum ada PIC outlet.</TableNote>
+          <TableNote>Belum ada PIC toko.</TableNote>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Outlet</TableHead>
+                <TableHead>Toko</TableHead>
                 <TableHead>PIC</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
@@ -550,7 +550,7 @@ function PicsTab({ outlets }: { outlets: Outlet[] }) {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Hapus PIC outlet?"
+        title="Hapus PIC toko?"
         description={deleting ? `${deleting.full_name} tidak lagi menjadi PIC ${deleting.branch_name}.` : undefined}
         confirmLabel="Hapus"
         loading={remove.isPending}
@@ -579,7 +579,7 @@ function PicDialog({ outlets, defaultBranch, onClose }: { outlets: Outlet[]; def
   const create = useCreateOutletPic();
 
   const submit = () => {
-    if (!branchId) return setError("Pilih outlet.");
+    if (!branchId) return setError("Pilih toko.");
     if (!employee) return setError("Pilih karyawan.");
     setError(null);
     create.mutate(
@@ -607,10 +607,10 @@ function PicDialog({ outlets, defaultBranch, onClose }: { outlets: Outlet[]; def
           }}
         >
           <DialogPanelHeader>
-            <DialogPanelTitle>Tambah PIC outlet</DialogPanelTitle>
+            <DialogPanelTitle>Tambah PIC toko</DialogPanelTitle>
           </DialogPanelHeader>
           <DialogPanelBody className="space-y-4">
-            <Field label="Outlet">
+            <Field label="Toko">
               <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} required />
             </Field>
             <div>

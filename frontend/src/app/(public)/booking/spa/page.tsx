@@ -4,8 +4,8 @@ import { parsePrefill } from "@/features/spa/public-booking";
 import { SiteLayout } from "@/features/site/site-layout";
 
 export const metadata: Metadata = {
-  title: "Booking Treatment — Mizu",
-  description: "Booking pijat, refleksi dan perawatan tubuh di Mizu Family Massage & Reflexology, Bandung. Pilih outlet, treatment dan jam; bayar di outlet.",
+  title: "Booking Paddy Experience — Paddy",
+  description: "Desain custom case HP kamu sendiri di Paddy Experience — tipe HP, stiker dari 16 tema, nama dan background — lalu pilih Paddy Store, jam, dan crew. Rp119.000, bayar di toko.",
 };
 
 export const dynamic = "force-dynamic";

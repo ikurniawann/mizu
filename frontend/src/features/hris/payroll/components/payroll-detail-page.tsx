@@ -8,13 +8,17 @@ import {
   ArrowLeftIcon,
   DocumentTextIcon,
   ArrowDownTrayIcon,
+  BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { formatRupiah } from "@/lib/format";
 import { monthName } from "@/lib/hris/month-label";
+import { shortDateId } from "@/lib/hris/attendance-period";
 import { buildPayrollRunCsv } from "@/lib/payroll/ui-run-csv";
 import { usePayrollRun } from "../queries";
 import { useNotifyPayslip } from "../mutations";
+import { AllocationChips } from "./store-breakdown";
+import { StoreAllocationCard } from "./store-allocation-card";
 
 interface PayrollPageProps {
   params: Promise<{ id: string }>;
@@ -92,11 +96,40 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
             {monthName(payrollRun.period_month)} {payrollRun.period_year} • {payrollRun.total_employees} karyawan
           </p>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => router.push(`/dashboard/hris/payroll/store-costs?run=${id}`)}
+        >
+          <BuildingStorefrontIcon className="w-4 h-4 mr-2" />
+          Biaya per Toko
+        </Button>
         <Button onClick={handleExportCSV} variant="outline">
           <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
           Export CSV
         </Button>
       </div>
+
+      {payrollRun.attendance_period && (
+        payrollRun.attendance_period.status === "open" ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-semibold">
+              Periode absensi belum di-closing — data absensi masih bisa berubah
+            </p>
+            <p className="text-xs text-amber-800">
+              Payroll ini membaca absensi {payrollRun.attendance_period.label}
+              {payrollRun.attendance_period.closing_date
+                ? ` (closing otomatis ${shortDateId(payrollRun.attendance_period.closing_date)})`
+                : ""}
+              . Hitung ulang setelah closing; payroll baru bisa diproses/disetujui setelah periode di-closing di
+              HRIS → Absensi → Periode Absensi.
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-500">
+            🔒 Absensi periode {payrollRun.attendance_period.label} sudah di-closing.
+          </p>
+        )
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -148,6 +181,12 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
         </Card>
       </div>
 
+      <StoreAllocationCard
+        allocation={payrollRun.store_allocation}
+        slipCount={details.length}
+        isDraft={payrollRun.status === "draft"}
+      />
+
       {/* Employee Details Table */}
       <Card>
         <CardHeader>
@@ -160,6 +199,7 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 font-medium text-gray-500">Karyawan</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-500">Departemen</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-500">Toko</th>
                   <th className="text-right py-3 px-4 font-medium text-gray-500">Gaji Kotor</th>
                   <th className="text-right py-3 px-4 font-medium text-gray-500">Potongan</th>
                   <th className="text-right py-3 px-4 font-medium text-gray-500">Gaji Bersih</th>
@@ -169,7 +209,7 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
               <tbody>
                 {details.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                    <td colSpan={7} className="py-8 text-center text-gray-500">
                       Belum ada detail payroll. Klik &quot;Calculate&quot; di halaman sebelumnya.
                     </td>
                   </tr>
@@ -184,6 +224,9 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
                       </td>
                       <td className="py-3 px-4">
                         {detail.employee?.department?.name || "-"}
+                      </td>
+                      <td className="py-3 px-4">
+                        <AllocationChips allocations={detail.allocations} />
                       </td>
                       <td className="text-right py-3 px-4 font-medium">
                         {formatRupiah(detail.gross_salary)}

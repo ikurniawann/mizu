@@ -39,13 +39,13 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (error && !unauthenticated) {
     return (
       <div className="flex min-h-dvh items-center justify-center px-8 text-center text-sm text-nh-muted">
-        Mizu could not load. Check your connection and reload the page.
+        Paddy could not load. Check your connection and reload the page.
       </div>
     );
   }
   return (
     <div className="flex min-h-dvh items-center justify-center">
-      <Spinner label="Opening Mizu…" />
+      <Spinner label="Opening Paddy…" />
     </div>
   );
 }
@@ -95,7 +95,7 @@ function Shell({ children }: { children: ReactNode }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={asset("/brand/wordmark-black.png")}
-          alt="Mizu"
+          alt="Paddy"
           className="pointer-events-none absolute top-[max(env(safe-area-inset-top),1.1rem)] left-1/2 h-[18px] w-auto -translate-x-1/2 translate-y-[11px]"
         />
         <Link href={m("/notifications")} className={`relative ${ROUND_BUTTON}`} aria-label={t("Notifications")}>

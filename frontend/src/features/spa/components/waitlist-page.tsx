@@ -67,7 +67,7 @@ export function SpaWaitlistPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        kicker="Spa"
+        kicker="Studio"
         title="Daftar Tunggu"
         description="Tamu yang menunggu jam kosong. Entri dari bot WhatsApp dikabari otomatis begitu ada jam; entri yang Anda catat sendiri ditangani lewat telepon."
         actions={
@@ -95,7 +95,7 @@ export function SpaWaitlistPage() {
 
       <Card className="p-3">
         <div className="grid gap-2 sm:grid-cols-3">
-          <OutletSelect outlets={outlets.data ?? []} value={branchId} onChange={setBranchId} allLabel="Semua outlet" className={SELECT} />
+          <OutletSelect outlets={outlets.data ?? []} value={branchId} onChange={setBranchId} allLabel="Semua toko" className={SELECT} />
           <select value={status} onChange={(e) => setStatus(e.target.value as WaitlistStatus | "")} className={SELECT} aria-label="Status">
             <option value="">Menunggu & sudah dikabari</option>
             {(Object.keys(STATUS_LABEL) as WaitlistStatus[]).map((s) => (
@@ -117,7 +117,7 @@ export function SpaWaitlistPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tanggal</TableHead>
-                <TableHead>Outlet</TableHead>
+                <TableHead>Toko</TableHead>
                 <TableHead>Tamu</TableHead>
                 <TableHead>Keinginan</TableHead>
                 <TableHead>Sumber</TableHead>
@@ -250,7 +250,7 @@ function WaitlistForm({
   return (
     <Card className="p-4">
       <form onSubmit={(e) => void submit(e)} className="grid gap-3 md:grid-cols-3">
-        <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} required ariaLabel="Outlet daftar tunggu" className={SELECT} />
+        <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} required ariaLabel="Toko daftar tunggu" className={SELECT} />
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama tamu" required aria-label="Nama tamu" />
         <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Nomor WhatsApp (0812…)" required aria-label="Nomor WhatsApp" />
         <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required aria-label="Tanggal kunjungan" />

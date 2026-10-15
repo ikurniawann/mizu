@@ -63,7 +63,7 @@ export function QrPage() {
               cy="32"
               r={R}
               fill="none"
-              stroke="#d6b47a"
+              stroke="#ffcf3f"
               strokeWidth="5"
               strokeLinecap="round"
               strokeDasharray={CIRC}

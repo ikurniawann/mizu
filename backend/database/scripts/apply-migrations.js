@@ -109,7 +109,7 @@ async function main() {
     } catch (err) {
       console.error(err.message);
       console.error(
-        "Untuk target remote (mis. server-mizu), tambahkan --allow-remote."
+        "Untuk target remote (mis. server Paddy), tambahkan --allow-remote."
       );
       process.exit(1);
     }

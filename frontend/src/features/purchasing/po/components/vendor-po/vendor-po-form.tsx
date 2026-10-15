@@ -38,6 +38,8 @@ interface VendorPOFormProps<Row extends VendorPOFormRow> {
   vendors: { id: string; name: string; code: string }[];
   approvedPRs: { id: string; pr_number: string; department_name?: string | null }[];
   initialPRId?: string;
+  /** Aturan Pengaturan Pembelian: PO wajib memilih PR disetujui (bawaan: opsional). */
+  prRequired?: boolean;
   initialItems: Row[];
   emptyItem: () => Row;
   /** Baris item dari PR terpilih; null bila PR tidak punya item (baris yang ada dipertahankan). */
@@ -55,6 +57,7 @@ export function VendorPOForm<Row extends VendorPOFormRow>({
   vendors,
   approvedPRs,
   initialPRId,
+  prRequired = false,
   initialItems,
   emptyItem,
   itemsFromPR,
@@ -88,7 +91,7 @@ export function VendorPOForm<Row extends VendorPOFormRow>({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const invalid = validate(vendorId, items);
+    const invalid = prRequired && !prId ? "Pilih purchase request yang disetujui terlebih dahulu" : validate(vendorId, items);
     if (invalid) {
       toast.error(invalid);
       return;
@@ -136,7 +139,9 @@ export function VendorPOForm<Row extends VendorPOFormRow>({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Sumber Permintaan Barang</Label>
+                <Label className="text-xs">
+                  Sumber Permintaan Barang {prRequired && <span className="text-red-500">*</span>}
+                </Label>
                 <Combobox
                   options={approvedPRs.map((pr) => ({
                     value: pr.id,
@@ -145,7 +150,7 @@ export function VendorPOForm<Row extends VendorPOFormRow>({
                   }))}
                   value={prId}
                   onChange={handlePRChange}
-                  placeholder="Opsional, pilih PR disetujui..."
+                  placeholder={prRequired ? "Wajib, pilih PR disetujui..." : "Opsional, pilih PR disetujui..."}
                   searchPlaceholder="Cari PR..."
                   emptyMessage="Tidak ada PR disetujui"
                   allowClear

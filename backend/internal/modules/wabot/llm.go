@@ -35,23 +35,23 @@ func (o OpenAIExtractor) Configured(ctx context.Context, q database.Querier) boo
 	return strings.TrimSpace(firstSet(s["openai_api_key"], o.Getenv("OPENAI_API_KEY"))) != ""
 }
 
-const extractPrompt = `Kamu membaca pesan WhatsApp dari calon pelanggan spa/massage Mizu (bisa berbahasa Indonesia atau Inggris) dan mengisi JSON. Jangan menjawab pelanggan; hanya ekstrak.
+const extractPrompt = `Kamu membaca pesan WhatsApp dari calon pelanggan Paddy Experience — layanan custom case, personalisasi, workshop, dan gadget care di toko Paddy (bisa berbahasa Indonesia atau Inggris) dan mengisi JSON. Jangan menjawab pelanggan; hanya ekstrak.
 Keluarkan JSON dengan kunci (kosongkan "" / 0 / false / [] bila tidak disebut):
-- outlet: nama outlet persis dari daftar OUTLET bila disebut atau jelas dimaksud
+- outlet: nama toko persis dari daftar OUTLET bila disebut atau jelas dimaksud
 - people: jumlah orang (angka)
-- treatments: daftar label treatment persis dari daftar TREATMENT, urut per orang bila disebut per orang
+- treatments: daftar label layanan persis dari daftar TREATMENT, urut per orang bila disebut per orang
 - date: tanggal kunjungan "YYYY-MM-DD" (hari ini = TODAY; "besok", "sabtu", "15 okt" dihitung dari TODAY, zona WIB)
 - time: jam mulai "HH:MM" 24 jam bila disebut spesifik ("jam 3 sore" = "15:00")
 - period: "pagi"/"siang"/"sore"/"malam" bila hanya disebut waktu umum
-- therapist: nama terapis persis dari daftar TERAPIS bila disebut
-- gender_pref: "male"/"female" bila minta terapis pria/wanita
+- therapist: nama crew experience persis dari daftar TERAPIS bila disebut
+- gender_pref: "male"/"female" bila minta crew pria/wanita
 - system_pick: true bila minta dipilihkan/terserah
 - confirm: "yes"/"no" HANYA bila STEP = confirm dan pelanggan mengiyakan/menolak ringkasan
 - payment: "outlet"/"online" HANYA bila STEP = payment
 - name: nama pelanggan HANYA bila STEP = name
 - want_admin: true bila minta bicara dengan admin/manusia/CS
-- off_topic: true bila pesan tidak ada hubungannya dengan booking spa
-ATURAN: isi sebuah field HANYA bila pelanggan menyebutnya secara eksplisit di PESAN ini; jangan menebak outlet, tanggal, jam, atau jumlah orang dari konteks. "saya dan istri" = 2 orang; "berdua" = 2; "sendiri" = 1.`
+- off_topic: true bila pesan tidak ada hubungannya dengan booking Paddy Experience
+ATURAN: isi sebuah field HANYA bila pelanggan menyebutnya secara eksplisit di PESAN ini; jangan menebak toko, tanggal, jam, atau jumlah orang dari konteks. "saya dan pacar" = 2 orang; "berdua" = 2; "sendiri" = 1.`
 
 // Extract runs one completion; errors fall back to menu mode.
 func (o OpenAIExtractor) Extract(ctx context.Context, q database.Querier, text string, ec ExtractContext) (*Extraction, error) {
@@ -155,7 +155,7 @@ func truncate(s string, n int) string {
 	return s[:n]
 }
 
-const answerPrompt = `Kamu asisten WhatsApp spa Mizu. Jawab pertanyaan pelanggan dengan ramah dan singkat (maksimal 3 kalimat, boleh emoji seperlunya) dalam bahasa yang disebut di BAHASA JAWABAN, HANYA berdasarkan FAKTA di bawah. Jangan mengarang harga, jam, alamat, promo, atau kebijakan. Jika jawabannya tidak ada di FAKTA, balas persis: TIDAK_TAHU`
+const answerPrompt = `Kamu asisten WhatsApp Paddy (toko custom phone case & adorable goods di Bandung, dengan layanan Paddy Experience). Jawab pertanyaan pelanggan dengan ramah dan singkat (maksimal 3 kalimat, boleh emoji seperlunya) dalam bahasa yang disebut di BAHASA JAWABAN, HANYA berdasarkan FAKTA di bawah. Jangan mengarang harga, jam, alamat, promo, atau kebijakan. Jika jawabannya tidak ada di FAKTA, balas persis: TIDAK_TAHU`
 
 var _ Answerer = OpenAIExtractor{}
 
@@ -219,7 +219,7 @@ func (o OpenAIExtractor) Answer(ctx context.Context, q database.Querier, questio
 	return answer, nil
 }
 
-const conversePrompt = `Kamu asisten WhatsApp spa Mizu di tengah alur booking. Pesan pelanggan tidak terbaca oleh sistem. Tentukan maksudnya dan isi JSON:
+const conversePrompt = `Kamu asisten WhatsApp Paddy Experience di tengah alur booking. Pesan pelanggan tidak terbaca oleh sistem. Tentukan maksudnya dan isi JSON:
 - intent: "restart" bila ingin mengulang/membatalkan draf/mulai dari awal; "back" bila ingin kembali ke pertanyaan sebelumnya; "status" bila menanyakan booking yang sudah dibuat; "admin" bila ingin bicara dengan manusia/CS; selain itu "none".
 - reply: bila intent "none", balasan ramah dan singkat (maksimal 2 kalimat, bahasa sesuai BAHASA) HANYA berdasarkan FAKTA — misalnya menanggapi basa-basi, ucapan terima kasih, atau pertanyaan yang jawabannya ada di FAKTA; jangan mengarang. Jangan ulangi pertanyaan booking (PERTANYAAN TERTUNDA) karena sistem akan mengulanginya. Bila tidak perlu/tidak bisa dijawab, reply "".`
 

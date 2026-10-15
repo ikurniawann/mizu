@@ -811,6 +811,73 @@ func TestPayrollJournals(t *testing.T) {
 	}
 }
 
+// A paid run with a store split posts the expense (DEBIT) lines per store
+// (journal_entry_lines.branch_id) and keeps the liability lines at company
+// level; the journal stays balanced and the read API names the store.
+func TestPayrollJournalsPerStore(t *testing.T) {
+	e := setup(t)
+	expense := e.account("6401012", "Beban Gaji", "EXPENSE", false)
+	payable := e.account("2104001", "Hutang Gaji", "LIABILITY", false)
+	bpjsTk := e.account("2103002", "Hutang BPJS TK", "LIABILITY", false)
+	e.fiscal2026()
+	e.exec(`UPDATE accounting.journal_mappings SET is_active = false WHERE event_code LIKE 'PAYROLL\_%' AND company_id IS DISTINCT FROM $1`, e.company)
+	e.mapping("PAYROLL_ACCRUAL", "PAYROLL", mline("DEBIT", "SALARY_EXPENSE", expense, "TOTAL"), mline("CREDIT", "SALARY_PAYABLE", payable, "TOTAL"))
+	e.mapping("PAYROLL_BPJS_TK_EMPLOYER", "PAYROLL", mline("DEBIT", "BPJS_EXPENSE", expense, "TOTAL"), mline("CREDIT", "BPJS_TK_PAYABLE", bpjsTk, "TOTAL"))
+	var pvj, kopo string
+	e.scalar(&pvj, `INSERT INTO configuration.branches (company_id, name, code) VALUES ($1, 'PVJ Jurnal', 'PVJ-J') RETURNING id::text`, e.company)
+	e.scalar(&kopo, `INSERT INTO configuration.branches (company_id, name, code) VALUES ($1, 'Kopo Jurnal', 'KOPO-J') RETURNING id::text`, e.company)
+
+	run := "6f1d5c2e-2222-4a1b-9c1d-000000000010"
+	e.publish(payroll.TopicRunPaid, run, payroll.RunPaid{RunID: run, PeriodMonth: 9, PeriodYear: 2026, UserID: e.staff.UserID,
+		PaidAt: time.Date(2026, 10, 4, 2, 0, 0, 0, time.UTC),
+		Companies: []payroll.RunCompany{{CompanyID: &e.company, TotalGross: 10000000.01, TotalBpjsTkEmployer: 600000,
+			Branches: []payroll.RunBranch{
+				{BranchID: &pvj, TotalGross: 6000000.01, TotalBpjsTkEmployer: 360000},
+				{BranchID: &kopo, TotalGross: 3500000, TotalBpjsTkEmployer: 240000},
+				{TotalGross: 500000},
+			}}}})
+	e.dispatch()
+	rows, err := e.tx.Query(e.ctx, `SELECT j.source_event_code||':'||string_agg(l.entry_side||'='||l.amount::text, ','
+		ORDER BY l.sort_order, l.entry_side, l.amount DESC)
+		FROM accounting.journal_entries j JOIN accounting.journal_entry_lines l ON l.entry_id = j.id
+		WHERE j.source_document_id = $1 AND j.status = 'POSTED' GROUP BY j.id, j.source_event_code ORDER BY j.source_event_code`, run)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := pgx.CollectRows(rows, pgx.RowTo[string]); fmt.Sprint(got) != fmt.Sprint([]string{
+		"PAYROLL_ACCRUAL:DEBIT=6000000.01,DEBIT=3500000.00,DEBIT=500000.00,CREDIT=10000000.01",
+		"PAYROLL_BPJS_TK_EMPLOYER:DEBIT=360000.00,DEBIT=240000.00,CREDIT=600000.00",
+	}) {
+		t.Fatalf("journals per store: %v", got)
+	}
+	rows, err = e.tx.Query(e.ctx, `SELECT j.source_event_code||' '||l.entry_side||' '||COALESCE(b.code, '-')
+		FROM accounting.journal_entries j JOIN accounting.journal_entry_lines l ON l.entry_id = j.id
+		LEFT JOIN configuration.branches b ON b.id = l.branch_id
+		WHERE j.source_document_id = $1 ORDER BY j.source_event_code, l.sort_order, l.entry_side, l.amount DESC`, run)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(got) != fmt.Sprint([]string{"PAYROLL_ACCRUAL DEBIT PVJ-J", "PAYROLL_ACCRUAL DEBIT KOPO-J", "PAYROLL_ACCRUAL DEBIT -",
+		"PAYROLL_ACCRUAL CREDIT -", "PAYROLL_BPJS_TK_EMPLOYER DEBIT PVJ-J", "PAYROLL_BPJS_TK_EMPLOYER DEBIT KOPO-J",
+		"PAYROLL_BPJS_TK_EMPLOYER CREDIT -"}) {
+		t.Fatalf("line stores: %v", got)
+	}
+	var entry string
+	e.scalar(&entry, `SELECT id::text FROM accounting.journal_entries WHERE source_document_id = $1 AND source_event_code = 'PAYROLL_ACCRUAL'`, run)
+	lines := data(e.do("GET", "/api/accounting/journal-entries/"+entry, nil, 200))["lines"].([]any)
+	names := map[any]bool{}
+	for _, l := range lines {
+		names[l.(map[string]any)["branch_name"]] = true
+	}
+	if !names["PVJ Jurnal"] || !names["Kopo Jurnal"] || !names[nil] {
+		t.Fatalf("read API branch names: %v", lines)
+	}
+}
+
 // The payroll mappings migration: ensure_payroll_journal_mappings creates the
 // company's payroll mappings, points their empty lines at the chart of
 // accounts by code and name and never overwrites a chosen account. A paid

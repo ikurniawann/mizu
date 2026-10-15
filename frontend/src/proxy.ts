@@ -6,11 +6,11 @@ import { legacyRedirectTarget } from "@/lib/legacy-host-redirect";
 /**
  * Serves the member portal at its own hostname.
  *
- *   member.mizuinwounderland.com/            -> /member
- *   member.mizuinwounderland.com/coins       -> /member/coins
+ *   member.paddy.id/            -> /member
+ *   member.paddy.id/coins       -> /member/coins
  *
  * The pages keep living under src/app/member; only the public URL changes.
- * dashboard.mizuinwounderland.com is untouched and still serves /member too,
+ * dashboard.paddy.id is untouched and still serves /member too,
  * so nothing breaks while the new hostname is being rolled out.
  *
  * Next.js 16 renamed this file convention from `middleware.ts` to `proxy.ts`
@@ -25,8 +25,8 @@ import { legacyRedirectTarget } from "@/lib/legacy-host-redirect";
 /**
  * True when any DNS label of the host is exactly "member". Matching the label
  * rather than a "member." prefix is what makes this work across environments:
- * production is member.mizuinwounderland.com (label first), while the dev
- * hostname is dev.mizu.member.wit.id (label in the middle). A prefix check
+ * production is member.paddy.id (label first), while the dev
+ * hostname is dev.paddy.member.wit.id (label in the middle). A prefix check
  * silently served the dashboard on dev.
  */
 function isMemberHost(hostHeader: string): boolean {
@@ -36,7 +36,9 @@ function isMemberHost(hostHeader: string): boolean {
 
 export async function proxy(request: NextRequest) {
   if (request.method === "GET" || request.method === "HEAD") {
-    const target = legacyRedirectTarget(request.headers.get("host") ?? "", request.nextUrl, process.env.MIZU_LEGACY_HOST_REDIRECTS);
+    // PADDY_LEGACY_HOST_REDIRECTS; nama env lama (MIZU_…) tetap dibaca sebagai cadangan.
+    const redirects = process.env.PADDY_LEGACY_HOST_REDIRECTS ?? process.env.MIZU_LEGACY_HOST_REDIRECTS;
+    const target = legacyRedirectTarget(request.headers.get("host") ?? "", request.nextUrl, redirects);
     if (target) return NextResponse.redirect(target, 308);
   }
   // Strangler migration: /api prefixes ported to the Go backend go there

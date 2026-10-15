@@ -117,12 +117,19 @@ func Weekday(t time.Time) int {
 
 const codeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
-// BookingCode is "MZ-YYMMDD-XXXX" with the WIB date of at.
+// BookingPrefix starts every new booking code; LegacyBookingPrefix codes
+// (issued before the Paddy rebrand) are still accepted for lookups.
+const (
+	BookingPrefix       = "PD"
+	LegacyBookingPrefix = "MZ"
+)
+
+// BookingCode is "PD-YYMMDD-XXXX" (Paddy) with the WIB date of at.
 func BookingCode(at time.Time) string {
 	b := make([]byte, 4)
 	_, _ = rand.Read(b)
 	for i := range b {
 		b[i] = codeAlphabet[int(b[i])%len(codeAlphabet)]
 	}
-	return "MZ-" + at.In(WIB).Format("060102") + "-" + string(b)
+	return BookingPrefix + "-" + at.In(WIB).Format("060102") + "-" + string(b)
 }

@@ -26,7 +26,7 @@ export function RoomBoard({ branchId, onOpenBooking }: { branchId: string; onOpe
   if (rooms.length === 0) {
     return (
       <Card className="py-0 shadow-none!">
-        <TableNote>Belum ada room di outlet ini. Tambahkan di Spa → Outlet → Room.</TableNote>
+        <TableNote>Belum ada room di toko ini. Tambahkan di Paddy Experience → Toko Experience → Room.</TableNote>
       </Card>
     );
   }
@@ -108,7 +108,7 @@ function Occupant({ occupant, running, onOpen }: { occupant: RoomOccupant; runni
       </div>
       <p className="text-xs text-muted-foreground">
         <span className="font-mono">{occupant.booking_code}</span>
-        {occupant.therapist_name ? ` · Terapis ${occupant.therapist_name}` : " · Terapis belum ditugaskan"}
+        {occupant.therapist_name ? ` · Crew ${occupant.therapist_name}` : " · Crew belum ditugaskan"}
       </p>
       {occupant.treatments.length > 0 && <p className="text-sm text-body">{occupant.treatments.join(", ")}</p>}
     </button>

@@ -6,12 +6,14 @@ import {
   ArrowLeftIcon,
   ArrowPathIcon,
   BriefcaseIcon,
+  BuildingStorefrontIcon,
   CalendarDaysIcon,
   ClockIcon,
   DocumentTextIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
+import { EmployeePlacementsTab } from "@/features/hris/placements";
 import { useIamAccess } from "@/components/iam/iam-access-provider";
 import { IAM } from "@/lib/iam/prefixes";
 import { EMPLOYEES_ROUTES } from "../constants";
@@ -33,6 +35,7 @@ const TABS = [
   { key: "lifecycle", label: "Lifecycle", icon: ArrowPathIcon },
   { key: "contracts", label: "Kontrak", icon: BriefcaseIcon },
   { key: "shifts", label: "Jadwal Shift", icon: ClockIcon },
+  { key: "placements", label: "Penempatan", icon: BuildingStorefrontIcon },
   { key: "employment", label: "Employment History", icon: BriefcaseIcon },
   { key: "documents", label: "Dokumen", icon: DocumentTextIcon },
   { key: "attendance", label: "Attendance", icon: ClockIcon },
@@ -83,6 +86,7 @@ export function UserDetailPage({ params }: { params: Promise<{ id: string }> }) 
     lifecycle: <EmployeeLifecycleTab employeeId={id} />,
     contracts: <EmployeeContractsTab employeeId={id} />,
     shifts: <EmployeeShiftsTab employeeId={id} />,
+    placements: <EmployeePlacementsTab employeeId={id} employeeName={employee.full_name} />,
     employment: <EmploymentHistoryTab employeeId={id} />,
     documents: <EmployeeDocumentsTab employeeId={id} />,
     attendance: <EmployeeAttendanceTab employeeId={id} />,

@@ -61,7 +61,7 @@ type RatingReport struct {
 	From string `json:"from"`
 	To   string `json:"to"`
 	RatingSummary
-	Bookings   []RatingBooking  `json:"bookings"`
+	Bookings   []RatingBooking   `json:"bookings"`
 	Therapists []TherapistRating `json:"therapists"`
 }
 

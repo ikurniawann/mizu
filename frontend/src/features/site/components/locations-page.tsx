@@ -51,16 +51,16 @@ export function LocationsPage({ branches }: { branches: BranchSummary[] }) {
   return (
     <Section>
       <Container className="space-y-8">
-        <SectionHeading as="h1" kicker="Lokasi" title="Outlet Mizu di Bandung" text="Pilih outlet terdekat, lalu booking treatment secara online. Pembayaran dilakukan di outlet." />
+        <SectionHeading as="h1" kicker="Paddy Store" title="Main ke Paddy Store di Bandung" text="Pilih toko terdekat untuk belanja langsung atau booking sesi Paddy Experience secara online. Pembayaran dilakukan di toko." />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <label className="relative flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
-            <span className="sr-only">Cari nama outlet, kota atau kode pos</span>
+            <span className="sr-only">Cari nama toko, kota atau kode pos</span>
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nama outlet, kota atau kode pos"
+              placeholder="Nama toko, kota atau kode pos"
               className="h-11 rounded-full pl-11"
             />
           </label>
@@ -84,14 +84,14 @@ export function LocationsPage({ branches }: { branches: BranchSummary[] }) {
           <ul className="space-y-3 lg:order-1">
             {ranked.length === 0 ? (
               <li>
-                <EmptyNote>{branches.length === 0 ? "Belum ada outlet yang ditampilkan." : "Tidak ada outlet yang cocok dengan pencarianmu."}</EmptyNote>
+                <EmptyNote>{branches.length === 0 ? "Belum ada toko yang ditampilkan." : "Tidak ada toko yang cocok dengan pencarianmu."}</EmptyNote>
               </li>
             ) : (
               ranked.map(({ item, km }) => (
                 <li key={item.slug}>
                   <article
                     onClick={() => setSelected(item.slug)}
-                    className={`flex gap-4 rounded-card bg-card p-4 shadow-card transition-shadow ${selected === item.slug ? "ring-2 ring-forest" : ""}`}
+                    className={`flex gap-4 rounded-card border-2 border-navy bg-card p-4 shadow-[4px_4px_0_0_var(--color-navy)] transition-shadow ${selected === item.slug ? "ring-4 ring-sunny" : ""}`}
                   >
                     <Picture src={photoOr(item.hero_image_url, outletPhoto(item.slug))} alt="" className="size-20 shrink-0 rounded-2xl" />
                     <div className="min-w-0 flex-1">
@@ -108,7 +108,7 @@ export function LocationsPage({ branches }: { branches: BranchSummary[] }) {
                           <Link href={bookingHref({ outlet: item.slug })}>Booking</Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
-                          <Link href={`/locations/${item.slug}`}>Lihat outlet</Link>
+                          <Link href={`/locations/${item.slug}`}>Lihat toko</Link>
                         </Button>
                         {item.phone ? (
                           <Button asChild size="sm" variant="outline">

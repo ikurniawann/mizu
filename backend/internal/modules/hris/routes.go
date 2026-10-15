@@ -28,6 +28,14 @@ func (h handlers) routes() []module.Route {
 		// would reject as conflicting; Next prefers the static segment.
 		r("/api/hris/employees/{id}/{sub}", h.employeeSubroutes()),
 
+		// placements (Penempatan Karyawan: stores an employee works at)
+		r("GET /api/hris/employee-placements", h.withMenu(placementManagers, h.listPlacementOverview)),
+		r("POST /api/hris/employee-placements/bulk", h.withMenu(placementManagers, h.bulkPlacement)),
+		r("PATCH /api/hris/employee-placements/{id}", h.withMenu(placementManagers, h.updatePlacement)),
+		r("DELETE /api/hris/employee-placements/{id}", h.withMenu(placementManagers, h.deletePlacement)),
+		r("GET /api/hris/me/placements", h.withActor(h.myPlacements)),
+		r("GET /api/hris/branches", h.withUser(h.listBranches)),
+
 		// attendance (clock-in/out, export and photos: fileRoutes)
 		r("GET /api/hris/attendance", h.withActor(h.listAttendance)),
 		r("GET /api/hris/attendance/daily-roster", h.withActor(h.dailyRoster)),
@@ -36,6 +44,16 @@ func (h handlers) routes() []module.Route {
 		r("GET /api/hris/attendance/{id}", h.withActor(h.getAttendance)),
 		r("PUT /api/hris/attendance/{id}", h.withActor(h.updateAttendance)),
 		r("DELETE /api/hris/attendance/{id}", h.withActor(h.deleteAttendance)),
+		// manual adjustment and period closing (closing absensi)
+		r("POST /api/hris/attendance/manual", h.withActor(h.createManualAttendance)),
+		r("GET /api/hris/attendance-adjustments", h.withActor(h.listAttendanceAdjustments)),
+		r("GET /api/hris/attendance-periods", h.withPeriodActor(h.listAttendancePeriods)),
+		r("GET /api/hris/attendance-periods/{id}", h.withPeriodActor(h.getAttendancePeriod)),
+		r("PATCH /api/hris/attendance-periods/{id}", h.withPeriodActor(h.patchAttendancePeriod)),
+		r("POST /api/hris/attendance-periods/{id}/close", h.withPeriodActor(h.closeAttendancePeriod)),
+		r("POST /api/hris/attendance-periods/{id}/reopen", h.withPeriodActor(h.reopenAttendancePeriod)),
+		r("GET /api/hris/attendance-settings", h.withPeriodActor(h.getAttendanceSettings)),
+		r("PUT /api/hris/attendance-settings", h.withPeriodActor(h.putAttendanceSettings)),
 
 		// leaves (attachments: fileRoutes)
 		r("GET /api/hris/leaves", h.withActor(h.listLeaves)),
@@ -134,7 +152,11 @@ func (h handlers) employeeSubroutes() http.Handler {
 			http.MethodGet:  h.withMenu(kepegawaian, h.listEmployeeContracts),
 			http.MethodPost: h.withMenu(kepegawaian, h.createEmployeeContract),
 		},
-		"lifecycle":             {http.MethodGet: handle(h.employeeLifecycle)},
+		"lifecycle": {http.MethodGet: handle(h.employeeLifecycle)},
+		"placements": {
+			http.MethodGet:  handle(h.listEmployeePlacements),
+			http.MethodPost: h.withMenu(placementManagers, h.createEmployeePlacement),
+		},
 		"recruitment-documents": {http.MethodGet: h.withMenu(kepegawaian, h.recruitmentDocuments)},
 		"shifts": {
 			http.MethodGet: handle(h.employeeShifts),

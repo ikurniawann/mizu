@@ -23,9 +23,9 @@ function item(p: Partial<MyScheduleItem> & { id: string; booking_id: string; sta
     completed_at: null,
     commission_idr: 18500,
     ends_at: p.starts_at,
-    booking_code: `MZ-${p.booking_id}`,
+    booking_code: `PD-${p.booking_id}`,
     branch_id: "b",
-    branch_name: "Mizu 1.0",
+    branch_name: "Paddy Store PVJ",
     customer_name: "Rina",
     booking_status: "assigned",
     payment_status: "unpaid",
@@ -56,8 +56,8 @@ describe("groupMySchedule", () => {
       "2026-10-12"
     );
     expect(days.map((d) => [d.label, d.bookings.map((b) => b.booking_code)])).toEqual([
-      ["Hari ini", ["MZ-A"]],
-      ["Besok", ["MZ-B"]],
+      ["Hari ini", ["PD-A"]],
+      ["Besok", ["PD-B"]],
     ]);
     const a = days[0].bookings[0];
     expect(a.items).toHaveLength(2);

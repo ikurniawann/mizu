@@ -49,14 +49,14 @@ export function SpaCommissionsPage() {
     <div className="space-y-4">
       <PageHeader
         kicker={SPA_KICKER}
-        title="Komisi Terapis"
-        description="Komisi dibekukan saat item treatment selesai, dan baru diakui di laporan bila booking-nya sudah lunas."
+        title="Komisi Crew"
+        description="Komisi dibekukan saat item layanan selesai, dan baru diakui di laporan bila booking-nya sudah lunas."
       />
       <Tabs defaultValue="report" className="w-full flex-col">
         <TabsList>
           <TabsTrigger value="report">Laporan</TabsTrigger>
           <TabsTrigger value="rules">Aturan Komisi</TabsTrigger>
-          <TabsTrigger value="payroll">Payroll Terapis</TabsTrigger>
+          <TabsTrigger value="payroll">Payroll Crew</TabsTrigger>
         </TabsList>
         <TabsContent value="report" className="mt-4">
           <ReportTab outlets={outlets.data ?? []} />
@@ -98,7 +98,7 @@ function ReportTab({ outlets }: { outlets: Outlet[] }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[10rem_10rem_minmax(0,16rem)_1fr] sm:items-center">
         <Input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} aria-label="Dari tanggal" />
         <Input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} aria-label="Sampai tanggal" />
-        <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua outlet" />
+        <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua toko" />
         <div className="flex sm:justify-end">
           <Button variant="outline" onClick={exportCsv} disabled={!report.data || rows.length === 0}>
             <Download /> Ekspor CSV
@@ -106,13 +106,13 @@ function ReportTab({ outlets }: { outlets: Outlet[] }) {
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        Item selesai {formatDate(from)} – {formatDate(to)} (WIB) · {outletName ?? "semua outlet"} · hanya booking lunas
+        Item selesai {formatDate(from)} – {formatDate(to)} (WIB) · {outletName ?? "semua toko"} · hanya booking lunas
       </p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard label="Total komisi" value={formatRupiah(report.data?.total_idr ?? 0)} icon={<Wallet />} tone="ink" />
-        <StatCard label="Treatment selesai & lunas" value={formatNumber(treatments)} icon={<Receipt />} />
-        <StatCard label="Omzet treatment" value={formatRupiah(revenue)} hint={`${formatNumber(rows.length)} terapis`} icon={<Users />} />
+        <StatCard label="Layanan selesai & lunas" value={formatNumber(treatments)} icon={<Receipt />} />
+        <StatCard label="Omzet layanan" value={formatRupiah(revenue)} hint={`${formatNumber(rows.length)} crew`} icon={<Users />} />
       </div>
 
       <Card className="py-0">
@@ -130,8 +130,8 @@ function ReportTab({ outlets }: { outlets: Outlet[] }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Terapis</TableHead>
-                <TableHead className="text-right">Treatment</TableHead>
+                <TableHead>Crew</TableHead>
+                <TableHead className="text-right">Layanan</TableHead>
                 <TableHead className="hidden text-right sm:table-cell">Omzet</TableHead>
                 <TableHead className="text-right">Komisi</TableHead>
               </TableRow>
@@ -168,8 +168,8 @@ function ReportTab({ outlets }: { outlets: Outlet[] }) {
                                 <tr className="text-left">
                                   <th className="py-1 pr-3 font-medium">Selesai</th>
                                   <th className="py-1 pr-3 font-medium">Booking</th>
-                                  <th className="py-1 pr-3 font-medium">Outlet</th>
-                                  <th className="py-1 pr-3 font-medium">Treatment</th>
+                                  <th className="py-1 pr-3 font-medium">Toko</th>
+                                  <th className="py-1 pr-3 font-medium">Layanan</th>
                                   <th className="py-1 pr-3 text-right font-medium">Harga</th>
                                   <th className="py-1 pr-3 text-right font-medium">Aturan</th>
                                   <th className="py-1 text-right font-medium">Komisi</th>
@@ -251,7 +251,7 @@ function RulesTab({ outlets }: { outlets: Outlet[] }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Cakupan</TableHead>
-                <TableHead>Outlet</TableHead>
+                <TableHead>Toko</TableHead>
                 <TableHead className="text-right">Komisi</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
@@ -273,7 +273,7 @@ function RulesTab({ outlets }: { outlets: Outlet[] }) {
                         </p>
                       )}
                     </TableCell>
-                    <TableCell>{r.branch_name ?? <span className="text-muted-foreground">Semua outlet</span>}</TableCell>
+                    <TableCell>{r.branch_name ?? <span className="text-muted-foreground">Semua toko</span>}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {commissionValueLabel(r.commission_type, r.value)}
                       <span className="block text-xs font-normal text-muted-foreground">
@@ -357,7 +357,7 @@ function RuleDialog({
   const examplePrice = variant?.price_idr ?? treatment?.variants[0]?.price_idr ?? 200000;
 
   const submit = () => {
-    if (scope !== "default" && !treatmentId) return setError("Pilih treatment.");
+    if (scope !== "default" && !treatmentId) return setError("Pilih layanan.");
     if (scope === "variant" && !variantId) return setError("Pilih varian.");
     if (value.trim() === "" || !Number.isFinite(numeric) || numeric < 0) return setError("Nilai komisi harus angka ≥ 0.");
     if (type === "percent" && numeric > 100) return setError("Persentase maksimal 100.");
@@ -417,11 +417,11 @@ function RuleDialog({
                 ))}
               </select>
             </Field>
-            <Field label="Outlet">
-              <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua outlet" />
+            <Field label="Toko">
+              <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua toko" />
             </Field>
             {scope !== "default" && (
-              <Field label="Treatment" className={scope === "treatment" ? "sm:col-span-2" : undefined}>
+              <Field label="Layanan" className={scope === "treatment" ? "sm:col-span-2" : undefined}>
                 <select
                   className={SELECT}
                   value={treatmentId}
@@ -431,7 +431,7 @@ function RuleDialog({
                   }}
                   required
                 >
-                  <option value="">Pilih treatment…</option>
+                  <option value="">Pilih layanan…</option>
                   {treatments.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}

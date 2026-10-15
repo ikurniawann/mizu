@@ -64,7 +64,9 @@ func TestAttendance(t *testing.T) {
 		t.Fatalf("stats = %s", stats.raw)
 	}
 	expect(t, h.do(&staff, "DELETE", "/api/hris/attendance/"+att, nil), 403, "Forbidden: Only HRD can delete attendance records")
-	expect(t, h.do(&hr, "DELETE", "/api/hris/attendance/"+att, nil), 200, "")
+	// HR deletion needs a reason (attendance adjustment log).
+	expect(t, h.do(&hr, "DELETE", "/api/hris/attendance/"+att, nil), 400, "Alasan penyesuaian wajib diisi (minimal 5 karakter)")
+	expect(t, h.do(&hr, "DELETE", "/api/hris/attendance/"+att, map[string]any{"reason": "Data uji dihapus"}), 200, "")
 }
 
 func TestLeaves(t *testing.T) {
@@ -93,7 +95,7 @@ func TestLeaves(t *testing.T) {
 	if _, err := h.deps.Events.Dispatch(context.Background(), h.tx); err != nil {
 		t.Fatal(err)
 	}
-	if len(h.wa.sent) != 1 || !strings.HasPrefix(h.wa.sent[0], "6281234567890|Arkiv OS — Pengajuan Cuti Tahunan") ||
+	if len(h.wa.sent) != 1 || !strings.HasPrefix(h.wa.sent[0], "6281234567890|Paddy OS — Pengajuan Cuti Tahunan") ||
 		!strings.Contains(h.wa.sent[0], "Kepada: Atasan Cuti") {
 		t.Fatalf("whatsapp = %v", h.wa.sent)
 	}

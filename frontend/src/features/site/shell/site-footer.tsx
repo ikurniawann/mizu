@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Camera, Mail, MapPin, MessageCircle, Music2, Play } from "lucide-react";
 import { BOOKING_HREF } from "../components/booking-link";
 import type { BranchSummary, SocialContent } from "../types";
+import { GooglyEyes, Sparkle } from "../components/doodles";
 import { SECONDARY_NAV, SITE_NAV } from "./site-header";
 
 function Outlets({ branches }: { branches: BranchSummary[] }) {
@@ -43,7 +44,7 @@ function SocialLinks({ social }: { social: SocialContent }) {
             target={href.startsWith("http") ? "_blank" : undefined}
             rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
             aria-label={label}
-            className="flex size-10 items-center justify-center rounded-full bg-card text-foreground shadow-card transition-colors hover:bg-surface-2"
+            className="flex size-10 items-center justify-center rounded-full border-2 border-navy bg-sunny text-navy shadow-[2px_2px_0_0_var(--color-navy)] transition-transform hover:-translate-y-0.5"
           >
             <Icon className="size-4" />
           </a>
@@ -56,15 +57,17 @@ function SocialLinks({ social }: { social: SocialContent }) {
 export function SiteFooter({ branches, social }: { branches: BranchSummary[]; social: SocialContent }) {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-16 bg-surface">
+    <footer className="relative mt-16 overflow-hidden rounded-t-[2.5rem] border-t-2 border-navy bg-bubblegum/25 md:rounded-t-[4rem]">
+      <GooglyEyes className="absolute top-8 right-6 hidden w-16 rotate-6 sm:block md:right-12 md:w-20" />
+      <Sparkle className="absolute bottom-24 left-[46%] hidden size-7 text-sunny md:block" outline />
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-12 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] lg:px-6">
         <div className="space-y-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/lockup-black.png" alt="Mizu Family Massage & Reflexology" className="h-8 w-auto max-w-full dark:hidden" />
+          <img src="/brand/lockup-black.png" alt="Paddy — Your Adorable Companion" className="h-10 w-auto max-w-full dark:hidden" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/lockup-white.png" alt="Mizu Family Massage & Reflexology" className="hidden h-8 w-auto max-w-full dark:block" />
+          <img src="/brand/lockup-white.png" alt="Paddy — Your Adorable Companion" className="hidden h-10 w-auto max-w-full dark:block" />
           <p className="max-w-sm text-sm text-body">
-            Family massage & reflexology di Bandung. Magical places to rest, relax and rejuvenate.
+            Custom phone case &amp; adorable goods dari Bandung sejak 2016. Grab it, love it!
           </p>
           <Outlets branches={branches} />
           <SocialLinks social={social} />
@@ -81,12 +84,12 @@ export function SiteFooter({ branches, social }: { branches: BranchSummary[]; so
             ))}
           </ul>
         </nav>
-        <nav aria-label="Mizu" className="text-sm">
-          <p className="mb-3 font-semibold text-foreground">Mizu</p>
+        <nav aria-label="Paddy" className="text-sm">
+          <p className="mb-3 font-semibold text-foreground">Paddy</p>
           <ul className="space-y-2">
             <li>
-              <Link href={BOOKING_HREF} className="font-semibold text-forest hover:underline dark:text-accent">
-                Booking treatment
+              <Link href={BOOKING_HREF} className="font-semibold text-forest hover:underline dark:text-brand-text">
+                Booking Paddy Experience
               </Link>
             </li>
             <li>
@@ -107,12 +110,15 @@ export function SiteFooter({ branches, social }: { branches: BranchSummary[]; so
               </Link>
             </li>
           </ul>
-          <p className="mt-6 text-xs text-muted-foreground">Booking online dengan DP, sisa pembayaran di outlet.</p>
+          <p className="mt-6 text-xs text-muted-foreground">Booking online dengan DP, sisa pembayaran di toko.</p>
+          <a href="https://paddy.id" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs font-semibold text-brand-text hover:underline">
+            Belanja online di paddy.id
+          </a>
         </nav>
       </div>
-      <div className="border-t border-border/60">
+      <div className="border-t-2 border-dashed border-bubblegum">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
-          <p>© {year} Mizu Family Massage & Reflexology.</p>
+          <p>© {year} Paddy · Your Adorable Companion.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-foreground">
               Kebijakan Privasi

@@ -14,7 +14,7 @@ type store struct{}
 
 // settings reads the bot_* keys (jsonb values).
 func (store) settings(ctx context.Context, q database.Querier) (Settings, error) {
-	s := Settings{Name: "Mizu Assistant", HandoverKeywords: []string{"admin", "cs", "manusia", "operator"}, NotifyCustomer: true}
+	s := Settings{Name: "Paddy Assistant", HandoverKeywords: []string{"admin", "cs", "manusia", "operator"}, NotifyCustomer: true}
 	rows, err := q.Query(ctx, `SELECT key, value FROM crm.crm_settings WHERE key LIKE 'bot_%'`)
 	if err != nil {
 		return s, err

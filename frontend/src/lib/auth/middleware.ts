@@ -21,8 +21,10 @@ const PUBLIC_AUTH_PREFIXES = [
   "/products/",
   "/qris/",
   "/site/sample/",
-  // Foto stok website Mizu (public/site/photos) untuk beranda & booking publik.
+  // Foto stok website Paddy (public/site/photos) untuk beranda & booking publik.
   "/site/photos/",
+  // Katalog desain custom case Paddy Experience (public/experience): booking online & situs publik.
+  "/experience/",
   // Desktop NüHabit OS (/os) & alamat lamanya: tampil juga untuk pengunjung.
   "/arkiv-os",
   "/qa",

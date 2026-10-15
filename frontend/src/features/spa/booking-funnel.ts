@@ -1,6 +1,6 @@
 "use client";
 
-const KEY = "mizu-spa-booking-session";
+const KEY = "paddy-spa-booking-session";
 export type BookingFunnelStep = "open" | "outlet" | "treatment" | "time" | "contact" | "submit" | "success" | "error";
 
 /** Send one anonymous step event; booking details and contact fields stay out of the payload. */

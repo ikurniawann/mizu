@@ -361,7 +361,7 @@ function PayStep({ plan, branch, onSessionLost }: { plan: PublicPlan; branch: Pu
       </Button>
       <p className="text-xs text-muted-foreground">
         Your plan activates as soon as the payment arrives. Track it in the{" "}
-        <Link href="/member" className="font-semibold text-forest hover:underline dark:text-accent">
+        <Link href="/member" className="font-semibold text-forest hover:underline dark:text-brand-text">
           Member Area
         </Link>
         .
@@ -398,7 +398,7 @@ export function JoinCheckout({
     <Section>
       <Container className="max-w-3xl space-y-8">
         <div className="space-y-4">
-          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Join Mizu</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Join Paddy</h1>
           <Stepper current={step} />
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">

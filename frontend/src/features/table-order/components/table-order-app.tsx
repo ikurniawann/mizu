@@ -62,7 +62,7 @@ import { OrderTracking } from "./order-tracking";
 import { VariantSheet } from "./variant-sheet";
 import { DecrementSheet } from "./decrement-sheet";
 
-const HERO_IMAGE = "/brand/mizu-wallpaper.webp";
+const HERO_IMAGE = "/brand/paddy-wallpaper.webp";
 
 type View = "menu" | "tracking" | "orders";
 
@@ -121,7 +121,7 @@ export function TableOrderApp({ tableCode }: { tableCode: string }) {
     [cart, charges, memberDiscountPct]
   );
   const tableLabel = session?.table_label || tableCode;
-  const brandName = session?.brand_name || "Mizu";
+  const brandName = session?.brand_name || "Paddy";
 
   const showToast = useCallback((message: string) => {
     setToast(message);

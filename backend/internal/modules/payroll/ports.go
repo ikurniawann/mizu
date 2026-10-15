@@ -87,12 +87,33 @@ type Workforce interface {
 	PeriodRecords(ctx context.Context, q database.Querier, employeeID, start, end string) (domain.WorkforceRecords, error)
 	// Holidays are the active public holiday dates in [start, end].
 	Holidays(ctx context.Context, q database.Querier, start, end string) (map[string]bool, error)
+	// Placements are the employee's store placements
+	// (hris.employee_placements) running on any day of [start, end].
+	Placements(ctx context.Context, q database.Querier, employeeID, start, end string) ([]domain.Placement, error)
 }
 
 // AppSettings reads configuration.app_settings (the company identity on
 // payslips): every key, nil when missing or NULL.
 type AppSettings interface {
 	GetMany(ctx context.Context, q database.Querier, keys []string) (map[string]*string, error)
+}
+
+// AttendancePeriod is the HRIS attendance period of a payroll month: the
+// date range payroll reads attendance, leave, overtime and placements over,
+// and whether it is closed (locked).
+type AttendancePeriod struct {
+	ID          string
+	Start, End  string // YYYY-MM-DD, inclusive
+	ClosingDate string
+	Label       string // "21 Sep – 20 Okt 2026"
+	Closed      bool
+}
+
+// AttendancePeriods reads the attendance periods (HRIS people context).
+type AttendancePeriods interface {
+	// ForMonth is the period of the payroll month (materialized; a period
+	// past its closing date is closed).
+	ForMonth(ctx context.Context, q database.Querier, year, month int) (*AttendancePeriod, error)
 }
 
 // Ports bundles the adapters the module needs.
@@ -103,4 +124,7 @@ type Ports struct {
 	Settings    AppSettings
 	// KPI reads what the KPI snapshot measures in other contexts.
 	KPI KPISources
+	// AttendancePeriods gives the attendance period of a run; nil means the
+	// calendar month, always treated as closed.
+	AttendancePeriods AttendancePeriods
 }

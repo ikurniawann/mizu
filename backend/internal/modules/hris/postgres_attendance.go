@@ -9,8 +9,10 @@ import (
 var attendanceListColumns = `id, employee_id, date, clock_in, clock_out,
   clock_in_location, clock_out_location, clock_in_photo_url, clock_out_photo_url,
   shift_id, scheduled_start, scheduled_end, work_hours, break_minutes,
-  status, is_late, late_minutes, notes, created_at, updated_at, ` +
+  status, is_late, late_minutes, notes, created_at, updated_at, branch_id,
+  is_overtime, overtime_hours, validated_at, is_manual, adjusted_at, adjusted_by_name, adjustment_count, ` +
 	embedOne("shift", "id, name", "hris.shifts", "id = attendance.shift_id") + ", " +
+	embedOne("branch", "id, code, name", "configuration.branches", "id = attendance.branch_id") + ", " +
 	embedOne("employee", "id, full_name, nip, photo_url, department_id, job_title_id", "hris.employees", "id = attendance.employee_id")
 
 func (s *store) AttendancePage(ctx context.Context, p attendanceListParams) ([]*Row, int64, error) {
@@ -35,6 +37,12 @@ func (s *store) AttendancePage(ctx context.Context, p attendanceListParams) ([]*
 	}
 	if p.LateOnly {
 		add("is_late = $%d", true)
+	}
+	switch b := strOr(p.BranchID); {
+	case b == "none":
+		where = append(where, "branch_id IS NULL")
+	case b != "":
+		add("branch_id = $%d", b)
 	}
 	whereSQL := ""
 	if len(where) > 0 {

@@ -97,8 +97,8 @@ describe("treatment", () => {
 
 describe("bookingQrFileName", () => {
   it("nama file aman dari kode booking", () => {
-    expect(bookingQrFileName("MZ-261009-VXL3")).toBe("mizu-booking-MZ-261009-VXL3.png");
-    expect(bookingQrFileName("../x y")).toBe("mizu-booking-xy.png");
-    expect(bookingQrFileName("")).toBe("mizu-booking-booking.png");
+    expect(bookingQrFileName("PD-261009-VXL3")).toBe("paddy-booking-PD-261009-VXL3.png");
+    expect(bookingQrFileName("../x y")).toBe("paddy-booking-xy.png");
+    expect(bookingQrFileName("")).toBe("paddy-booking-booking.png");
   });
 });

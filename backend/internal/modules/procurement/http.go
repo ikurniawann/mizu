@@ -25,6 +25,7 @@ func (h *Handler) Routes() []module.Route {
 	h.reportRoutes(add)
 	h.dashboardRoutes(add)
 	h.fileRoutes(add)
+	h.settingsRoutes(add)
 	return routes
 }
 

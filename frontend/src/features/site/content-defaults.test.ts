@@ -20,16 +20,16 @@ describe("withDefaults", () => {
 
   it("lets a stored list replace the default list", () => {
     const training = withDefaults("training", { laws: { items: ["Satu"] } });
-    expect(training.laws).toEqual({ title: "Sebelum treatment", items: ["Satu"] });
+    expect(training.laws).toEqual({ title: "Sebelum sesi experience", items: ["Satu"] });
   });
 
-  it("carries spa copy, not the old gym copy", () => {
+  it("carries Paddy copy, not the old gym or spa copy", () => {
     const text = JSON.stringify(CONTENT_DEFAULTS).toLowerCase();
-    for (const word of ["hyrox", "gym", "coach", "membership", "trial"]) expect(text).not.toContain(word);
+    for (const word of ["hyrox", "gym", "coach", "membership", "trial", "mizu", "massage", "pijat"]) expect(text).not.toContain(word);
   });
 
   it("does not mutate the defaults", () => {
     withDefaults("social", { instagram: "x" });
-    expect(CONTENT_DEFAULTS.social.instagram).toBe("https://instagram.com/mizufamily.id");
+    expect(CONTENT_DEFAULTS.social.instagram).toBe("https://www.instagram.com/paddy.id/");
   });
 });

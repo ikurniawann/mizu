@@ -9,9 +9,9 @@ import type { ContentByKey, ContentKey } from "./types";
 export const CONTENT_DEFAULTS: ContentByKey = {
   home: {
     hero: {
-      kicker: "Family Massage & Reflexology · Bandung",
-      title: "Rest. Relax. Rejuvenate.",
-      subtitle: "Tempat yang tenang untuk berhenti sejenak. Pijat, refleksi dan perawatan tubuh di dua outlet Mizu di Bandung.",
+      kicker: "Custom Case & Adorable Goods · Bandung",
+      title: "Your Adorable Companion.",
+      subtitle: "Case HP custom, Paddy Pods, Paddy Bags dan aksesori lucu dari Bandung. Mampir ke Paddy Store atau booking sesi Paddy Experience.",
       video_url: "",
       image_url: "",
       cta_label: "Booking Sekarang",
@@ -22,16 +22,16 @@ export const CONTENT_DEFAULTS: ContentByKey = {
     reel: [],
     stories: [],
   },
-  // The treatment guide (/treatments and the home page); the key name predates the spa.
+  // The Paddy Experience service guide (/treatments and the home page); the key name predates the studio.
   training: {
-    intro: { title: "Treatment untuk setiap kebutuhan.", text: "" },
+    intro: { title: "Layanan Paddy Experience untuk barang kesayanganmu.", text: "" },
     class_types: [],
-    block: { title: "Alur kunjungan", text: "", phases: [] },
-    laws: { title: "Sebelum treatment", items: [] },
+    block: { title: "Alur kunjungan experience", text: "", phases: [] },
+    laws: { title: "Sebelum sesi experience", items: [] },
   },
-  space: { title: "Ruang yang tenang di tengah kota.", intro: "", sections: [] },
-  brand: { title: "Tentang Mizu", intro: "", story_md: "", values: [], image_url: "" },
-  social: { instagram: "https://instagram.com/mizufamily.id", tiktok: "", youtube: "", whatsapp: "", email: "" },
+  space: { title: "Toko penuh warna, doodle dan barang lucu.", intro: "", sections: [] },
+  brand: { title: "Tentang Paddy", intro: "", story_md: "", values: [], image_url: "" },
+  social: { instagram: "https://www.instagram.com/paddy.id/", tiktok: "", youtube: "", whatsapp: "", email: "" },
   legal_privacy: { title: "Kebijakan Privasi", body_md: "" },
   legal_terms: { title: "Syarat & Ketentuan", body_md: "" },
   analytics: { gtm_id: "", meta_pixel_id: "" },

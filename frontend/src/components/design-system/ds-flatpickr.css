@@ -72,8 +72,8 @@
 .ds-flatpickr .flatpickr-day.selected,
 .ds-flatpickr .flatpickr-day.startRange,
 .ds-flatpickr .flatpickr-day.endRange {
-  background: #3d2b20;
-  border-color: #3d2b20;
+  background: #b8045a;
+  border-color: #b8045a;
 }
 
 .ds-flatpickr .flatpickr-day.selected:hover,
@@ -88,5 +88,5 @@
 }
 
 .ds-flatpickr .flatpickr-day.today:hover {
-  border-color: #3d2b20;
+  border-color: #b8045a;
 }

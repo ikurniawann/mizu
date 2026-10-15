@@ -671,11 +671,11 @@ func TestIntegrationDemoOTP(t *testing.T) {
 		t.Fatal("demo mode must not send WhatsApp")
 	}
 	// The code is still required: a wrong one fails, the demo code works.
-	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/register", map[string]any{"phone": phone, "name": "Demo Mizu", "code": "654321"}))
+	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/register", map[string]any{"phone": phone, "name": "Demo Paddy", "code": "654321"}))
 	if status == 200 {
 		t.Fatalf("wrong code accepted: %v", body)
 	}
-	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/register", map[string]any{"phone": phone, "name": "Demo Mizu", "code": "123456"}))
+	status, body, _ = h.do(testutil.Request("POST", "/api/member-portal/register", map[string]any{"phone": phone, "name": "Demo Paddy", "code": "123456"}))
 	if status != 200 {
 		t.Fatalf("demo register: %d %v", status, body)
 	}

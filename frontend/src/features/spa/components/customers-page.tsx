@@ -28,7 +28,7 @@ export function SpaCustomersPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader kicker="Spa" title="Customer" description="Daftar pelanggan yang tersedia untuk pencarian saat membuat booking spa." />
+      <PageHeader kicker="Studio" title="Customer" description="Daftar pelanggan yang tersedia untuk pencarian saat membuat booking studio." />
       <Input
         value={q}
         onChange={(event) => { setQ(event.target.value); setPage(1); }}

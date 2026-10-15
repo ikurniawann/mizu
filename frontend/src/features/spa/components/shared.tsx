@@ -13,7 +13,7 @@ import type { Outlet, Pagination } from "../types";
 export { Field, TableNote, TEXTAREA } from "@/features/crm/engagement/components/shared";
 export { SELECT } from "@/features/gym/shared";
 
-export const SPA_KICKER = "Spa";
+export const SPA_KICKER = "Paddy Experience";
 
 /**
  * Ikon bantuan dengan teks bebas — tampilan sama dengan HelpHint, tetapi
@@ -78,7 +78,7 @@ export function OutletSelect({
   allLabel,
   onlyConfigured = true,
   required,
-  ariaLabel = "Outlet",
+  ariaLabel = "Toko",
 }: {
   outlets: Outlet[];
   value: string;

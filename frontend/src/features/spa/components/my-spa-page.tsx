@@ -21,6 +21,7 @@ import { Countdown } from "./countdown";
 import { MyAddTreatmentDialog } from "./my-add-treatment-dialog";
 import { MyDayOffCard } from "./my-day-off-card";
 import { MyPayCard } from "./my-pay-card";
+import { CaseDesignBadge, CaseDesignCard } from "./case-design/case-design-card";
 import { ItemStatusBadge, SPA_KICKER, TimeRange } from "./shared";
 
 /**
@@ -44,9 +45,9 @@ export function MySpaPage() {
   if (!me.data?.therapist) {
     return (
       <div className="mx-auto max-w-md py-20 text-center">
-        <p className="text-lg font-semibold text-foreground">Akun Anda belum terdaftar sebagai terapis</p>
+        <p className="text-lg font-semibold text-foreground">Akun Anda belum terdaftar sebagai crew</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Halaman ini untuk terapis Mizu. Minta admin spa menambahkan Anda di menu Spa → Terapis bila menurut Anda ini keliru.
+          Halaman ini untuk crew Paddy Experience. Minta admin studio menambahkan Anda di menu Paddy Experience → Crew Experience bila menurut Anda ini keliru.
         </p>
       </div>
     );
@@ -93,9 +94,9 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
       <PageHeader
-        kicker={`${SPA_KICKER} · Tugas Terapis`}
+        kicker={`${SPA_KICKER} · Tugas Experience`}
         title={`Halo, ${name.split(" ")[0]}`}
-        description={branch ? `Outlet asal ${branch}. Tekan Mulai saat treatment dimulai dan Selesai saat sudah selesai.` : undefined}
+        description={branch ? `Toko asal ${branch}. Tekan Mulai saat layanan dimulai dan Selesai saat sudah selesai.` : undefined}
         className="mb-2"
       />
 
@@ -105,7 +106,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
           onClick={() => setView("upcoming")}
           className="flex w-full items-center gap-3 rounded-card bg-accent-soft px-4 py-3 text-left text-sm transition hover:bg-accent/20"
         >
-          <BellRing className="size-5 shrink-0 text-forest dark:text-accent" />
+          <BellRing className="size-5 shrink-0 text-forest dark:text-brand-text" />
           <span className="min-w-0 flex-1">
             <span className="block font-semibold">{fresh.length} booking baru untukmu</span>
             <span className="block truncate text-xs text-body">
@@ -126,7 +127,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
             <p className="text-[28px] leading-tight font-extrabold tabular-nums">
               {summary.isLoading ? "…" : formatRupiah(summary.data?.earned_idr ?? 0)}
             </p>
-            <p className="text-xs text-muted-foreground">Sudah cair: treatment selesai & booking lunas</p>
+            <p className="text-xs text-muted-foreground">Sudah cair: layanan selesai & booking lunas</p>
           </div>
           <Wallet className="size-8 text-accent-strong" />
         </div>
@@ -143,7 +144,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
             label="Perkiraan dari jadwal"
             value={summary.data?.upcoming_idr}
             count={summary.data?.upcoming_count}
-            hint="Treatment terjadwal bulan ini"
+            hint="Layanan terjadwal bulan ini"
           />
         </div>
         {summary.error && <p className="text-sm text-danger">{summary.error.message}</p>}
@@ -183,7 +184,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
               className="w-44"
             />
             <p className="text-sm text-muted-foreground">
-              {formatNumber(dayBookings.length)} booking{pending ? ` · ${pending} treatment belum selesai` : ""}
+              {formatNumber(dayBookings.length)} booking{pending ? ` · ${pending} layanan belum selesai` : ""}
             </p>
           </div>
           <ScheduleState query={day} empty={`Tidak ada tugas pada ${formatDateLong(date)}.`} count={dayBookings.length}>
@@ -220,7 +221,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
           <span className="text-sm font-semibold">Rincian komisi cair {monthLabel}</span>
           <span className="flex items-center gap-2">
-            <Badge variant="muted">{formatNumber(lines.length)} treatment</Badge>
+            <Badge variant="muted">{formatNumber(lines.length)} layanan</Badge>
             <ChevronDown className="size-4 text-muted-foreground transition group-open:rotate-180" />
           </span>
         </summary>
@@ -280,7 +281,7 @@ function MiniStat({
       </p>
       <p className="mt-1 text-lg font-bold tabular-nums">{value === undefined ? "…" : formatRupiah(value)}</p>
       <p className="text-[11px] text-muted-foreground">
-        {count ? `${formatNumber(count)} treatment · ` : ""}
+        {count ? `${formatNumber(count)} layanan · ` : ""}
         {hint}
       </p>
     </div>
@@ -348,7 +349,7 @@ function BookingCard({ booking, isNew, actions }: { booking: MyBooking; isNew: b
         </ul>
         {canAdd && (
           <Button variant="outline" className="w-full" onClick={() => setAdding(true)}>
-            <Plus className="size-4" /> Tambah treatment
+            <Plus className="size-4" /> Tambah layanan
           </Button>
         )}
         {adding && (
@@ -375,7 +376,7 @@ function TreatmentRow({ item, actions }: { item: MyScheduleItem; actions: boolea
     action.mutate(
       { itemId: item.id, action: kind },
       {
-        onSuccess: () => toast.success(kind === "start" ? "Treatment dimulai" : "Treatment selesai", { description: item.customer_name }),
+        onSuccess: () => toast.success(kind === "start" ? "Layanan dimulai" : "Layanan selesai", { description: item.customer_name }),
         onError: (err) => toast.error(kind === "start" ? "Gagal memulai" : "Gagal menyelesaikan", { description: err.message }),
       }
     );
@@ -385,6 +386,12 @@ function TreatmentRow({ item, actions }: { item: MyScheduleItem; actions: boolea
         <p className="text-sm font-medium">{treatmentLabel(item)}</p>
         <ItemStatusBadge status={item.status} />
       </div>
+      {item.customizable &&
+        (item.design ? (
+          <CaseDesignCard design={item.design} size="sm" className="rounded-xl bg-surface p-2" />
+        ) : (
+          <CaseDesignBadge design={null} />
+        ))}
       {actions && item.status === "assigned" && (
         <Button size="lg" className="w-full" disabled={action.isPending} onClick={() => run("start")}>
           <PlayCircle className="size-5" /> Mulai

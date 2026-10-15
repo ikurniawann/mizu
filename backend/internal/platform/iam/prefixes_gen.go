@@ -13,6 +13,7 @@ var (
 	ItemsInventory          = []string{"items.product.inventory", "items.raw-material.inventory"}
 	ItemsApproval           = []string{"items.product.approval", "items.raw-material.approval"}
 	ItemsReports            = []string{"items.reports"}
+	ItemsPurchasingSettings = []string{"items.raw-material.purchasing.settings", "items.product.purchasing.settings"}
 	Pos                     = []string{"pos"}
 	PosOperations           = []string{"pos.operations", "pos.cashier.central"}
 	PosMemberBills          = []string{"pos.operations.member-bills"}
@@ -25,6 +26,7 @@ var (
 	HrisKepegawaian         = []string{"hris.kepegawaian"}
 	HrisWorkforce           = []string{"hris.workforce"}
 	HrisCompensation        = []string{"hris.compensation"}
+	HrisPlacements          = []string{"hris.master.placements"}
 	HrisPerformance         = []string{"hris.performance"}
 	HrisRecruitment         = []string{"hris.recruitment"}
 	Accounting              = []string{"accounting"}
@@ -104,6 +106,7 @@ var ByKey = map[string][]string{
 	"itemsInventory":          ItemsInventory,
 	"itemsApproval":           ItemsApproval,
 	"itemsReports":            ItemsReports,
+	"itemsPurchasingSettings": ItemsPurchasingSettings,
 	"pos":                     Pos,
 	"posOperations":           PosOperations,
 	"posMemberBills":          PosMemberBills,
@@ -116,6 +119,7 @@ var ByKey = map[string][]string{
 	"hrisKepegawaian":         HrisKepegawaian,
 	"hrisWorkforce":           HrisWorkforce,
 	"hrisCompensation":        HrisCompensation,
+	"hrisPlacements":          HrisPlacements,
 	"hrisPerformance":         HrisPerformance,
 	"hrisRecruitment":         HrisRecruitment,
 	"accounting":              Accounting,

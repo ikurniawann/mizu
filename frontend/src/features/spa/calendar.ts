@@ -177,8 +177,8 @@ export function availabilityWarning(
   item: Timed,
   row: { shift: Shift | null; on_leave: boolean; day_off?: boolean }
 ): string | null {
-  if (row.on_leave) return "Terapis sedang cuti pada tanggal ini.";
-  if (row.day_off) return "Hari ini jadwal libur terapis.";
-  if (!row.shift) return "Terapis tidak punya shift pada tanggal ini.";
+  if (row.on_leave) return "Crew sedang cuti pada tanggal ini.";
+  if (row.day_off) return "Hari ini jadwal libur crew.";
+  if (!row.shift) return "Crew tidak punya shift pada tanggal ini.";
   return shiftMismatch(item, row.shift);
 }

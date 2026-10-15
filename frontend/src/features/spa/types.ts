@@ -1,8 +1,10 @@
 /**
- * Tipe modul Spa (Mizu) — cermin persis kontrak API EPIC-052
+ * Tipe modul Spa (Paddy) — cermin persis kontrak API EPIC-052
  * (docs/epics/EPIC-052-mizu-spa-booking-terapis.md, bagian "API").
  * Waktu = ISO UTC; tanggal = "YYYY-MM-DD" (WIB); uang = angka rupiah.
  */
+
+import type { CaseDesign } from "./experience";
 
 export type ItemStatus = "unassigned" | "assigned" | "in_treatment" | "completed" | "cancelled";
 export type BookingStatus = "unassigned" | "assigned" | "in_treatment" | "completed" | "cancelled" | "expired";
@@ -71,6 +73,8 @@ export interface Treatment {
   description: string | null;
   is_active: boolean;
   sort_order: number;
+  /** Layanan custom case: tiap booking-nya membawa desain case. */
+  customizable?: boolean;
   variants: Variant[];
 }
 
@@ -155,6 +159,7 @@ export interface TreatmentInput {
   description: string;
   is_active: boolean;
   sort_order: number;
+  customizable?: boolean;
   variants: VariantInput[];
 }
 
@@ -255,6 +260,10 @@ export interface BookingItem {
   started_at: string | null;
   completed_at: string | null;
   commission_idr: number | null;
+  /** Layanan custom case: butuh desain case (lihat `design`). */
+  customizable?: boolean;
+  /** Desain case tersimpan; null = belum diisi (diisi crew di toko). */
+  design?: CaseDesign | null;
 }
 
 export interface BookingEvent {
@@ -298,6 +307,7 @@ export interface BookingListParams {
 
 export interface BookingItemInput {
   variant_id: string;
+  design?: CaseDesign | null;
 }
 
 export interface BookingCreateInput {
@@ -375,6 +385,7 @@ export interface BoardItem extends BookingItem {
   customer_name: string;
 	therapist_gender_pref: GenderPref;
   booking_status: BookingStatus;
+  payment_status?: PaymentStatus;
 }
 
 export interface BoardTherapist {
@@ -537,6 +548,8 @@ export interface PublicTreatment {
   name: string;
   category: string | null;
   description: string | null;
+  /** Booking online layanan ini wajib menyertakan desain case. */
+  customizable?: boolean;
   variants: PublicVariant[];
 }
 
@@ -553,6 +566,8 @@ export interface PublicBookingInput {
   /** Room pilihan tamu (opsional); harganya ditambahkan ke total. */
   room_id?: string;
   payment_method?: PublicPaymentMethod;
+  /** designs[i] = desain case untuk variant_ids[i] (null untuk layanan non-custom). */
+  designs?: (CaseDesign | null)[];
 }
 
 /** Room yang masih bisa dipilih tamu pada jam itu. */
@@ -578,6 +593,16 @@ export type DepositInfo = {
 
 export type DepositSettings = { amount_idr: number; hold_minutes: number; enabled: boolean };
 
+export interface PublicBookingItem {
+  variant_id: string;
+  treatment_name: string;
+  variant_name: string;
+  duration_min: number;
+  price_idr: number;
+  customizable?: boolean;
+  design?: CaseDesign | null;
+}
+
 export interface PublicBookingResult {
   access_token: string;
   branch_id: string;
@@ -589,7 +614,7 @@ export interface PublicBookingResult {
   status: BookingStatus;
   payment_status: PaymentStatus;
   can_manage: boolean;
-  items: { variant_id: string; treatment_name: string; variant_name: string; duration_min: number; price_idr: number }[];
+  items: PublicBookingItem[];
   total_idr: number;
   therapist_name?: string | null;
   payment_method?: PublicPaymentMethod;

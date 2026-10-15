@@ -42,7 +42,9 @@ func TestPurchaseOrderCreateAndTotals(t *testing.T) {
 	e.expect(e.do(&staff, "POST", "/api/purchasing/po", map[string]any{"supplier_id": f.Supplier, "tanggal_po": "04-10-2026", "items": []any{}}), 400, "Format tanggal: YYYY-MM-DD")
 	e.expect(e.do(&staff, "POST", "/api/purchasing/po", map[string]any{"module_type": "product", "tanggal_po": "2026-10-04"}), 400, "Invalid input: expected string, received undefined")
 	raw := map[string]any{"supplier_id": f.Supplier, "tanggal_po": "2026-10-04", "items": []any{map[string]any{"raw_material_id": f.Material, "qty_ordered": 1, "harga_satuan": 1}}}
-	e.expect(e.do(&staff, "POST", "/api/purchasing/po", raw), 400, "Purchase order must be created from an approved purchase request")
+	// No stored rule: a raw-material PO still needs a PR (the old behaviour).
+	e.exec(`DELETE FROM configuration.app_settings WHERE key IN ('po_requires_pr_raw_material', 'po_requires_pr_product')`)
+	e.expect(e.do(&staff, "POST", "/api/purchasing/po", raw), 400, rawNeedsPr)
 
 	po := e.generalPo(&staff, f, supply, map[string]any{"diskon_persen": 10, "ppn_persen": 0})
 	if !regexp.MustCompile(`^PO-\d{6}-\d{4}$`).MatchString(po["nomor_po"].(string)) {
@@ -132,6 +134,121 @@ func TestPurchaseOrderCreateAndTotals(t *testing.T) {
 	e.expect(r, 410, "Penerimaan PO langsung sudah dinonaktifkan. Gunakan flow Delivery/GRN untuk menerima barang.")
 	if r.Body["next_step"] != "/dashboard/purchasing/grn/insert?po_id="+poID {
 		t.Fatalf("receive = %s", r.Raw)
+	}
+}
+
+const (
+	rawNeedsPr     = "PO bahan baku harus dibuat dari purchase request yang disetujui (aturan di Pengaturan Pembelian)"
+	productNeedsPr = "PO produk harus dibuat dari purchase request yang disetujui (aturan di Pengaturan Pembelian)"
+)
+
+// setPoRule stores one Pengaturan Pembelian flag on the test transaction.
+func (e *env) setPoRule(key string, on bool) {
+	e.t.Helper()
+	v := "false"
+	if on {
+		v = "true"
+	}
+	e.exec(`INSERT INTO configuration.app_settings (key, value, updated_at) VALUES ($1, $2, now())
+		ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, key, v)
+}
+
+func TestPurchaseOrderRequiresPrRule(t *testing.T) {
+	e := newEnv(t)
+	f := e.fixtures()
+	staff := e.staff(itemsAll)
+	_, _, wh := e.warehouse()
+	product := e.id(`INSERT INTO item.products (kode, nama, satuan_id, warehouse_id) VALUES ('GTP'||$1, 'Kaos '||$1, $2, $3) RETURNING id::text`, suffix(), f.Unit, wh)
+	raw := map[string]any{"supplier_id": f.Supplier, "tanggal_po": "2026-10-04", "items": []any{
+		map[string]any{"raw_material_id": f.Material, "satuan_id": f.BigUnit, "qty_ordered": 2, "harga_satuan": 15000, "notes": "langsung"}}}
+	prod := map[string]any{"module_type": "product", "vendor_id": f.Vendor, "tanggal_po": "2026-10-04", "items": []any{
+		map[string]any{"product_id": product, "qty_ordered": 3, "harga_satuan": 5000}}}
+
+	// Defaults (keys missing): raw material needs a PR, product does not.
+	e.exec(`DELETE FROM configuration.app_settings WHERE key IN ('po_requires_pr_raw_material', 'po_requires_pr_product')`)
+	r := e.do(&staff, "GET", "/api/purchasing/settings", nil)
+	e.expect(r, 200, "")
+	if r.data()["po_requires_pr_raw_material"] != true || r.data()["po_requires_pr_product"] != false {
+		t.Fatalf("default settings = %s", r.Raw)
+	}
+	e.expect(e.do(&staff, "POST", "/api/purchasing/po", raw), 400, rawNeedsPr)
+	r = e.do(&staff, "POST", "/api/purchasing/po", prod)
+	e.expect(r, 201, "")
+	if r.data()["pr_id"] != nil || r.data()["module_type"] != "product" {
+		t.Fatalf("product po = %s", r.Raw)
+	}
+
+	// Raw-material rule off: a direct PO is created without PR.
+	e.setPoRule("po_requires_pr_raw_material", false)
+	r = e.do(&staff, "POST", "/api/purchasing/po", raw)
+	e.expect(r, 201, "")
+	po := r.data()
+	if po["pr_id"] != nil || po["module_type"] != "raw_material" || po["supplier_id"] != f.Supplier || po["subtotal"] != "30000.00" || po["status"] != "draft" {
+		t.Fatalf("direct raw po = %s", r.Raw)
+	}
+	if e.scalar(`SELECT raw_material_id::text||'|'||satuan_id::text||'|'||catatan FROM purchasing.purchase_order_items WHERE purchase_order_id = $1`, po["id"]) !=
+		f.Material+"|"+f.BigUnit+"|langsung" {
+		t.Fatal("direct raw po item")
+	}
+	// A PR that is sent is still checked, rule or not.
+	withPr := map[string]any{"pr_id": "11111111-1111-4111-8111-111111111111"}
+	for k, v := range raw {
+		withPr[k] = v
+	}
+	e.expect(e.do(&staff, "POST", "/api/purchasing/po", withPr), 404, "PR tidak ditemukan")
+
+	// Product rule on: a product PO without PR is rejected; raw stays off.
+	e.setPoRule("po_requires_pr_product", true)
+	e.expect(e.do(&staff, "POST", "/api/purchasing/po", prod), 400, productNeedsPr)
+	e.expect(e.do(&staff, "POST", "/api/purchasing/po", raw), 201, "")
+	// General POs are not governed by the rules.
+	e.generalPo(&staff, f, e.supplyItem(), nil)
+	// Unreadable stored values fall back to the defaults.
+	e.exec(`UPDATE configuration.app_settings SET value = 'maybe' WHERE key = 'po_requires_pr_product'`)
+	e.expect(e.do(&staff, "POST", "/api/purchasing/po", prod), 201, "")
+}
+
+func TestPurchasingSettingsUpdate(t *testing.T) {
+	e := newEnv(t)
+	staff := e.staff(itemsAll)
+	manager := e.staff(map[string][]string{
+		"items": {"read"}, "items.raw-material.purchasing.settings": {"read", "update"},
+	}, func(o *testutil.StaffOptions) { o.Role = "purchasing_manager" })
+	e.exec(`DELETE FROM configuration.app_settings WHERE key IN ('po_requires_pr_raw_material', 'po_requires_pr_product')`)
+
+	// Staff read the rules (the PO forms need them) but cannot change them.
+	e.expect(e.do(&staff, "GET", "/api/purchasing/settings", nil), 200, "")
+	e.expect(e.do(&staff, "PUT", "/api/purchasing/settings", map[string]any{"po_requires_pr_raw_material": false}), 403, "Insufficient permissions")
+
+	e.expect(e.do(&manager, "PUT", "/api/purchasing/settings", map[string]any{"po_requires_pr_raw_material": "no"}), 400, "Invalid input: expected boolean, received string")
+	e.expect(e.do(&manager, "PUT", "/api/purchasing/settings", map[string]any{}), 400, "Tidak ada pengaturan yang diubah")
+
+	r := e.do(&manager, "PUT", "/api/purchasing/settings", map[string]any{"po_requires_pr_raw_material": false})
+	e.expect(r, 200, "")
+	if r.Body["message"] != "Pengaturan pembelian disimpan" || r.data()["po_requires_pr_raw_material"] != false || r.data()["po_requires_pr_product"] != false {
+		t.Fatalf("update = %s", r.Raw)
+	}
+	if e.scalar(`SELECT string_agg(key||'='||value, ',' ORDER BY key) FROM configuration.app_settings WHERE key IN ('po_requires_pr_raw_material', 'po_requires_pr_product')`) !=
+		"po_requires_pr_product=false,po_requires_pr_raw_material=false" {
+		t.Fatal("stored settings")
+	}
+	if e.scalar(`SELECT count(*)::int FROM audit.audit_log WHERE action = 'purchasing_settings.update' AND actor_id = $1
+		AND before->>'po_requires_pr_raw_material' = 'true' AND after->>'po_requires_pr_raw_material' = 'false'`, manager.UserID) != int32(1) {
+		t.Fatal("audit entry")
+	}
+	r = e.do(&manager, "PUT", "/api/purchasing/settings", map[string]any{"po_requires_pr_product": true})
+	e.expect(r, 200, "")
+	if r.data()["po_requires_pr_raw_material"] != false || r.data()["po_requires_pr_product"] != true {
+		t.Fatalf("second update = %s", r.Raw)
+	}
+	// Saving the same values again writes no audit entry.
+	e.expect(e.do(&manager, "PUT", "/api/purchasing/settings", map[string]any{"po_requires_pr_product": true}), 200, "")
+	if e.scalar(`SELECT count(*)::int FROM audit.audit_log WHERE action = 'purchasing_settings.update' AND actor_id = $1`, manager.UserID) != int32(2) {
+		t.Fatal("audit count")
+	}
+	r = e.do(&staff, "GET", "/api/purchasing/settings", nil)
+	if r.data()["po_requires_pr_raw_material"] != false || r.data()["po_requires_pr_product"] != true {
+		t.Fatalf("get = %s", r.Raw)
 	}
 }
 

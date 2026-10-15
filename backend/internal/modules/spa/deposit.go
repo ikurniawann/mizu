@@ -218,7 +218,7 @@ func (s *Service) PublicPayDeposit(ctx context.Context, token string) (*PublicPa
 		ExternalID:  spaDepositPrefix + b.ID,
 		Amount:      b.Amount,
 		PayerName:   b.CustomerName,
-		Description: "DP booking Mizu " + b.Code,
+		Description: "DP booking Paddy Experience " + b.Code,
 		RedirectURL: statusURL,
 	})
 	if err != nil {

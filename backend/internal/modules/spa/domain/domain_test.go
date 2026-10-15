@@ -178,7 +178,7 @@ func TestBoundsAndCodes(t *testing.T) {
 		t.Fatal("weekday must follow WIB")
 	}
 	code := BookingCode(time.Date(2026, 10, 7, 18, 0, 0, 0, time.UTC))
-	if len(code) != 14 || code[:10] != "MZ-261008-" {
+	if len(code) != 14 || code[:10] != "PD-261008-" {
 		t.Fatalf("BookingCode = %s", code)
 	}
 	if HHMM("09:05:00") != "09:05" {

@@ -9,6 +9,8 @@ import { PlusIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/o
 import { toast } from "sonner";
 import { formatRupiah } from "@/lib/format";
 import { monthName } from "@/lib/hris/month-label";
+import { shortDateId } from "@/lib/hris/attendance-period";
+import type { PayrollRun } from "../types";
 import { usePayrollRuns } from "../queries";
 import { useCalculatePayroll, useUpdatePayrollStatus, useDeletePayrollRun } from "../mutations";
 import {
@@ -33,6 +35,24 @@ const STATUS_COLORS: Record<string, string> = {
   paid: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
 };
+
+/** Status periode absensi (cut-off) bulan run: terbuka = payroll belum boleh diproses. */
+function AttendancePeriodCell({ run }: { run: PayrollRun }) {
+  const p = run.attendance_period;
+  if (!p) return <span className="text-xs text-gray-400">—</span>;
+  return (
+    <div className="space-y-0.5">
+      <p className="text-xs text-gray-600">{p.label}</p>
+      {p.status === "closed" ? (
+        <Badge className="bg-slate-100 text-slate-700">🔒 Closed</Badge>
+      ) : (
+        <Badge className="bg-amber-100 text-amber-800" title="Absensi masih bisa berubah">
+          Terbuka{p.closing_date ? ` · closing ${shortDateId(p.closing_date)}` : ""}
+        </Badge>
+      )}
+    </div>
+  );
+}
 
 export function PayrollPage() {
   const router = useRouter();
@@ -59,6 +79,9 @@ export function PayrollPage() {
           setCalculationResult({
             count: result.summary?.total_employees || 0,
             employees: result.summary?.employee_names || [],
+            warnings: result.summary?.allocation_warnings || [],
+            periodLabel: result.attendance_period?.label,
+            periodWarning: result.warning,
           });
           toast.success(`Payroll dihitung untuk ${result.summary?.total_employees || 0} karyawan`);
         },
@@ -174,6 +197,7 @@ export function PayrollPage() {
                   <th className="text-left py-3 px-4 font-medium text-gray-500">Periode</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-500">Nama</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-500">Periode Absensi</th>
                   <th className="text-right py-3 px-4 font-medium text-gray-500">Karyawan</th>
                   <th className="text-right py-3 px-4 font-medium text-gray-500">Total Gross</th>
                   <th className="text-right py-3 px-4 font-medium text-gray-500">Total Net</th>
@@ -183,7 +207,7 @@ export function PayrollPage() {
               <tbody>
                 {payrollRuns.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-500">
+                    <td colSpan={8} className="py-8 text-center text-gray-500">
                       Belum ada payroll run. Klik &quot;Payroll Baru&quot; untuk membuat.
                     </td>
                   </tr>
@@ -198,6 +222,9 @@ export function PayrollPage() {
                         <Badge className={STATUS_COLORS[run.status]}>
                           {STATUS_LABELS[run.status]}
                         </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <AttendancePeriodCell run={run} />
                       </td>
                       <td className="text-right py-3 px-4">{run.total_employees || 0}</td>
                       <td className="text-right py-3 px-4 font-medium">
@@ -228,6 +255,12 @@ export function PayrollPage() {
                                 size="sm"
                                 onClick={() => handleUpdateStatus(run.id, "processing")}
                                 style={{ backgroundColor: '#ea580c', color: 'white' }}
+                                disabled={run.attendance_period?.status === "open"}
+                                title={
+                                  run.attendance_period?.status === "open"
+                                    ? "Closing periode absensi dulu (HRIS → Absensi → Periode Absensi)"
+                                    : undefined
+                                }
                               >
                                 Process
                               </Button>
@@ -238,6 +271,12 @@ export function PayrollPage() {
                               size="sm"
                               onClick={() => handleUpdateStatus(run.id, "completed")}
                               className="bg-green-600 hover:bg-green-700"
+                              disabled={run.attendance_period?.status === "open"}
+                              title={
+                                run.attendance_period?.status === "open"
+                                  ? "Closing periode absensi dulu sebelum menyetujui payroll"
+                                  : undefined
+                              }
                             >
                               Approve
                             </Button>

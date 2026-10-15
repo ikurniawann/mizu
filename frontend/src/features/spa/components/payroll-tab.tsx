@@ -74,9 +74,9 @@ function SettingsForm({ cfg }: { cfg: PaySettings }) {
   return (
     <Card className="gap-3 px-5">
       <div>
-        <p className="font-semibold">Jadwal pembayaran terapis</p>
+        <p className="font-semibold">Jadwal pembayaran crew</p>
         <p className="text-xs text-muted-foreground">
-          Tengah bulan membayar komisi treatment yang selesai & lunas pada tanggal 1 s.d. tanggal komisi; akhir bulan membayar komisi sisa bulan.
+          Tengah bulan membayar komisi layanan yang selesai & lunas pada tanggal 1 s.d. tanggal komisi; akhir bulan membayar komisi sisa bulan.
           Tanggal lewat akhir bulan memakai tanggal terakhir.
         </p>
       </div>
@@ -94,8 +94,8 @@ function SettingsForm({ cfg }: { cfg: PaySettings }) {
             Gaji tetap dibayar lewat Payroll HRIS
             <span className="block text-xs text-muted-foreground">
               {viaHris
-                ? "Disarankan. Gaji pokok, BPJS, PPh21 dan potongan diurus Payroll HRIS bulanan; di sini hanya komisi. Terapis komisi saja cukup tidak punya data gaji di HRIS."
-                : "Akhir bulan juga membayar gaji pokok + tunjangan kotor dari HRIS (tanpa BPJS/PPh21). Pastikan terapis tidak ikut Payroll HRIS agar tidak dibayar dua kali."}
+                ? "Disarankan. Gaji pokok, BPJS, PPh21 dan potongan diurus Payroll HRIS bulanan; di sini hanya komisi. Crew komisi saja cukup tidak punya data gaji di HRIS."
+                : "Akhir bulan juga membayar gaji pokok + tunjangan kotor dari HRIS (tanpa BPJS/PPh21). Pastikan crew tidak ikut Payroll HRIS agar tidak dibayar dua kali."}
             </span>
           </span>
         </label>
@@ -112,14 +112,14 @@ function RunsCard({ onOpen }: { onOpen: (id: string) => void }) {
   const create = useCreatePayRun();
   const run = () =>
     create.mutate({ month, kind }, {
-      onSuccess: (r) => { toast.success("Payroll dibuat", { description: `${PAY_KIND_LABEL[r.kind]} · ${r.line_count} terapis` }); onOpen(r.id); },
+      onSuccess: (r) => { toast.success("Payroll dibuat", { description: `${PAY_KIND_LABEL[r.kind]} · ${r.line_count} crew` }); onOpen(r.id); },
       onError: (err) => toast.error("Payroll gagal dibuat", { description: err.message }),
     });
   const list = runs.data ?? [];
   return (
     <Card className="gap-3 px-5">
       <div className="flex flex-wrap items-end gap-3">
-        <p className="mr-auto font-semibold">Payroll terapis</p>
+        <p className="mr-auto font-semibold">Payroll crew</p>
         <Input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="w-44" aria-label="Bulan payroll" />
         <select className={`${SELECT} w-56`} value={kind} onChange={(e) => setKind(e.target.value as PayRun["kind"])} aria-label="Jenis payroll">
           <option value="commission">{PAY_KIND_LABEL.commission}</option>
@@ -132,7 +132,7 @@ function RunsCard({ onOpen }: { onOpen: (id: string) => void }) {
       ) : runs.error ? (
         <TableNote tone="danger">{runs.error.message}</TableNote>
       ) : list.length === 0 ? (
-        <TableNote>Belum ada payroll terapis.</TableNote>
+        <TableNote>Belum ada payroll crew.</TableNote>
       ) : (
         <Table>
           <TableHeader>
@@ -140,7 +140,7 @@ function RunsCard({ onOpen }: { onOpen: (id: string) => void }) {
               <TableHead>Periode</TableHead>
               <TableHead>Jenis</TableHead>
               <TableHead>Tanggal bayar</TableHead>
-              <TableHead>Terapis</TableHead>
+              <TableHead>Crew</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -170,8 +170,8 @@ function PayTypesCard() {
   return (
     <Card className="gap-3 px-5">
       <div>
-        <p className="font-semibold">Tipe gaji terapis</p>
-        <p className="text-xs text-muted-foreground">Gaji pokok & tunjangan tetap dari data gaji karyawan di HRIS (sebagai informasi bila gaji dibayar lewat HRIS). Terapis komisi saja tidak menerima gaji tetap.</p>
+        <p className="font-semibold">Tipe gaji crew</p>
+        <p className="text-xs text-muted-foreground">Gaji pokok & tunjangan tetap dari data gaji karyawan di HRIS (sebagai informasi bila gaji dibayar lewat HRIS). Crew komisi saja tidak menerima gaji tetap.</p>
       </div>
       {pays.isLoading ? (
         <SkeletonTable columns={4} rows={4} />
@@ -181,8 +181,8 @@ function PayTypesCard() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Terapis</TableHead>
-              <TableHead>Outlet</TableHead>
+              <TableHead>Crew</TableHead>
+              <TableHead>Toko</TableHead>
               <TableHead className="text-right">Gaji pokok + tunjangan (HRIS)</TableHead>
               <TableHead>Tipe gaji</TableHead>
             </TableRow>
@@ -235,9 +235,9 @@ function RunDialog({ id, onClose }: { id: string; onClose: () => void }) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogPanel size="xl">
         <DialogPanelHeader>
-          <DialogPanelTitle>{r ? `${PAY_KIND_LABEL[r.kind]} · ${r.period_month}` : "Payroll terapis"}</DialogPanelTitle>
+          <DialogPanelTitle>{r ? `${PAY_KIND_LABEL[r.kind]} · ${r.period_month}` : "Payroll crew"}</DialogPanelTitle>
           <DialogPanelDescription>
-            {r ? `Periode ${formatDate(r.period_start)} – ${formatDate(r.period_end)}, dibayar ${formatDate(r.pay_date)}. Komisi dihitung dari treatment selesai & lunas yang belum dibayar.` : ""}
+            {r ? `Periode ${formatDate(r.period_start)} – ${formatDate(r.period_end)}, dibayar ${formatDate(r.pay_date)}. Komisi dihitung dari layanan selesai & lunas yang belum dibayar.` : ""}
           </DialogPanelDescription>
         </DialogPanelHeader>
         <DialogPanelBody className="space-y-3">
@@ -249,7 +249,7 @@ function RunDialog({ id, onClose }: { id: string; onClose: () => void }) {
             <>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={PAY_STATUS_VARIANT[r.status]}>{PAY_STATUS_LABEL[r.status]}</Badge>
-                <span className="text-sm">Total <span className="font-semibold tabular-nums">{formatRupiah(r.total_idr)}</span> · {r.lines?.length ?? 0} terapis</span>
+                <span className="text-sm">Total <span className="font-semibold tabular-nums">{formatRupiah(r.total_idr)}</span> · {r.lines?.length ?? 0} crew</span>
               </div>
               {(r.lines ?? []).length === 0 ? (
                 <TableNote>Tidak ada yang perlu dibayar di periode ini.</TableNote>
@@ -257,7 +257,7 @@ function RunDialog({ id, onClose }: { id: string; onClose: () => void }) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Terapis</TableHead>
+                      <TableHead>Crew</TableHead>
                       <TableHead className="text-right">Gaji + tunjangan</TableHead>
                       <TableHead className="text-right">Komisi</TableHead>
                       <TableHead className="text-right">Bonus</TableHead>
@@ -327,7 +327,7 @@ function LineRow({ line, runId, editable }: { line: PayLine; runId: string; edit
       <TableCell className="text-right tabular-nums">{formatRupiah(line.base_salary_idr + line.allowance_idr)}</TableCell>
       <TableCell className="text-right tabular-nums">
         {formatRupiah(line.commission_idr)}
-        <span className="block text-xs text-muted-foreground">{line.commission_count} treatment</span>
+        <span className="block text-xs text-muted-foreground">{line.commission_count} layanan</span>
       </TableCell>
       <TableCell className="text-right">
         {editable ? <NumericInput prefix="Rp" value={bonus} onValueChange={setBonus} className="w-32" aria-label={`Bonus ${line.therapist_name}`} /> : <span className="tabular-nums">{formatRupiah(line.bonus_idr)}</span>}

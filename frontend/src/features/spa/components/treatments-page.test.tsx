@@ -8,7 +8,7 @@ import { SpaTreatmentsPage } from "./treatments-page";
 const catalog: Treatment[] = [
   { id: "t2", code: "REF", name: "Refleksi", category: "Reflexology", description: null, is_active: false, sort_order: 0,
     variants: [{ id: "v3", name: "30 menit", duration_min: 30, price_idr: 100000, is_active: false, sort_order: 0, outlet_prices: [] }] },
-  { id: "t1", code: "BAL", name: "Balinese Massage", category: "Massage", description: null, is_active: true, sort_order: 99,
+  { id: "t1", code: "BAL", name: "Custom Case Design", category: "Massage", description: null, is_active: true, sort_order: 99,
     variants: [
       { id: "v2", name: "90 menit", duration_min: 90, price_idr: 300000, is_active: true, sort_order: 1, outlet_prices: [] },
       { id: "v1", name: "60 menit", duration_min: 60, price_idr: 200000, is_active: true, sort_order: 0, outlet_prices: [{ branch_id: "b1", price_idr: 220000 }] },
@@ -42,7 +42,7 @@ beforeEach(() => {
       const { prices } = JSON.parse(String(init.body)) as { prices: PriceInput[] };
       writes.push({ id, prices });
       if (releaseWrite) await new Promise<void>((resolve) => { releaseWrite = resolve; });
-      if (id === failTreatment) return new Response(JSON.stringify({ success: false, error: { message: "Outlet di luar akses Anda" } }), { status: 403 });
+      if (id === failTreatment) return new Response(JSON.stringify({ success: false, error: { message: "Toko di luar akses Anda" } }), { status: 403 });
       const treatment = data.find((t) => t.id === id)!;
       for (const p of prices) {
         const variant = treatment.variants.find((v) => v.id === p.variant_id)!;
@@ -53,7 +53,7 @@ beforeEach(() => {
     }
     if (failRead) return new Response(JSON.stringify({ success: false, error: "Penyegaran gagal" }), { status: 500 });
     return new Response(JSON.stringify({ success: true, data: url.endsWith("/outlets")
-      ? [outlet("b1", "Mizu 1"), outlet("b2", "Mizu 2"), outlet("b3", "Belum dikonfigurasi", false)] : data }));
+      ? [outlet("b1", "Paddy 1"), outlet("b2", "Paddy 2"), outlet("b3", "Belum dikonfigurasi", false)] : data }));
   });
 });
 afterEach(() => { cleanup(); clients.forEach((client) => client.clear()); vi.unstubAllGlobals(); });
@@ -65,26 +65,26 @@ async function openPage() {
   await screen.findAllByRole("button", { name: "Ubah" });
   return client;
 }
-const openPrices = () => fireEvent.click(screen.getByRole("tab", { name: "Harga Outlet" }));
-const price = (variant: string, branch = "Mizu 1", treatment = "Balinese Massage") => screen.getByRole("textbox", { name: `Harga ${treatment}, ${variant}, ${branch}` });
-const change = (variant: string, value: string, branch = "Mizu 1", treatment = "Balinese Massage") => fireEvent.change(price(variant, branch, treatment), { target: { value } });
+const openPrices = () => fireEvent.click(screen.getByRole("tab", { name: "Harga Toko" }));
+const price = (variant: string, branch = "Paddy 1", treatment = "Custom Case Design") => screen.getByRole("textbox", { name: `Harga ${treatment}, ${variant}, ${branch}` });
+const change = (variant: string, value: string, branch = "Paddy 1", treatment = "Custom Case Design") => fireEvent.change(price(variant, branch, treatment), { target: { value } });
 
-describe("Treatment dan Harga Outlet", () => {
+describe("Layanan dan Harga Toko", () => {
   it("mengurutkan A–Z, mengelompokkan varian, dan membuka harga lewat tab", async () => {
     await openPage();
-    expect(screen.getByRole("tab", { name: "Daftar Treatment" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Daftar Layanan" })).toHaveAttribute("aria-selected", "true");
     const rows = screen.getAllByRole("row");
-    expect(rows[1]).toHaveTextContent("Balinese Massage");
-    expect(within(rows[1]).queryByRole("button", { name: "Harga per outlet" })).not.toBeInTheDocument();
+    expect(rows[1]).toHaveTextContent("Custom Case Design");
+    expect(within(rows[1]).queryByRole("button", { name: "Harga per toko" })).not.toBeInTheDocument();
     openPrices();
-    expect(screen.getByRole("textbox", { name: "Cari treatment" })).toHaveValue("");
-    fireEvent.click(screen.getByRole("tab", { name: "Daftar Treatment" }));
+    expect(screen.getByRole("textbox", { name: "Cari layanan" })).toHaveValue("");
+    fireEvent.click(screen.getByRole("tab", { name: "Daftar Layanan" }));
     fireEvent.click(within(screen.getAllByRole("row")[1]).getByRole("button", { name: "Ubah" }));
     expect(screen.getByRole("combobox", { name: "Kategori" })).toHaveValue("Massage");
     fireEvent.click(screen.getByRole("button", { name: "Batal" }));
     openPrices();
     expect(screen.getByRole("columnheader", { name: "Harga berlaku (Rp)" })).toBeInTheDocument();
-    expect(screen.queryByRole("columnheader", { name: "Harga outlet (Rp)" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Harga toko (Rp)" })).not.toBeInTheDocument();
     expect(price("60 menit")).toHaveValue("220.000");
     expect(price("90 menit")).toHaveValue("300.000");
     const priceRow = price("60 menit").closest("tr")!;
@@ -92,33 +92,33 @@ describe("Treatment dan Harga Outlet", () => {
     expect(within(priceRow).queryByText("Harga khusus")).not.toBeInTheDocument();
     expect(within(price("90 menit").closest("tr")!).queryByText("Harga dasar")).not.toBeInTheDocument();
     expect(screen.getAllByRole("textbox", { name: /^Harga / }).map((input) => input.getAttribute("aria-label"))).toEqual([
-      "Harga Balinese Massage, 60 menit, Mizu 1", "Harga Balinese Massage, 90 menit, Mizu 1", "Harga Refleksi, 30 menit, Mizu 1",
+      "Harga Custom Case Design, 60 menit, Paddy 1", "Harga Custom Case Design, 90 menit, Paddy 1", "Harga Refleksi, 30 menit, Paddy 1",
     ]);
     expect(screen.queryByRole("option", { name: "Belum dikonfigurasi" })).not.toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /Mizu 2.*nonaktif/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Buka Outlet Spa" })).toHaveAttribute("target", "_blank");
+    expect(screen.getByRole("option", { name: /Paddy 2.*nonaktif/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Buka Toko Experience" })).toHaveAttribute("target", "_blank");
     fireEvent.change(screen.getByRole("combobox", { name: "Kategori" }), { target: { value: "Reflexology" } });
-    fireEvent.click(screen.getByRole("tab", { name: "Daftar Treatment" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Daftar Layanan" }));
     openPrices();
-    expect(price("30 menit", "Mizu 1", "Refleksi")).toBeInTheDocument();
+    expect(price("30 menit", "Paddy 1", "Refleksi")).toBeInTheDocument();
   });
 
-  it("mempertahankan draft lintas tab/outlet/filter/penyegaran dan menyimpan semua perubahan tersembunyi", async () => {
+  it("mempertahankan draft lintas tab/toko/filter/penyegaran dan menyimpan semua perubahan tersembunyi", async () => {
     const client = await openPage();
     openPrices();
     change("60 menit", "");
     expect(price("60 menit")).toHaveValue("200.000");
-    fireEvent.change(screen.getByRole("combobox", { name: "Outlet" }), { target: { value: "b2" } });
-    change("90 menit", "0", "Mizu 2");
-    fireEvent.click(screen.getByRole("tab", { name: "Daftar Treatment" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Toko" }), { target: { value: "b2" } });
+    change("90 menit", "0", "Paddy 2");
+    fireEvent.click(screen.getByRole("tab", { name: "Daftar Layanan" }));
     openPrices();
-    expect(price("90 menit", "Mizu 2")).toHaveValue("0");
+    expect(price("90 menit", "Paddy 2")).toHaveValue("0");
     await act(() => client.invalidateQueries({ queryKey: spaKeys.treatmentsAll() }));
-    expect(price("90 menit", "Mizu 2")).toHaveValue("0");
-    fireEvent.change(screen.getByRole("textbox", { name: "Cari treatment" }), { target: { value: "  ref  " } });
+    expect(price("90 menit", "Paddy 2")).toHaveValue("0");
+    fireEvent.change(screen.getByRole("textbox", { name: "Cari layanan" }), { target: { value: "  ref  " } });
     fireEvent.change(screen.getByRole("combobox", { name: "Kategori" }), { target: { value: "Reflexology" } });
     expect(screen.queryByRole("textbox", { name: /^Harga Balinese/ })).not.toBeInTheDocument();
-    expect(screen.getByText("2 perubahan di 2 outlet belum disimpan")).toBeInTheDocument();
+    expect(screen.getByText("2 perubahan di 2 toko belum disimpan")).toBeInTheDocument();
     const unload = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(unload);
     expect(unload.defaultPrevented).toBe(true);
@@ -140,8 +140,8 @@ describe("Treatment dan Harga Outlet", () => {
     expect(screen.getByRole("button", { name: "Simpan perubahan" })).toBeDisabled();
     change("90 menit", "1000000000000");
     expect(price("90 menit")).toHaveAttribute("aria-invalid", "true");
-    fireEvent.change(screen.getByRole("combobox", { name: "Outlet" }), { target: { value: "b2" } });
-    change("60 menit", "250000", "Mizu 2");
+    fireEvent.change(screen.getByRole("combobox", { name: "Toko" }), { target: { value: "b2" } });
+    change("60 menit", "250000", "Paddy 2");
     fireEvent.click(screen.getByRole("button", { name: "Simpan perubahan" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/tidak valid/i);
     expect(writes).toEqual([]);
@@ -151,14 +151,14 @@ describe("Treatment dan Harga Outlet", () => {
     await openPage(); openPrices();
     change("60 menit", "250.000");
     expect(price("60 menit")).toHaveValue("250.000");
-    change("30 menit", "50000", "Mizu 1", "Refleksi");
+    change("30 menit", "50000", "Paddy 1", "Refleksi");
     failTreatment = "t2";
     fireEvent.click(screen.getByRole("button", { name: "Simpan perubahan" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("1 perubahan sudah tersimpan"));
-    expect(screen.getByRole("alert")).toHaveTextContent("Outlet di luar akses Anda");
-    expect(screen.getByText("1 perubahan di 1 outlet belum disimpan")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Toko di luar akses Anda");
+    expect(screen.getByText("1 perubahan di 1 toko belum disimpan")).toBeInTheDocument();
     expect(writes[0].prices).toEqual([{ variant_id: "v1", branch_id: "b1", price_idr: 250000 }]);
-    expect(price("30 menit", "Mizu 1", "Refleksi")).toHaveValue("50.000");
+    expect(price("30 menit", "Paddy 1", "Refleksi")).toHaveValue("50.000");
     failTreatment = null;
     fireEvent.click(screen.getByRole("button", { name: "Simpan perubahan" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Simpan perubahan" })).toBeDisabled());

@@ -65,21 +65,21 @@ export function ApplicationForm({ prefill, onSubmitted }: { prefill: Application
       <ProfileSection form={form} />
       <DocumentSection files={files} />
 
-      <div className="rounded-lg border border-[#e3dbcc] bg-white p-5 sm:p-6">
+      <div className="rounded-lg border border-[#ece5da] bg-white p-5 sm:p-6">
         <h2 className="mb-4 text-base font-medium leading-tight">Notes (Optional)</h2>
         <textarea
           placeholder="Anything else you want us to know..."
           rows={3}
           {...form.register("notes")}
-          className={`min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[#3d2b20] disabled:cursor-not-allowed disabled:opacity-50 ${form.formState.errors.notes ? "border-[#3d2b20]" : "border-[#e3dbcc]"}`}
+          className={`min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[#b8045a] disabled:cursor-not-allowed disabled:opacity-50 ${form.formState.errors.notes ? "border-[#b8045a]" : "border-[#ece5da]"}`}
         />
         {form.formState.errors.notes && (
-          <p className="mt-1 text-xs text-[#3d2b20]">{form.formState.errors.notes.message}</p>
+          <p className="mt-1 text-xs text-[#b8045a]">{form.formState.errors.notes.message}</p>
         )}
       </div>
 
       {submit.error && (
-        <div className="rounded-lg border border-[#3d2b20] bg-[#f2e3c6] p-4 text-sm text-[#3d2b20]">
+        <div className="rounded-lg border border-[#b8045a] bg-[#fee6f0] p-4 text-sm text-[#b8045a]">
           {submit.error.message}
         </div>
       )}
@@ -87,7 +87,7 @@ export function ApplicationForm({ prefill, onSubmitted }: { prefill: Application
       <button
         type="submit"
         disabled={submit.isPending || !files.cvFile || !files.photoFile}
-        className="w-full rounded-full bg-[#3d2b20] px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#5a4334] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-full bg-[#b8045a] px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#5b2a4d] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submit.isPending ? (
           <>
@@ -100,7 +100,7 @@ export function ApplicationForm({ prefill, onSubmitted }: { prefill: Application
       </button>
 
       {!files.cvFile && (
-        <p className="-mt-3 text-center text-xs text-[#3a302a]">* Upload your CV to submit the application</p>
+        <p className="-mt-3 text-center text-xs text-[#403b37]">* Upload your CV to submit the application</p>
       )}
     </form>
   );

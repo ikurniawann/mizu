@@ -18,13 +18,23 @@ interface ProductPOFormProps {
   lookups: ProductPOFormData;
   approvedPRs: ApprovedProductPRForPO[];
   initialPRId?: string;
+  /** Aturan "PO Produk wajib dari PR" (Pengaturan Pembelian). */
+  prRequired?: boolean;
   onSubmit: (data: ProductPOFormInput) => Promise<void>;
   isLoading: boolean;
   cancelHref: string;
 }
 
 /** Form PO produk; harga acuan dari master produk, produk ber-varian wajib memilih SKU. */
-export function ProductPOForm({ lookups, approvedPRs, initialPRId, onSubmit, isLoading, cancelHref }: ProductPOFormProps) {
+export function ProductPOForm({
+  lookups,
+  approvedPRs,
+  initialPRId,
+  prRequired,
+  onSubmit,
+  isLoading,
+  cancelHref,
+}: ProductPOFormProps) {
   const { vendors, products, units } = lookups;
   const findProduct = (id: string) => products.find((p) => p.id === id);
   const itemsFromPR = (prId: string) => {
@@ -38,6 +48,7 @@ export function ProductPOForm({ lookups, approvedPRs, initialPRId, onSubmit, isL
       vendors={vendors}
       approvedPRs={approvedPRs}
       initialPRId={initialPRId}
+      prRequired={prRequired}
       initialItems={(initialPRId && itemsFromPR(initialPRId)) || [emptyProductItem()]}
       emptyItem={emptyProductItem}
       itemsFromPR={itemsFromPR}

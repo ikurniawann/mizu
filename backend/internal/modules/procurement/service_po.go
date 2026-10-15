@@ -560,10 +560,17 @@ func (s *Service) productsWithSkus(ctx context.Context, company, branch *string)
 /* ── Create ──────────────────────────────────────────────────────────── */
 
 // CreatePurchaseOrder is createPurchaseOrder: a draft PO with its lines; a
-// linked PR is marked converted.
+// linked PR is marked converted. Whether a raw-material or product PO may be
+// created without a PR is the Pengaturan Pembelian rule (PurchasingSettings).
 func (s *Service) CreatePurchaseOrder(ctx context.Context, moduleType string, in *poCreateInput, scope *pscope.Scope) (*Row, error) {
-	if moduleType == "raw_material" && in.PrID == nil {
-		return nil, badRequest("Purchase order must be created from an approved purchase request")
+	if in.PrID == nil {
+		rules, err := s.PurchasingSettings(ctx, s.db)
+		if err != nil {
+			return nil, err
+		}
+		if rules.RequiresPr(moduleType) {
+			return nil, badRequest(poRequiresPrMessage(moduleType))
+		}
 	}
 	company, branch, err := s.resolvePoBusinessIDs(ctx, in, scope)
 	if err != nil {

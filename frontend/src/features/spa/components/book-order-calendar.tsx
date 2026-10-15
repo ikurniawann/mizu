@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import Image from "next/image";
-import { UserRoundX } from "lucide-react";
+import { Palette, UserRoundX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { initials } from "@/lib/hris/ess-view";
@@ -20,6 +20,7 @@ import {
   type DayRange,
   type Placed,
 } from "../calendar";
+import { designSummary } from "../experience";
 import { genderLabel, sortByStart } from "../rules";
 import { shortClock, wibClockOf } from "../time";
 import type { BoardItem, BoardTherapist } from "../types";
@@ -49,7 +50,7 @@ export function BookOrderCalendar({
   unassigned,
   onOpenItem,
   onSlot,
-  unassignedEmptyMessage = "Semua booking sudah punya terapis.",
+  unassignedEmptyMessage = "Semua booking sudah punya crew.",
 }: {
   date: string;
   openTime?: string;
@@ -103,7 +104,7 @@ export function BookOrderCalendar({
             <h2 className="text-base font-semibold">Belum ditugaskan</h2>
             <Badge variant={unassignedItems.length ? "warning" : "muted"}>{unassignedItems.length}</Badge>
           </div>
-          <p className="text-xs text-muted-foreground">Seret booking ke kolom terapis untuk menugaskan seluruh treatment. Seret kembali ke sini untuk melepas terapis.</p>
+          <p className="text-xs text-muted-foreground">Seret booking ke kolom crew untuk menugaskan seluruh layanan. Seret kembali ke sini untuk melepas crew.</p>
         </div>
         <div className="max-h-[calc(100dvh-20rem)] overflow-y-auto p-4">
           {unassignedItems.length === 0 ? (
@@ -120,7 +121,7 @@ export function BookOrderCalendar({
         </div>
       </Card>
 
-      <div role="region" aria-label="Jadwal terapis" className="min-w-0 overflow-hidden rounded-card border border-border bg-card shadow-none">
+      <div role="region" aria-label="Jadwal crew" className="min-w-0 overflow-hidden rounded-card border border-border bg-card shadow-none">
         <div ref={scroller} className="relative max-h-[calc(100dvh-15rem)] min-h-[28rem] overflow-auto">
           <div className="relative flex" style={{ height: height + HEADER_H }}>
             {/* Sumbu jam */}
@@ -357,7 +358,9 @@ function ItemButton({ item, height, onOpen }: { item: BoardItem; height?: number
         e.dataTransfer.effectAllowed = "move";
       }}
       onClick={() => onOpen(item)}
-      title={`${wibClockOf(item.starts_at)}–${wibClockOf(item.ends_at)} · ${item.customer_name} · ${item.treatment_name} (${item.variant_name})`}
+      title={`${wibClockOf(item.starts_at)}–${wibClockOf(item.ends_at)} · ${item.customer_name} · ${item.treatment_name} (${item.variant_name})${
+        item.customizable ? (item.design ? ` · Desain: ${designSummary(item.design)}` : " · Belum ada desain case") : ""
+      }`}
       className={cn(
         "flex w-full flex-col overflow-hidden rounded-lg border px-2 py-1 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         height === undefined && "gap-1 px-3 py-3",
@@ -367,7 +370,13 @@ function ItemButton({ item, height, onOpen }: { item: BoardItem; height?: number
       )}
       style={{ height }}
     >
-      <span className="font-semibold tabular-nums">
+      <span className="flex items-center gap-1 font-semibold tabular-nums">
+        {item.customizable ? (
+          <Palette
+            aria-label={item.design ? "Desain case siap" : "Belum ada desain case"}
+            className={cn("size-3 shrink-0", item.design ? "opacity-80" : "text-warning")}
+          />
+        ) : null}
         {wibClockOf(item.starts_at)}–{wibClockOf(item.ends_at)}
         {compact ? ` · ${item.customer_name}` : ""}
       </span>
@@ -385,7 +394,7 @@ function Legend() {
   const chips: [string, string][] = [
     ["Belum ditugaskan", BLOCK_TONE.unassigned],
     ["Ditugaskan", BLOCK_TONE.assigned],
-    ["Sedang treatment", BLOCK_TONE.in_treatment],
+    ["Sedang dikerjakan", BLOCK_TONE.in_treatment],
     ["Selesai", BLOCK_TONE.completed],
   ];
   return (
@@ -402,7 +411,7 @@ function Legend() {
       <span className="inline-flex items-center gap-1.5">
         <span className="inline-block h-0.5 w-4 bg-danger" /> Sekarang
       </span>
-      <span className="ml-auto hidden sm:inline">Seret ke kolom lain = ganti terapis · seret naik/turun = ganti jam · klik slot kosong = booking baru</span>
+      <span className="ml-auto hidden sm:inline">Seret ke kolom lain = ganti crew · seret naik/turun = ganti jam · klik slot kosong = booking baru</span>
     </div>
   );
 }

@@ -27,11 +27,11 @@ export interface WallpaperItem {
  * localStorage/user_desktop_prefs — mengganti id akan mereset pilihan user.
  */
 export const BUILTIN_WALLPAPERS: WallpaperItem[] = [
-  // Nama file "mizu-…" supaya cache browser wallpaper NüHabit lama tidak terpakai.
-  { id: "arkiv", name: brandName(), src: "/brand/mizu-wallpaper.webp" },
-  { id: "pink", name: "Espresso", src: "linear-gradient(135deg,#1a120d,#3d2b20 45%,#241b16)" },
-  { id: "midnight", name: "Midnight", src: "linear-gradient(135deg,#110d0a,#241b16 52%,#33271f)" },
-  { id: "glass", name: "Mocha", src: "linear-gradient(135deg,#5a4334,#241b16 48%,#3d2b20)" },
+  // Nama file "paddy-…" supaya cache browser wallpaper merek lama tidak terpakai.
+  { id: "arkiv", name: brandName(), src: "/brand/paddy-wallpaper.webp" },
+  { id: "pink", name: "Lilac Doodle", src: "/brand/paddy-wallpaper-lilac.webp" },
+  { id: "midnight", name: "Sunny Doodle", src: "/brand/paddy-wallpaper-sunny.webp" },
+  { id: "glass", name: "Berry Night", src: "linear-gradient(135deg,#52022a,#2a1024 48%,#8b6ae6)" },
 ];
 
 export const DEFAULT_WALLPAPER: WallpaperItem = BUILTIN_WALLPAPERS[0];

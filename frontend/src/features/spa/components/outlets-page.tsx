@@ -49,8 +49,8 @@ export function SpaOutletsPage() {
     <div className="space-y-4">
       <PageHeader
         kicker={SPA_KICKER}
-        title="Outlet Spa"
-        description="Setiap cabang aktif dapat dijadikan outlet spa. Outlet POS menentukan gudang/kasir tempat produk treatment dijual; Sinkron produk POS membuat atau memperbarui produk untuk semua varian aktif."
+        title="Toko Experience"
+        description="Setiap cabang aktif dapat dijadikan toko experience. Outlet POS menentukan gudang/kasir tempat produk layanan dijual; Sinkron produk POS membuat atau memperbarui produk untuk semua varian aktif."
       />
       <DepositSettingsCard />
       <Card className="py-0">
@@ -96,7 +96,7 @@ export function SpaOutletsPage() {
                   </TableCell>
                   <TableCell>
                     {!o.configured ? (
-                      <Badge variant="outline">Belum jadi outlet spa</Badge>
+                      <Badge variant="outline">Belum jadi toko experience</Badge>
                     ) : o.is_active ? (
                       <Badge variant="success">Aktif</Badge>
                     ) : (
@@ -106,7 +106,7 @@ export function SpaOutletsPage() {
                   <TableCell className="text-right">
                     <div className="flex flex-wrap justify-end gap-1">
                       <Button size="sm" variant={o.configured ? "ghost" : "outline"} onClick={() => setEditing(o)}>
-                        <Settings2 /> {o.configured ? "Atur" : "Jadikan outlet spa"}
+                        <Settings2 /> {o.configured ? "Atur" : "Jadikan toko experience"}
                       </Button>
                       {o.configured && (
                         <Button size="sm" variant="ghost" onClick={() => setRooms(o)}>
@@ -151,7 +151,7 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
 
   const submit = () => {
     const slotMinutes = Number(slot);
-    if (!warehouseId) return setError("Pilih outlet POS (gudang) untuk outlet ini.");
+    if (!warehouseId) return setError("Pilih outlet POS (gudang) untuk toko ini.");
     if (parseClock(open) === null || parseClock(close) === null) return setError("Jam buka/tutup tidak valid.");
     if (open === close) return setError("Jam buka dan tutup tidak boleh sama.");
     if (!Number.isInteger(slotMinutes) || slotMinutes < 5 || slotMinutes > 240) return setError("Slot harus 5–240 menit.");
@@ -163,12 +163,12 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
       },
       {
         onSuccess: () => {
-          toast.success("Outlet spa disimpan", { description: outlet.branch_name });
+          toast.success("Toko studio disimpan", { description: outlet.branch_name });
           onClose();
         },
         onError: (err) => {
           setError(err.message);
-          toast.error("Outlet gagal disimpan", { description: err.message });
+          toast.error("Toko gagal disimpan", { description: err.message });
         },
       }
     );
@@ -190,7 +190,7 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
           <DialogPanelBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Outlet POS (gudang)" className="sm:col-span-2">
               <select className={SELECT} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required>
-                <option value="">{outlet.warehouses.length ? "Pilih outlet…" : "Cabang ini belum punya gudang"}</option>
+                <option value="">{outlet.warehouses.length ? "Pilih toko…" : "Cabang ini belum punya gudang"}</option>
                 {outlet.warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}
@@ -214,7 +214,7 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
                 Terima booking online
               </label>
               <label className="flex items-center gap-3 text-sm">
-                <Switch checked={active} onCheckedChange={setActive} aria-label="Outlet aktif" />
+                <Switch checked={active} onCheckedChange={setActive} aria-label="Toko aktif" />
                 Outlet aktif
               </label>
             </div>

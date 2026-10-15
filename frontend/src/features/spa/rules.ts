@@ -29,7 +29,7 @@ export interface StatusBadge {
 export const ITEM_STATUS: Record<ItemStatus, StatusBadge> = {
   unassigned: { label: "Belum ditugaskan", variant: "warning" },
   assigned: { label: "Ditugaskan", variant: "info" },
-  in_treatment: { label: "Sedang treatment", variant: "accent" },
+  in_treatment: { label: "Sedang dikerjakan", variant: "accent" },
   completed: { label: "Selesai", variant: "success" },
   cancelled: { label: "Dibatalkan", variant: "muted" },
 };
@@ -37,7 +37,7 @@ export const ITEM_STATUS: Record<ItemStatus, StatusBadge> = {
 export const BOOKING_STATUS: Record<BookingStatus, StatusBadge> = {
   unassigned: { label: "Belum ditugaskan", variant: "warning" },
   assigned: { label: "Ditugaskan", variant: "info" },
-  in_treatment: { label: "Sedang treatment", variant: "accent" },
+  in_treatment: { label: "Sedang dikerjakan", variant: "accent" },
   completed: { label: "Selesai", variant: "success" },
   cancelled: { label: "Dibatalkan", variant: "muted" },
   expired: { label: "Kedaluwarsa", variant: "destructive" },
@@ -68,8 +68,8 @@ export function paymentStatusBadge(status: string | null | undefined): StatusBad
 
 export const GENDER_PREF_LABEL: Record<GenderPref, string> = {
   any: "Bebas",
-  male: "Terapis pria",
-  female: "Terapis wanita",
+  male: "Crew pria",
+  female: "Crew wanita",
 };
 
 export const GENDER_LABEL: Record<TherapistGender, string> = {
@@ -101,10 +101,10 @@ const EVENT_LABEL: Record<string, string> = {
   created: "Booking dibuat",
   add_item: "Item ditambahkan",
   item_added: "Item ditambahkan",
-  assign: "Terapis ditugaskan",
-  unassign: "Terapis dilepas",
-  start: "Treatment dimulai",
-  complete: "Treatment selesai",
+  assign: "Crew ditugaskan",
+  unassign: "Crew dilepas",
+  start: "Layanan dimulai",
+  complete: "Layanan selesai",
   start_booking: "Booking dimulai",
   complete_booking: "Booking selesai",
   cancel: "Dibatalkan",
@@ -116,7 +116,13 @@ const EVENT_LABEL: Record<string, string> = {
   void: "Pembayaran di-void",
   expire: "Kedaluwarsa",
   expired: "Kedaluwarsa",
+  design: "Desain case diperbarui",
 };
+
+/** Desain custom case masih boleh diubah: booking belum ditutup dan belum lunas. */
+export function canEditDesign(booking: Pick<Booking, "status" | "payment_status">, item?: Pick<BookingItem, "status">): boolean {
+  return !isBookingClosed(booking) && booking.payment_status === "unpaid" && item?.status !== "cancelled";
+}
 
 export function eventLabel(action: string): string {
   return EVENT_LABEL[action] ?? action.replace(/_/g, " ");
@@ -210,11 +216,11 @@ export function checkoutState(booking: BookingWithItemStatus): CheckoutState {
   if (booking.status === "expired") return { allowed: false, reason: "Booking kedaluwarsa." };
   if (booking.payment_status === "paid") return { allowed: false, reason: "Booking sudah lunas." };
   if (booking.payment_status === "void") return { allowed: false, reason: "Pembayaran booking di-void." };
-  if (booking.status !== "completed") return { allowed: false, reason: "Selesaikan semua treatment sebelum checkout." };
+  if (booking.status !== "completed") return { allowed: false, reason: "Selesaikan semua layanan sebelum checkout." };
   const active = booking.items.filter(isActiveItem);
-  if (active.length === 0) return { allowed: false, reason: "Belum ada item treatment aktif." };
+  if (active.length === 0) return { allowed: false, reason: "Belum ada item layanan aktif." };
   if (active.some((i) => i.status !== "completed"))
-    return { allowed: false, reason: "Masih ada treatment yang belum selesai." };
+    return { allowed: false, reason: "Masih ada layanan yang belum selesai." };
   return { allowed: true, reason: null };
 }
 
@@ -235,7 +241,7 @@ export function ruleScope(rule: Pick<CommissionRule, "treatment_id" | "variant_i
 
 export const RULE_SCOPE_LABEL: Record<RuleScope, string> = {
   default: "Default",
-  treatment: "Treatment",
+  treatment: "Layanan",
   variant: "Varian",
 };
 
@@ -247,7 +253,7 @@ export function ruleSpecificity(rule: Pick<CommissionRule, "treatment_id" | "var
 }
 
 export const COMMISSION_RESOLUTION_TEXT =
-  "Aturan paling spesifik menang: varian + outlet → varian → treatment + outlet → treatment → default + outlet → default. Persentase = harga × nilai ÷ 100; nominal tetap = nilai.";
+  "Aturan paling spesifik menang: varian + toko → varian → layanan + toko → layanan → default + toko → default. Persentase = harga × nilai ÷ 100; nominal tetap = nilai.";
 
 /** "10%" atau "Rp 25.000" (tanpa import formatter supaya tetap murni). */
 export function commissionValueLabel(type: CommissionType | null | undefined, value: number | null | undefined): string {

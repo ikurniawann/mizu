@@ -1,5 +1,16 @@
 import type { LoanInstallmentDetail } from "@/lib/payroll/loans";
 
+/** Periode absensi (cut-off) yang dibaca payroll untuk bulan run. */
+export interface PayrollAttendancePeriod {
+  id?: string;
+  start_date: string;
+  end_date: string;
+  closing_date?: string;
+  /** "21 Sep – 20 Okt 2026" */
+  label: string;
+  status: "open" | "closed";
+}
+
 export interface PayrollRun {
   id: string;
   run_name: string;
@@ -14,6 +25,7 @@ export interface PayrollRun {
   processed_at?: string;
   approved_at?: string;
   paid_at?: string;
+  attendance_period?: PayrollAttendancePeriod;
 }
 
 export interface CreatePayrollPayload {
@@ -21,11 +33,59 @@ export interface CreatePayrollPayload {
   period_year: number;
 }
 
+/** Slip yang biayanya (sebagian) tidak punya toko. */
+export interface AllocationWarning {
+  employee_id: string;
+  full_name: string;
+  reason: string;
+}
+
 export interface CalculatePayrollResult {
+  attendance_period?: PayrollAttendancePeriod;
+  /** Diisi saat periode absensi belum di-closing. */
+  warning?: string;
   summary?: {
     total_employees?: number;
     employee_names?: string[];
+    allocation_warnings?: AllocationWarning[];
   };
+}
+
+/** Dasar pembagian biaya slip ke toko. */
+export type AllocationBasis = "hours" | "days" | "primary" | "none";
+
+/** Bagian satu toko dari sebuah slip (hris.payroll_detail_allocations). */
+export interface SlipAllocation {
+  branch_id: string | null;
+  branch_code: string | null;
+  branch_name: string | null;
+  basis: AllocationBasis;
+  ratio: number;
+  days: number;
+  hours: number;
+  gross_amount: number;
+  deductions_amount: number;
+  net_amount: number;
+  employer_contribution_amount: number;
+  sort_order: number;
+}
+
+/** Total satu toko dalam run (numeric pg sebagai string). */
+export interface StoreAllocationTotal {
+  branch_id: string | null;
+  branch_code: string | null;
+  branch_name: string | null;
+  employee_count: number;
+  fte: string | number;
+  gross_amount: string | number;
+  employer_contribution_amount: string | number;
+  labor_cost: string | number;
+}
+
+export interface RunStoreAllocation {
+  stores: StoreAllocationTotal[];
+  unassigned: { employee_id: string; gross_amount: string | number; employee?: { id: string; full_name: string; nip: string } }[];
+  allocated_slips: number;
 }
 
 /** Baris payroll_details ringkas di halaman detail run. */
@@ -40,6 +100,7 @@ export interface PayrollRunDetailRow {
   bpjs_kes_deduction: number;
   status: string;
   payslip_sent?: boolean;
+  allocations?: SlipAllocation[];
   employee?: {
     id: string;
     full_name: string;
@@ -54,6 +115,54 @@ export interface PayrollRunDetail extends PayrollRun {
   total_bjtk_employer: number;
   notes?: string;
   payroll_details?: PayrollRunDetailRow[];
+  store_allocation?: RunStoreAllocation;
+}
+
+/** Nominal biaya satu toko / satu bagian karyawan di laporan Biaya Gaji per Toko. */
+export interface StoreCostAmounts {
+  gross_amount: number;
+  deductions_amount: number;
+  pph21_amount: number;
+  bpjs_employee_amount: number;
+  net_amount: number;
+  employer_bpjs_tk_amount: number;
+  employer_bpjs_kes_amount: number;
+  employer_tapera_amount: number;
+  employer_contribution_amount: number;
+  labor_cost: number;
+}
+
+export interface StoreCostStore extends StoreCostAmounts {
+  branch_id: string | null;
+  branch_code: string | null;
+  branch_name: string;
+  employee_count: number;
+  fte: number;
+  days: number;
+  hours: number;
+}
+
+export interface StoreCostEmployee extends StoreCostAmounts {
+  employee_id: string;
+  full_name: string;
+  nip: string | null;
+  department: string | null;
+  position: string | null;
+  branch_id: string | null;
+  branch_name: string;
+  basis: AllocationBasis;
+  ratio: number;
+  days: number;
+  hours: number;
+}
+
+/** GET /api/hris/payroll/{id}/store-costs */
+export interface StoreCostReport {
+  run: { id: string; run_name: string; period_month: number; period_year: number; status: string };
+  stores: StoreCostStore[];
+  totals: StoreCostAmounts & { employee_count: number };
+  employees: StoreCostEmployee[];
+  unallocated_slips: number;
 }
 
 /** Nominal slip gaji (pg numeric bisa datang sebagai string). */
@@ -98,6 +207,8 @@ export interface PayslipDetail extends PayslipAmounts {
   unpaid_leave_days: number;
   status: string;
   created_at: string;
+  /** Rincian per toko (payroll multi-toko); kosong untuk run lama */
+  allocations?: SlipAllocation[];
   employee?: {
     id: string;
     full_name: string;

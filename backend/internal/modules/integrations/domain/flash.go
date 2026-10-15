@@ -34,7 +34,7 @@ func BrandName(configured string) string {
 	if name := validate.JSTrim(configured); name != "" {
 		return name
 	}
-	return "Mizu"
+	return "Paddy"
 }
 
 // TodayWib is todayWib: the WIB calendar date, YYYY-MM-DD.
@@ -120,7 +120,7 @@ func BuildFlashReportMessage(d FlashReportData, dateWib, brand string) string {
 		"Revenue : "+rp(d.Revenue),
 		"Nett Sales : "+rp(d.NettSales),
 		"Discount : "+rp(d.Discount),
-		"MIZU Citizen : "+validate.JSNumber(d.CitizenCardTx)+" Card",
+		"Paddy Citizen : "+validate.JSNumber(d.CitizenCardTx)+" Card",
 		"Disc 100% : "+validate.JSNumber(d.FullDiscountTx)+" Transaksi",
 	)
 	if d.KolCompTx > 0 {

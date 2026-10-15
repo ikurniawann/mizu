@@ -14,6 +14,7 @@ import { monthYearLabel } from "@/lib/hris/month-label";
 import { loanInstallmentLabel } from "@/lib/payroll/loans";
 import { formatShareOfGross } from "@/lib/payroll/share";
 import { prorateNote } from "@/lib/payroll/prorate-note";
+import { SlipStoreBreakdown } from "@/features/hris/payroll/components/store-breakdown";
 import type { EssPayslip } from "../types";
 
 export function payslipPeriodLabel(slip: EssPayslip): string {
@@ -150,6 +151,8 @@ export function PayslipDetailDialog({
                   </span>
                 </div>
               </div>
+
+              <SlipStoreBreakdown allocations={selected.allocations} />
 
               <p className="text-xs text-gray-400">
                 Kehadiran: {selected.present_days}/{selected.working_days} hari

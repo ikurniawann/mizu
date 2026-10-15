@@ -13,6 +13,7 @@ import {
   Loader2,
   MapPin,
   Moon,
+  Palette,
   Phone,
   Sparkles,
   Sun,
@@ -39,20 +40,28 @@ import {
 } from "../public-booking";
 import { resetBookingFunnel, trackBookingStep } from "../booking-funnel";
 import { publicSpaApi } from "../api";
-import { usePublicSpaOutlets, usePublicSpaRooms, usePublicSpaSlots, usePublicSpaTherapists, usePublicSpaTreatments } from "../queries";
+import { useExperienceCatalog, usePublicSpaOutlets, usePublicSpaRooms, usePublicSpaSlots, usePublicSpaTherapists, usePublicSpaTreatments } from "../queries";
+import { draftToDesign, emptyDraft, isDraftComplete, resolveDraft, type CaseDraft, type ExperienceCatalog } from "../experience";
+import { CaseConfigurator } from "./case-design/case-configurator";
+import { BackgroundSwatch, CasePreview } from "./case-design/case-preview";
 import { isValidPhone } from "../rules";
 import { addDaysToDate, shortClock, wibClockOf, wibDateOf } from "../time";
 import type { GenderPref, PublicOutlet, PublicPaymentMethod, PublicRoom, PublicTherapist, PublicVariant } from "../types";
 
 const MAX_DAYS_AHEAD = 30;
 const STRIP_DAYS = 14;
-const STEPS = ["outlet", "treatment", "waktu", "kontak"] as const;
+const STEPS = ["outlet", "treatment", "desain", "waktu", "kontak"] as const;
 type Step = (typeof STEPS)[number];
 
 const STEP_META: Record<Step, { label: string; title: string; hint: string }> = {
-  outlet: { label: "Outlet", title: "Mau datang ke outlet mana?", hint: "Dua outlet Mizu di Bandung, buka setiap hari." },
-  treatment: { label: "Treatment", title: "Pilih treatment", hint: "Boleh lebih dari satu, mis. massage lalu refleksi kaki." },
-  waktu: { label: "Jadwal", title: "Kapan kamu mau datang?", hint: "Pilih jam, lalu pilih terapis atau biarkan Mizu yang memilihkan. Semua jam dalam WIB." },
+  outlet: { label: "Toko", title: "Mau main ke Paddy Store mana?", hint: "Dua Paddy Store di Bandung, buka setiap hari." },
+  treatment: { label: "Layanan", title: "Pilih layanan Paddy Experience", hint: "Custom case dengan desainmu sendiri: tipe HP, stiker, nama, dan background." },
+  desain: {
+    label: "Desain",
+    title: "Desain case kamu",
+    hint: "Pilih tipe HP, layout, stiker, nama, dan background. Pratinjau berubah setiap kamu memilih — crew Paddy mencetaknya di toko.",
+  },
+  waktu: { label: "Jadwal", title: "Kapan kamu mau datang?", hint: "Pilih jam, lalu pilih crew experience atau biarkan Paddy yang memilihkan. Semua jam dalam WIB." },
   kontak: { label: "Data diri", title: "Sedikit tentang kamu", hint: "Kami hubungi lewat WhatsApp bila jadwal perlu dikonfirmasi." },
 };
 
@@ -72,10 +81,12 @@ const NO_PREFILL: BookingPrefill = { outlet: null, treatment: null, date: null }
 interface Picked {
   variant: PublicVariant;
   treatmentName: string;
+  /** Layanan custom case: butuh desain sebelum pilih jadwal. */
+  customizable: boolean;
 }
 
 /**
- * Halaman booking publik Mizu (tanpa login): outlet → treatment → jadwal →
+ * Halaman booking publik Paddy Experience (tanpa login): outlet → treatment → jadwal →
  * data diri → halaman status booking. Bisa dibuka dengan isian awal dari menu
  * (?outlet=<slug atau branch_id>&treatment=<id>&date=YYYY-MM-DD). Jam yang
  * ditawarkan berasal dari server (cek terapis & preferensi gender).
@@ -94,13 +105,16 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const [phone, setPhone] = useState("");
   const [pref, setPref] = useState<GenderPref>("any");
   const [notes, setNotes] = useState("");
-  // null = "Pilihkan oleh Mizu"; pilihan hanya berlaku selama terapis itu masih kosong di jam terpilih.
+  // null = "Pilihkan oleh Paddy"; pilihan hanya berlaku selama terapis itu masih kosong di jam terpilih.
   const [therapistId, setTherapistId] = useState<string | null>(null);
   // null = tanpa room khusus; pilihan berlaku selama room itu masih punya tempat di jam terpilih.
   const [roomId, setRoomId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<PublicPaymentMethod>("outlet");
   const [redirecting, setRedirecting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Desain custom case per varian terpilih (layanan customizable).
+  const [designs, setDesigns] = useState<Record<string, CaseDraft>>({});
+  const [designFor, setDesignFor] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<"name" | "phone" | null>(null);
   const top = useRef<HTMLDivElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
@@ -123,12 +137,20 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const list = useMemo(() => orderedTreatments(treatments.data ?? [], prefill.treatment), [treatments.data, prefill.treatment]);
   const categories = useMemo(() => treatmentCategories(list), [list]);
   const byVariant = useMemo(
-    () => new Map(list.flatMap((t) => t.variants.map((v) => [v.id, { variant: v, treatmentName: t.name }] as const))),
+    () =>
+      new Map(list.flatMap((t) => t.variants.map((v) => [v.id, { variant: v, treatmentName: t.name, customizable: !!t.customizable }] as const))),
     [list]
   );
   const fromMenu = outletId === prefill.outlet ? list.find((t) => t.id === prefill.treatment) : undefined;
   const ids = pickedIds ?? (fromMenu ? [fromMenu.variants[0].id] : []);
   const picked: Picked[] = ids.flatMap((id) => byVariant.get(id) ?? []);
+  const customPicked = picked.filter((p) => p.customizable);
+  const needsDesign = customPicked.length > 0;
+  const catalog = useExperienceCatalog(needsDesign || list.some((t) => t.customizable));
+  const draftOf = (variantId: string) => designs[variantId] ?? emptyDraft(catalog.data);
+  const designsDone = !needsDesign || (!!catalog.data && customPicked.every((p) => isDraftComplete(designs[p.variant.id], catalog.data)));
+  const designTarget = customPicked.find((p) => p.variant.id === designFor) ?? customPicked[0] ?? null;
+  const steps = STEPS.filter((s) => s !== "desain" || needsDesign);
 
   const totalDuration = picked.reduce((sum, p) => sum + p.variant.duration_min, 0);
   const treatmentPrice = picked.reduce((sum, p) => sum + p.variant.price_idr, 0);
@@ -154,8 +176,9 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   const reach: Record<Step, boolean> = {
     outlet: true,
     treatment: !!outlet,
-    waktu: !!outlet && picked.length > 0,
-    kontak: !!outlet && picked.length > 0 && slotValid,
+    desain: !!outlet && needsDesign,
+    waktu: !!outlet && picked.length > 0 && designsDone,
+    kontak: !!outlet && picked.length > 0 && designsDone && slotValid,
   };
   let step = wanted;
   while (!reach[step]) step = STEPS[STEPS.indexOf(step) - 1];
@@ -170,7 +193,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sekali saat halaman dibuka
   }, []);
   useEffect(() => {
-    trackBookingStep(step === "waktu" ? "time" : step === "kontak" ? "contact" : step, funnelBranch);
+    trackBookingStep(step === "waktu" ? "time" : step === "kontak" ? "contact" : step === "desain" ? "treatment" : step, funnelBranch);
   }, [step, funnelBranch]);
 
   const go = (next: Step) => {
@@ -222,6 +245,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
         therapist_gender_pref: pref,
         notes: notes.trim(),
         variant_ids: picked.map((p) => p.variant.id),
+        ...(needsDesign ? { designs: picked.map((p) => (p.customizable ? draftToDesign(draftOf(p.variant.id)) : null)) } : {}),
         ...(therapist ? { therapist_id: therapist.id } : {}),
         ...(room ? { room_id: room.id } : {}),
         payment_method: payOnline ? "online" : "outlet",
@@ -257,6 +281,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
         onError: (err) => {
           trackBookingStep("error", outlet.branch_id);
           setFormError(err.message);
+          if (err.message.startsWith("Desain case") || err.message.includes("desain case")) return go("desain");
           // Jam atau terapis keburu terisi orang lain: kembali ke pilihan yang segar.
           if (err.message.includes("penuh") || err.message.includes("Terapis pilihanmu") || err.message.includes("Room ")) {
             if (err.message.includes("penuh")) setSlotIso(null);
@@ -275,30 +300,39 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
   // Label & status tombol utama dihitung terpisah dari aksinya (aksi menyentuh ref).
   const cta: { label: string; disabled: boolean } =
     step === "outlet"
-      ? { label: "Pilih outlet dulu", disabled: true }
+      ? { label: "Pilih toko dulu", disabled: true }
       : step === "treatment"
-        ? { label: picked.length ? "Lanjut pilih jadwal" : "Pilih treatment dulu", disabled: picked.length === 0 }
-        : step === "waktu"
+        ? { label: picked.length ? (needsDesign ? "Lanjut desain case" : "Lanjut pilih jadwal") : "Pilih layanan dulu", disabled: picked.length === 0 }
+        : step === "desain"
+          ? { label: designsDone ? "Lanjut pilih jadwal" : "Lengkapi desain dulu", disabled: !designsDone }
+          : step === "waktu"
           ? { label: slotValid && slotIso ? `Lanjut · ${wibClockOf(slotIso)} WIB` : "Pilih jam dulu", disabled: !slotValid }
           : {
               label: redirecting ? "Menuju pembayaran…" : create.isPending ? "Mengirim…" : needsDeposit ? `Konfirmasi & bayar DP ${formatRupiah(depositIdr * Math.max(1, 1))}` : payOnline ? "Konfirmasi & bayar" : "Konfirmasi booking",
               disabled: create.isPending || redirecting,
             };
   const next = () => {
-    if (step === "treatment") go("waktu");
-    else if (step === "waktu") go("kontak");
+    if (step === "treatment") go(needsDesign ? "desain" : "waktu");
+    else if (step === "desain") {
+      // Beberapa custom case: lanjut ke desain berikutnya yang belum lengkap.
+      const pending = customPicked.find((p) => !isDraftComplete(designs[p.variant.id], catalog.data));
+      if (pending) {
+        setDesignFor(pending.variant.id);
+        top.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else go("waktu");
+    } else if (step === "waktu") go("kontak");
     else if (step === "kontak") submit();
   };
 
   return (
     <div className="bg-background">
-      <Hero step={step} reach={reach} onStep={go} deposit={heroDeposit} />
+      <Hero step={step} steps={steps} reach={reach} onStep={go} deposit={heroDeposit} />
 
       <Container className="grid grid-cols-1 gap-8 pt-8 pb-40 lg:grid-cols-[minmax(0,1fr)_22rem] lg:pt-12 lg:pb-20">
         <div ref={top} className="min-w-0 scroll-mt-32 space-y-6">
           <div className="space-y-2">
             <Kicker>
-              Langkah {STEPS.indexOf(step) + 1} dari {STEPS.length}
+              Langkah {steps.indexOf(step) + 1} dari {steps.length}
             </Kicker>
             <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">{STEP_META[step].title}</h2>
             <p className="text-body">{STEP_META[step].hint}</p>
@@ -323,9 +357,25 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                 pickedIds={ids}
                 focusId={fromMenu?.id ?? null}
                 onToggle={toggleVariant}
+                catalog={catalog.data ?? null}
                 onChangeOutlet={() => go("outlet")}
               />
             ))}
+
+          {step === "desain" && designTarget && (
+            <DesignStep
+              catalog={catalog.data ?? null}
+              loading={catalog.isLoading}
+              error={catalog.error?.message ?? null}
+              items={customPicked}
+              current={designTarget}
+              onCurrent={(id) => setDesignFor(id)}
+              drafts={designs}
+              draft={draftOf(designTarget.variant.id)}
+              onChange={(d) => setDesigns((all) => ({ ...all, [designTarget.variant.id]: d }))}
+              error2={formError}
+            />
+          )}
 
           {step === "waktu" && outlet && (
             <TimeStep
@@ -373,6 +423,8 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                   deposit={needsDeposit ? depositIdr : 0}
                   therapistName={therapist?.name ?? null}
                   room={room}
+                  designs={designs}
+                  catalog={catalog.data ?? null}
                 />
               </div>
               <div className="space-y-5 rounded-card bg-card p-5 shadow-card md:p-6">
@@ -417,12 +469,12 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                 {needsDeposit && (
                   <div className="space-y-2 rounded-2xl border border-border bg-background p-4">
                     <p className="flex items-center gap-2 text-sm font-semibold">
-                      <CreditCard className="size-4 text-forest dark:text-accent" /> DP {formatRupiah(depositIdr)} untuk mengunci jadwal
+                      <CreditCard className="size-4 text-forest dark:text-brand-text" /> DP {formatRupiah(depositIdr)} untuk mengunci jadwal
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Setelah konfirmasi kamu diarahkan ke halaman pembayaran DP (VA, e-wallet, QRIS, kartu). Jadwal ditahan{" "}
                       {outlet?.deposit_hold_minutes ?? 60} menit sampai DP dibayar; sisa{" "}
-                      <span className="font-semibold text-foreground">{formatRupiah(Math.max(0, totalPrice - depositIdr))}</span> dibayar di outlet setelah treatment.
+                      <span className="font-semibold text-foreground">{formatRupiah(Math.max(0, totalPrice - depositIdr))}</span> dibayar di toko setelah sesi selesai.
                     </p>
                   </div>
                 )}
@@ -432,7 +484,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                     <div className="grid gap-2 sm:grid-cols-2">
                       {(
                         [
-                          { value: "outlet", title: "Bayar di outlet", text: "Setelah treatment, tunai atau non-tunai di kasir.", icon: Wallet },
+                          { value: "outlet", title: "Bayar di toko", text: "Setelah sesi experience, tunai atau non-tunai di kasir.", icon: Wallet },
                           { value: "online", title: "Bayar online sekarang", text: "Transfer VA, e-wallet, QRIS atau kartu lewat Xendit.", icon: CreditCard },
                         ] as const
                       ).map(({ value, title, text, icon: Icon }) => (
@@ -446,7 +498,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                             payMethod === value ? "border-ink bg-ink text-on-ink" : "border-border bg-background hover:border-foreground/40"
                           )}
                         >
-                          <Icon className={cn("mt-0.5 size-5 shrink-0", payMethod === value ? "text-accent" : "text-muted-foreground")} />
+                          <Icon className={cn("mt-0.5 size-5 shrink-0", payMethod === value ? "text-sunny" : "text-muted-foreground")} />
                           <span>
                             <span className="block text-sm font-semibold">{title}</span>
                             <span className={cn("block text-xs", payMethod === value ? "text-on-ink-muted" : "text-muted-foreground")}>{text}</span>
@@ -456,17 +508,17 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
                     </div>
                   </fieldset>
                 )}
-                <Field label="Catatan untuk terapis" optional>
+                <Field label="Catatan untuk crew experience" optional>
                   <textarea
                     className={cn(INPUT, "h-auto min-h-24 py-3")}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Keluhan, area yang ingin difokuskan, tekanan yang disukai…"
+                    placeholder="Permintaan khusus untuk crew, mis. datang berdua atau mau lihat contoh case dulu…"
                   />
                 </Field>
                 {formError && <ErrorNote>{formError}</ErrorNote>}
                 <p className="text-xs text-muted-foreground">
-                  Dengan menekan Konfirmasi booking, kamu setuju dihubungi tim Mizu lewat WhatsApp terkait jadwal ini.
+                  Dengan menekan Konfirmasi booking, kamu setuju dihubungi crew Paddy lewat WhatsApp terkait jadwal ini.
                 </p>
               </div>
             </div>
@@ -484,6 +536,8 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               deposit={needsDeposit ? depositIdr : 0}
               therapistName={therapist?.name ?? null}
               room={room}
+              designs={designs}
+              catalog={catalog.data ?? null}
               showTherapist={step === "waktu" || step === "kontak"}
               onRemove={step === "treatment" ? toggleVariant : undefined}
             />
@@ -493,7 +547,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               {!cta.disabled && !create.isPending ? <ArrowRight /> : null}
             </Button>
             <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <Wallet className="size-3.5" /> {needsDeposit ? `DP ${formatRupiah(depositIdr)} online · sisa di outlet` : payOnline ? "Bayar online lewat Xendit" : "Bayar di outlet atau online"}
+              <Wallet className="size-3.5" /> {needsDeposit ? `DP ${formatRupiah(depositIdr)} online · sisa di toko` : payOnline ? "Bayar online lewat Xendit" : "Bayar di toko atau online"}
             </p>
           </div>
         </aside>
@@ -503,12 +557,12 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           {step === "outlet" ? (
-            <p className="flex-1 text-center text-sm text-muted-foreground">Pilih outlet untuk mulai · bayar di outlet</p>
+            <p className="flex-1 text-center text-sm text-muted-foreground">Pilih toko untuk mulai · bayar di toko</p>
           ) : (
             <>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs text-muted-foreground">
-                  {picked.length ? `${picked.length} treatment · ${totalDuration} menit` : (outlet?.name ?? "")}
+                  {picked.length ? `${picked.length} layanan · ${totalDuration} menit` : (outlet?.name ?? "")}
                 </p>
                 <p className="font-display text-lg font-bold tabular-nums">
                   {formatRupiah(totalPrice)}
@@ -519,7 +573,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
               </div>
               <Button size="lg" disabled={cta.disabled} onClick={next}>
                 {create.isPending ? <Loader2 className="animate-spin" /> : null}
-                {step === "kontak" ? (create.isPending ? "Mengirim…" : "Konfirmasi") : "Lanjut"}
+                {step === "kontak" ? (create.isPending ? "Mengirim…" : "Konfirmasi") : step === "desain" && !designsDone ? "Lengkapi" : "Lanjut"}
                 {!cta.disabled && !create.isPending ? <ArrowRight /> : null}
               </Button>
             </>
@@ -532,37 +586,50 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
 
 // ── Hero & langkah ───────────────────────────────────────────────────────────
 
-function Hero({ step, reach, onStep, deposit }: { step: Step; reach: Record<Step, boolean>; onStep: (s: Step) => void; deposit: number }) {
-  const current = STEPS.indexOf(step);
+function Hero({
+  step,
+  steps,
+  reach,
+  onStep,
+  deposit,
+}: {
+  step: Step;
+  steps: readonly Step[];
+  reach: Record<Step, boolean>;
+  onStep: (s: Step) => void;
+  deposit: number;
+}) {
+  const current = steps.indexOf(step);
   const heroDeposit = deposit;
   return (
     <section className="relative isolate overflow-hidden bg-ink text-on-ink">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/site/photos/mizu-back-massage.webp" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_40%]" />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/40" />
+      <img src="/site/photos/paddy-watch.webp" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_50%]" />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-berry/40" />
       <Container className="space-y-8 pt-12 pb-8 md:pt-16">
         <div className="max-w-2xl space-y-4">
-          <Kicker onInk>Booking online · Mizu Family Massage &amp; Reflexology</Kicker>
-          <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-5xl">Waktunya istirahat sejenak.</h1>
+          <Kicker onInk>Booking online · Paddy Experience</Kicker>
+          <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-5xl">Yuk, bikin yang lucu-lucu!</h1>
           <p className="max-w-xl text-on-ink-muted md:text-lg">
-            Pilih outlet, treatment, jam dan terapis favoritmu.{" "}
-            {heroDeposit > 0 ? `Kunci jadwal dengan DP ${formatRupiah(heroDeposit)}, sisanya dibayar di outlet setelah treatment.` : "Bayar di outlet setelah treatment, atau langsung online."}
+            Desain custom case kamu sendiri — tipe HP, stiker, nama, dan background — lalu pilih toko, jam, dan crew favoritmu.{" "}
+            {heroDeposit > 0 ? `Kunci jadwal dengan DP ${formatRupiah(heroDeposit)}, sisanya dibayar di toko setelah sesi selesai.` : "Bayar di toko setelah sesi selesai, atau langsung online."}
           </p>
           <ul className="flex flex-wrap gap-2 pt-1 text-xs font-medium text-on-ink">
             {[
-              { icon: UserRound, text: "Pilih terapis sendiri" },
-              { icon: CreditCard, text: heroDeposit > 0 ? `DP ${formatRupiah(heroDeposit)} · sisa di outlet` : "Bayar di outlet atau online" },
+              { icon: Palette, text: "Desain case sendiri, pratinjau langsung" },
+              { icon: UserRound, text: "Pilih crew experience sendiri" },
+              { icon: CreditCard, text: heroDeposit > 0 ? `DP ${formatRupiah(heroDeposit)} · sisa di toko` : "Bayar di toko atau online" },
               { icon: QrCode, text: "Kode & QR booking langsung" },
             ].map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur">
-                <Icon className="size-3.5 text-accent" /> {text}
+                <Icon className="size-3.5 text-sunny" /> {text}
               </li>
             ))}
           </ul>
         </div>
 
-        <ol className="grid grid-cols-4 gap-2 border-t border-white/10 pt-5">
-          {STEPS.map((s, i) => {
+        <ol className={cn("grid gap-2 border-t border-white/10 pt-5", steps.length === 5 ? "grid-cols-5" : "grid-cols-4")}>
+          {steps.map((s, i) => {
             const done = i < current;
             const active = i === current;
             return (
@@ -584,7 +651,7 @@ function Hero({ step, reach, onStep, deposit }: { step: Step; reach: Record<Step
                     <span
                       className={cn(
                         "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                        active ? "bg-accent text-ink" : done ? "bg-accent/25 text-accent" : "bg-white/10 text-on-ink-muted"
+                        active ? "bg-accent text-accent-foreground" : done ? "bg-accent/25 text-sunny" : "bg-white/10 text-on-ink-muted"
                       )}
                     >
                       {done ? <Check className="size-3.5" /> : i + 1}
@@ -622,7 +689,7 @@ function OutletStep({
   if (outlets.isLoading) return <Spinner />;
   if (outlets.error) return <ErrorNote>{outlets.error.message}</ErrorNote>;
   const rows = outlets.data ?? [];
-  if (rows.length === 0) return <ErrorNote>Booking online sedang tidak tersedia. Silakan hubungi outlet langsung.</ErrorNote>;
+  if (rows.length === 0) return <ErrorNote>Booking online sedang tidak tersedia. Silakan hubungi Paddy Store langsung.</ErrorNote>;
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {rows.map((o) => {
@@ -638,17 +705,17 @@ function OutletStep({
               on ? "ring-accent-strong" : "ring-transparent"
             )}
           >
-            <div className="relative h-28 overflow-hidden bg-ink">
+            <div className="relative h-28 overflow-hidden bg-accent">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/pattern.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-30 transition group-hover:scale-105" />
+              <img src="/brand/paddy-wallpaper.webp" alt="" className="absolute inset-0 h-full w-full object-cover transition group-hover:scale-105" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/mark-white.png" alt="" className="absolute bottom-4 left-5 size-10 opacity-90" />
+              <img src="/brand/mark-lime.png" alt="" className="absolute bottom-3 left-4 size-12 -rotate-6" />
               <span className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-on-ink backdrop-blur">
-                <Clock className="size-3.5 text-accent" />
+                <Clock className="size-3.5 text-sunny" />
                 {shortClock(o.open_time)}–{shortClock(o.close_time)}
               </span>
               {on && (
-                <span className="absolute right-4 bottom-4 flex size-7 items-center justify-center rounded-full bg-accent text-ink">
+                <span className="absolute right-4 bottom-4 flex size-7 items-center justify-center rounded-full bg-accent text-accent-foreground">
                   <Check className="size-4" />
                 </span>
               )}
@@ -667,8 +734,8 @@ function OutletStep({
                   {o.phone}
                 </p>
               )}
-              <span className="mt-auto flex items-center gap-1 pt-2 text-sm font-semibold text-forest dark:text-accent">
-                {on ? "Outlet dipilih" : "Pilih outlet ini"} <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+              <span className="mt-auto flex items-center gap-1 pt-2 text-sm font-semibold text-forest dark:text-brand-text">
+                {on ? "Toko dipilih" : "Pilih toko ini"} <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
               </span>
             </div>
           </button>
@@ -692,6 +759,7 @@ function TreatmentStep({
   focusId,
   onToggle,
   onChangeOutlet,
+  catalog,
 }: {
   outlet: PublicOutlet;
   loading: boolean;
@@ -704,17 +772,18 @@ function TreatmentStep({
   focusId: string | null;
   onToggle: (v: PublicVariant) => void;
   onChangeOutlet: () => void;
+  catalog: ExperienceCatalog | null;
 }) {
   const shown = category ? list.filter((t) => (t.category?.trim() || OTHER_CATEGORY) === category) : list;
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3 text-sm">
         <span className="flex items-center gap-2">
-          <MapPin className="size-4 text-forest dark:text-accent" />
+          <MapPin className="size-4 text-forest dark:text-brand-text" />
           Harga di <strong className="font-semibold">{outlet.name}</strong>
         </span>
-        <button type="button" onClick={onChangeOutlet} className="font-semibold text-forest hover:underline dark:text-accent">
-          Ganti outlet
+        <button type="button" onClick={onChangeOutlet} className="font-semibold text-forest hover:underline dark:text-brand-text">
+          Ganti toko
         </button>
       </div>
 
@@ -723,7 +792,7 @@ function TreatmentStep({
       ) : error ? (
         <ErrorNote>{error}</ErrorNote>
       ) : list.length === 0 ? (
-        <ErrorNote>Belum ada treatment yang bisa dipesan di outlet ini.</ErrorNote>
+        <ErrorNote>Belum ada layanan experience yang bisa dipesan di toko ini.</ErrorNote>
       ) : (
         <>
           {categories.length > 1 && (
@@ -744,7 +813,7 @@ function TreatmentStep({
               ))}
             </div>
           )}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className={cn("grid grid-cols-1 gap-4", shown.length > 1 && "md:grid-cols-2")}>
             {shown.map((t) => {
               const chosen = t.variants.some((v) => pickedIds.includes(v.id));
               return (
@@ -757,7 +826,7 @@ function TreatmentStep({
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-accent">
+                      <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-brand-text">
                         {t.category?.trim() || OTHER_CATEGORY}
                       </p>
                       {t.id === focusId && (
@@ -767,6 +836,7 @@ function TreatmentStep({
                     <h3 className="font-display text-xl font-semibold">{t.name}</h3>
                     {t.description && <p className="line-clamp-3 text-sm text-body">{t.description}</p>}
                   </div>
+                  {t.customizable && catalog ? <CustomCaseTeaser catalog={catalog} /> : null}
                   <div className="mt-auto flex flex-wrap gap-2 pt-1">
                     {t.variants.map((v) => {
                       const on = pickedIds.includes(v.id);
@@ -782,8 +852,8 @@ function TreatmentStep({
                             on ? "border-ink bg-ink text-on-ink" : "border-border bg-background hover:border-foreground/40"
                           )}
                         >
-                          {on ? <Check className="size-4 text-accent" /> : <Clock className="size-4 text-muted-foreground" />}
-                          <span className="font-medium">{v.duration_min} mnt</span>
+                          {on ? <Check className="size-4 text-sunny" /> : <Clock className="size-4 text-muted-foreground" />}
+                          <span className="font-medium">{t.customizable ? `${v.name} · ${v.duration_min} mnt` : `${v.duration_min} mnt`}</span>
                           <span className={cn("tabular-nums", on ? "text-on-ink-muted" : "text-muted-foreground")}>
                             {formatRupiah(v.price_idr)}
                           </span>
@@ -801,7 +871,91 @@ function TreatmentStep({
   );
 }
 
-// ── Langkah 3: jadwal ────────────────────────────────────────────────────────
+/** Galeri singkat di kartu Custom Case: background & tema stiker yang bisa dipilih. */
+function CustomCaseTeaser({ catalog }: { catalog: ExperienceCatalog }) {
+  return (
+    <div className="space-y-2 rounded-2xl bg-surface p-3">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+        {catalog.backgrounds.map((b) => (
+          <span key={b.code} className="w-9 shrink-0" title={b.name}>
+            <BackgroundSwatch image={b.image} />
+          </span>
+        ))}
+      </div>
+      <div className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
+        {catalog.themes.map((t) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={t.code} src={t.stickers[0]?.image} alt={t.name} title={t.name} loading="lazy" className="size-9 shrink-0 object-contain" />
+        ))}
+      </div>
+      <p className="text-xs text-body">
+        <strong className="text-foreground">{catalog.backgrounds.length} background</strong> &{" "}
+        <strong className="text-foreground">{catalog.themes.length} tema stiker</strong> · layout{" "}
+        {catalog.layouts.map((l) => l.slots).join(" / ")} gambar · nama dengan {catalog.fonts.length} pilihan font
+      </p>
+    </div>
+  );
+}
+
+// ── Langkah 3: desain case ───────────────────────────────────────────────────
+
+function DesignStep({
+  catalog,
+  loading,
+  error,
+  items,
+  current,
+  onCurrent,
+  drafts,
+  draft,
+  onChange,
+  error2,
+}: {
+  catalog: ExperienceCatalog | null;
+  loading: boolean;
+  error: string | null;
+  items: Picked[];
+  current: Picked;
+  onCurrent: (variantId: string) => void;
+  drafts: Record<string, CaseDraft>;
+  draft: CaseDraft;
+  onChange: (d: CaseDraft) => void;
+  error2: string | null;
+}) {
+  if (loading) return <Spinner />;
+  if (error || !catalog) return <ErrorNote>{error ?? "Katalog desain belum tersedia. Coba muat ulang halaman."}</ErrorNote>;
+  return (
+    <div className="space-y-4">
+      {items.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {items.map((p, i) => {
+            const done = isDraftComplete(drafts[p.variant.id], catalog);
+            const on = p.variant.id === current.variant.id;
+            return (
+              <button
+                key={p.variant.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onCurrent(p.variant.id)}
+                className={cn(
+                  "flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition",
+                  on ? "bg-ink text-on-ink" : "bg-card text-body shadow-card"
+                )}
+              >
+                {done ? <Check className="size-4 text-accent-strong" /> : <Palette className="size-4" />}
+                Case {i + 1}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {error2 ? <ErrorNote>{error2}</ErrorNote> : null}
+      <CaseConfigurator key={current.variant.id} catalog={catalog} value={draft} onChange={onChange} />
+    </div>
+  );
+}
+
+// ── Langkah 4: jadwal ────────────────────────────────────────────────────────
 
 function TimeStep({
   outlet,
@@ -856,7 +1010,7 @@ function TimeStep({
     <div className="space-y-6">
       {error && <ErrorNote>{error}</ErrorNote>}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-semibold">Preferensi terapis</legend>
+        <legend className="text-sm font-semibold">Preferensi crew experience</legend>
         <div className="grid max-w-md grid-cols-3 gap-2 rounded-2xl bg-surface p-1">
           {PREF_OPTIONS.map((o) => (
             <button
@@ -895,7 +1049,7 @@ function TimeStep({
                   on ? "bg-ink text-on-ink shadow-card" : "bg-card text-foreground shadow-card hover:bg-surface"
                 )}
               >
-                <span className={cn("text-[11px] font-semibold uppercase", on ? "text-accent" : "text-muted-foreground")}>
+                <span className={cn("text-[11px] font-semibold uppercase", on ? "text-sunny" : "text-muted-foreground")}>
                   {d.label === "Hari ini" ? "Hari ini" : d.weekday}
                 </span>
                 <span className="font-display text-2xl leading-tight font-bold">{d.day}</span>
@@ -937,7 +1091,7 @@ function TimeStep({
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="text-sm font-semibold">Jam mulai</h3>
           <p className="text-xs text-muted-foreground">
-            Outlet buka {shortClock(outlet.open_time)}–{shortClock(outlet.close_time)} · durasi {totalDuration} menit
+            Toko buka {shortClock(outlet.open_time)}–{shortClock(outlet.close_time)} · durasi {totalDuration} menit
           </p>
         </div>
         {loading ? (
@@ -946,7 +1100,7 @@ function TimeStep({
           <ErrorNote>Jam belum bisa dimuat. Coba lagi sebentar.</ErrorNote>
         ) : groups.length === 0 ? (
           <ErrorNote tone="muted">
-            Tidak ada jam kosong pada tanggal ini{pref === "any" ? "" : " untuk terapis pilihanmu"}. Coba tanggal lain
+            Tidak ada jam kosong pada tanggal ini{pref === "any" ? "" : " untuk crew pilihanmu"}. Coba tanggal lain
             {pref === "any" ? "" : " atau pilih Bebas"}.
           </ErrorNote>
         ) : (
@@ -987,7 +1141,7 @@ function TimeStep({
 
       {selected ? (
         <div className="flex items-center gap-3 rounded-2xl bg-accent-soft px-4 py-3 text-sm">
-          <Clock className="size-5 shrink-0 text-forest dark:text-accent" />
+          <Clock className="size-5 shrink-0 text-forest dark:text-brand-text" />
           <p>
             <strong className="font-semibold">
               {selected.time}–{endClock(selected.time, totalDuration)} WIB
@@ -996,7 +1150,7 @@ function TimeStep({
           </p>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Terapis ditentukan outlet sesuai preferensimu. Datang 10 menit lebih awal ya.</p>
+        <p className="text-xs text-muted-foreground">Crew experience ditentukan toko sesuai preferensimu. Datang 10 menit lebih awal ya.</p>
       )}
     </div>
   );
@@ -1014,7 +1168,7 @@ function initials(name: string): string {
     .join("");
 }
 
-/** Terapis untuk jam terpilih: "Pilihkan oleh Mizu" (bawaan) atau salah satu terapis yang kosong. */
+/** Crew experience (terapis) untuk jam terpilih: "Pilihkan oleh Paddy" (bawaan) atau salah satu terapis yang kosong. */
 function TherapistPicker({
   therapists,
   loading,
@@ -1034,23 +1188,23 @@ function TherapistPicker({
   return (
     <fieldset className="space-y-3">
       <legend className="flex w-full items-baseline justify-between gap-3">
-        <span className="text-sm font-semibold">Terapis</span>
-        <span className="text-xs text-muted-foreground">{loading ? "Mengecek terapis…" : `${therapists.length} terapis kosong di jam ini`}</span>
+        <span className="text-sm font-semibold">Crew experience</span>
+        <span className="text-xs text-muted-foreground">{loading ? "Mengecek crew…" : `${therapists.length} crew kosong di jam ini`}</span>
       </legend>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
         <button type="button" aria-pressed={value === null} onClick={() => onChange(null)} className={option(value === null)}>
           <span
             className={cn(
               "flex size-10 shrink-0 items-center justify-center rounded-full",
-              value === null ? "bg-accent text-ink" : "bg-accent-soft text-forest dark:text-accent"
+              value === null ? "bg-accent text-accent-foreground" : "bg-accent-soft text-forest dark:text-brand-text"
             )}
           >
             <Sparkles className="size-5" />
           </span>
           <span className="min-w-0">
-            <span className="block font-semibold">Pilihkan oleh Mizu</span>
+            <span className="block font-semibold">Pilihkan oleh Paddy</span>
             <span className={cn("block text-xs", value === null ? "text-on-ink-muted" : "text-muted-foreground")}>
-              Terapis terbaik yang kosong di jam ini
+              Crew experience terbaik yang kosong di jam ini
             </span>
           </span>
         </button>
@@ -1063,7 +1217,7 @@ function TherapistPicker({
                   <span
                     className={cn(
                       "flex size-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold",
-                      on ? "bg-accent text-ink" : "bg-surface text-foreground"
+                      on ? "bg-accent text-accent-foreground" : "bg-surface text-foreground"
                     )}
                   >
                     {initials(t.name)}
@@ -1071,7 +1225,7 @@ function TherapistPicker({
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{t.name}</span>
                     <span className={cn("block text-xs", on ? "text-on-ink-muted" : "text-muted-foreground")}>
-                      {t.gender === "female" ? "Terapis wanita" : t.gender === "male" ? "Terapis pria" : "Terapis"} · tersedia
+                      {t.gender === "female" ? "Crew wanita" : t.gender === "male" ? "Crew pria" : "Crew experience"} · tersedia
                     </span>
                   </span>
                 </button>
@@ -1102,7 +1256,7 @@ function RoomPicker({ rooms, value, onChange }: { rooms: PublicRoom[]; value: st
           <DoorOpen className="mt-0.5 size-5 shrink-0" />
           <span className="min-w-0">
             <span className="block font-semibold">Tanpa room khusus</span>
-            <span className={cn("block text-xs", value === null ? "text-on-ink-muted" : "text-muted-foreground")}>Outlet menyiapkan ruang treatment · gratis</span>
+            <span className={cn("block text-xs", value === null ? "text-on-ink-muted" : "text-muted-foreground")}>Toko menyiapkan meja experience · gratis</span>
           </span>
         </button>
         {rooms.map((r) => {
@@ -1138,6 +1292,8 @@ function Summary({
   room = null,
   showTherapist = true,
   onRemove,
+  designs = {},
+  catalog = null,
 }: {
   outlet: PublicOutlet | null;
   slotIso: string | null;
@@ -1151,14 +1307,17 @@ function Summary({
   therapistName: string | null;
   showTherapist?: boolean;
   onRemove?: (v: PublicVariant) => void;
+  /** Desain custom case per varian (pratinjau mini di ringkasan). */
+  designs?: Record<string, CaseDraft>;
+  catalog?: ExperienceCatalog | null;
 }) {
   return (
     <div className="overflow-hidden rounded-card bg-card shadow-card">
       <div className="relative overflow-hidden bg-ink px-5 py-4 text-on-ink">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/pattern.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-20" />
-        <p className="relative text-xs font-semibold tracking-wider text-accent uppercase">Ringkasan booking</p>
-        <p className="relative font-display text-lg font-semibold">{outlet?.name ?? "Belum pilih outlet"}</p>
+        <img src="/brand/pattern.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />
+        <p className="relative text-xs font-semibold tracking-wider text-sunny uppercase">Ringkasan booking</p>
+        <p className="relative font-display text-lg font-semibold">{outlet?.name ?? "Belum pilih toko"}</p>
       </div>
       <div className="space-y-4 p-5 text-sm">
         <SummaryRow icon={CalendarDays} label="Jadwal">
@@ -1174,20 +1333,29 @@ function Summary({
           )}
         </SummaryRow>
         {showTherapist && (
-          <SummaryRow icon={UserRound} label="Terapis">
-            {therapistName ?? <span className="text-body">Dipilihkan oleh Mizu</span>}
+          <SummaryRow icon={UserRound} label="Crew experience">
+            {therapistName ?? <span className="text-body">Dipilihkan oleh Paddy</span>}
           </SummaryRow>
         )}
-        <SummaryRow icon={Sparkles} label="Treatment">
+        <SummaryRow icon={Sparkles} label="Layanan">
           {picked.length === 0 ? (
             <span className="text-muted-foreground">Belum dipilih</span>
           ) : (
             <ul className="space-y-1.5">
               {picked.map((p) => (
                 <li key={p.variant.id} className="flex items-start justify-between gap-3">
-                  <span>
-                    {p.treatmentName}
-                    <span className="block text-xs text-muted-foreground">{p.variant.duration_min} menit</span>
+                  <span className="flex min-w-0 items-start gap-2">
+                    {p.customizable && catalog && designs[p.variant.id] ? (
+                      <CasePreview design={resolveDraft(designs[p.variant.id], catalog)} className="mt-0.5 w-7" />
+                    ) : null}
+                    <span className="min-w-0">
+                      {p.treatmentName}
+                      <span className="block text-xs text-muted-foreground">
+                        {p.variant.duration_min} menit
+                        {p.customizable && catalog && designs[p.variant.id]?.model ? ` · ${designs[p.variant.id].model}` : ""}
+                        {p.customizable && catalog && !isDraftComplete(designs[p.variant.id], catalog) ? " · desain belum lengkap" : ""}
+                      </span>
+                    </span>
                   </span>
                   <span className="flex items-center gap-1.5 tabular-nums">
                     {formatRupiah(p.variant.price_idr)}
@@ -1229,10 +1397,10 @@ function Summary({
               <span className="font-semibold tabular-nums text-foreground">{formatRupiah(Math.min(deposit, total))}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-body">Sisa · bayar di outlet setelah treatment</span>
+              <span className="text-body">Sisa · bayar di toko setelah sesi</span>
               <span className="font-semibold tabular-nums text-foreground">{formatRupiah(Math.max(0, total - deposit))}</span>
             </div>
-            <p className="text-muted-foreground">DP mengunci jadwal kamu dan langsung mengurangi total treatment.</p>
+            <p className="text-muted-foreground">DP mengunci jadwal kamu dan langsung mengurangi total layanan.</p>
           </div>
         )}
       </div>
@@ -1244,7 +1412,7 @@ export function SummaryRow({ icon: Icon, label, children }: { icon: typeof Sun; 
   return (
     <div className="flex gap-3">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface">
-        <Icon className="size-4 text-forest dark:text-accent" />
+        <Icon className="size-4 text-forest dark:text-brand-text" />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{label}</p>

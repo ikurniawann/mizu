@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 vi.mock("@/lib/table-order/server", () => ({
   loadTableByCode: async (code: string) => (code === "A1" ? { id: "t1", is_active: true, area: "Indoor" } : null),
   loadVenueContext: async () => ({
-    brandName: "Mizu",
+    brandName: "Paddy",
     billingProfileName: "Default",
     charges: [],
     qrisAvailable: true,

@@ -30,6 +30,7 @@ import {
   type FieldDef,
   type FormState,
 } from "@/lib/payroll/ui-settings-form";
+import { AttendancePeriodSettingsCard } from "@/features/hris/attendance";
 import { usePayrollSettings } from "../queries";
 import { useSavePayrollSettings } from "../mutations";
 
@@ -150,6 +151,9 @@ export function PayrollSettingsPage() {
           {saveMutation.isPending ? "Menyimpan..." : "Simpan Pengaturan"}
         </Button>
       </div>
+
+      {/* Cut-off & closing periode absensi: rentang absensi yang dibaca payroll. */}
+      <AttendancePeriodSettingsCard />
 
       {isLoading ? (
         <Card>

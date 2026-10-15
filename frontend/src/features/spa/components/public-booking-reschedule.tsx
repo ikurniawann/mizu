@@ -30,7 +30,7 @@ interface Session {
 /**
  * Ubah jadwal booking (/booking/spa/ubah): tamu memasukkan kode booking +
  * nomor WhatsApp yang dipakai saat booking, lalu memilih jam baru. Bisa
- * sampai 1 jam sebelum jadwal; terapis ditentukan ulang oleh outlet.
+ * sampai 1 jam sebelum jadwal; crew experience (terapis) ditentukan ulang oleh toko.
  */
 export function PublicBookingReschedule({ initialCode = "" }: { initialCode?: string }) {
   const [code, setCode] = useState(initialCode);
@@ -58,10 +58,10 @@ export function PublicBookingReschedule({ initialCode = "" }: { initialCode?: st
     <div className="bg-background pb-20">
       <section className="relative isolate overflow-hidden bg-ink text-on-ink">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={SITE_PHOTOS.relax} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_35%]" />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/40" />
+        <img src={SITE_PHOTOS.accessories} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_50%]" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-berry/40" />
         <Container className="space-y-4 py-12 md:py-16">
-          <Kicker onInk>Booking Mizu</Kicker>
+          <Kicker onInk>Booking Paddy Experience</Kicker>
           <h1 className="font-display text-4xl font-bold tracking-tight text-balance md:text-5xl">Ubah jadwal booking</h1>
           <p className="max-w-xl text-on-ink-muted md:text-lg">
             Berhalangan datang? Pindahkan jadwal sendiri sampai <strong className="text-on-ink">1 jam sebelum</strong> jadwalmu,
@@ -90,7 +90,7 @@ export function PublicBookingReschedule({ initialCode = "" }: { initialCode?: st
                 className={cn(INPUT, "font-mono uppercase tracking-wider")}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="MZ-261012-AB12"
+                placeholder="PD-261012-AB12"
                 autoComplete="off"
                 required
               />
@@ -117,7 +117,7 @@ export function PublicBookingReschedule({ initialCode = "" }: { initialCode?: st
               {busy ? <Loader2 className="animate-spin" /> : <Search />} Cari booking
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              Lupa kode booking? Hubungi outlet. Pembatalan tetap paling lambat 24 jam sebelum jadwal.
+              Lupa kode booking? Hubungi Paddy Store. Pembatalan tetap paling lambat 24 jam sebelum jadwal.
             </p>
           </form>
         )}
@@ -186,19 +186,19 @@ function Reschedule({
     <div className="space-y-4">
       <div className="space-y-4 rounded-card bg-card p-6 shadow-card">
         <p className="font-mono text-sm font-semibold tracking-wider text-body">{b.booking_code}</p>
-        <SummaryRow icon={MapPin} label="Outlet">
+        <SummaryRow icon={MapPin} label="Toko">
           {b.branch_name}
         </SummaryRow>
         <SummaryRow icon={CalendarDays} label="Jadwal sekarang">
           {formatDateLong(wibDateOf(current))} · {wibClockOf(current)}–{endClock(wibClockOf(current), duration)} WIB
         </SummaryRow>
-        <SummaryRow icon={Sparkles} label="Treatment">
+        <SummaryRow icon={Sparkles} label="Layanan">
           {b.items.map((i) => `${i.treatment_name} (${i.duration_min} menit)`).join(", ")}
         </SummaryRow>
         {b.therapist_name ? (
-          <SummaryRow icon={UserRound} label="Terapis">
+          <SummaryRow icon={UserRound} label="Crew experience">
             {b.therapist_name}
-            <span className="block text-xs font-normal text-muted-foreground">Setelah jadwal diubah, terapis ditentukan ulang oleh outlet.</span>
+            <span className="block text-xs font-normal text-muted-foreground">Setelah jadwal diubah, crew experience ditentukan ulang oleh toko.</span>
           </SummaryRow>
         ) : null}
       </div>
@@ -211,7 +211,7 @@ function Reschedule({
               ? "Booking ini sudah dibatalkan."
               : b.status === "expired" || b.status === "completed" || b.status === "in_treatment"
                 ? "Booking ini sudah lewat atau sedang berjalan."
-                : "Perubahan mandiri paling lambat 1 jam sebelum jadwal, dan belum dibuka di kasir. Silakan hubungi outlet."}
+                : "Perubahan mandiri paling lambat 1 jam sebelum jadwal, dan belum dibuka di kasir. Silakan hubungi Paddy Store."}
           </p>
           <Button asChild variant="outline">
             <Link href={`/booking/spa/status/${session.token}`}>Lihat status booking</Link>
@@ -221,7 +221,7 @@ function Reschedule({
         <section className="space-y-5 rounded-card bg-card p-6 shadow-card">
           <div className="space-y-1">
             <h2 className="font-display text-2xl font-semibold">Pilih jadwal baru</h2>
-            <p className="text-sm text-body">Jam yang tampil masih ada terapis kosong. Semua jam dalam WIB.</p>
+            <p className="text-sm text-body">Jam yang tampil masih ada crew experience kosong. Semua jam dalam WIB.</p>
           </div>
           <div className="-mx-2 flex snap-x gap-2 overflow-x-auto px-2 pt-1 pb-2 [scrollbar-width:none]">
             {dateStrip(today, STRIP_DAYS).map((d) => {
@@ -240,7 +240,7 @@ function Reschedule({
                     on ? "bg-ink text-on-ink" : "bg-background hover:bg-surface"
                   )}
                 >
-                  <span className={cn("text-[11px] font-semibold uppercase", on ? "text-accent" : "text-muted-foreground")}>
+                  <span className={cn("text-[11px] font-semibold uppercase", on ? "text-sunny" : "text-muted-foreground")}>
                     {d.label === "Hari ini" ? "Hari ini" : d.weekday}
                   </span>
                   <span className="font-display text-2xl leading-tight font-bold">{d.day}</span>
@@ -304,7 +304,7 @@ function Done({ booking, token }: { booking: PublicBookingResult; token: string 
   const duration = booking.items.reduce((n, i) => n + i.duration_min, 0);
   return (
     <section className="space-y-5 rounded-card bg-card p-6 text-center shadow-card">
-      <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent text-ink">
+      <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent text-accent-foreground">
         <Check className="size-7" />
       </span>
       <div className="space-y-1">
@@ -313,7 +313,7 @@ function Done({ booking, token }: { booking: PublicBookingResult; token: string 
           {booking.branch_name} · {formatDateLong(wibDateOf(at))}, {wibClockOf(at)}–{endClock(wibClockOf(at), duration)} WIB
         </p>
         <p className="text-sm text-muted-foreground">
-          Kode booking tetap <span className="font-mono font-semibold">{booking.booking_code}</span>. Terapis ditentukan ulang oleh outlet.
+          Kode booking tetap <span className="font-mono font-semibold">{booking.booking_code}</span>. Crew experience ditentukan ulang oleh toko.
         </p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">

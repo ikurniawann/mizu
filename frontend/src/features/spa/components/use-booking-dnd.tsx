@@ -8,9 +8,9 @@ import { useAssignBooking, useRescheduleBooking } from "../mutations";
 import { wibClockOf, wibToIso } from "../time";
 import type { BoardItem, BoardTherapist } from "../types";
 
-export const BOOKING_DRAG_TYPE = "application/x-mizu-item";
+export const BOOKING_DRAG_TYPE = "application/x-paddy-item";
 /** Jarak (px) titik pegang dari atas blok, agar posisi jatuh = posisi atas blok. */
-export const BOOKING_GRAB_TYPE = "application/x-mizu-grab";
+export const BOOKING_GRAB_TYPE = "application/x-paddy-grab";
 
 /** Kolom bersumbu jam (kalender): seret naik/turun di kolom yang sama = ubah jam. */
 export interface DropTimeline {
@@ -33,7 +33,7 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
     action.mutate(
       { bookingId: item.booking_id, therapistId: row.therapist.id },
       {
-        onSuccess: () => toast.success("Terapis ditugaskan", {
+        onSuccess: () => toast.success("Crew ditugaskan", {
           description: `${item.customer_name} · ${wibClockOf(item.starts_at)} → ${row.therapist.full_name}`,
         }),
         onError: (err) => toast.error("Gagal menugaskan", { description: err.message }),
@@ -75,10 +75,10 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
       action.mutate(
         { bookingId: item.booking_id, therapistId: null },
         {
-          onSuccess: () => toast.success("Terapis dilepas", {
+          onSuccess: () => toast.success("Crew dilepas", {
             description: `${item.customer_name} · ${wibClockOf(item.starts_at)} → Belum ditugaskan`,
           }),
-          onError: (err) => toast.error("Gagal melepas terapis", { description: err.message }),
+          onError: (err) => toast.error("Gagal melepas crew", { description: err.message }),
         }
       );
       return;
@@ -90,7 +90,7 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
     }
     if (item.therapist_gender_pref !== "any" && item.therapist_gender_pref !== row.therapist.gender) {
       toast.error("Penugasan ditolak", {
-        description: `Preferensi booking memerlukan terapis ${item.therapist_gender_pref === "female" ? "perempuan" : "laki-laki"}.`,
+        description: `Preferensi booking memerlukan crew ${item.therapist_gender_pref === "female" ? "perempuan" : "laki-laki"}.`,
       });
       return;
     }
@@ -119,7 +119,7 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
       title={`Pindahkan jadwal ${pendingMove?.item.customer_name ?? ""}?`}
       description={
         pendingMove
-          ? `${wibClockOf(pendingMove.item.starts_at)} → ${clockOf(pendingMove.minute)} WIB, ${pendingMove.item.therapist_name ? `tetap dengan ${pendingMove.item.therapist_name}` : "belum ada terapis"}. Sistem mengecek shift & bentrok terapis.`
+          ? `${wibClockOf(pendingMove.item.starts_at)} → ${clockOf(pendingMove.minute)} WIB, ${pendingMove.item.therapist_name ? `tetap dengan ${pendingMove.item.therapist_name}` : "belum ada crew"}. Sistem mengecek shift & bentrok crew.`
           : ""
       }
       confirmLabel="Pindahkan"

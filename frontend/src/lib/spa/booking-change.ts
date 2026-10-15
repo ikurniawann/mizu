@@ -44,7 +44,7 @@ export async function issueBookingChangeCode(token: string): Promise<ChangeResul
     await db.query("ROLLBACK").catch(() => {});
     throw error;
   } finally { db.release(); }
-  const sent = await sendWhatsAppOtp({ target: booking!.customer_phone, code, fallbackText: `Kode perubahan booking Mizu Anda: ${code}. Berlaku 5 menit. Jangan bagikan kode ini.` });
+  const sent = await sendWhatsAppOtp({ target: booking!.customer_phone, code, fallbackText: `Kode perubahan booking Paddy Anda: ${code}. Berlaku 5 menit. Jangan bagikan kode ini.` });
   if (!sent.success) {
     await getPool().query("DELETE FROM spa.public_booking_challenges WHERE id = $1", [challengeId]);
     return { ok: false, status: 503, error: "Kode belum bisa dikirim ke WhatsApp. Coba lagi nanti atau hubungi outlet." };

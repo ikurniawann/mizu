@@ -4,12 +4,16 @@ import { useEffect, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { usePurchaseRequest } from "@/features/purchasing/pr/queries";
+import { usePurchasingSettings } from "@/features/purchasing/settings/queries";
 import {
   emptyPOForm,
+  emptyPOItem,
+  lowStockPOItem,
   mapPOItemToForm,
   mapPRItemToForm,
   poFormFromExisting,
 } from "@/lib/purchasing/po-form-items";
+import { DEFAULT_PURCHASING_SETTINGS } from "@/lib/purchasing/po-rules";
 import { todayIsoDate } from "@/lib/purchasing/po-ui-detail";
 import { usePOFormData, usePurchaseOrder } from "../queries";
 import type { POFormData } from "../api";
@@ -32,17 +36,63 @@ type NewPOPageProps = {
   poId?: string;
 };
 
-/** Buat PO dari PR disetujui (?pr_id=), atau ubah PO draf bila `poId` diisi. */
+/**
+ * Buat PO dari PR disetujui (?pr_id=), ubah PO draf bila `poId` diisi, atau — tanpa PR —
+ * buat PO langsung bila aturan "PO Bahan Baku wajib dari PR" di Pengaturan Pembelian nonaktif.
+ */
 export function NewPOPage({ poId }: NewPOPageProps = {}) {
   const searchParams = useSearchParams();
   const formDataQuery = usePOFormData();
+  const settingsQuery = usePurchasingSettings();
   const prId = poId ? null : searchParams.get("pr_id");
+  // Gagal memuat aturan = anggap aturan bawaan (wajib PR); server tetap memvalidasi.
+  const rules = settingsQuery.data ?? (settingsQuery.isError ? DEFAULT_PURCHASING_SETTINGS : undefined);
 
   if (formDataQuery.isError) return <Message tone="error">Gagal memuat data formulir purchase order</Message>;
   if (!formDataQuery.data) return LOADING;
   if (poId) return <EditPOForm poId={poId} lookups={formDataQuery.data} />;
-  if (!prId) return <PORequiresPR lookups={formDataQuery.data} />;
-  return <CreatePOForm prId={prId} lookups={formDataQuery.data} />;
+  if (prId) return <CreatePOForm prId={prId} lookups={formDataQuery.data} />;
+  if (!rules) return LOADING;
+  if (rules.po_requires_pr_raw_material) return <PORequiresPR lookups={formDataQuery.data} />;
+  return (
+    <DirectPOForm
+      lookups={formDataQuery.data}
+      materialId={searchParams.get("material_id")}
+      baseQty={Number(searchParams.get("qty")) || 0}
+    />
+  );
+}
+
+/** PO bahan baku langsung tanpa PR; ?material_id=&qty= (laporan stok rendah) mengisi baris pertama. */
+function DirectPOForm({
+  lookups,
+  materialId,
+  baseQty,
+}: {
+  lookups: POFormData;
+  materialId: string | null;
+  baseQty: number;
+}) {
+  const material = lookups.materials.find((entry) => entry.id === materialId);
+  const firstRow = material ? lowStockPOItem(material, baseQty, lookups.units) : emptyPOItem("new-first");
+  return (
+    <POForm
+      direct
+      title="Buat Purchase Order"
+      description={
+        material
+          ? `Saran pemesanan ulang ${material.nama} dari laporan stok rendah. Pilih supplier lalu sesuaikan item`
+          : "Buat purchase order bahan baku langsung ke supplier, atau ambil item dari purchase request yang disetujui"
+      }
+      initialForm={{
+        ...emptyPOForm(undefined, todayIsoDate()),
+        source_type: material ? "low_stock" : "manual",
+      }}
+      initialItems={[firstRow]}
+      prSource={null}
+      lookups={lookups}
+    />
+  );
 }
 
 function CreatePOForm({ prId, lookups }: { prId: string; lookups: POFormData }) {

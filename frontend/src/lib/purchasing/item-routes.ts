@@ -38,6 +38,8 @@ export const RM_ROUTES = {
   purchasingPo: `${RM_BASE}/purchasing/po`,
   purchasingPoInsert: `${RM_BASE}/purchasing/po/insert`,
   purchasingPoDetail: (id: string) => `${RM_BASE}/purchasing/po/${id}`,
+  /** Pengaturan Pembelian (aturan PO wajib dari PR). */
+  purchasingSettings: `${RM_BASE}/purchasing/settings`,
   purchasingDelivery: `${RM_BASE}/purchasing/delivery`,
   purchasingGrn: `${RM_BASE}/purchasing/grn`,
   purchasingGrnInsert: `${RM_BASE}/purchasing/grn/insert`,
@@ -90,6 +92,7 @@ export const PRODUCT_ROUTES = {
   purchasingPo: `${PRODUCT_BASE}/purchasing/po`,
   purchasingPoInsert: `${PRODUCT_BASE}/purchasing/po/insert`,
   purchasingPoDetail: (id: string) => `${PRODUCT_BASE}/purchasing/po/${id}`,
+  purchasingSettings: `${PRODUCT_BASE}/purchasing/settings`,
   purchasingDelivery: `${PRODUCT_BASE}/purchasing/delivery`,
   purchasingDeliveryInsert: `${PRODUCT_BASE}/purchasing/delivery/insert`,
   purchasingDeliveryDetail: (id: string) => `${PRODUCT_BASE}/purchasing/delivery/${id}`,

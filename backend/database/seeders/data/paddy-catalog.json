@@ -1,0 +1,3804 @@
+{
+ "_note": "Dibangkitkan dari katalog publik paddy.id (WooCommerce Store API) pada 2026-10-04. Nama, harga jual, dan foto = data paddy.id; HPP (cost), stok, barcode internal (prefiks GS1 in-store 200) = ASUMSI demo.",
+ "categories": [
+  {
+   "code": "CASES",
+   "name": "Paddy Cases",
+   "description": "Case HP polos premium Paddy — Ultra Tech+, Ultra Grip 2.0, Bumper Pocket, Camera Cover"
+  },
+  {
+   "code": "CATALOGUE",
+   "name": "Catalogue Case",
+   "description": "Case HP motif katalog & kolaborasi ilustrator lokal, dicetak di workshop Paddy"
+  },
+  {
+   "code": "PODS",
+   "name": "Paddy Pods",
+   "description": "Case AirPods motif Paddy"
+  },
+  {
+   "code": "POPSOCKET",
+   "name": "Pop Socket",
+   "description": "Pop socket acrylic & printed"
+  },
+  {
+   "code": "ACCESSORIES",
+   "name": "Paddy Accessories",
+   "description": "Tempered glass, handy sanitizer, beads charm, gift box"
+  },
+  {
+   "code": "BAGS",
+   "name": "Paddy Bags",
+   "description": "Backpack kulit, canvas, dan knitted bag"
+  },
+  {
+   "code": "WATCHES",
+   "name": "Paddy Watch",
+   "description": "Smartwatch & jam tangan Paddy"
+  },
+  {
+   "code": "STRAPS",
+   "name": "Strap Paddy Watch",
+   "description": "Strap silicone & nylon untuk Paddy Watch"
+  },
+  {
+   "code": "APPARELS",
+   "name": "Paddy Apparels",
+   "description": "Knitwear cardigan & sweater rajut"
+  },
+  {
+   "code": "PARFUME",
+   "name": "Paddy Parfume",
+   "description": "Parfum body mist Paddy"
+  }
+ ],
+ "products": [
+  {
+   "sku": "PDY-CS-001",
+   "category": "CASES",
+   "name": "Polosan Ultra Tech+",
+   "description": "Case Ultra Tech+ dengan proteksi drop-tested, sudut air-cushion, dan bibir kamera tinggi.",
+   "price": 150000,
+   "compare_at_price": null,
+   "cost": 57000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-cs-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CS-001-PIN-IP16PM",
+     "name": "Pink / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000015",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-001-PIN-IP16P",
+     "name": "Pink / iPhone 16 Pro",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000022",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CS-001-PIN-IP15",
+     "name": "Pink / iPhone 15",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000039",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-CS-001-PIN-IP13",
+     "name": "Pink / iPhone 13",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000046",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-001-PIN-SA55",
+     "name": "Pink / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000053",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CS-001-PIN-RN13",
+     "name": "Pink / Redmi Note 13",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000060",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CS-001-LIL-IP16PM",
+     "name": "Lilac / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Lilac",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000077",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CS-001-LIL-IP16P",
+     "name": "Lilac / iPhone 16 Pro",
+     "options": {
+      "Warna": "Lilac",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000084",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CS-001-LIL-IP15",
+     "name": "Lilac / iPhone 15",
+     "options": {
+      "Warna": "Lilac",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000091",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CS-001-LIL-IP13",
+     "name": "Lilac / iPhone 13",
+     "options": {
+      "Warna": "Lilac",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000107",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-CS-001-LIL-SA55",
+     "name": "Lilac / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Lilac",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000114",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CS-001-LIL-RN13",
+     "name": "Lilac / Redmi Note 13",
+     "options": {
+      "Warna": "Lilac",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000121",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CS-001-DARGRE-IP16PM",
+     "name": "Dark Grey / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Dark Grey",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000138",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CS-001-DARGRE-IP16P",
+     "name": "Dark Grey / iPhone 16 Pro",
+     "options": {
+      "Warna": "Dark Grey",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000145",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-CS-001-DARGRE-IP15",
+     "name": "Dark Grey / iPhone 15",
+     "options": {
+      "Warna": "Dark Grey",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000152",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-CS-001-DARGRE-IP13",
+     "name": "Dark Grey / iPhone 13",
+     "options": {
+      "Warna": "Dark Grey",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000169",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CS-001-DARGRE-SA55",
+     "name": "Dark Grey / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Dark Grey",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000176",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-CS-001-DARGRE-RN13",
+     "name": "Dark Grey / Redmi Note 13",
+     "options": {
+      "Warna": "Dark Grey",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000183",
+     "stock": 6
+    },
+    {
+     "sku": "PDY-CS-001-WHI-IP16PM",
+     "name": "White / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000190",
+     "stock": 11
+    },
+    {
+     "sku": "PDY-CS-001-WHI-IP16P",
+     "name": "White / iPhone 16 Pro",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000206",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-001-WHI-IP15",
+     "name": "White / iPhone 15",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000213",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CS-001-WHI-IP13",
+     "name": "White / iPhone 13",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000220",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-CS-001-WHI-SA55",
+     "name": "White / Samsung Galaxy A55",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000237",
+     "stock": 6
+    },
+    {
+     "sku": "PDY-CS-001-WHI-RN13",
+     "name": "White / Redmi Note 13",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000244",
+     "stock": 7
+    }
+   ],
+   "source_url": "https://paddy.id/product/ultra-tech-pink/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CS-002",
+   "category": "CASES",
+   "name": "Polosan Ultra Grip 2.0",
+   "description": "Case Ultra Grip 2.0 bertekstur anti-slip, tipis dan ringan.",
+   "price": 125000,
+   "compare_at_price": null,
+   "cost": 47500,
+   "weight_gram": 40,
+   "image": "/products/paddy/pdy-cs-002.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CS-002-WHI-IP16PM",
+     "name": "White / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000251",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-CS-002-WHI-IP16P",
+     "name": "White / iPhone 16 Pro",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000268",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CS-002-WHI-IP15",
+     "name": "White / iPhone 15",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000275",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CS-002-WHI-IP13",
+     "name": "White / iPhone 13",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000282",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-CS-002-WHI-SA55",
+     "name": "White / Samsung Galaxy A55",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000299",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-002-WHI-RN13",
+     "name": "White / Redmi Note 13",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000305",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CS-002-PIN-IP16PM",
+     "name": "Pink / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000312",
+     "stock": 6
+    },
+    {
+     "sku": "PDY-CS-002-PIN-IP16P",
+     "name": "Pink / iPhone 16 Pro",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000329",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-CS-002-PIN-IP15",
+     "name": "Pink / iPhone 15",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000336",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CS-002-PIN-IP13",
+     "name": "Pink / iPhone 13",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000343",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CS-002-PIN-SA55",
+     "name": "Pink / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000350",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-CS-002-PIN-RN13",
+     "name": "Pink / Redmi Note 13",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000367",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CS-002-BLA-IP16PM",
+     "name": "Black / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000374",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-CS-002-BLA-IP16P",
+     "name": "Black / iPhone 16 Pro",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000381",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CS-002-BLA-IP15",
+     "name": "Black / iPhone 15",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000398",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-CS-002-BLA-IP13",
+     "name": "Black / iPhone 13",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000404",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CS-002-BLA-SA55",
+     "name": "Black / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000411",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CS-002-BLA-RN13",
+     "name": "Black / Redmi Note 13",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000428",
+     "stock": 19
+    }
+   ],
+   "source_url": "https://paddy.id/product/ultra-grip-2-0-white/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CS-003",
+   "category": "CASES",
+   "name": "Bumper Pocket Case",
+   "description": "Bumper case dengan kantong kartu di belakang.",
+   "price": 99000,
+   "compare_at_price": null,
+   "cost": 39500,
+   "weight_gram": 40,
+   "image": "/products/paddy/pdy-cs-003.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CS-003-CLE-IP16PM",
+     "name": "Clear / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Clear",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000435",
+     "stock": 6
+    },
+    {
+     "sku": "PDY-CS-003-CLE-IP16P",
+     "name": "Clear / iPhone 16 Pro",
+     "options": {
+      "Warna": "Clear",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000442",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CS-003-CLE-IP15",
+     "name": "Clear / iPhone 15",
+     "options": {
+      "Warna": "Clear",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000459",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CS-003-CLE-IP13",
+     "name": "Clear / iPhone 13",
+     "options": {
+      "Warna": "Clear",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000466",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CS-003-CLE-SA55",
+     "name": "Clear / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Clear",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000473",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-CS-003-CLE-RN13",
+     "name": "Clear / Redmi Note 13",
+     "options": {
+      "Warna": "Clear",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000480",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CS-003-BLA-IP16PM",
+     "name": "Black / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000497",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CS-003-BLA-IP16P",
+     "name": "Black / iPhone 16 Pro",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000503",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-CS-003-BLA-IP15",
+     "name": "Black / iPhone 15",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000510",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CS-003-BLA-IP13",
+     "name": "Black / iPhone 13",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000527",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CS-003-BLA-SA55",
+     "name": "Black / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000534",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-003-BLA-RN13",
+     "name": "Black / Redmi Note 13",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000541",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CS-003-CLETOS-IP16PM",
+     "name": "Clear Tosca / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Clear Tosca",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000558",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CS-003-CLETOS-IP16P",
+     "name": "Clear Tosca / iPhone 16 Pro",
+     "options": {
+      "Warna": "Clear Tosca",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000565",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CS-003-CLETOS-IP15",
+     "name": "Clear Tosca / iPhone 15",
+     "options": {
+      "Warna": "Clear Tosca",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000572",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-CS-003-CLETOS-IP13",
+     "name": "Clear Tosca / iPhone 13",
+     "options": {
+      "Warna": "Clear Tosca",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000589",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CS-003-CLETOS-SA55",
+     "name": "Clear Tosca / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Clear Tosca",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000596",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CS-003-CLETOS-RN13",
+     "name": "Clear Tosca / Redmi Note 13",
+     "options": {
+      "Warna": "Clear Tosca",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000602",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-CS-003-CLEPEA-IP16PM",
+     "name": "Clear Peach / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Clear Peach",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000619",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CS-003-CLEPEA-IP16P",
+     "name": "Clear Peach / iPhone 16 Pro",
+     "options": {
+      "Warna": "Clear Peach",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000626",
+     "stock": 11
+    },
+    {
+     "sku": "PDY-CS-003-CLEPEA-IP15",
+     "name": "Clear Peach / iPhone 15",
+     "options": {
+      "Warna": "Clear Peach",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000633",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CS-003-CLEPEA-IP13",
+     "name": "Clear Peach / iPhone 13",
+     "options": {
+      "Warna": "Clear Peach",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000640",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CS-003-CLEPEA-SA55",
+     "name": "Clear Peach / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Clear Peach",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000657",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CS-003-CLEPEA-RN13",
+     "name": "Clear Peach / Redmi Note 13",
+     "options": {
+      "Warna": "Clear Peach",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000664",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CS-003-CLELIL-IP16PM",
+     "name": "Clear Lilac / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Clear Lilac",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000671",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CS-003-CLELIL-IP16P",
+     "name": "Clear Lilac / iPhone 16 Pro",
+     "options": {
+      "Warna": "Clear Lilac",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000688",
+     "stock": 4
+    },
+    {
+     "sku": "PDY-CS-003-CLELIL-IP15",
+     "name": "Clear Lilac / iPhone 15",
+     "options": {
+      "Warna": "Clear Lilac",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000695",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CS-003-CLELIL-IP13",
+     "name": "Clear Lilac / iPhone 13",
+     "options": {
+      "Warna": "Clear Lilac",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000701",
+     "stock": 4
+    },
+    {
+     "sku": "PDY-CS-003-CLELIL-SA55",
+     "name": "Clear Lilac / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Clear Lilac",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000718",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-CS-003-CLELIL-RN13",
+     "name": "Clear Lilac / Redmi Note 13",
+     "options": {
+      "Warna": "Clear Lilac",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000725",
+     "stock": 17
+    }
+   ],
+   "source_url": "https://paddy.id/product/bumper-pocket-case-clear/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CS-004",
+   "category": "CASES",
+   "name": "Camera Cover Case",
+   "description": "Case dengan penutup kamera geser untuk melindungi lensa.",
+   "price": 89000,
+   "compare_at_price": null,
+   "cost": 35500,
+   "weight_gram": 40,
+   "image": "/products/paddy/pdy-cs-004.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CS-004-WHI-IP16PM",
+     "name": "White / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000732",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-004-WHI-IP16P",
+     "name": "White / iPhone 16 Pro",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000749",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CS-004-WHI-IP15",
+     "name": "White / iPhone 15",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000756",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-CS-004-WHI-IP13",
+     "name": "White / iPhone 13",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000763",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-CS-004-WHI-SA55",
+     "name": "White / Samsung Galaxy A55",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000770",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CS-004-WHI-RN13",
+     "name": "White / Redmi Note 13",
+     "options": {
+      "Warna": "White",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000787",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-004-BLA-IP16PM",
+     "name": "Black / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000794",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CS-004-BLA-IP16P",
+     "name": "Black / iPhone 16 Pro",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000800",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CS-004-BLA-IP15",
+     "name": "Black / iPhone 15",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000817",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CS-004-BLA-IP13",
+     "name": "Black / iPhone 13",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000824",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-CS-004-BLA-SA55",
+     "name": "Black / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000831",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CS-004-BLA-RN13",
+     "name": "Black / Redmi Note 13",
+     "options": {
+      "Warna": "Black",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000848",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-CS-004-PIN-IP16PM",
+     "name": "Pink / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000855",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CS-004-PIN-IP16P",
+     "name": "Pink / iPhone 16 Pro",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000862",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CS-004-PIN-IP15",
+     "name": "Pink / iPhone 15",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000879",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CS-004-PIN-IP13",
+     "name": "Pink / iPhone 13",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000886",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CS-004-PIN-SA55",
+     "name": "Pink / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000893",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CS-004-PIN-RN13",
+     "name": "Pink / Redmi Note 13",
+     "options": {
+      "Warna": "Pink",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000909",
+     "stock": 19
+    },
+    {
+     "sku": "PDY-CS-004-PUR-IP16PM",
+     "name": "Purple / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Purple",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000916",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-CS-004-PUR-IP16P",
+     "name": "Purple / iPhone 16 Pro",
+     "options": {
+      "Warna": "Purple",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000923",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-CS-004-PUR-IP15",
+     "name": "Purple / iPhone 15",
+     "options": {
+      "Warna": "Purple",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000930",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-CS-004-PUR-IP13",
+     "name": "Purple / iPhone 13",
+     "options": {
+      "Warna": "Purple",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000000947",
+     "stock": 11
+    },
+    {
+     "sku": "PDY-CS-004-PUR-SA55",
+     "name": "Purple / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Purple",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000000954",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CS-004-PUR-RN13",
+     "name": "Purple / Redmi Note 13",
+     "options": {
+      "Warna": "Purple",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000000961",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-CS-004-TOS-IP16PM",
+     "name": "Tosca / iPhone 16 Pro Max",
+     "options": {
+      "Warna": "Tosca",
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000000978",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CS-004-TOS-IP16P",
+     "name": "Tosca / iPhone 16 Pro",
+     "options": {
+      "Warna": "Tosca",
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000000985",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-CS-004-TOS-IP15",
+     "name": "Tosca / iPhone 15",
+     "options": {
+      "Warna": "Tosca",
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000000992",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CS-004-TOS-IP13",
+     "name": "Tosca / iPhone 13",
+     "options": {
+      "Warna": "Tosca",
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001005",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-CS-004-TOS-SA55",
+     "name": "Tosca / Samsung Galaxy A55",
+     "options": {
+      "Warna": "Tosca",
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001012",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CS-004-TOS-RN13",
+     "name": "Tosca / Redmi Note 13",
+     "options": {
+      "Warna": "Tosca",
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001029",
+     "stock": 4
+    }
+   ],
+   "source_url": "https://paddy.id/product/camera-cover-case-white/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-001",
+   "category": "CATALOGUE",
+   "name": "Strawberry Matcha by Sasa Khalisa",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-001-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001036",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CT-001-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001043",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-CT-001-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001050",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-CT-001-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001067",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CT-001-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001074",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-CT-001-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001081",
+     "stock": 3
+    }
+   ],
+   "source_url": "https://paddy.id/product/strawberry-matcha-by-sasa-khalisa/",
+   "collections": [
+    "Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-CT-002",
+   "category": "CATALOGUE",
+   "name": "Denim Fever Light by Sasa Khalisa",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-002.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-002-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001098",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-002-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001104",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-002-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001111",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-CT-002-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001128",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-CT-002-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001135",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-CT-002-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001142",
+     "stock": 14
+    }
+   ],
+   "source_url": "https://paddy.id/product/denim-fever-light-by-sasa-khalisa/",
+   "collections": [
+    "Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-CT-003",
+   "category": "CATALOGUE",
+   "name": "Kawaii Cafe by Sasa Khalisa",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-003.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-003-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001159",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-CT-003-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001166",
+     "stock": 4
+    },
+    {
+     "sku": "PDY-CT-003-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001173",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-CT-003-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001180",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-CT-003-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001197",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CT-003-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001203",
+     "stock": 3
+    }
+   ],
+   "source_url": "https://paddy.id/product/kawaii-cafe-by-sasa-khalisa/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-004",
+   "category": "CATALOGUE",
+   "name": "Fruity Kitty by Channidraw",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-004.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-004-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001210",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-004-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001227",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CT-004-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001234",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CT-004-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001241",
+     "stock": 19
+    },
+    {
+     "sku": "PDY-CT-004-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001258",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CT-004-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001265",
+     "stock": 22
+    }
+   ],
+   "source_url": "https://paddy.id/product/fruity-kitty-by-channidraw/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-005",
+   "category": "CATALOGUE",
+   "name": "Meowland by Channidraw",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-005.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-005-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001272",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-CT-005-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001289",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CT-005-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001296",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CT-005-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001302",
+     "stock": 19
+    },
+    {
+     "sku": "PDY-CT-005-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001319",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-CT-005-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001326",
+     "stock": 8
+    }
+   ],
+   "source_url": "https://paddy.id/product/meowland-by-channidraw/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-006",
+   "category": "CATALOGUE",
+   "name": "Little Prince by Dear Sun Hand",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-006.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-006-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001333",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-CT-006-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001340",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-006-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001357",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-CT-006-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001364",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CT-006-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001371",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-CT-006-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001388",
+     "stock": 23
+    }
+   ],
+   "source_url": "https://paddy.id/product/little-prince-by-dear-sun-hand/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-007",
+   "category": "CATALOGUE",
+   "name": "Alice by Dear Sun Hand",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-007.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-007-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001395",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CT-007-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001401",
+     "stock": 6
+    },
+    {
+     "sku": "PDY-CT-007-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001418",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CT-007-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001425",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CT-007-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001432",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-007-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001449",
+     "stock": 22
+    }
+   ],
+   "source_url": "https://paddy.id/product/alice-by-dear-sun-hand/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-008",
+   "category": "CATALOGUE",
+   "name": "Tomato Mart by Pica Pica",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-008.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-008-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001456",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CT-008-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001463",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-CT-008-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001470",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-CT-008-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001487",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CT-008-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001494",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-CT-008-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001500",
+     "stock": 13
+    }
+   ],
+   "source_url": "https://paddy.id/product/tomato-mart-by-pica-pica/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-009",
+   "category": "CATALOGUE",
+   "name": "Lovely doodles by Pica Pica",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-009.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-009-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001517",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CT-009-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001524",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-CT-009-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001531",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CT-009-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001548",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CT-009-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001555",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-CT-009-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001562",
+     "stock": 22
+    }
+   ],
+   "source_url": "https://paddy.id/product/lovely-doodles-by-pica-pica/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-010",
+   "category": "CATALOGUE",
+   "name": "Bloo The Catto by Tabe Thay",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-010.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-010-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001579",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CT-010-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001586",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-CT-010-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001593",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-010-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001609",
+     "stock": 11
+    },
+    {
+     "sku": "PDY-CT-010-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001616",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-010-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001623",
+     "stock": 16
+    }
+   ],
+   "source_url": "https://paddy.id/product/bloo-the-catto-by-tabe-thay/",
+   "collections": [
+    "Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-CT-011",
+   "category": "CATALOGUE",
+   "name": "Ocean Dreamers by Suci Draw",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-011.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-011-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001630",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CT-011-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001647",
+     "stock": 19
+    },
+    {
+     "sku": "PDY-CT-011-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001654",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-011-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001661",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-CT-011-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001678",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CT-011-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001685",
+     "stock": 3
+    }
+   ],
+   "source_url": "https://paddy.id/product/colorful-confidence-by-suci-draw/",
+   "collections": [
+    "Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-CT-012",
+   "category": "CATALOGUE",
+   "name": "Cloudy by Ervastudio",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-012.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-012-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001692",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-012-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001708",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-CT-012-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001715",
+     "stock": 19
+    },
+    {
+     "sku": "PDY-CT-012-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001722",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-CT-012-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001739",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CT-012-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001746",
+     "stock": 5
+    }
+   ],
+   "source_url": "https://paddy.id/product/cloudy-by-ervastudio/",
+   "collections": [
+    "Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-CT-013",
+   "category": "CATALOGUE",
+   "name": "Tiny Friends by Brombielab",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-013.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-013-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001753",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-CT-013-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001760",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-CT-013-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001777",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-CT-013-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001784",
+     "stock": 19
+    },
+    {
+     "sku": "PDY-CT-013-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001791",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-013-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001807",
+     "stock": 2
+    }
+   ],
+   "source_url": "https://paddy.id/product/tiny-friends-by-brombielab/",
+   "collections": [
+    "Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-CT-014",
+   "category": "CATALOGUE",
+   "name": "Duck Persona by Peteijo",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-014.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-014-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001814",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-014-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001821",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CT-014-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001838",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-014-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001845",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-CT-014-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001852",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-CT-014-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001869",
+     "stock": 14
+    }
+   ],
+   "source_url": "https://paddy.id/product/duck-persona-by-peteijo/",
+   "collections": [
+    "Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-CT-015",
+   "category": "CATALOGUE",
+   "name": "Tomato Is Life",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-015.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-015-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001876",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-CT-015-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001883",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-CT-015-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001890",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-015-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001906",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-015-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001913",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-015-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001920",
+     "stock": 4
+    }
+   ],
+   "source_url": "https://paddy.id/product/tomato-is-life/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-CT-016",
+   "category": "CATALOGUE",
+   "name": "Slow Morning",
+   "description": "Custom case motif katalog Paddy — dicetak UV di atas case Ultra Tech+.",
+   "price": 100000,
+   "compare_at_price": null,
+   "cost": 35000,
+   "weight_gram": 45,
+   "image": "/products/paddy/pdy-ct-016.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-CT-016-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000001937",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-CT-016-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000001944",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-CT-016-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000001951",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-CT-016-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000001968",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-CT-016-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000001975",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-CT-016-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000001982",
+     "stock": 19
+    }
+   ],
+   "source_url": "https://paddy.id/product/slow-morning/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PD-001",
+   "category": "PODS",
+   "name": "Purple Leopard – Pods",
+   "description": "Case AirPods silikon motif Paddy, lengkap dengan gantungan.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 62500,
+   "weight_gram": 30,
+   "image": "/products/paddy/pdy-pd-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-PD-001-AP2",
+     "name": "AirPods 2",
+     "options": {
+      "Tipe AirPods": "AirPods 2"
+     },
+     "barcode": "2000000001999",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-PD-001-AP3",
+     "name": "AirPods 3",
+     "options": {
+      "Tipe AirPods": "AirPods 3"
+     },
+     "barcode": "2000000002002",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-PD-001-APP2",
+     "name": "AirPods Pro 2",
+     "options": {
+      "Tipe AirPods": "AirPods Pro 2"
+     },
+     "barcode": "2000000002019",
+     "stock": 8
+    }
+   ],
+   "source_url": "https://paddy.id/product/purple-leopard-pods/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PD-002",
+   "category": "PODS",
+   "name": "Totoro Flower – Pods",
+   "description": "Case AirPods silikon motif Paddy, lengkap dengan gantungan.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 62500,
+   "weight_gram": 30,
+   "image": "/products/paddy/pdy-pd-002.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-PD-002-AP2",
+     "name": "AirPods 2",
+     "options": {
+      "Tipe AirPods": "AirPods 2"
+     },
+     "barcode": "2000000002026",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-PD-002-AP3",
+     "name": "AirPods 3",
+     "options": {
+      "Tipe AirPods": "AirPods 3"
+     },
+     "barcode": "2000000002033",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-PD-002-APP2",
+     "name": "AirPods Pro 2",
+     "options": {
+      "Tipe AirPods": "AirPods Pro 2"
+     },
+     "barcode": "2000000002040",
+     "stock": 10
+    }
+   ],
+   "source_url": "https://paddy.id/product/totoro-flower-pods/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PD-003",
+   "category": "PODS",
+   "name": "Rainbow Fleur – Pods",
+   "description": "Case AirPods silikon motif Paddy, lengkap dengan gantungan.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 62500,
+   "weight_gram": 30,
+   "image": "/products/paddy/pdy-pd-003.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-PD-003-AP2",
+     "name": "AirPods 2",
+     "options": {
+      "Tipe AirPods": "AirPods 2"
+     },
+     "barcode": "2000000002057",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-PD-003-AP3",
+     "name": "AirPods 3",
+     "options": {
+      "Tipe AirPods": "AirPods 3"
+     },
+     "barcode": "2000000002064",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-PD-003-APP2",
+     "name": "AirPods Pro 2",
+     "options": {
+      "Tipe AirPods": "AirPods Pro 2"
+     },
+     "barcode": "2000000002071",
+     "stock": 24
+    }
+   ],
+   "source_url": "https://paddy.id/product/rainbow-fleur-pods/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PD-004",
+   "category": "PODS",
+   "name": "Duckie Balloons – Pods",
+   "description": "Case AirPods silikon motif Paddy, lengkap dengan gantungan.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 62500,
+   "weight_gram": 30,
+   "image": "/products/paddy/pdy-pd-004.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-PD-004-AP2",
+     "name": "AirPods 2",
+     "options": {
+      "Tipe AirPods": "AirPods 2"
+     },
+     "barcode": "2000000002088",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-PD-004-AP3",
+     "name": "AirPods 3",
+     "options": {
+      "Tipe AirPods": "AirPods 3"
+     },
+     "barcode": "2000000002095",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-PD-004-APP2",
+     "name": "AirPods Pro 2",
+     "options": {
+      "Tipe AirPods": "AirPods Pro 2"
+     },
+     "barcode": "2000000002101",
+     "stock": 20
+    }
+   ],
+   "source_url": "https://paddy.id/product/duckie-balloons-pods/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PD-005",
+   "category": "PODS",
+   "name": "Chatime Bobba – Pods",
+   "description": "Case AirPods silikon motif Paddy, lengkap dengan gantungan.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 62500,
+   "weight_gram": 30,
+   "image": "/products/paddy/pdy-pd-005.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-PD-005-AP2",
+     "name": "AirPods 2",
+     "options": {
+      "Tipe AirPods": "AirPods 2"
+     },
+     "barcode": "2000000002118",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-PD-005-AP3",
+     "name": "AirPods 3",
+     "options": {
+      "Tipe AirPods": "AirPods 3"
+     },
+     "barcode": "2000000002125",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-PD-005-APP2",
+     "name": "AirPods Pro 2",
+     "options": {
+      "Tipe AirPods": "AirPods Pro 2"
+     },
+     "barcode": "2000000002132",
+     "stock": 22
+    }
+   ],
+   "source_url": "https://paddy.id/product/chatime-bobba-pods/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PD-006",
+   "category": "PODS",
+   "name": "Flower Spring Blooms – Pods",
+   "description": "Case AirPods silikon motif Paddy, lengkap dengan gantungan.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 62500,
+   "weight_gram": 30,
+   "image": "/products/paddy/pdy-pd-006.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-PD-006-AP2",
+     "name": "AirPods 2",
+     "options": {
+      "Tipe AirPods": "AirPods 2"
+     },
+     "barcode": "2000000002149",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-PD-006-AP3",
+     "name": "AirPods 3",
+     "options": {
+      "Tipe AirPods": "AirPods 3"
+     },
+     "barcode": "2000000002156",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-PD-006-APP2",
+     "name": "AirPods Pro 2",
+     "options": {
+      "Tipe AirPods": "AirPods Pro 2"
+     },
+     "barcode": "2000000002163",
+     "stock": 23
+    }
+   ],
+   "source_url": "https://paddy.id/product/flower-spring-blooms-pods/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PS-001",
+   "category": "POPSOCKET",
+   "name": "Bandung Foodie Popsocket",
+   "description": "Pop socket acrylic motif Paddy, bisa jadi stand HP.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 19500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ps-001.webp",
+   "barcode": "2000000002170",
+   "stock": 13,
+   "variants": [],
+   "source_url": "https://paddy.id/product/bandung-foodie-popsocket/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PS-002",
+   "category": "POPSOCKET",
+   "name": "Thinking About Love Popsocket",
+   "description": "Pop socket acrylic motif Paddy, bisa jadi stand HP.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 19500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ps-002.webp",
+   "barcode": "2000000002187",
+   "stock": 24,
+   "variants": [],
+   "source_url": "https://paddy.id/product/thinking-about-love-popsocket/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PS-003",
+   "category": "POPSOCKET",
+   "name": "Tahura Popsocket",
+   "description": "Pop socket acrylic motif Paddy, bisa jadi stand HP.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 19500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ps-003.webp",
+   "barcode": "2000000002194",
+   "stock": 11,
+   "variants": [],
+   "source_url": "https://paddy.id/product/tahura-popsocket/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PS-004",
+   "category": "POPSOCKET",
+   "name": "Gasibuddies Popsocket",
+   "description": "Pop socket acrylic motif Paddy, bisa jadi stand HP.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 19500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ps-004.webp",
+   "barcode": "2000000002200",
+   "stock": 14,
+   "variants": [],
+   "source_url": "https://paddy.id/product/gasibuddies-popsocket/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PS-005",
+   "category": "POPSOCKET",
+   "name": "Bus Tour Popsocket",
+   "description": "Pop socket acrylic motif Paddy, bisa jadi stand HP.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 19500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ps-005.webp",
+   "barcode": "2000000002217",
+   "stock": 16,
+   "variants": [],
+   "source_url": "https://paddy.id/product/bus-tour-popsocket/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PS-006",
+   "category": "POPSOCKET",
+   "name": "Adorable Goods Popsocket",
+   "description": "Pop socket acrylic motif Paddy, bisa jadi stand HP.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 19500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ps-006.webp",
+   "barcode": "2000000002224",
+   "stock": 23,
+   "variants": [],
+   "source_url": "https://paddy.id/product/adorable-goods-popsocket/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PS-007",
+   "category": "POPSOCKET",
+   "name": "Printed Popsocket",
+   "description": "Pop socket printed motif random.",
+   "price": 40000,
+   "compare_at_price": null,
+   "cost": 12000,
+   "weight_gram": 12,
+   "image": "/products/paddy/pdy-ps-007.webp",
+   "barcode": "2000000002231",
+   "stock": 24,
+   "variants": [],
+   "source_url": "https://paddy.id/product/printed-popsocke/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-AC-001",
+   "category": "ACCESSORIES",
+   "name": "Paddy Tempered Glass with Applicator",
+   "description": "Tempered glass anti-gores dengan applicator agar pemasangan presisi.",
+   "price": 110000,
+   "compare_at_price": null,
+   "cost": 33000,
+   "weight_gram": 60,
+   "image": "/products/paddy/pdy-ac-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-AC-001-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000002248",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-AC-001-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000002255",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-AC-001-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000002262",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-AC-001-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000002279",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-AC-001-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000002286",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-AC-001-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000002293",
+     "stock": 19
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-tempered-glass-with-applicator/",
+   "collections": [
+    "Best Seller"
+   ]
+  },
+  {
+   "sku": "PDY-AC-002",
+   "category": "ACCESSORIES",
+   "name": "Paddy Tempered Glass Gorilla Glass",
+   "description": "Tempered glass Gorilla Glass, 9H.",
+   "price": 120000,
+   "compare_at_price": null,
+   "cost": 38500,
+   "weight_gram": 60,
+   "image": "/products/paddy/pdy-ac-002.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-AC-002-IP16PM",
+     "name": "iPhone 16 Pro Max",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro Max"
+     },
+     "barcode": "2000000002309",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-AC-002-IP16P",
+     "name": "iPhone 16 Pro",
+     "options": {
+      "Tipe HP": "iPhone 16 Pro"
+     },
+     "barcode": "2000000002316",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-AC-002-IP15",
+     "name": "iPhone 15",
+     "options": {
+      "Tipe HP": "iPhone 15"
+     },
+     "barcode": "2000000002323",
+     "stock": 12
+    },
+    {
+     "sku": "PDY-AC-002-IP13",
+     "name": "iPhone 13",
+     "options": {
+      "Tipe HP": "iPhone 13"
+     },
+     "barcode": "2000000002330",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-AC-002-SA55",
+     "name": "Samsung Galaxy A55",
+     "options": {
+      "Tipe HP": "Samsung Galaxy A55"
+     },
+     "barcode": "2000000002347",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-AC-002-RN13",
+     "name": "Redmi Note 13",
+     "options": {
+      "Tipe HP": "Redmi Note 13"
+     },
+     "barcode": "2000000002354",
+     "stock": 18
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-tempered-glass-gorilla-glass/",
+   "collections": [
+    "Best Seller"
+   ]
+  },
+  {
+   "sku": "PDY-AC-003",
+   "category": "ACCESSORIES",
+   "name": "Handy Sanitizer",
+   "description": "Botol sanitizer gantung isi ulang dengan holder silikon.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 23000,
+   "weight_gram": 50,
+   "image": "/products/paddy/pdy-ac-003.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-AC-003-HIJMUD",
+     "name": "Hijau Muda",
+     "options": {
+      "Warna": "Hijau Muda"
+     },
+     "barcode": "2000000002361",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-AC-003-UNG",
+     "name": "Ungu",
+     "options": {
+      "Warna": "Ungu"
+     },
+     "barcode": "2000000002378",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-AC-003-PUT",
+     "name": "Putih",
+     "options": {
+      "Warna": "Putih"
+     },
+     "barcode": "2000000002385",
+     "stock": 18
+    },
+    {
+     "sku": "PDY-AC-003-BIR",
+     "name": "Biru",
+     "options": {
+      "Warna": "Biru"
+     },
+     "barcode": "2000000002392",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-AC-003-PIN",
+     "name": "Pink",
+     "options": {
+      "Warna": "Pink"
+     },
+     "barcode": "2000000002408",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-AC-003-HIT",
+     "name": "Hitam",
+     "options": {
+      "Warna": "Hitam"
+     },
+     "barcode": "2000000002415",
+     "stock": 12
+    }
+   ],
+   "source_url": "https://paddy.id/product/hijau-tua/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-AC-004",
+   "category": "ACCESSORIES",
+   "name": "Beads Charm Icy",
+   "description": "Phone strap beads charm seri Icy.",
+   "price": 49000,
+   "compare_at_price": null,
+   "cost": 14500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ac-004.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-AC-004-WINBLU",
+     "name": "Winter Blue",
+     "options": {
+      "Warna": "Winter Blue"
+     },
+     "barcode": "2000000002422",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-AC-004-VELDUS",
+     "name": "Velvet Dust",
+     "options": {
+      "Warna": "Velvet Dust"
+     },
+     "barcode": "2000000002439",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-AC-004-SUNDAY",
+     "name": "Sunny Day",
+     "options": {
+      "Warna": "Sunny Day"
+     },
+     "barcode": "2000000002446",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-AC-004-MINTEA",
+     "name": "Mint Tea",
+     "options": {
+      "Warna": "Mint Tea"
+     },
+     "barcode": "2000000002453",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-AC-004-FLA",
+     "name": "Flamingo",
+     "options": {
+      "Warna": "Flamingo"
+     },
+     "barcode": "2000000002460",
+     "stock": 2
+    }
+   ],
+   "source_url": "https://paddy.id/product/beads-charm-icy-winter-blue/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-AC-005",
+   "category": "ACCESSORIES",
+   "name": "Beads Charm Candy",
+   "description": "Phone strap beads charm seri Candy.",
+   "price": 49000,
+   "compare_at_price": null,
+   "cost": 14500,
+   "weight_gram": 15,
+   "image": "/products/paddy/pdy-ac-005.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-AC-005-POPBER",
+     "name": "Pop Berry",
+     "options": {
+      "Warna": "Pop Berry"
+     },
+     "barcode": "2000000002477",
+     "stock": 6
+    },
+    {
+     "sku": "PDY-AC-005-PINFOR",
+     "name": "Pine Forest",
+     "options": {
+      "Warna": "Pine Forest"
+     },
+     "barcode": "2000000002484",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-AC-005-BUTMIL",
+     "name": "Butter Milk",
+     "options": {
+      "Warna": "Butter Milk"
+     },
+     "barcode": "2000000002491",
+     "stock": 14
+    }
+   ],
+   "source_url": "https://paddy.id/product/beads-charm-candy-pop-berry-2/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-AC-006",
+   "category": "ACCESSORIES",
+   "name": "Paddy Special Gift Box",
+   "description": "Gift box Paddy untuk hadiah — muat case, pods, dan charm.",
+   "price": 45000,
+   "compare_at_price": null,
+   "cost": 18000,
+   "weight_gram": 120,
+   "image": "/products/paddy/pdy-ac-006.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-AC-006-BLU",
+     "name": "Blue",
+     "options": {
+      "Warna": "Blue"
+     },
+     "barcode": "2000000002507",
+     "stock": 22
+    },
+    {
+     "sku": "PDY-AC-006-COL",
+     "name": "Colorful",
+     "options": {
+      "Warna": "Colorful"
+     },
+     "barcode": "2000000002514",
+     "stock": 17
+    },
+    {
+     "sku": "PDY-AC-006-PIN",
+     "name": "Pink",
+     "options": {
+      "Warna": "Pink"
+     },
+     "barcode": "2000000002521",
+     "stock": 24
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-special-gift-box-blue/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-BG-001",
+   "category": "BAGS",
+   "name": "Small Kelly Two Tone Backpack",
+   "description": "Backpack kecil two-tone berbahan kulit sintetis.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 86000,
+   "weight_gram": 450,
+   "image": "/products/paddy/pdy-bg-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-BG-001-SWELIL",
+     "name": "Sweet Lilac",
+     "options": {
+      "Warna": "Sweet Lilac"
+     },
+     "barcode": "2000000002538",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-BG-001-SEABLU",
+     "name": "Sea Blue",
+     "options": {
+      "Warna": "Sea Blue"
+     },
+     "barcode": "2000000002545",
+     "stock": 7
+    },
+    {
+     "sku": "PDY-BG-001-FORGRE",
+     "name": "Forest Green",
+     "options": {
+      "Warna": "Forest Green"
+     },
+     "barcode": "2000000002552",
+     "stock": 17
+    }
+   ],
+   "source_url": "https://paddy.id/product/small-kelly-two-tone-backpack-sweet-lilac/",
+   "collections": [
+    "Small Basic Leather Backpack"
+   ]
+  },
+  {
+   "sku": "PDY-BG-002",
+   "category": "BAGS",
+   "name": "Yuppie Mini Basic Leather Backpack 2 in 1",
+   "description": "Mini backpack 2 in 1 — bisa backpack atau sling bag.",
+   "price": 179000,
+   "compare_at_price": null,
+   "cost": 86000,
+   "weight_gram": 400,
+   "image": "/products/paddy/pdy-bg-002.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-BG-002-SKYBLU",
+     "name": "Sky Blue",
+     "options": {
+      "Warna": "Sky Blue"
+     },
+     "barcode": "2000000002569",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-BG-002-PIN",
+     "name": "Pink",
+     "options": {
+      "Warna": "Pink"
+     },
+     "barcode": "2000000002576",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-BG-002-LIL",
+     "name": "Lilac",
+     "options": {
+      "Warna": "Lilac"
+     },
+     "barcode": "2000000002583",
+     "stock": 9
+    }
+   ],
+   "source_url": "https://paddy.id/product/yuppie-mini-basic-leather-backpack-2-in-1-sky-blue/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-BG-003",
+   "category": "BAGS",
+   "name": "Kayya Backpack",
+   "description": "Backpack canvas Kayya dengan slot laptop 13 inci.",
+   "price": 155000,
+   "compare_at_price": 250000,
+   "cost": 77500,
+   "weight_gram": 600,
+   "image": "/products/paddy/pdy-bg-003.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-BG-003-IVO",
+     "name": "Ivory",
+     "options": {
+      "Warna": "Ivory"
+     },
+     "barcode": "2000000002590",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-BG-003-MIN",
+     "name": "Mint",
+     "options": {
+      "Warna": "Mint"
+     },
+     "barcode": "2000000002606",
+     "stock": 20
+    }
+   ],
+   "source_url": "https://paddy.id/product/kayya-backpack-ivory/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-BG-004",
+   "category": "BAGS",
+   "name": "Gizli Leather Backpack",
+   "description": "Backpack kulit Gizli dengan kompartemen tersembunyi.",
+   "price": 250000,
+   "compare_at_price": null,
+   "cost": 120000,
+   "weight_gram": 650,
+   "image": "/products/paddy/pdy-bg-004.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-BG-004-PIS",
+     "name": "Pistachio",
+     "options": {
+      "Warna": "Pistachio"
+     },
+     "barcode": "2000000002613",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-BG-004-CRE",
+     "name": "Cream",
+     "options": {
+      "Warna": "Cream"
+     },
+     "barcode": "2000000002620",
+     "stock": 20
+    },
+    {
+     "sku": "PDY-BG-004-BRO",
+     "name": "Brown",
+     "options": {
+      "Warna": "Brown"
+     },
+     "barcode": "2000000002637",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-BG-004-NAV",
+     "name": "Navy",
+     "options": {
+      "Warna": "Navy"
+     },
+     "barcode": "2000000002644",
+     "stock": 4
+    },
+    {
+     "sku": "PDY-BG-004-BLA",
+     "name": "Black",
+     "options": {
+      "Warna": "Black"
+     },
+     "barcode": "2000000002651",
+     "stock": 21
+    }
+   ],
+   "source_url": "https://paddy.id/product/gizli-leather-backpack-pistachio/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-BG-005",
+   "category": "BAGS",
+   "name": "Paddy Knitted Bag",
+   "description": "Tas rajut handmade motif ceria.",
+   "price": 199000,
+   "compare_at_price": 299000,
+   "cost": 89500,
+   "weight_gram": 300,
+   "image": "/products/paddy/pdy-bg-005.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-BG-005-YELSUM",
+     "name": "Yellow Summer",
+     "options": {
+      "Warna": "Yellow Summer"
+     },
+     "barcode": "2000000002668",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-BG-005-GRECON",
+     "name": "Green Confetti",
+     "options": {
+      "Warna": "Green Confetti"
+     },
+     "barcode": "2000000002675",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-BG-005-BLUBRE",
+     "name": "Blue Breakfast",
+     "options": {
+      "Warna": "Blue Breakfast"
+     },
+     "barcode": "2000000002682",
+     "stock": 15
+    },
+    {
+     "sku": "PDY-BG-005-PURCHE",
+     "name": "Purple Checkered",
+     "options": {
+      "Warna": "Purple Checkered"
+     },
+     "barcode": "2000000002699",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-BG-005-PINSWI",
+     "name": "Pink Swirl",
+     "options": {
+      "Warna": "Pink Swirl"
+     },
+     "barcode": "2000000002705",
+     "stock": 15
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-knitted-bag-yellow-summer/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-BG-006",
+   "category": "BAGS",
+   "name": "Menari Shoulder Bag (Paddy x Ify Alyssa)",
+   "description": "Shoulder bag edisi kolaborasi Paddy x Ify Alyssa.",
+   "price": 159000,
+   "compare_at_price": 269000,
+   "cost": 71500,
+   "weight_gram": 350,
+   "image": "/products/paddy/pdy-bg-006.webp",
+   "barcode": "2000000002712",
+   "stock": 5,
+   "variants": [],
+   "source_url": "https://paddy.id/product/menari-shoulder-bag-paddy-x-ify-alyssa/",
+   "collections": [
+    "Memori Istimewa Paddy x Ify Alyssa Special Collaboration"
+   ]
+  },
+  {
+   "sku": "PDY-WT-001",
+   "category": "WATCHES",
+   "name": "Paddywatch G Series",
+   "description": "Smartwatch entry-level dengan notifikasi & step counter.",
+   "price": 149000,
+   "compare_at_price": null,
+   "cost": 74500,
+   "weight_gram": 120,
+   "image": "/products/paddy/pdy-wt-001.webp",
+   "barcode": "2000000002729",
+   "stock": 24,
+   "variants": [],
+   "source_url": "https://paddy.id/product/paddywatch-g-series-2/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-WT-002",
+   "category": "WATCHES",
+   "name": "Paddywatch Nea",
+   "description": "Smartwatch Nea dengan layar AMOLED dan bodi metal.",
+   "price": 389000,
+   "compare_at_price": 889000,
+   "cost": 194500,
+   "weight_gram": 150,
+   "image": "/products/paddy/pdy-wt-002.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-WT-002-SIL",
+     "name": "Silver",
+     "options": {
+      "Warna": "Silver"
+     },
+     "barcode": "2000000002736",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-WT-002-ROSGOL",
+     "name": "Rose Gold",
+     "options": {
+      "Warna": "Rose Gold"
+     },
+     "barcode": "2000000002743",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-WT-002-BLA",
+     "name": "Black",
+     "options": {
+      "Warna": "Black"
+     },
+     "barcode": "2000000002750",
+     "stock": 4
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddywatch-nea-silver/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-WT-003",
+   "category": "WATCHES",
+   "name": "Paddy Watch Orion Pro",
+   "description": "Smartwatch Orion Pro — panggilan Bluetooth, SpO2, heart rate.",
+   "price": 379000,
+   "compare_at_price": 899000,
+   "cost": 189500,
+   "weight_gram": 150,
+   "image": "/products/paddy/pdy-wt-003.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-WT-003-ROSGOL",
+     "name": "Rose Gold",
+     "options": {
+      "Warna": "Rose Gold"
+     },
+     "barcode": "2000000002767",
+     "stock": 2
+    },
+    {
+     "sku": "PDY-WT-003-BLA",
+     "name": "Black",
+     "options": {
+      "Warna": "Black"
+     },
+     "barcode": "2000000002774",
+     "stock": 2
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-watch-orion-pro-rose-gold/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-WT-004",
+   "category": "WATCHES",
+   "name": "Paddywatch Hazel Pro",
+   "description": "Smartwatch Hazel Pro layar kotak 1.8 inci.",
+   "price": 169000,
+   "compare_at_price": 899000,
+   "cost": 84500,
+   "weight_gram": 140,
+   "image": "/products/paddy/pdy-wt-004.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-WT-004-ROSGOL",
+     "name": "Rose Gold",
+     "options": {
+      "Warna": "Rose Gold"
+     },
+     "barcode": "2000000002781",
+     "stock": 25
+    },
+    {
+     "sku": "PDY-WT-004-GRE",
+     "name": "Grey",
+     "options": {
+      "Warna": "Grey"
+     },
+     "barcode": "2000000002798",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-WT-004-BLA",
+     "name": "Black",
+     "options": {
+      "Warna": "Black"
+     },
+     "barcode": "2000000002804",
+     "stock": 6
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddywatch-hazel-pro-rose-gold/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-WT-005",
+   "category": "WATCHES",
+   "name": "Paddywatch Orion",
+   "description": "Smartwatch Orion bezel bulat premium.",
+   "price": 799000,
+   "compare_at_price": null,
+   "cost": 415500,
+   "weight_gram": 160,
+   "image": "/products/paddy/pdy-wt-005.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-WT-005-OCEBLU",
+     "name": "Ocean Blue",
+     "options": {
+      "Warna": "Ocean Blue"
+     },
+     "barcode": "2000000002811",
+     "stock": 8
+    },
+    {
+     "sku": "PDY-WT-005-BLA",
+     "name": "Black",
+     "options": {
+      "Warna": "Black"
+     },
+     "barcode": "2000000002828",
+     "stock": 9
+    }
+   ],
+   "source_url": "https://paddy.id/product/orion-navy/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-WT-006",
+   "category": "WATCHES",
+   "name": "Paddywatch O New Generation",
+   "description": "Smartwatch O New Generation.",
+   "price": 488000,
+   "compare_at_price": null,
+   "cost": 244000,
+   "weight_gram": 150,
+   "image": "/products/paddy/pdy-wt-006.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-WT-006-SIL",
+     "name": "Silver",
+     "options": {
+      "Warna": "Silver"
+     },
+     "barcode": "2000000002835",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-WT-006-ROSGOL",
+     "name": "Rose Gold",
+     "options": {
+      "Warna": "Rose Gold"
+     },
+     "barcode": "2000000002842",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-WT-006-BLA",
+     "name": "Black",
+     "options": {
+      "Warna": "Black"
+     },
+     "barcode": "2000000002859",
+     "stock": 6
+    }
+   ],
+   "source_url": "https://paddy.id/product/silver-2/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-ST-001",
+   "category": "STRAPS",
+   "name": "Strap Orion Pro Silicone 20mm",
+   "description": "Strap silicone 20mm untuk Orion Pro / O New Gen.",
+   "price": 65000,
+   "compare_at_price": null,
+   "cost": 19500,
+   "weight_gram": 25,
+   "image": "/products/paddy/pdy-st-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-ST-001-WHIMIL",
+     "name": "White Milk",
+     "options": {
+      "Warna": "White Milk"
+     },
+     "barcode": "2000000002866",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-ST-001-NAV",
+     "name": "Navy",
+     "options": {
+      "Warna": "Navy"
+     },
+     "barcode": "2000000002873",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-ST-001-MOO",
+     "name": "Moonstone",
+     "options": {
+      "Warna": "Moonstone"
+     },
+     "barcode": "2000000002880",
+     "stock": 24
+    },
+    {
+     "sku": "PDY-ST-001-MAG",
+     "name": "Magnolia",
+     "options": {
+      "Warna": "Magnolia"
+     },
+     "barcode": "2000000002897",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-ST-001-JET",
+     "name": "Jetblack",
+     "options": {
+      "Warna": "Jetblack"
+     },
+     "barcode": "2000000002903",
+     "stock": 8
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-watch-strap-orion-silicone-white-milk/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-ST-002",
+   "category": "STRAPS",
+   "name": "Strap Orion Pro Nylon 20mm",
+   "description": "Strap nylon loop 20mm untuk Orion Pro / O New Gen.",
+   "price": 75000,
+   "compare_at_price": null,
+   "cost": 22500,
+   "weight_gram": 25,
+   "image": "/products/paddy/pdy-st-002.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-ST-002-SWEPIN",
+     "name": "Sweet Pink",
+     "options": {
+      "Warna": "Sweet Pink"
+     },
+     "barcode": "2000000002910",
+     "stock": 16
+    },
+    {
+     "sku": "PDY-ST-002-SNOWHI",
+     "name": "Snow White",
+     "options": {
+      "Warna": "Snow White"
+     },
+     "barcode": "2000000002927",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-ST-002-SKYBLU",
+     "name": "Sky Blue",
+     "options": {
+      "Warna": "Sky Blue"
+     },
+     "barcode": "2000000002934",
+     "stock": 14
+    },
+    {
+     "sku": "PDY-ST-002-NAVVES",
+     "name": "Navy Vessel",
+     "options": {
+      "Warna": "Navy Vessel"
+     },
+     "barcode": "2000000002941",
+     "stock": 3
+    },
+    {
+     "sku": "PDY-ST-002-CONGRE",
+     "name": "Concrete Grey",
+     "options": {
+      "Warna": "Concrete Grey"
+     },
+     "barcode": "2000000002958",
+     "stock": 16
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-watch-strap-orion-nylon-sweet-pink/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-ST-003",
+   "category": "STRAPS",
+   "name": "Strap Hazel Pro Nylon 40mm",
+   "description": "Strap nylon loop 40mm untuk Hazel Pro / X New Gen.",
+   "price": 75000,
+   "compare_at_price": null,
+   "cost": 22500,
+   "weight_gram": 25,
+   "image": "/products/paddy/pdy-st-003.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-ST-003-STO",
+     "name": "Stone",
+     "options": {
+      "Warna": "Stone"
+     },
+     "barcode": "2000000002965",
+     "stock": 21
+    },
+    {
+     "sku": "PDY-ST-003-STA",
+     "name": "Starlight",
+     "options": {
+      "Warna": "Starlight"
+     },
+     "barcode": "2000000002972",
+     "stock": 6
+    },
+    {
+     "sku": "PDY-ST-003-PEA",
+     "name": "Peach",
+     "options": {
+      "Warna": "Peach"
+     },
+     "barcode": "2000000002989",
+     "stock": 5
+    },
+    {
+     "sku": "PDY-ST-003-BABBLU",
+     "name": "Baby Blue",
+     "options": {
+      "Warna": "Baby Blue"
+     },
+     "barcode": "2000000002996",
+     "stock": 23
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-watch-strap-hazel-nylon-stone/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-AP-001",
+   "category": "APPARELS",
+   "name": "Paddy Knitwear Cardigan Rajut",
+   "description": "Cardigan rajut all size, bahan katun lembut.",
+   "price": 499000,
+   "compare_at_price": null,
+   "cost": 224500,
+   "weight_gram": 450,
+   "image": "/products/paddy/pdy-ap-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-AP-001-BLUBRE",
+     "name": "Blue Breakfast",
+     "options": {
+      "Warna": "Blue Breakfast"
+     },
+     "barcode": "2000000003009",
+     "stock": 9
+    },
+    {
+     "sku": "PDY-AP-001-SWEGAR",
+     "name": "Sweet Garden",
+     "options": {
+      "Warna": "Sweet Garden"
+     },
+     "barcode": "2000000003016",
+     "stock": 21
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-knitwear-cardigan-rajut-blue-breakfast/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-AP-002",
+   "category": "APPARELS",
+   "name": "Paddy Knitwear Sweater Rajut Pink Swirl",
+   "description": "Sweater rajut all size motif Pink Swirl.",
+   "price": 499000,
+   "compare_at_price": null,
+   "cost": 224500,
+   "weight_gram": 450,
+   "image": "/products/paddy/pdy-ap-002.webp",
+   "barcode": "2000000003023",
+   "stock": 18,
+   "variants": [],
+   "source_url": "https://paddy.id/product/paddy-knitwear-sweater-rajut-pink-swirl/",
+   "collections": []
+  },
+  {
+   "sku": "PDY-PF-001",
+   "category": "PARFUME",
+   "name": "Paddy Parfume",
+   "description": "Body mist Paddy 50ml.",
+   "price": 89000,
+   "compare_at_price": 169000,
+   "cost": 31000,
+   "weight_gram": 120,
+   "image": "/products/paddy/pdy-pf-001.webp",
+   "barcode": null,
+   "stock": null,
+   "variants": [
+    {
+     "sku": "PDY-PF-001-LUL",
+     "name": "Lullababy",
+     "options": {
+      "Warna": "Lullababy"
+     },
+     "barcode": "2000000003030",
+     "stock": 23
+    },
+    {
+     "sku": "PDY-PF-001-SUMPOP",
+     "name": "Summer Popsicle",
+     "options": {
+      "Warna": "Summer Popsicle"
+     },
+     "barcode": "2000000003047",
+     "stock": 13
+    },
+    {
+     "sku": "PDY-PF-001-BLOPEA",
+     "name": "Blooming Peach",
+     "options": {
+      "Warna": "Blooming Peach"
+     },
+     "barcode": "2000000003054",
+     "stock": 10
+    },
+    {
+     "sku": "PDY-PF-001-MILMEL",
+     "name": "Milky Melon",
+     "options": {
+      "Warna": "Milky Melon"
+     },
+     "barcode": "2000000003061",
+     "stock": 5
+    }
+   ],
+   "source_url": "https://paddy.id/product/paddy-parfume-lullababy/",
+   "collections": []
+  }
+ ]
+}

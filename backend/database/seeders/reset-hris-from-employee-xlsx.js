@@ -44,6 +44,7 @@ const DEFAULT_XLSX = path.join(
   "DATABASE - MIZU IN WONDERLAND EMPLOYEE.xlsx"
 );
 const KEEP_EMAILS = [
+  "super@paddy.id",
   "super@arkivworld.com",
   "agus@wit.id",
   "agussugiman@gmail.com",
@@ -369,6 +370,8 @@ async function wipeHrisEmployees(client, dryRun) {
     `DELETE FROM hris.overtime_requests`,
     `DELETE FROM hris.onboarding_checklists`,
     `DELETE FROM hris.offboarding_checklists`,
+    // Periode absensi (closing) ikut direset agar absensi bisa dihapus (trigger periode closed).
+    `DO $$ BEGIN IF to_regclass('hris.attendance_periods') IS NOT NULL THEN DELETE FROM hris.attendance_periods; END IF; END $$`,
     `DELETE FROM hris.attendance`,
     `DELETE FROM hris.employee_shifts`,
     `DELETE FROM hris.employee_schedules`,

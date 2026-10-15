@@ -5,17 +5,20 @@ import { useSearchParams } from "next/navigation";
 import { ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useIamAccess } from "@/components/iam/iam-access-provider";
 import { PurchasingFormHeader } from "@/features/purchasing/components/shared/purchasing-page-header";
+import { IAM } from "@/lib/iam/prefixes";
 import { RM_ROUTES } from "@/lib/purchasing/item-routes";
 import { defaultPurchasePackFor, wholePacksFor } from "@/lib/purchasing/packs";
 import type { POFormData } from "../../api";
 
 /**
- * PO hanya bisa dibuat dari PR yang disetujui. Dari laporan stok rendah (?material_id=&qty=)
+ * Aturan "PO Bahan Baku wajib dari PR" aktif: PO hanya bisa dibuat dari PR yang disetujui. Dari laporan stok rendah (?material_id=&qty=)
  * halaman ini menyarankan qty kemasan dan membuka form PR untuk bahan itu.
  */
 export function PORequiresPR({ lookups }: { lookups: POFormData }) {
   const searchParams = useSearchParams();
+  const canChangeRules = useIamAccess().hasPrefix(IAM.itemsPurchasingSettings);
   const material = lookups.materials.find((m) => m.id === searchParams.get("material_id"));
   const baseQty = Number(searchParams.get("qty")) || 0;
   const pack = material ? defaultPurchasePackFor(material) : undefined;
@@ -50,8 +53,16 @@ export function PORequiresPR({ lookups }: { lookups: POFormData }) {
             <h2 className="text-lg font-semibold text-gray-900">Mulai dari Purchase Request</h2>
             <p className="max-w-md text-sm text-gray-500">
               Buka purchase request yang sudah disetujui lalu gunakan &quot;Buat Purchase Order&quot; untuk memulai PO
-              baru. Pembuatan purchase order secara langsung tidak tersedia di halaman ini.
+              baru. Pembuatan purchase order secara langsung dinonaktifkan oleh aturan di Pengaturan Pembelian.
             </p>
+            {canChangeRules && (
+              <Link
+                href={RM_ROUTES.purchasingSettings}
+                className="inline-block text-sm font-medium text-pink-700 underline-offset-4 hover:underline"
+              >
+                Ubah aturan di Pengaturan Pembelian
+              </Link>
+            )}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link href={RM_ROUTES.purchasingPo}>

@@ -1,5 +1,5 @@
 /**
- * Logika masuk/daftar member Mizu (tanpa UI).
+ * Logika masuk/daftar member Paddy (tanpa UI).
  *
  * Masuk : nomor WhatsApp → POST /otp → kode → POST /verify.
  * Daftar: nama + nomor → POST /register/otp → kode → POST /register.
@@ -120,7 +120,7 @@ export async function requestLoginCode(phone: string, fetcher: Fetch = fetch): P
   const res = await post(fetcher, "/otp", { phone: toApiPhone(phone) });
   if (res.json.success) return sent(res.json, "login");
   if (res.json.code === "not_registered") {
-    throw new MemberAuthError("Nomor ini belum terdaftar sebagai member Mizu.", "not_registered");
+    throw new MemberAuthError("Nomor ini belum terdaftar sebagai member Paddy.", "not_registered");
   }
   throw new MemberAuthError(res.json.error || "Gagal mengirim kode. Coba lagi.", "phone");
 }

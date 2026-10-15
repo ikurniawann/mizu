@@ -34,12 +34,12 @@ describe("buildFlashReportMessage", () => {
   it("meniru struktur laporan manual Operations", () => {
     const msg = buildFlashReportMessage(contoh, "2026-08-22");
     expect(msg).toContain("*Daily Flash Report*");
-    expect(msg).toContain("MIZU");
+    expect(msg).toContain("PADDY");
     expect(msg).toContain("Sabtu, 22 Agustus 2026");
     expect(msg).toContain("Revenue : Rp 8.892.000");
     expect(msg).toContain("Nett Sales : Rp 3.806.000");
     expect(msg).toContain("Discount : Rp 5.086.000");
-    expect(msg).toContain("MIZU Citizen : 0 Card");
+    expect(msg).toContain("PADDY Citizen : 0 Card");
     expect(msg).toContain("Disc 100% : 13 Transaksi");
     // EPIC-043: komplimen dipecah per jenis; baris muncul hanya bila ada
     expect(msg).toContain("KOL Comp : Rp 350.000 (3 Trx)");

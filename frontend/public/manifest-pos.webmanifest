@@ -1,13 +1,13 @@
 {
-  "name": "Mizu POS Kasir",
+  "name": "Paddy POS Kasir",
   "short_name": "POS Kasir",
-  "description": "Mode tablet / kiosk untuk kasir Mizu POS",
+  "description": "Mode tablet / kiosk untuk kasir Paddy POS",
   "start_url": "/dashboard/pos/tablet",
   "scope": "/dashboard/pos/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f3ece2",
-  "theme_color": "#241b16",
+  "background_color": "#fbf5ec",
+  "theme_color": "#e3066f",
   "lang": "id",
   "icons": [
     {

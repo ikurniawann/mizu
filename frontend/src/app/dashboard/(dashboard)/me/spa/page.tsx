@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/require-user";
 import { MySpaPage } from "@/features/spa";
 
-export const metadata = { title: "Tugas Terapis" };
+export const metadata = { title: "Tugas Experience" };
 
 export default async function Page() {
   await requireUser();

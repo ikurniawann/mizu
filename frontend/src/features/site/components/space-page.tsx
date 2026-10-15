@@ -8,7 +8,7 @@ export function SpacePage({ space }: { space: SpaceContent }) {
     <>
       <Section className="pb-6">
         <Container>
-          <SectionHeading as="h1" kicker="Suasana" title={space.title} text={space.intro} />
+          <SectionHeading as="h1" kicker="Suasana toko" title={space.title} text={space.intro} />
         </Container>
       </Section>
       <Section className="pt-4">
@@ -19,7 +19,7 @@ export function SpacePage({ space }: { space: SpaceContent }) {
               className="grid grid-cols-1 items-center gap-6 md:grid-cols-2 md:gap-12 md:[&:nth-child(even)>div:first-child]:order-2"
             >
               <div>
-                <Picture src={photoOr(s.image_url, spacePhoto(s.title, i))} alt={s.title} className="aspect-[4/3] w-full rounded-card" />
+                <Picture src={photoOr(s.image_url, spacePhoto(s.title, i))} alt={s.title} className="aspect-[4/3] w-full rounded-card border-2 border-navy shadow-[5px_5px_0_0_var(--color-navy)]" />
               </div>
               <div className="space-y-3">
                 <h2 className="font-display text-2xl font-semibold md:text-3xl">{s.title}</h2>
@@ -28,8 +28,8 @@ export function SpacePage({ space }: { space: SpaceContent }) {
             </article>
           ))}
           <div className="flex flex-wrap items-center gap-4 pt-4">
-            <BookingButton size="lg">Booking treatment</BookingButton>
-            <p className="text-sm text-muted-foreground">Pilih outlet dan jam yang pas, bayar di outlet.</p>
+            <BookingButton size="lg">Booking Paddy Experience</BookingButton>
+            <p className="text-sm text-muted-foreground">Pilih toko dan jam yang pas, bayar di toko.</p>
           </div>
         </Container>
       </Section>

@@ -493,7 +493,7 @@ func MatchName(query string, labels []string) int {
 	best, bestLen := -1, 1<<30
 	for i, l := range labels {
 		ll := Normalize(l)
-		ok := distinctive // "mizu" alone must not pick the first outlet
+		ok := distinctive // "paddy" alone must not pick the first store
 		for _, w := range words {
 			if !strings.Contains(ll, w) {
 				ok = false
@@ -530,7 +530,8 @@ func MatchName(query string, labels []string) int {
 }
 
 // genericWords carry no choice on their own.
-var genericWords = map[string]bool{"massage": true, "pijat": true, "menit": true, "jam": true, "treatment": true, "paket": true, "mizu": true, "outlet": true, "spa": true, "yang": true, "mau": true, "saja": true, "aja": true}
+var genericWords = map[string]bool{"massage": true, "pijat": true, "menit": true, "jam": true, "treatment": true, "paket": true, "mizu": true, "outlet": true, "spa": true, "yang": true, "mau": true, "saja": true, "aja": true,
+	"paddy": true, "store": true, "toko": true, "studio": true, "layanan": true}
 
 // hasDigit: "1.0", "60", "90" are distinctive even when short.
 func hasDigit(w string) bool {
@@ -542,7 +543,7 @@ func hasDigit(w string) bool {
 	return false
 }
 
-// sharedWords are words every label contains ("mizu", "massage").
+// sharedWords are words every label contains ("paddy", "store").
 func sharedWords(labels []string) map[string]bool {
 	count := map[string]int{}
 	for _, l := range labels {

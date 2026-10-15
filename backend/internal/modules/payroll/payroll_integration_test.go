@@ -123,16 +123,32 @@ func (f *fakeEmployees) Active(context.Context, database.Querier) ([]EmployeeBri
 }
 
 type fakeWorkforce struct {
-	records  map[string]domain.WorkforceRecords
-	holidays map[string]bool
+	// lastRange is the period PeriodRecords was last asked for.
+	lastRange  [2]string
+	records    map[string]domain.WorkforceRecords
+	holidays   map[string]bool
+	placements map[string][]domain.Placement
 }
 
-func (f *fakeWorkforce) PeriodRecords(_ context.Context, _ database.Querier, id, _, _ string) (domain.WorkforceRecords, error) {
+func (f *fakeWorkforce) PeriodRecords(_ context.Context, _ database.Querier, id, start, end string) (domain.WorkforceRecords, error) {
+	f.lastRange = [2]string{start, end}
 	return f.records[id], nil
 }
 
 func (f *fakeWorkforce) Holidays(context.Context, database.Querier, string, string) (map[string]bool, error) {
 	return f.holidays, nil
+}
+
+func (f *fakeWorkforce) Placements(_ context.Context, _ database.Querier, id, _, _ string) ([]domain.Placement, error) {
+	return f.placements[id], nil
+}
+
+// fakeSettings is configuration.app_settings with the company identity.
+type fakeSettings struct{}
+
+func (fakeSettings) GetMany(_ context.Context, _ database.Querier, keys []string) (map[string]*string, error) {
+	name := "CV Uji Payroll"
+	return map[string]*string{"company_legal_name": &name}, nil
 }
 
 type env struct {
@@ -149,7 +165,7 @@ type env struct {
 
 var fixedNow = time.Date(2026, 10, 4, 10, 0, 0, 0, time.UTC)
 
-func setup(t *testing.T) *env {
+func setup(t *testing.T, periods ...AttendancePeriods) *env {
 	t.Helper()
 	deps := testutil.Deps(t, func() time.Time { return fixedNow })
 	hr := testutil.CreateStaff(t, testutil.StaffOptions{Role: "hrd", Menus: map[string][]string{
@@ -166,7 +182,11 @@ func setup(t *testing.T) *env {
 		emps:  &fakeEmployees{byUser: map[string]string{}, briefs: map[string]EmployeeBrief{}, roles: map[string]string{}, companies: map[string]string{}},
 		depts: &fakeDepartments{},
 		work:  &fakeWorkforce{records: map[string]domain.WorkforceRecords{}, holidays: map[string]bool{}}}
-	e.mux = testutil.Mux(NewOn(deps, tx, Ports{Employees: e.emps, Departments: e.depts, Workforce: e.work}))
+	ports := Ports{Employees: e.emps, Departments: e.depts, Workforce: e.work, Settings: fakeSettings{}}
+	if len(periods) > 0 {
+		ports.AttendancePeriods = periods[0]
+	}
+	e.mux = testutil.Mux(NewOn(deps, tx, ports))
 	return e
 }
 

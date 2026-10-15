@@ -59,6 +59,11 @@ export function JournalLinesTable({
                   className={formComboboxClassName}
                   contentClassName="min-w-80"
                 />
+                {line.branch_name ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Toko / cost center: <span className="font-medium text-foreground">{line.branch_name}</span>
+                  </p>
+                ) : null}
               </td>
               <td className="px-2 py-2 align-middle">
                 <NumericInput

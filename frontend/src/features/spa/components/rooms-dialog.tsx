@@ -44,7 +44,7 @@ export function RoomsDialog({ branchId, branchName, onClose }: { branchId: strin
           ) : rooms.error ? (
             <TableNote tone="danger">{rooms.error.message}</TableNote>
           ) : list.length === 0 ? (
-            <TableNote>Belum ada room di outlet ini.</TableNote>
+            <TableNote>Belum ada room di toko ini.</TableNote>
           ) : (
             <Table>
               <TableHeader>

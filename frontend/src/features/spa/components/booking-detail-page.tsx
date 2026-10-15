@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, DoorOpen, Pencil, PlayCircle, Plus, Receipt, Star, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, DoorOpen, Palette, Pencil, PlayCircle, Plus, Receipt, Star, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,7 @@ import {
   bookingTotal,
   canAddItem,
   canCancelBooking,
+  canEditDesign,
   canRescheduleBooking,
   checkoutState,
   eventLabel,
@@ -42,6 +43,8 @@ import {
 import type { Booking, BookingItem, GenderPref } from "../types";
 import { isoToWibLocalInput, wibLocalInputToIso } from "../time";
 import { AddItemDialog, AssignTherapistDialog } from "./item-dialogs";
+import { CaseDesignBadge, CaseDesignCard } from "./case-design/case-design-card";
+import { CaseDesignDialog } from "./case-design/case-design-dialog";
 import { RoomSelectDialog } from "./room-select-dialog";
 import {
   BookingStatusBadge,
@@ -57,7 +60,7 @@ import {
   TimeRange,
 } from "./shared";
 
-const REMOVE_DESCRIPTION = "Treatment ini tidak lagi dihitung dalam total, durasi, dan jadwal booking.";
+const REMOVE_DESCRIPTION = "Layanan ini tidak lagi dihitung dalam total, durasi, dan jadwal booking.";
 
 /** Shared booking detail: Book Order is operational; Booking History is read-only. */
 export function SpaBookingDetailPage({ id, readOnly = false, embedded = false }: { id: string; readOnly?: boolean; embedded?: boolean }) {
@@ -93,7 +96,7 @@ export function BookingDetailDialog({ id, readOnly = false, onClose }: { id: str
       <DialogPanel size="2xl">
         <DialogPanelHeader>
           <DialogPanelTitle>Detail booking</DialogPanelTitle>
-          <DialogPanelDescription>Informasi pelanggan, treatment, pembayaran, dan riwayat booking.</DialogPanelDescription>
+          <DialogPanelDescription>Informasi pelanggan, layanan, pembayaran, dan riwayat booking.</DialogPanelDescription>
         </DialogPanelHeader>
         <DialogPanelBody>
           <SpaBookingDetailPage id={id} readOnly={readOnly} embedded />
@@ -120,6 +123,7 @@ type Dialogs =
   | { kind: "assign" }
   | { kind: "schedule" }
   | { kind: "confirm-item"; item: BookingItem }
+  | { kind: "design"; item: BookingItem }
   | { kind: "add" }
   | { kind: "edit" }
   | { kind: "survey" }
@@ -154,10 +158,10 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
       { bookingId: booking.id, itemId: item.id, input: { action: "cancel" } },
       {
         onSuccess: () => {
-          toast.success("Treatment dihapus dari booking", { description: `${item.treatment_name} — ${item.variant_name}` });
+          toast.success("Layanan dihapus dari booking", { description: `${item.treatment_name} — ${item.variant_name}` });
           close();
         },
-        onError: (err) => toast.error("Hapus treatment gagal", { description: err.message }),
+        onError: (err) => toast.error("Hapus layanan gagal", { description: err.message }),
       }
     );
 
@@ -253,7 +257,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
               <InfoRow label="Nomor HP">
                 <span className="font-mono">{booking.customer_phone || "-"}</span>
               </InfoRow>
-              <InfoRow label="Preferensi terapis">{GENDER_PREF_LABEL[booking.therapist_gender_pref] ?? "-"}</InfoRow>
+              <InfoRow label="Preferensi crew">{GENDER_PREF_LABEL[booking.therapist_gender_pref] ?? "-"}</InfoRow>
               <InfoRow label="Dibuat">{formatDateTime(booking.created_at)}</InfoRow>
               <div className="col-span-2">
                 <InfoRow label="Catatan">
@@ -269,7 +273,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-2 gap-4">
-              <InfoRow label="Total treatment">
+              <InfoRow label="Total layanan">
                 <span className="text-lg tabular-nums">{formatRupiah(total)}</span>
               </InfoRow>
               <InfoRow label="Room">
@@ -308,7 +312,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
                         {booking.deposit.deposit_status === "pending" && booking.deposit.deposit_hold_until
                           ? `menunggu sampai ${formatDateTime(booking.deposit.deposit_hold_until)}`
                           : booking.deposit.deposit_status === "paid"
-                            ? `diterima ${formatDateTime(booking.deposit.deposit_paid_at)} · sisa di outlet ${formatRupiah(booking.deposit.remaining_idr)}`
+                            ? `diterima ${formatDateTime(booking.deposit.deposit_paid_at)} · sisa di toko ${formatRupiah(booking.deposit.remaining_idr)}`
                             : booking.deposit.deposit_status === "waived"
                               ? "dibebaskan"
                               : "tidak dibayar — booking dibatalkan"}
@@ -342,11 +346,11 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
       <Card className="py-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>
-            <p className="text-sm font-medium">Terapis booking</p>
+            <p className="text-sm font-medium">Crew booking</p>
             <p className="text-sm text-muted-foreground">{booking.therapist_name
-              ? `${booking.therapist_name} · Menangani seluruh treatment`
+              ? `${booking.therapist_name} · Menangani seluruh layanan`
               : closed && booking.therapist_names.length > 0
-                ? `Riwayat terapis: ${booking.therapist_names.join(", ")}`
+                ? `Riwayat crew: ${booking.therapist_names.join(", ")}`
                 : "Belum ditugaskan"}</p>
             {booking.therapist_rating != null && (
               <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
@@ -356,28 +360,28 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
             )}
           </div>
           {!readOnly && canAssign && <div className="flex gap-2">
-            <Button size="sm" onClick={() => setDialog({ kind: "assign" })}>{booking.therapist_id ? "Ganti terapis" : "Tugaskan terapis"}</Button>
+            <Button size="sm" onClick={() => setDialog({ kind: "assign" })}>{booking.therapist_id ? "Ganti crew" : "Tugaskan crew"}</Button>
             {booking.therapist_id && <Button size="sm" variant="outline" disabled={assignment.isPending} onClick={() => assignment.mutate(
               { bookingId: booking.id, therapistId: null },
-              { onSuccess: () => toast.success("Terapis booking dilepas"), onError: (err) => toast.error("Gagal melepas terapis", { description: err.message }) }
-            )}>Lepas terapis</Button>}
+              { onSuccess: () => toast.success("Crew booking dilepas"), onError: (err) => toast.error("Gagal melepas crew", { description: err.message }) }
+            )}>Lepas crew</Button>}
           </div>}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-4">
-          <h2 className="text-base font-semibold">Treatment</h2>
+          <h2 className="text-base font-semibold">Layanan</h2>
           {!readOnly && canAddItem(booking) && (
             <Button size="sm" variant="outline" onClick={() => setDialog({ kind: "add" })}>
-              <Plus /> Tambah treatment
+              <Plus /> Tambah layanan
             </Button>
           )}
         </div>
         {items.length === 0 ? (
-          <TableNote>Belum ada treatment.</TableNote>
+          <TableNote>Belum ada layanan.</TableNote>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Treatment</TableHead>
+                <TableHead>Layanan</TableHead>
                 <TableHead>Durasi</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden text-right md:table-cell">Harga</TableHead>
@@ -389,10 +393,20 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
                 const muted = item.status === "cancelled";
                 return (
                   <TableRow key={item.id} className={muted ? "opacity-60" : undefined}>
-                    <TableCell className="max-w-[16rem] whitespace-normal">
+                    <TableCell className="max-w-[20rem] whitespace-normal">
                       <p className="font-medium">{item.treatment_name}</p>
                       <p className="text-xs text-muted-foreground">{item.variant_name}</p>
                       {closed && !booking.therapist_id && item.therapist_name && <p className="text-xs text-muted-foreground">Dikerjakan oleh {item.therapist_name}</p>}
+                      {item.customizable && (
+                        <div className="mt-2 space-y-2">
+                          {item.design ? <CaseDesignCard design={item.design} size="sm" /> : <CaseDesignBadge design={null} />}
+                          {!muted && (
+                            <Button size="xs" variant="soft" onClick={() => setDialog({ kind: "design", item })}>
+                              <Palette /> {item.design ? (readOnly || !canEditDesign(booking, item) ? "Lihat desain" : "Lihat / ubah desain") : readOnly || !canEditDesign(booking, item) ? "Lihat desain" : "Isi desain"}
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="whitespace-normal">
                       <span className="font-medium">{item.duration_min} menit</span>
@@ -476,6 +490,15 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
         />
       )}
       {!readOnly && dialog?.kind === "schedule" && <ScheduleBookingDialog booking={booking} onClose={close} />}
+      {dialog?.kind === "design" && (
+        <CaseDesignDialog
+          bookingId={booking.id}
+          item={dialog.item}
+          customerName={booking.customer_name}
+          editable={!readOnly && canEditDesign(booking, dialog.item)}
+          onClose={close}
+        />
+      )}
       {!readOnly && dialog?.kind === "add" && (
         <AddItemDialog bookingId={booking.id} branchId={booking.branch_id} onClose={close} />
       )}
@@ -488,7 +511,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
           onOpenChange={(open) => !open && close()}
           title={`Hapus ${dialog.item.treatment_name} dari booking?`}
           description={REMOVE_DESCRIPTION}
-          confirmLabel="Hapus treatment"
+          confirmLabel="Hapus layanan"
           cancelLabel="Kembali"
           loading={itemAction.isPending}
           onConfirm={() => runRemoveItem(dialog.item)}
@@ -496,7 +519,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
       )}
       {!readOnly && dialog?.kind === "edit" && <EditBookingDialog booking={booking} onClose={close} />}
       {!readOnly && dialog?.kind === "survey" && <TherapistSurveyDialog
-        therapistName={booking.therapist_name ?? "Terapis booking"}
+        therapistName={booking.therapist_name ?? "Crew booking"}
         pending={checkout.isPending}
         onSubmit={doCheckout}
         onClose={close}
@@ -517,12 +540,12 @@ function TherapistSurveyDialog({ therapistName, pending, onSubmit, onClose }: {
     <Dialog open onOpenChange={(open) => !open && !pending && onClose()}>
       <DialogPanel size="xs">
         <DialogPanelHeader>
-          <DialogPanelTitle>Survei kepuasan terapis</DialogPanelTitle>
-          <DialogPanelDescription>Berikan rating untuk terapis booking sebelum membuka tagihan POS.</DialogPanelDescription>
+          <DialogPanelTitle>Survei kepuasan crew</DialogPanelTitle>
+          <DialogPanelDescription>Berikan rating untuk crew booking sebelum membuka tagihan POS.</DialogPanelDescription>
         </DialogPanelHeader>
         <DialogPanelBody className="space-y-4">
           <p className="text-sm font-medium">{therapistName}</p>
-          <div role="group" aria-label="Rating kepuasan terapis" className="flex gap-2">
+          <div role="group" aria-label="Rating kepuasan crew" className="flex gap-2">
             {[1, 2, 3, 4, 5].map((value) => (
               <button key={value} type="button" aria-label={`${value} bintang`} aria-pressed={rating === value}
                 onClick={() => setRating(value)} disabled={pending}
@@ -567,7 +590,7 @@ function ScheduleBookingDialog({ booking, onClose }: { booking: Booking; onClose
         <DialogPanelForm onSubmit={(event) => { event.preventDefault(); submit(); }}>
           <DialogPanelHeader>
             <DialogPanelTitle>Ubah jadwal booking</DialogPanelTitle>
-            <DialogPanelDescription>Jam akhir mengikuti total durasi treatment. Bentrok terapis akan diperiksa kembali.</DialogPanelDescription>
+            <DialogPanelDescription>Jam akhir mengikuti total durasi layanan. Bentrok crew akan diperiksa kembali.</DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="space-y-3">
             <Field label="Mulai booking (WIB)">
@@ -631,7 +654,7 @@ function EditBookingDialog({ booking, onClose }: { booking: Booking; onClose: ()
             <Field label="Nomor HP">
               <Input value={phone} inputMode="tel" onChange={(e) => setPhone(e.target.value)} required />
             </Field>
-            <Field label="Preferensi terapis" className="sm:col-span-2">
+            <Field label="Preferensi crew" className="sm:col-span-2">
               <select className={SELECT} value={pref} onChange={(e) => setPref(e.target.value as GenderPref)}>
                 {(Object.keys(GENDER_PREF_LABEL) as GenderPref[]).map((g) => (
                   <option key={g} value={g}>

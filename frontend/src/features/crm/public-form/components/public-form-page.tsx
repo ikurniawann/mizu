@@ -15,7 +15,7 @@ export function PublicFormPage({ form }: { form: PublicFormView }) {
   return (
     <main className="relative min-h-screen bg-[#0d111b]">
       <div className="absolute inset-0">
-        <Image src="/brand/mizu-wallpaper.webp" alt="" fill priority className="object-cover opacity-25" sizes="100vw" />
+        <Image src="/brand/paddy-wallpaper.webp" alt="" fill priority className="object-cover opacity-25" sizes="100vw" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0d111b]/80 via-[#10182e]/85 to-[#0d111b]/95" />
       </div>
 
@@ -23,7 +23,7 @@ export function PublicFormPage({ form }: { form: PublicFormView }) {
           `.flex.min-h-screen` yang menimpa latar dengan page-mesh terang. */}
       <div className="relative mx-auto flex min-h-dvh max-w-3xl flex-col px-5 py-10 sm:py-16">
         <div className="flex items-center gap-3">
-          <Image src="/brand/wordmark-black.png" alt="Mizu" width={640} height={165} className="h-7 w-auto" priority />
+          <Image src="/brand/wordmark-black.png" alt="Paddy" width={640} height={165} className="h-7 w-auto" priority />
         </div>
 
         <div className="relative mt-8 rounded-2xl bg-card p-6 shadow-2xl sm:p-8">
@@ -35,7 +35,7 @@ export function PublicFormPage({ form }: { form: PublicFormView }) {
         </div>
 
         <p className="mt-auto pt-10 text-center text-xs text-white/50">
-          © {COPYRIGHT_YEAR} Mizu
+          © {COPYRIGHT_YEAR} Paddy
         </p>
       </div>
     </main>

@@ -1,6 +1,6 @@
 /**
  * Pemformat tampilan bersama: rupiah, angka, tanggal, jam. Rupiah mengikuti
- * "Rp 1.250.000" (dengan spasi, permintaan owner Mizu 13 Okt 2026). Tanggal & jam selalu WIB supaya server
+ * "Rp 1.250.000" (dengan spasi, permintaan owner Paddy 13 Okt 2026). Tanggal & jam selalu WIB supaya server
  * (UTC) dan browser menampilkan hal yang sama.
  */
 

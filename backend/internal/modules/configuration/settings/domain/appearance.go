@@ -54,21 +54,21 @@ type AppearanceFont struct {
 
 // DefaultAppearance is DEFAULT_APPEARANCE.
 var DefaultAppearance = Appearance{
-	PresetID: "mizu",
+	PresetID: "paddy",
 	Base: AppearanceBase{
-		Background: "#fffaf2", Foreground: "#241b16", Card: "#fffaf2", Primary: "#d6b47a", Secondary: "#3d2b20",
-		Destructive: "#b3262c", Border: "#e3dbcc", Input: "#e3dbcc", Ring: "#5a4334",
+		Background: "#fffdf9", Foreground: "#2a1024", Card: "#fffdf9", Primary: "#e3066f", Secondary: "#8b6ae6",
+		Destructive: "#b3262c", Border: "#ece5da", Input: "#ece5da", Ring: "#e3066f",
 	},
 	Sidebar: AppearanceSidebar{
-		Background: "#241b16", Foreground: "#fffaf2", ActiveBackground: "#d6b47a", ActiveForeground: "#3d2b20",
-		Border: "#241b16",
+		Background: "#2a1024", Foreground: "#fffdf9", ActiveBackground: "#e3066f", ActiveForeground: "#ffffff",
+		Border: "#2a1024",
 	},
-	Navbar: AppearanceNavbar{Background: "#f3ece2", Foreground: "#241b16", Border: "#e3dbcc"},
-	Font:   AppearanceFont{Family: "manrope", Size: 16},
+	Navbar: AppearanceNavbar{Background: "#fbf5ec", Foreground: "#2a1024", Border: "#ece5da"},
+	Font:   AppearanceFont{Family: "nunito", Size: 16},
 }
 
 // themePresets are the THEME_PRESETS ids (lib/theme/presets.ts).
-var themePresets = []string{"mizu", "lime", "wonderland", "ocean", "emerald", "graphite", "sunset"}
+var themePresets = []string{"paddy", "lime", "wonderland", "ocean", "emerald", "graphite", "sunset"}
 
 // fontFamilies are the FONT_STACKS keys.
 var fontFamilies = []string{

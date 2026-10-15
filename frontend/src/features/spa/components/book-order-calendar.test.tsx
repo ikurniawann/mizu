@@ -14,7 +14,7 @@ const item: BoardItem = {
 };
 const therapist: BoardTherapist = {
   therapist: { id: "therapist-1", employee_id: "employee-1", full_name: "Sari", nip: null, phone: null,
-    photo_url: null, home_branch_id: "branch-1", home_branch_name: "Mizu", gender: "female", is_active: true },
+    photo_url: null, home_branch_id: "branch-1", home_branch_name: "Paddy", gender: "female", is_active: true },
   shift: { name: "Pagi", start_time: "09:00", end_time: "17:00" }, on_leave: false, items: [],
 };
 let client: QueryClient;
@@ -42,7 +42,7 @@ function openCalendar(rows = [therapist], unassigned = [item]) {
 function dragToTherapist(button: HTMLElement, target?: HTMLElement) {
   const values = new Map<string, string>();
   const dataTransfer = {
-    types: ["application/x-mizu-item"], effectAllowed: "", dropEffect: "",
+    types: ["application/x-paddy-item"], effectAllowed: "", dropEffect: "",
     setData: (type: string, value: string) => values.set(type, value),
     getData: (type: string) => values.get(type) ?? "",
   };
@@ -52,10 +52,10 @@ function dragToTherapist(button: HTMLElement, target?: HTMLElement) {
   fireEvent.drop(column, { dataTransfer });
 }
 
-it("menugaskan treatment dari card terpisah ke kalender tanpa mengubah jadwal", async () => {
+it("menugaskan layanan dari card terpisah ke kalender tanpa mengubah jadwal", async () => {
   const onOpenItem = openCalendar();
   const sidebar = screen.getByRole("complementary", { name: "Belum ditugaskan" });
-  const schedule = screen.getByRole("region", { name: "Jadwal terapis" });
+  const schedule = screen.getByRole("region", { name: "Jadwal crew" });
   expect(schedule).not.toContainElement(sidebar);
   const button = within(sidebar).getByRole("button", { name: /Ayu/ });
   expect(button).toHaveAttribute("draggable", "true");
@@ -68,30 +68,30 @@ it("menugaskan treatment dari card terpisah ke kalender tanpa mengubah jadwal", 
   }]));
 });
 
-it("tetap meminta konfirmasi sebelum drop ke terapis yang cuti", async () => {
+it("tetap meminta konfirmasi sebelum drop ke crew yang cuti", async () => {
   openCalendar([{ ...therapist, on_leave: true }]);
   dragToTherapist(within(screen.getByRole("complementary", { name: "Belum ditugaskan" })).getByRole("button", { name: /Ayu/ }));
   expect(writes).toEqual([]);
-  expect(await screen.findByRole("dialog")).toHaveTextContent("Terapis sedang cuti");
+  expect(await screen.findByRole("dialog")).toHaveTextContent("Crew sedang cuti");
   fireEvent.click(screen.getByRole("button", { name: "Tetap tugaskan" }));
   await waitFor(() => expect(writes).toHaveLength(1));
 });
 
-it("menolak drop booking yang berada di luar shift terapis", () => {
+it("menolak drop booking yang berada di luar shift crew", () => {
   openCalendar([{ ...therapist, shift: { name: "Siang", start_time: "13:00", end_time: "17:00" } }]);
   dragToTherapist(within(screen.getByRole("complementary", { name: "Belum ditugaskan" })).getByRole("button", { name: /Ayu/ }));
   expect(writes).toEqual([]);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-it("menolak drop bila gender terapis tidak sesuai preferensi booking", () => {
+it("menolak drop bila gender crew tidak sesuai preferensi booking", () => {
   openCalendar([therapist], [{ ...item, therapist_gender_pref: "male" }]);
   dragToTherapist(within(screen.getByRole("complementary", { name: "Belum ditugaskan" })).getByRole("button", { name: /Ayu/ }));
   expect(writes).toEqual([]);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-it("tetap dapat memindahkan treatment dari kolom terapis lain", async () => {
+it("tetap dapat memindahkan layanan dari kolom crew lain", async () => {
   const assigned = { ...item, status: "assigned" as const, therapist_id: "therapist-2" };
   openCalendar([therapist, {
     ...therapist, therapist: { ...therapist.therapist, id: "therapist-2", full_name: "Dewi" }, items: [assigned],
@@ -100,7 +100,7 @@ it("tetap dapat memindahkan treatment dari kolom terapis lain", async () => {
   await waitFor(() => expect(writes[0]?.input).toEqual({ therapist_id: "therapist-1" }));
 });
 
-it("menggunakan avatar inisial saat foto terapis gagal dimuat", () => {
+it("menggunakan avatar inisial saat foto crew gagal dimuat", () => {
   openCalendar([{ ...therapist, therapist: { ...therapist.therapist, photo_url: "https://example.com/photos/sari.jpg" } }]);
   const photo = screen.getByRole("img", { name: "Foto Sari" });
   expect(photo).toHaveAttribute("src", "https://example.com/photos/sari.jpg");
@@ -127,11 +127,11 @@ it("menampilkan garis dan jam slot 15 menit yang sama dengan hasil klik", () => 
   expect(within(column as HTMLElement).queryByText("10:30")).not.toBeInTheDocument();
 });
 
-it.each([{ label: "kosong", unassigned: [] }, { label: "berisi", unassigned: [item] }])("melepas terapis saat treatment di-drop kembali ke card kiri ($label)", async ({ unassigned }) => {
+it.each([{ label: "kosong", unassigned: [] }, { label: "berisi", unassigned: [item] }])("melepas crew saat layanan di-drop kembali ke card kiri ($label)", async ({ unassigned }) => {
   const assigned = { ...item, id: "assigned-1", status: "assigned" as const, therapist_id: "therapist-1", booking_status: "assigned" as const };
   openCalendar([{ ...therapist, items: [assigned] }], unassigned);
   const sidebar = screen.getByRole("complementary", { name: "Belum ditugaskan" });
-  const schedule = screen.getByRole("region", { name: "Jadwal terapis" });
+  const schedule = screen.getByRole("region", { name: "Jadwal crew" });
   dragToTherapist(within(schedule).getByRole("button", { name: /Ayu/ }), sidebar);
   await waitFor(() => expect(writes).toEqual([{
     url: "/api/spa/bookings/booking-1/therapist", method: "PUT", input: { therapist_id: null },
@@ -144,7 +144,7 @@ it.each([
   { ...item, status: "completed" as const, therapist_id: "therapist-1" },
   { ...item, status: "assigned" as const, therapist_id: "therapist-1", booking_status: "expired" as const },
   item,
-])("mengabaikan drop balik untuk treatment yang tidak bisa dilepas (%j)", async (blocked) => {
+])("mengabaikan drop balik untuk layanan yang tidak bisa dilepas (%j)", async (blocked) => {
   openCalendar([{ ...therapist, items: blocked.therapist_id ? [blocked] : [] }], blocked.therapist_id ? [] : [blocked]);
   await act(async () => {
     dragToTherapist(screen.getByRole("button", { name: /Ayu/ }), screen.getByRole("complementary", { name: "Belum ditugaskan" }));

@@ -1,0 +1,46 @@
+import { apiDelete, apiGet, apiPatch, apiPost, buildListUrl } from "@/lib/api-client";
+import type {
+  BulkPlacementPayload,
+  ClockPlacements,
+  Placement,
+  PlacementOverviewFilter,
+  PlacementOverviewRow,
+  PlacementPayload,
+  StoreBranch,
+} from "./types";
+
+export const fetchStoreBranches = () =>
+  apiGet<{ data: StoreBranch[] }>("/api/hris/branches").then((res) => res.data ?? []);
+
+export const fetchEmployeePlacements = (employeeId: string) =>
+  apiGet<{ data: Placement[] }>(`/api/hris/employees/${employeeId}/placements`).then((res) => res.data ?? []);
+
+export const fetchPlacementOverview = (filter: PlacementOverviewFilter) =>
+  apiGet<{ data: PlacementOverviewRow[] }>(
+    buildListUrl("/api/hris/employee-placements", {
+      branch_id: filter.branch_id,
+      unplaced: filter.unplaced ? "true" : undefined,
+      q: filter.q,
+      include_ended: filter.include_ended ? "true" : undefined,
+    })
+  ).then((res) => res.data ?? []);
+
+export const createPlacement = (employeeId: string, payload: PlacementPayload) =>
+  apiPost<{ data: Placement; message?: string }>(`/api/hris/employees/${employeeId}/placements`, payload);
+
+export const updatePlacement = (id: string, payload: PlacementPayload) =>
+  apiPatch<{ data: Placement; message?: string }>(`/api/hris/employee-placements/${id}`, payload);
+
+export const deletePlacement = (id: string) => apiDelete(`/api/hris/employee-placements/${id}`);
+
+export const bulkPlacement = (payload: BulkPlacementPayload) =>
+  apiPost<{ data: { created: number; skipped: number }; message?: string }>(
+    "/api/hris/employee-placements/bulk",
+    payload
+  );
+
+/** Toko yang bisa dipilih saat clock-in; employeeId kosong = karyawan yang login. */
+export const fetchClockPlacements = (employeeId?: string) =>
+  apiGet<{ data: ClockPlacements }>(
+    buildListUrl("/api/hris/me/placements", { employee_id: employeeId })
+  ).then((res) => res.data ?? { placements: [], default_branch_id: null });

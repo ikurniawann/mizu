@@ -88,7 +88,7 @@ export function AssignTherapistDialog({
       { bookingId, therapistId },
       {
         onSuccess: () => {
-          toast.success("Terapis ditugaskan", { description: `${name} · ${item.treatment_name}` });
+          toast.success("Crew ditugaskan", { description: `${name} · ${item.treatment_name}` });
           onClose();
         },
         onError: (err) => toast.error("Penugasan ditolak", { description: err.message }),
@@ -99,20 +99,20 @@ export function AssignTherapistDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogPanel size="md">
         <DialogPanelHeader>
-          <DialogPanelTitle>Tugaskan terapis</DialogPanelTitle>
+          <DialogPanelTitle>Tugaskan crew</DialogPanelTitle>
           <DialogPanelDescription>
-            Seluruh treatment dalam booking · {formatDate(item.starts_at)}{" "}
+            Seluruh layanan dalam booking · {formatDate(item.starts_at)}{" "}
             <TimeRange start={item.starts_at} end={item.ends_at} />
-            . Terapis yang bentrok jadwal tidak dapat dipilih.
+            . Crew yang bentrok jadwal tidak dapat dipilih.
           </DialogPanelDescription>
         </DialogPanelHeader>
         <DialogPanelBody className="space-y-2">
           {availability.isLoading ? (
-            <TableNote>Memeriksa ketersediaan terapis…</TableNote>
+            <TableNote>Memeriksa ketersediaan crew…</TableNote>
           ) : availability.error ? (
             <TableNote tone="danger">{availability.error.message}</TableNote>
           ) : rows.length === 0 ? (
-            <TableNote>Tidak ada terapis aktif untuk outlet ini pada tanggal tersebut.</TableNote>
+            <TableNote>Tidak ada crew aktif untuk toko ini pada tanggal tersebut.</TableNote>
           ) : (
             rows.map((row) => {
               const t = row.therapist;
@@ -187,18 +187,18 @@ export function AddItemDialog({
   const add = useAddBookingItem(bookingId);
 
   const submit = () => {
-    if (!variantId) return setError("Pilih treatment.");
+    if (!variantId) return setError("Pilih layanan.");
     setError(null);
     add.mutate(
       { variant_id: variantId },
       {
         onSuccess: () => {
-          toast.success("Treatment ditambahkan");
+          toast.success("Layanan ditambahkan");
           onClose();
         },
         onError: (err) => {
           setError(err.message);
-          toast.error("Treatment gagal ditambahkan", { description: err.message });
+          toast.error("Layanan gagal ditambahkan", { description: err.message });
         },
       }
     );
@@ -214,13 +214,13 @@ export function AddItemDialog({
           }}
         >
           <DialogPanelHeader>
-            <DialogPanelTitle>Tambah treatment</DialogPanelTitle>
-            <DialogPanelDescription>Treatment mengikuti terapis booking. Ketersediaan terapis diperiksa kembali untuk jadwal yang bertambah.</DialogPanelDescription>
+            <DialogPanelTitle>Tambah layanan</DialogPanelTitle>
+            <DialogPanelDescription>Layanan mengikuti crew booking. Ketersediaan crew diperiksa kembali untuk jadwal yang bertambah.</DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="space-y-4">
-            <Field label="Treatment">
+            <Field label="Layanan">
               <select className={SELECT} value={variantId} onChange={(e) => setVariantId(e.target.value)} required>
-                <option value="">{treatments.isLoading ? "Memuat…" : "Pilih treatment…"}</option>
+                <option value="">{treatments.isLoading ? "Memuat…" : "Pilih layanan…"}</option>
                 {options.map((o) => (
                   <option key={o.variant.id} value={o.variant.id}>
                     {o.label} · {formatRupiah(variantPrice(o.variant, branchId))}

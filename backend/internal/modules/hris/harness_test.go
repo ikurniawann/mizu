@@ -208,6 +208,19 @@ func (fakePayroll) LoanUpdatesSince(context.Context, database.Querier, string, *
 	return 0, nil
 }
 
+// fakePeriodRuns are the payroll runs fakePayroll reports (tests set it).
+var fakePeriodRuns []PeriodRun
+
+func (fakePayroll) PeriodRuns(_ context.Context, _ database.Querier, year int) ([]PeriodRun, error) {
+	var out []PeriodRun
+	for _, r := range fakePeriodRuns {
+		if r.Year == year {
+			out = append(out, r)
+		}
+	}
+	return out, nil
+}
+
 type fakeSalary struct{}
 
 func (fakeSalary) ActiveBaseSalary(context.Context, database.Querier, string) (*string, error) {

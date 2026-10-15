@@ -4,6 +4,12 @@ import type { DbClient } from "@/lib/pg/types";
 import type { PurchasingModuleType } from "@/lib/purchasing/module-scope";
 import { computePoTotals, sumPoLines } from "@/lib/purchasing/po-totals";
 import {
+  DEFAULT_PURCHASING_SETTINGS,
+  poRequiresPr,
+  poRequiresPrMessage,
+  type PurchasingSettings,
+} from "@/lib/purchasing/po-rules";
+import {
   generalPoCreateSchema,
   productPoCreateSchema,
   rawMaterialPoCreateSchema,
@@ -177,15 +183,19 @@ export function buildPoItemRows(poId: string, items: PoCreateLine[]) {
   });
 }
 
-/** Buat PO draft (+ item) dan tandai PR asal sebagai converted. */
+/**
+ * Buat PO draft (+ item) dan tandai PR asal sebagai converted. Tanpa PR, aturan
+ * Pengaturan Pembelian (`loadRules`) menentukan apakah PO modul ini boleh dibuat langsung.
+ */
 export async function createPurchaseOrder(
   db: DbClient,
   moduleType: PurchasingModuleType,
   input: PoCreateInput,
-  scope: UserScope | null
+  scope: UserScope | null,
+  loadRules: () => Promise<PurchasingSettings> = async () => DEFAULT_PURCHASING_SETTINGS
 ) {
-  if (moduleType === "raw_material" && !input.pr_id) {
-    throw ApiError.badRequest("Purchase order must be created from an approved purchase request");
+  if (!input.pr_id && poRequiresPr(moduleType, await loadRules())) {
+    throw ApiError.badRequest(poRequiresPrMessage(moduleType));
   }
 
   const { companyId, branchId } = await resolvePoBusinessIds(db, input, scope);

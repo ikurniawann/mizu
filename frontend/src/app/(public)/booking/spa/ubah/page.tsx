@@ -3,8 +3,8 @@ import { PublicBookingReschedule } from "@/features/spa/components/public-bookin
 import { SiteLayout } from "@/features/site/site-layout";
 
 export const metadata: Metadata = {
-  title: "Ubah jadwal booking — Mizu",
-  description: "Pindahkan jadwal booking Mizu sendiri sampai 1 jam sebelum jadwal dengan kode booking dan nomor WhatsApp.",
+  title: "Ubah jadwal booking — Paddy",
+  description: "Pindahkan jadwal booking Paddy Experience sendiri sampai 1 jam sebelum jadwal dengan kode booking dan nomor WhatsApp.",
   robots: { index: false, follow: false },
 };
 

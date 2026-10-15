@@ -82,6 +82,12 @@ function createFakeDb(responses: Record<string, FakeResult[]>) {
   return { db, calls };
 }
 
+// Aturan Pengaturan Pembelian (configuration.app_settings) tanpa DB sungguhan.
+let poRules = { po_requires_pr_raw_material: true, po_requires_pr_product: false };
+vi.mock("@/lib/purchasing/po-rules-server", () => ({
+  getPurchasingSettings: vi.fn(async () => poRules),
+}));
+
 vi.mock("@/lib/pg/create-client", () => ({
   createServerPgClient: vi.fn(async () => fakeDbRef.db),
 }));
@@ -257,6 +263,7 @@ describe("POST /api/purchasing/po — variant SKU validation (EPIC-047 Fase 2)",
     ]);
   });
   it("rejects a raw-material PO without an approved PR before any query (400)", async () => {
+    poRules = { po_requires_pr_raw_material: true, po_requires_pr_product: false };
     fakeDbRef = createFakeDb({});
     const { POST } = await import("./route");
     const res = await POST(
@@ -269,8 +276,48 @@ describe("POST /api/purchasing/po — variant SKU validation (EPIC-047 Fase 2)",
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({
       success: false,
-      error: "Purchase order must be created from an approved purchase request",
+      error: "PO bahan baku harus dibuat dari purchase request yang disetujui (aturan di Pengaturan Pembelian)",
     });
     expect(fakeDbRef.calls).toEqual([]);
+  });
+
+  it("rejects a product PO without PR when the product rule is on (400)", async () => {
+    poRules = { po_requires_pr_raw_material: false, po_requires_pr_product: true };
+    fakeDbRef = createFakeDb({});
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({ ...basePayload, items: [{ product_id: KAOS_003, qty_ordered: 1, harga_satuan: 1000 }] })
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      success: false,
+      error: "PO produk harus dibuat dari purchase request yang disetujui (aturan di Pengaturan Pembelian)",
+    });
+    expect(fakeDbRef.calls).toEqual([]);
+  });
+
+  it("creates a raw-material PO without PR when the rule is off (201)", async () => {
+    poRules = { po_requires_pr_raw_material: false, po_requires_pr_product: false };
+    fakeDbRef = createFakeDb({
+      purchase_orders: [
+        { data: [], error: null },
+        { data: { id: "po-direct", nomor_po: "PO-202609-0001", pr_id: null }, error: null },
+      ],
+      purchase_order_items: [{ data: null, error: null }],
+    });
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({
+        supplier_id: VENDOR_ID,
+        tanggal_po: "2026-09-10",
+        items: [{ raw_material_id: KAOS_001, qty_ordered: 2, harga_satuan: 1000 }],
+      })
+    );
+    expect(res.status).toBe(201);
+    const inserted = fakeDbRef.calls.find((c) => c.table === "purchase_orders" && c.action === "insert")
+      ?.payload as { module_type: string; supplier_id: string; pr_id?: string };
+    expect(inserted).toEqual(expect.objectContaining({ module_type: "raw_material", supplier_id: VENDOR_ID }));
+    expect(inserted.pr_id).toBeUndefined();
+    expect(fakeDbRef.calls.some((c) => c.table === "purchase_requests")).toBe(false);
   });
 });

@@ -65,7 +65,7 @@ export function SpaBookingsPage() {
       <PageHeader
         kicker="Laporan"
         title="Booking History"
-        description="Booking treatment semua outlet. Status layanan dan status pembayaran ditampilkan terpisah — selesai belum tentu lunas."
+        description="Booking layanan semua toko. Status layanan dan status pembayaran ditampilkan terpisah — selesai belum tentu lunas."
         actions={
           <Link
             href="/dashboard/spa/waitlist"
@@ -88,7 +88,7 @@ export function SpaBookingsPage() {
           placeholder="Cari kode, nama, atau HP"
           aria-label="Cari booking"
         />
-        <OutletSelect outlets={outlets.data ?? []} value={branchId} onChange={reset(setBranchId)} className={SELECT} allLabel="Semua outlet" />
+        <OutletSelect outlets={outlets.data ?? []} value={branchId} onChange={reset(setBranchId)} className={SELECT} allLabel="Semua toko" />
         <Input type="date" value={from} max={to || undefined} onChange={(e) => reset(setFrom)(e.target.value)} aria-label="Dari tanggal" />
         <Input type="date" value={to} min={from || undefined} onChange={(e) => reset(setTo)(e.target.value)} aria-label="Sampai tanggal" />
         <select className={SELECT} value={status} onChange={(e) => reset(setStatus)(e.target.value as BookingStatus | "")} aria-label="Status layanan">
@@ -110,7 +110,7 @@ export function SpaBookingsPage() {
       </div>
       <p className="text-xs text-muted-foreground">
         Periode jadwal {from ? formatDate(from) : "—"} s.d. {to ? formatDate(to) : "—"} (WIB)
-        {branchId ? ` · ${outlets.data?.find((o) => o.branch_id === branchId)?.branch_name ?? ""}` : " · semua outlet"}
+        {branchId ? ` · ${outlets.data?.find((o) => o.branch_id === branchId)?.branch_name ?? ""}` : " · semua toko"}
       </p>
 
       <Card className="py-0">
@@ -131,8 +131,8 @@ export function SpaBookingsPage() {
                 <TableRow>
                   <TableHead>Booking</TableHead>
                   <TableHead>Pelanggan</TableHead>
-                  <TableHead className="hidden md:table-cell">Outlet</TableHead>
-                  <TableHead className="hidden lg:table-cell">Terapis</TableHead>
+                  <TableHead className="hidden md:table-cell">Toko</TableHead>
+                  <TableHead className="hidden lg:table-cell">Crew</TableHead>
                   <TableHead>Layanan</TableHead>
                   <TableHead>Pembayaran</TableHead>
                   <TableHead className="text-right">Total</TableHead>
@@ -157,7 +157,7 @@ export function SpaBookingsPage() {
                     <TableCell className="hidden md:table-cell">{b.branch_name}</TableCell>
                     <TableCell className="hidden max-w-[14rem] whitespace-normal lg:table-cell">
                       <p className="text-sm">{b.therapist_name ?? (b.therapist_names.length ? b.therapist_names.join(", ") : "—")}</p>
-                      <p className="text-xs text-muted-foreground">{b.item_count} treatment</p>
+                      <p className="text-xs text-muted-foreground">{b.item_count} layanan</p>
                     </TableCell>
                     <TableCell>
                       <BookingStatusBadge status={b.status} />

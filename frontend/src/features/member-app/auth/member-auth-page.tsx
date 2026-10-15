@@ -300,7 +300,7 @@ function OtpStep({
         {sent.switchedToLogin ? (
           <p className="mt-3 flex items-start gap-2 rounded-xl bg-nh-raised p-3 text-sm">
             <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-nh-ok" />
-            Nomor ini sudah punya akun Mizu — masukkan kode untuk langsung masuk.
+            Nomor ini sudah punya akun Paddy — masukkan kode untuk langsung masuk.
           </p>
         ) : null}
       </header>
@@ -319,7 +319,7 @@ function OtpStep({
           </p>
         ) : !sent.waDelivered && !sent.devBypass ? (
           <p className="rounded-xl bg-nh-warn/10 p-3 text-sm text-nh-warn">
-            Kode belum berhasil dikirim ke WhatsApp. Tunggu sebentar lalu kirim ulang, atau hubungi outlet Mizu.
+            Kode belum berhasil dikirim ke WhatsApp. Tunggu sebentar lalu kirim ulang, atau hubungi Paddy Store.
           </p>
         ) : null}
         {problem ? <ProblemBox problem={problem} onLogin={onGoLogin} /> : null}
@@ -357,19 +357,19 @@ function Shell({ children }: { children: ReactNode }) {
       <div className="flex min-h-dvh">
         <aside className="relative hidden flex-1 overflow-hidden bg-nh-ink lg:flex lg:flex-col lg:justify-between lg:p-12">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/brand/mizu-wallpaper.webp")} alt="" className="absolute inset-0 size-full object-cover opacity-80" />
+          <img src={asset("/brand/paddy-wallpaper.webp")} alt="" className="absolute inset-0 size-full object-cover" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/brand/lockup-white.png")} alt="Mizu" className="relative w-80" />
+          <img src={asset("/brand/lockup-white.png")} alt="Paddy" className="relative w-80" />
           <div className="relative text-white">
-            <p className="nh-display text-5xl leading-tight">Rest. Relax.</p>
-            <p className="nh-display text-5xl leading-tight text-nh-lime italic">Rejuvenate.</p>
-            <p className="mt-4 max-w-sm text-white/70">Mizu Family Massage &amp; Reflexology — Mizu 1.0 Westhoff &amp; Mizu Signature Riau, Bandung.</p>
+            <p className="nh-display text-5xl leading-tight [text-shadow:3px_3px_0_#232c6b]">Your Adorable</p>
+            <p className="nh-display text-5xl leading-tight text-nh-lime [text-shadow:3px_3px_0_#232c6b]">Companion.</p>
+            <p className="mt-4 max-w-sm font-semibold text-white/90">Happy shopping, Paddy Besties! Paddy Store PVJ &amp; Paddy Store Kopo, Bandung.</p>
           </div>
         </aside>
         <main className="flex w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-8 lg:max-w-xl lg:justify-center lg:px-16">
           <Link href="/" className="mb-8 w-fit lg:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={asset("/brand/wordmark-black.png")} alt="Mizu" className="h-8 w-auto" />
+            <img src={asset("/brand/wordmark-black.png")} alt="Paddy" className="h-8 w-auto" />
           </Link>
           <div className="mx-auto flex w-full max-w-sm flex-col gap-5">{children}</div>
         </main>
@@ -455,7 +455,7 @@ function Legal() {
       <Link href="/privacy" className="underline underline-offset-2">
         Kebijakan Privasi
       </Link>{" "}
-      Mizu.
+      Paddy.
     </p>
   );
 }

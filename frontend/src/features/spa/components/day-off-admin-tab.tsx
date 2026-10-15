@@ -41,7 +41,7 @@ export function DayOffAdminTab({ outlets }: { outlets: Outlet[] }) {
       </div>
       {!branch ? (
         <Card className="py-0">
-          <TableNote>Belum ada outlet spa.</TableNote>
+          <TableNote>Belum ada toko experience.</TableNote>
         </Card>
       ) : data.isLoading ? (
         <SkeletonTable columns={4} rows={6} />
@@ -86,7 +86,7 @@ function QuotaForm({ data }: { data: DayOffMonth }) {
       <div>
         <p className="font-semibold">Kuota hari libur</p>
         <p className="text-xs text-muted-foreground">
-          Pengajuan libur ditolak otomatis bila membuat terapis wanita atau pria yang masuk di bawah minimal. Libur tetap dari jadwal shift HRIS ikut dihitung dalam batas per minggu.
+          Pengajuan libur ditolak otomatis bila membuat crew wanita atau pria yang masuk di bawah minimal. Libur tetap dari jadwal shift HRIS ikut dihitung dalam batas per minggu.
         </p>
       </div>
       <form
@@ -96,11 +96,11 @@ function QuotaForm({ data }: { data: DayOffMonth }) {
           submit();
         }}
       >
-        <Field label="Min. terapis wanita masuk / hari">
-          <Input type="number" min={0} max={100} value={female} onChange={(e) => setFemale(e.target.value)} aria-label="Minimal terapis wanita" />
+        <Field label="Min. crew wanita masuk / hari">
+          <Input type="number" min={0} max={100} value={female} onChange={(e) => setFemale(e.target.value)} aria-label="Minimal crew wanita" />
         </Field>
-        <Field label="Min. terapis pria masuk / hari">
-          <Input type="number" min={0} max={100} value={male} onChange={(e) => setMale(e.target.value)} aria-label="Minimal terapis pria" />
+        <Field label="Min. crew pria masuk / hari">
+          <Input type="number" min={0} max={100} value={male} onChange={(e) => setMale(e.target.value)} aria-label="Minimal crew pria" />
         </Field>
         <Field label="Maks. libur / minggu">
           <Input type="number" min={0} max={7} value={perWeek} onChange={(e) => setPerWeek(e.target.value)} aria-label="Maksimal libur per minggu" />

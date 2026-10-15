@@ -86,4 +86,23 @@ func TestPayrollAdapters(t *testing.T) {
 	if _, err := ports.Workforce.Holidays(ctx, tx, "2099-01-01", "2099-12-31"); err != nil {
 		t.Fatal(err)
 	}
+	// Store placements running in the period (an ended one is left out) and
+	// the attendance store with its work hours.
+	_, err = tx.Exec(ctx, `INSERT INTO hris.employee_placements (employee_id, branch_id, is_primary, start_date, end_date)
+		VALUES ($1, $2, true, '2099-01-01', NULL)`, worker, branch)
+	must(err)
+	_, err = tx.Exec(ctx, `UPDATE hris.attendance SET branch_id = $2 WHERE employee_id = $1`, worker, branch)
+	must(err)
+	placements, err := ports.Workforce.Placements(ctx, tx, worker, "2099-06-01", "2099-06-30")
+	if err != nil || len(placements) != 1 || placements[0].BranchID != branch || !placements[0].IsPrimary || placements[0].End != nil {
+		t.Fatalf("placements %+v %v", placements, err)
+	}
+	if ended, _ := ports.Workforce.Placements(ctx, tx, worker, "2098-06-01", "2098-06-30"); len(ended) != 0 {
+		t.Fatalf("placements before start %+v", ended)
+	}
+	rec, err = ports.Workforce.PeriodRecords(ctx, tx, worker, "2099-06-01", "2099-06-30")
+	must(err)
+	if a := rec.Attendance[0]; a.BranchID == nil || *a.BranchID != branch {
+		t.Fatalf("attendance store %+v", a)
+	}
 }

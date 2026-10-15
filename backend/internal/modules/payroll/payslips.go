@@ -46,7 +46,7 @@ func (s *service) listPayslips(ctx context.Context, a *actor, employeeParam, run
 			where = append(where, "d.payroll_run_id IN (SELECT id FROM hris.payroll_runs WHERE "+period.col+" = $"+itoa(len(args))+")")
 		}
 	}
-	sql := `SELECT d.*, ` + payslipRunEmbed + ` FROM hris.payroll_details d`
+	sql := `SELECT d.*, ` + payslipRunEmbed + `, ` + detailAllocationsJSON("d") + ` AS allocations FROM hris.payroll_details d`
 	if len(where) > 0 {
 		sql += " WHERE " + strings.Join(where, " AND ")
 	}

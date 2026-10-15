@@ -52,7 +52,7 @@ func TestDefaultsAreSpaCopy(t *testing.T) {
 	for _, key := range Keys() {
 		walk(key, Defaults[key])
 	}
-	if got := Defaults["social"]["instagram"]; got != "https://instagram.com/mizufamily.id" {
+	if got := Defaults["social"]["instagram"]; got != "https://www.instagram.com/paddy.id/" {
 		t.Fatalf("instagram %v", got)
 	}
 }
@@ -63,7 +63,7 @@ func TestMergeKeepsDefaultsForMissingFields(t *testing.T) {
 		"partners": []any{map[string]any{"name": "Mitra", "logo_url": "/x.png"}},
 	})
 	hero := got["hero"].(map[string]any)
-	if hero["title"] != "Judul baru" || hero["cta_label"] != "Booking Sekarang" {
+	if hero["title"] != "Judul baru" || hero["cta_label"] != "Booking Paddy Experience" {
 		t.Fatalf("hero %v", hero)
 	}
 	if len(got["partners"].([]any)) != 1 || len(got["pillars"].([]any)) != 3 {

@@ -52,7 +52,7 @@ describe("buildReservationQueueWaMessage", () => {
       timeLabel: "19:00",
       paxCount: 2,
       tableLabel: "T-12",
-      merchantName: "Mizu",
+      merchantName: "Paddy",
     });
     expect(msg).toContain("Meja: T-12");
   });

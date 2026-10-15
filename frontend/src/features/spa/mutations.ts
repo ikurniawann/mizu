@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { publicSpaApi, spaApi } from "./api";
 import { spaKeys } from "./query-keys";
+import type { CaseDesign } from "./experience";
 import type {
   AssistInput,
   Booking,
@@ -84,6 +85,16 @@ export const useAddBookingItem = (id: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: BookingItemInput) => spaApi.addItem(id, input),
+    onSuccess: (booking) => bookingChanged(qc, booking),
+  });
+};
+
+/** Simpan/hapus desain custom case satu layanan booking (`design: null` = hapus). */
+export const useSetItemDesign = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, itemId, design }: { bookingId: string; itemId: string; design: CaseDesign | null }) =>
+      spaApi.setItemDesign(bookingId, itemId, design),
     onSuccess: (booking) => bookingChanged(qc, booking),
   });
 };

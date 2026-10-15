@@ -4,7 +4,7 @@ import { userHasIamAction } from "@/lib/iam/has-menu";
 import { IAM } from "@/lib/iam/prefixes";
 import { SpaRushHourPage } from "@/features/spa";
 
-export const metadata = { title: "Spa Report · Rush Hour" };
+export const metadata = { title: "Experience Report · Rush Hour" };
 
 export default async function Page() {
   const user = await requireIamPage(IAM.spaRushHour);

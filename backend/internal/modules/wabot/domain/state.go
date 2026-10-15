@@ -43,7 +43,7 @@ type VariantOpt struct {
 	Price       float64 `json:"price"`
 }
 
-// Label is "Balinese Massage · 60 menit".
+// Label is "Custom Case Design · 60 menit".
 func (v VariantOpt) Label() string { return v.Treatment + " · " + v.Variant }
 
 // Person is one guest's chosen variant. SlotISO is set only when the group

@@ -112,6 +112,7 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/bookings/{id}/status", iam.SpaBookings, h.bookingStatus),
 		staff("POST "+p+"/bookings/{id}/items", iam.SpaBookings, h.addItem),
 		staff("PATCH "+p+"/bookings/{id}/items/{itemId}", iam.SpaBookings, h.itemAction),
+		staff("PUT "+p+"/bookings/{id}/items/{itemId}/design", iam.SpaBookings, h.setItemDesign),
 		staff("POST "+p+"/bookings/{id}/cancel", iam.SpaBookings, h.cancelBooking),
 		staff("POST "+p+"/bookings/{id}/deposit", iam.SpaBookings, h.bookingDeposit),
 		staff("PUT "+p+"/bookings/{id}/room", iam.SpaBookings, h.setBookingRoom),
@@ -165,6 +166,7 @@ func (h *Handler) Routes() []module.Route {
 		self("GET "+p+"/me/commissions", h.myCommissions),
 
 		public("GET "+publicPrefix+"/outlets", h.publicOutlets),
+		public("GET "+publicPrefix+"/experience-catalog", h.experienceCatalog),
 		public("GET "+publicPrefix+"/outlets/{branchId}/treatments", h.publicTreatments),
 		public("GET "+publicPrefix+"/outlets/{branchId}/slots", h.publicSlots),
 		public("GET "+publicPrefix+"/outlets/{branchId}/therapists", h.publicTherapists),
@@ -394,11 +396,12 @@ func treatmentFields(f *validate.Form, partial bool) treatmentInput {
 		Code: f.Str("code", rule, validate.StrOpts{Trim: true, Check: func(s string) (string, string, bool) {
 			return "invalid_format", "Kode 1–20 karakter huruf, angka atau tanda hubung", codePattern.MatchString(strings.ToUpper(s))
 		}}),
-		Name:        f.Str("name", rule, validate.StrOpts{Trim: true, Min: 1, Max: 120}),
-		Category:    f.Str("category", opt, validate.StrOpts{Trim: true, Max: 60}),
-		Description: f.Str("description", opt, validate.StrOpts{Trim: true, Max: 2000}),
-		IsActive:    f.Bool("is_active", opt),
-		SortOrder:   f.Int("sort_order", opt, validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(9999)}),
+		Name:         f.Str("name", rule, validate.StrOpts{Trim: true, Min: 1, Max: 120}),
+		Category:     f.Str("category", opt, validate.StrOpts{Trim: true, Max: 60}),
+		Description:  f.Str("description", opt, validate.StrOpts{Trim: true, Max: 2000}),
+		IsActive:     f.Bool("is_active", opt),
+		Customizable: f.Bool("customizable", opt),
+		SortOrder:    f.Int("sort_order", opt, validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(9999)}),
 	}
 	if in.Code != nil {
 		upper := strings.ToUpper(*in.Code)
@@ -796,9 +799,11 @@ func itemFields(f *validate.Form) []itemRequest {
 	var items []itemRequest
 	f.List("items", req, 10, func(list *validate.Form, i int, v any) {
 		item := list.Item(i, v)
+		design, _ := designFromBody(item, "design")
 		items = append(items, itemRequest{
 			VariantID:   str(item.Str("variant_id", req, uuidOpts)),
 			TherapistID: str(item.Str("therapist_id", optNull, uuidOpts)),
+			Design:      design,
 		})
 	})
 	if len(items) == 0 {
@@ -893,9 +898,11 @@ func (h *Handler) addItem(w http.ResponseWriter, r *http.Request, u *auth.User) 
 		return err
 	}
 	f := body(r)
+	design, _ := designFromBody(f, "design")
 	item := itemRequest{
 		VariantID:   str(f.Str("variant_id", req, uuidOpts)),
 		TherapistID: str(f.Str("therapist_id", optNull, uuidOpts)),
+		Design:      design,
 	}
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
@@ -926,6 +933,32 @@ func (h *Handler) itemAction(w http.ResponseWriter, r *http.Request, u *auth.Use
 		return err
 	}
 	b, err := h.svc.ItemAction(r.Context(), u.ID, id, itemID, ch)
+	if err != nil {
+		return err
+	}
+	return ok(w, b)
+}
+
+// setItemDesign saves the case design of a customizable item
+// ({"design": {...}}), or clears it ({"design": null}).
+func (h *Handler) setItemDesign(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	itemID, err := pathUUID(r, "itemId")
+	if err != nil {
+		return err
+	}
+	f := body(r)
+	design, sent := designFromBody(f, "design")
+	if !sent {
+		f.Fail("design", "required", "Desain wajib dikirim (null untuk menghapus)")
+	}
+	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+		return err
+	}
+	b, err := h.svc.SetItemDesign(r.Context(), u.ID, id, itemID, design)
 	if err != nil {
 		return err
 	}
@@ -1263,6 +1296,12 @@ func (h *Handler) publicOutlets(w http.ResponseWriter, r *http.Request) error {
 	return ok(w, list)
 }
 
+// experienceCatalog serves the custom case design catalog (static, cacheable).
+func (h *Handler) experienceCatalog(w http.ResponseWriter, _ *http.Request) error {
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	return ok(w, Experience())
+}
+
 func (h *Handler) publicTreatments(w http.ResponseWriter, r *http.Request) error {
 	branchID, err := pathUUID(r, "branchId")
 	if err != nil {
@@ -1332,6 +1371,13 @@ func (h *Handler) publicBook(w http.ResponseWriter, r *http.Request) error {
 	}
 	if len(in.VariantIDs) == 0 {
 		f.Fail("variant_ids", "too_small", "Pilih minimal satu treatment")
+	}
+	// designs[i] is the case design of variant_ids[i] (null for other services).
+	f.List("designs", opt, 5, func(list *validate.Form, i int, v any) {
+		in.Designs = append(in.Designs, designValue(list, i, v))
+	})
+	if in.Designs != nil && len(in.Designs) != len(in.VariantIDs) {
+		f.Fail("designs", "custom", "Jumlah desain harus sama dengan jumlah layanan")
 	}
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err

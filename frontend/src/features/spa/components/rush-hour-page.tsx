@@ -38,7 +38,7 @@ export function SpaRushHourPage() {
   const total = data?.total_bookings;
   const hourly = data?.hourly ?? [];
   const peaks = data?.peak_hours ?? [];
-  const outletName = outlets.data?.find((o) => o.branch_id === filters.branch_id)?.branch_name ?? "Semua outlet";
+  const outletName = outlets.data?.find((o) => o.branch_id === filters.branch_id)?.branch_name ?? "Semua toko";
   const title = "Rush Hour";
   const rows = hourly.map((row) => ({ key: String(row.hour), label: hourRange(row.hour), bookings: row.bookings, peak: peaks.includes(row.hour) }));
   const retry = () => {
@@ -48,7 +48,7 @@ export function SpaRushHourPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader kicker="Spa Report" title={title} description="Kenali jam booking paling ramai untuk membantu perencanaan operasional outlet." />
+      <PageHeader kicker="Experience Report" title={title} description="Kenali jam booking paling ramai untuk membantu perencanaan operasional toko." />
       <Card className="gap-4 p-5">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1.3fr_auto] xl:items-end">
           <label className="space-y-2 text-xs font-medium">
@@ -60,9 +60,9 @@ export function SpaRushHourPage() {
             <Input type="date" aria-label="Tanggal akhir" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
           </label>
           <label className="space-y-2 text-xs font-medium">
-            <span>Outlet</span>
+            <span>Toko</span>
             <OutletSelect outlets={outlets.data ?? []} value={filters.branch_id ?? ""} onChange={(branch_id) => setFilters({ ...filters, branch_id: branch_id || undefined })}
-              className={cn(SELECT, "w-full")} allLabel="Semua outlet" onlyConfigured={false} />
+              className={cn(SELECT, "w-full")} allLabel="Semua toko" onlyConfigured={false} />
           </label>
           <Button variant="outline" onClick={() => void report.refetch()} disabled={invalid || loading || !outlets.isSuccess}>
             <RefreshCw className={cn("size-4", loading && "animate-spin")} /> Perbarui

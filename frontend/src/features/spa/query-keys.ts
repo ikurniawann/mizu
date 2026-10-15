@@ -44,6 +44,7 @@ export const spaKeys = {
   outletDayOffs: (branchId: string, month: string) => ["spa", "day-offs", branchId, month] as const,
   mySummary: (month: string) => ["spa", "me", "summary", month] as const,
   publicOutlets: () => ["spa", "public", "outlets"] as const,
+  experienceCatalog: () => ["spa", "public", "experience-catalog"] as const,
   publicTreatments: (branchId: string) => ["spa", "public", "treatments", branchId] as const,
   publicSlots: (branchId: string, date: string, variantIds: string[], pref: string) => ["spa", "public", "slots", branchId, date, variantIds, pref] as const,
   publicTherapists: (branchId: string, startsAt: string, variantIds: string[], pref: string) =>

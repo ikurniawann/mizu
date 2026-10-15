@@ -1,5 +1,5 @@
 /**
- * Mapping kategori bahan baku → default Chart of Accounts (MIZU).
+ * Mapping kategori bahan baku → default Chart of Accounts (PADDY).
  * Sumber kategori Market List / Inv. Storage di docs/data/MIZU - COA .xlsx
  * dan sheet Market List Menu Matrix.
  *

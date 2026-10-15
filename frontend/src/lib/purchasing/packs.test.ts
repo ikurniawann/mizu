@@ -136,4 +136,16 @@ describe("baris PO dari saran stok rendah", () => {
       })?.satuan_id
     ).toBe("ctn");
   });
+
+  it("isi pack dari API berupa string tetap dihitung sebagai angka", () => {
+    const material = {
+      satuan_besar_id: "pcs",
+      satuan_kecil_id: null,
+      konversi_factor: 1,
+      unit_conversions: [{ satuan_id: "pack", qty_in_base_unit: "50" as unknown as number, is_purchase_default: true }],
+    };
+    const pack = defaultPurchasePackFor(material);
+    expect(pack?.qty_in_base_unit).toBe(50);
+    expect(wholePacksFor(250, pack?.qty_in_base_unit ?? 1)).toBe(5);
+  });
 });

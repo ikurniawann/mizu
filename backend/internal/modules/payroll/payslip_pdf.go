@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"nuhabit/backend/internal/modules/payroll/domain"
 	"nuhabit/backend/internal/platform/database"
 	"nuhabit/backend/internal/platform/httpx"
@@ -90,6 +92,13 @@ type payslipDoc struct {
 	paidAt      *time.Time
 	amounts     map[string]float64
 	loans       []domain.LoanInstallmentDetail
+	stores      []slipStore
+}
+
+// slipStore is one store's share of the slip ("Rincian per toko").
+type slipStore struct {
+	name                      string
+	days, hours, ratio, gross float64
 }
 
 // payslipDocument is loadPayslipPdfRow + payslipAmounts + the company
@@ -136,11 +145,29 @@ func (s *service) payslipDocument(ctx context.Context, id string) (*payslipDoc, 
 		return nil, nil
 	}
 	doc.employee = emp
+	if doc.stores, err = slipStores(ctx, s.db, id); err != nil {
+		return nil, err
+	}
 	doc.company, err = s.ports.Settings.GetMany(ctx, s.db, []string{"company_legal_name", "company_address", "company_city"})
 	if err != nil {
 		doc.company = map[string]*string{}
 	}
 	return doc, nil
+}
+
+// slipStores reads the slip's store allocation, in calculation order.
+func slipStores(ctx context.Context, q database.Querier, detailID string) ([]slipStore, error) {
+	rows, err := q.Query(ctx, `SELECT COALESCE(b.name, 'Tanpa toko'), a.days::float8, a.hours::float8, a.ratio::float8,
+		a.gross_amount::float8
+		FROM hris.payroll_detail_allocations a LEFT JOIN configuration.branches b ON b.id = a.branch_id
+		WHERE a.payroll_detail_id = $1 ORDER BY a.sort_order`, detailID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (slipStore, error) {
+		var st slipStore
+		return st, r.Scan(&st.name, &st.days, &st.hours, &st.ratio, &st.gross)
+	})
 }
 
 /* ── PDF ─────────────────────────────────────────────────────────────── */
@@ -153,6 +180,14 @@ const (
 )
 
 func jsNum(v float64) string { return strconv.FormatFloat(v, 'f', -1, 64) }
+
+// decimalID is v with one decimal and a comma ("115,1"), whole numbers bare.
+func decimalID(v float64) string {
+	if v == float64(int64(v)) {
+		return strconv.FormatInt(int64(v), 10)
+	}
+	return strings.Replace(strconv.FormatFloat(v, 'f', 1, 64), ".", ",", 1)
+}
 
 func dashIfEmpty(s *string) string {
 	if s == nil || *s == "" {
@@ -303,6 +338,41 @@ func buildPayslipPDF(p *payslipDoc) ([]byte, error) {
 	d.MoveDown(0.25)
 	row("Total Potongan", a["total_deductions"], rowOpts{bold: true, negative: true,
 		share: domain.ShareOfGross(a["total_deductions"], a["gross_salary"])})
+
+	// Store split, only when the slip's cost is shared by stores.
+	if len(p.stores) > 1 {
+		d.X = left
+		section("Rincian per Toko")
+		cols := []struct {
+			label string
+			x, w  float64
+			align pdfgen.Align
+		}{
+			{"Toko", left, right - left - 330, pdfgen.AlignLeft},
+			{"Hari", right - 330, 50, pdfgen.AlignRight},
+			{"Jam", right - 270, 60, pdfgen.AlignRight},
+			{"Porsi", right - 200, 70, pdfgen.AlignRight},
+			{"Gaji kotor bagian toko", right - 120, 120, pdfgen.AlignRight},
+		}
+		y := d.Y
+		d.Font(pdfgen.Helvetica, 7.5).Color(slipMuted)
+		for _, c := range cols {
+			d.Text(c.label, c.x, y, pdfgen.TextOpts{Width: c.w, Align: c.align})
+		}
+		d.Y = y + 12
+		for _, st := range p.stores {
+			y := d.Y
+			d.Font(pdfgen.Helvetica, 9).Color(slipText)
+			values := []string{st.name, jsNum(st.days), decimalID(st.hours), domain.PercentID(st.ratio), pdfgen.RupiahSpaced(st.gross)}
+			for i, c := range cols {
+				d.Text(values[i], c.x, y, pdfgen.TextOpts{Width: c.w, Align: c.align})
+			}
+			d.Y = y + 13
+		}
+		d.Font(pdfgen.Helvetica, 7.5).Color(slipMuted)
+		d.X = left
+		flow("Satu slip dan satu perhitungan PPh 21/BPJS; biaya dibagi ke toko sesuai jam/hari hadir per toko.", pdfgen.AlignLeft)
+	}
 
 	// Take-home pay.
 	d.MoveDown(0.5)

@@ -68,4 +68,21 @@ type RunCompany struct {
 	TotalBpjsKesEmployee float64 `json:"total_bpjs_kes_employee"`
 	TotalTaperaEmployer  float64 `json:"total_tapera_employer"`
 	TotalTaperaEmployee  float64 `json:"total_tapera_employee"`
+	// Branches splits the company's expense amounts per store from the
+	// slips' store allocation (hris.payroll_detail_allocations); empty for
+	// runs calculated before allocations existed. Accounting posts the
+	// expense (DEBIT) lines of PAYROLL_ACCRUAL, PAYROLL_BPJS_TK_EMPLOYER,
+	// PAYROLL_BPJS_KES_EMPLOYER and PAYROLL_TAPERA_EMPLOYER per store; the
+	// liability lines stay at company level.
+	Branches []RunBranch `json:"branches,omitempty"`
+}
+
+// RunBranch is one store's part of a company's paid run, in rupiah.
+// BranchID is nil for the cost without a store ("Tanpa toko").
+type RunBranch struct {
+	BranchID             *string `json:"branch_id"`
+	TotalGross           float64 `json:"total_gross"`
+	TotalBpjsTkEmployer  float64 `json:"total_bpjs_tk_employer"`
+	TotalBpjsKesEmployer float64 `json:"total_bpjs_kes_employer"`
+	TotalTaperaEmployer  float64 `json:"total_tapera_employer"`
 }

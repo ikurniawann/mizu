@@ -45,7 +45,7 @@ describe("labels", () => {
   });
 
   it("links to the checkout with the branch when known", () => {
-    expect(joinHref("abc", "mizu-bandung")).toBe("/join?plan=abc&branch=mizu-bandung");
+    expect(joinHref("abc", "paddy-bandung")).toBe("/join?plan=abc&branch=paddy-bandung");
     expect(joinHref("abc", null)).toBe("/join?plan=abc");
   });
 });

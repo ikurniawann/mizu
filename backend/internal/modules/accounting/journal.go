@@ -28,6 +28,11 @@ type JournalLine struct {
 	Amount      float64 `json:"amount"`
 	Memo        *string `json:"memo"`
 	SortOrder   int     `json:"sort_order"`
+	// BranchID/BranchCode/BranchName are the line's store (cost center),
+	// nil at company level.
+	BranchID   *string `json:"branch_id"`
+	BranchCode *string `json:"branch_code"`
+	BranchName *string `json:"branch_name"`
 }
 
 // JournalEntry is JournalEntryItem.
@@ -106,6 +111,9 @@ type lineRow struct {
 	SortOrder   int
 	AccountCode *string
 	AccountName *string
+	BranchID    *string
+	BranchCode  *string
+	BranchName  *string
 }
 
 func fetchEntryLines(ctx context.Context, q database.Querier, ids []string) (map[string][]JournalLine, error) {
@@ -116,10 +124,12 @@ func fetchEntryLines(ctx context.Context, q database.Querier, ids []string) (map
 	rows, err := collect[lineRow](ctx, q, `
 SELECT l.id::text, l.entry_id::text, l.account_id::text, l.entry_side,
        l.amount::text AS amount, l.memo, l.sort_order,
-       coa.code AS account_code, coa.name AS account_name
+       coa.code AS account_code, coa.name AS account_name,
+       l.branch_id::text AS branch_id, br.code AS branch_code, br.name AS branch_name
   FROM accounting.journal_entry_lines l
   LEFT JOIN accounting.chart_of_accounts coa
     ON coa.id = l.account_id AND coa.deleted_at IS NULL
+  LEFT JOIN configuration.branches br ON br.id = l.branch_id
  WHERE l.entry_id = ANY($1::uuid[])
  ORDER BY l.sort_order ASC, l.entry_side ASC`, ids)
 	if err != nil {
@@ -134,6 +144,7 @@ SELECT l.id::text, l.entry_id::text, l.account_id::text, l.entry_side,
 		out[r.EntryID] = append(out[r.EntryID], JournalLine{
 			ID: r.ID, EntryID: r.EntryID, AccountID: r.AccountID, AccountCode: code, AccountName: r.AccountName,
 			EntrySide: r.EntrySide, Amount: domain.ToNumber(r.Amount), Memo: r.Memo, SortOrder: r.SortOrder,
+			BranchID: r.BranchID, BranchCode: r.BranchCode, BranchName: r.BranchName,
 		})
 	}
 	return out, nil
@@ -346,8 +357,8 @@ func replaceEntryLines(ctx context.Context, q database.Querier, entryID string, 
 			sort = *l.SortOrder
 		}
 		if _, err := q.Exec(ctx, `
-INSERT INTO accounting.journal_entry_lines (entry_id, account_id, entry_side, amount, memo, sort_order)
-VALUES ($1,$2,$3,$4,$5,$6)`, entryID, l.AccountID, l.Side, domain.Round2(l.Amount), trimOrNull(l.Memo), sort); err != nil {
+INSERT INTO accounting.journal_entry_lines (entry_id, account_id, entry_side, amount, memo, sort_order, branch_id)
+VALUES ($1,$2,$3,$4,$5,$6,$7)`, entryID, l.AccountID, l.Side, domain.Round2(l.Amount), trimOrNull(l.Memo), sort, l.BranchID); err != nil {
 			return err
 		}
 	}

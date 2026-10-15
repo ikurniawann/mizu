@@ -17,7 +17,7 @@ export function EventPage({ event, form }: { event: SiteEvent; form: PublicFormV
     <article>
       <Section className="pb-6">
         <Container className="max-w-3xl space-y-4">
-          <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-accent">Acara</p>
+          <p className="text-xs font-semibold tracking-wider text-forest uppercase dark:text-brand-text">Acara</p>
           <h1 className="font-display text-3xl font-bold tracking-tight text-balance md:text-5xl">{event.title}</h1>
           <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-body">
             <div className="flex items-center gap-2">

@@ -7,6 +7,7 @@ export * from "./rules";
 export * from "./time";
 export * from "./csv";
 export * from "./treatment-form";
+export * from "./experience";
 export { SpaBookingsPage } from "./components/bookings-page";
 export { SpaCustomersPage } from "./components/customers-page";
 export { SpaCustomerDetailPage } from "./components/customer-detail-page";

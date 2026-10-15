@@ -8,23 +8,24 @@ describe("site photos", () => {
     expect(photoOr(null, SITE_PHOTOS.hero)).toBe(SITE_PHOTOS.hero);
   });
 
-  it("each outlet keeps its own photo, and the two Mizu outlets differ", () => {
-    expect(outletPhoto("mizu-westhoff")).toBe(outletPhoto("mizu-westhoff"));
-    expect(outletPhoto("mizu-westhoff")).not.toBe(outletPhoto("mizu-signature-riau"));
+  it("each store keeps its own photo, and the two Paddy stores differ", () => {
+    expect(outletPhoto("paddy-store-pvj")).toBe(outletPhoto("paddy-store-pvj"));
+    expect(outletPhoto("paddy-store-pvj")).not.toBe(outletPhoto("paddy-store-kopo"));
   });
 
   it("Suasana sections follow their subject", () => {
-    expect(spacePhoto("Ruang refleksi", 1)).toBe(SITE_PHOTOS.reflexology);
-    expect(spacePhoto("Couple & keluarga", 2)).toBe(SITE_PHOTOS.relax);
-    expect(spacePhoto("Ruang ganti", 3)).toBe(SITE_PHOTOS.hero);
-    expect(spacePhoto("Ruang treatment", 0)).toBe(SITE_PHOTOS.backMassage);
+    expect(spacePhoto("Meja workshop", 1)).toBe(SITE_PHOTOS.accessories);
+    expect(spacePhoto("Paddy Experience", 2)).toBe(SITE_PHOTOS.studio);
+    expect(spacePhoto("Etalase case", 3)).toBe(SITE_PHOTOS.cases);
+    expect(spacePhoto("Spot foto", 0)).toBe(SITE_PHOTOS.bags);
   });
 
-  it("treatment categories", () => {
-    expect(categoryPhoto("Refleksi")).toBe(SITE_PHOTOS.reflexology);
-    expect(categoryPhoto("Signature")).toBe(SITE_PHOTOS.stonesOrchid);
-    expect(categoryPhoto("Facial")).toBe(SITE_PHOTOS.headMassage);
-    expect(categoryPhoto("Body Treatment")).toBe(SITE_PHOTOS.hero);
-    expect(categoryPhoto("Massage")).toBe(SITE_PHOTOS.backMassage);
+  it("studio service categories", () => {
+    expect(categoryPhoto("Custom Case")).toBe(SITE_PHOTOS.cases);
+    expect(categoryPhoto("Personalisasi")).toBe(SITE_PHOTOS.pods);
+    expect(categoryPhoto("Workshop")).toBe(SITE_PHOTOS.accessories);
+    expect(categoryPhoto("Gadget Care")).toBe(SITE_PHOTOS.watch);
+    expect(categoryPhoto("Signature")).toBe(SITE_PHOTOS.studio);
+    expect(categoryPhoto("Lainnya")).toBe(SITE_PHOTOS.bags);
   });
 });

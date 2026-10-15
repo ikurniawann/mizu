@@ -59,7 +59,7 @@ function SessionRow({ session }: { session: PublicSession }) {
         <span className="text-xs text-muted-foreground">{session.duration_min} min</span>
         <span className="flex min-w-0 flex-wrap gap-x-3 text-xs">
           {session.coach_name ? <span className="truncate text-body">Coach {session.coach_name}</span> : null}
-          <span className={cn("font-semibold", seats.full ? "text-warning" : "text-forest dark:text-accent")}>{seats.text}</span>
+          <span className={cn("font-semibold", seats.full ? "text-warning" : "text-forest dark:text-brand-text")}>{seats.text}</span>
         </span>
       </Link>
     </li>

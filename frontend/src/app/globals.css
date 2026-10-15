@@ -1,112 +1,123 @@
-@import url("https://api.fontshare.com/v2/css?f[]=roundo@400,500,600,700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Karla:wght@400;500;600;700&family=Lato:wght@400;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Mulish:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Rubik:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Urbanist:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap");
-
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* NüHabit Brand Guideline 2026 (docs/frontend-conventions.md), di atas tata letak WIT.
-   Warna utama: White Beige #f3ece2, Deep Forest Green #3d2b20, Pale Lime #d6b47a.
-   Fungsional: Dark Jungle #33271f, Everglade #5a4334, Lettuce #c49a5c,
-   Lemon Lime #f2e3c6, Mint Cream #fffaf2, Golden Ochre #b8893f. Judul Outfit, isi Manrope.
+/* Paddy Brand 2026 (paddy.id · @paddy.id) di atas tata letak WIT.
+   Warna utama: Paddy Magenta #e3066f (logo), Berry #b8045a (teks merek di permukaan
+   terang), Cream #fbf5ec (kanvas), Plum Ink #2a1024 (sidebar/permukaan gelap).
+   Pendamping doodle: Sunny #ffcf3f, Lilac #8b6ae6, Grass #19804b, Sky #4fa8e8,
+   Tangerine #f47c20, Navy #232c6b (garis doodle). Judul Roundo (bulat tebal,
+   senada lettering logo), isi Nunito.
    Palet `pink-*` (dipakai ratusan halaman lama sebagai warna merek) ditimpa skala
-   emas → mocha Mizu; `gray-*`, `slate-*`, `zinc-*`, `neutral-*` ditimpa tangga netral
-   hangat dari beige ke ink. Ribuan kelas lama ikut tanpa menyentuh tiap file. */
+   magenta Paddy; `gray-*`, `slate-*`, `zinc-*`, `neutral-*` ditimpa tangga netral
+   bersih dengan sedikit rona krem. Ribuan kelas lama ikut tanpa menyentuh tiap file. */
 @theme {
-  --color-pink-50: #fbf3e4;
-  --color-pink-100: #f2e3c6;
-  --color-pink-200: #ecd3a6;
-  --color-pink-300: #d6b47a;
-  --color-pink-400: #c49a5c;
-  --color-pink-500: #a8834d;
-  --color-pink-600: #5a4334;
-  --color-pink-700: #3d2b20;
-  --color-pink-800: #2a1f18;
-  --color-pink-900: #1a120d;
-  --color-pink-950: #0d0a08;
+  --color-pink-50: #fff3f8;
+  --color-pink-100: #fee6f0;
+  --color-pink-200: #fdd0e3;
+  --color-pink-300: #fca9cd;
+  --color-pink-400: #f97db3;
+  --color-pink-500: #f4529a;
+  --color-pink-600: #ec2a80;
+  --color-pink-700: #e3066f;
+  --color-pink-800: #b8045a;
+  --color-pink-900: #8c0545;
+  --color-pink-950: #52022a;
 
-  --color-gray-50: #f8f4ee;
-  --color-gray-100: #f3ece2;
-  --color-gray-200: #e3dbcc;
-  --color-gray-300: #d4cbbb;
-  --color-gray-400: #9c8f82;
-  --color-gray-500: #75665a;
-  --color-gray-600: #574a40;
-  --color-gray-700: #3a302a;
-  --color-gray-800: #33271f;
-  --color-gray-900: #241b16;
-  --color-gray-950: #110d0a;
-  --color-slate-50: #f8f4ee;
-  --color-slate-100: #f3ece2;
-  --color-slate-200: #e3dbcc;
-  --color-slate-300: #d4cbbb;
-  --color-slate-400: #9c8f82;
-  --color-slate-500: #75665a;
-  --color-slate-600: #574a40;
-  --color-slate-700: #3a302a;
-  --color-slate-800: #33271f;
-  --color-slate-900: #241b16;
-  --color-slate-950: #110d0a;
-  --color-zinc-50: #f8f4ee;
-  --color-zinc-100: #f3ece2;
-  --color-zinc-200: #e3dbcc;
-  --color-zinc-300: #d4cbbb;
-  --color-zinc-400: #9c8f82;
-  --color-zinc-500: #75665a;
-  --color-zinc-600: #574a40;
-  --color-zinc-700: #3a302a;
-  --color-zinc-800: #33271f;
-  --color-zinc-900: #241b16;
-  --color-zinc-950: #110d0a;
-  --color-neutral-50: #f8f4ee;
-  --color-neutral-100: #f3ece2;
-  --color-neutral-200: #e3dbcc;
-  --color-neutral-300: #d4cbbb;
-  --color-neutral-400: #9c8f82;
-  --color-neutral-500: #75665a;
-  --color-neutral-600: #574a40;
-  --color-neutral-700: #3a302a;
-  --color-neutral-800: #33271f;
-  --color-neutral-900: #241b16;
-  --color-neutral-950: #110d0a;
+  --color-gray-50: #fbfaf7;
+  --color-gray-100: #f5f2ec;
+  --color-gray-200: #e8e3da;
+  --color-gray-300: #d7d1c7;
+  --color-gray-400: #a29b92;
+  --color-gray-500: #716a63;
+  --color-gray-600: #58524c;
+  --color-gray-700: #403b37;
+  --color-gray-800: #2c2826;
+  --color-gray-900: #1e1b19;
+  --color-gray-950: #100e0d;
+  --color-slate-50: #fbfaf7;
+  --color-slate-100: #f5f2ec;
+  --color-slate-200: #e8e3da;
+  --color-slate-300: #d7d1c7;
+  --color-slate-400: #a29b92;
+  --color-slate-500: #716a63;
+  --color-slate-600: #58524c;
+  --color-slate-700: #403b37;
+  --color-slate-800: #2c2826;
+  --color-slate-900: #1e1b19;
+  --color-slate-950: #100e0d;
+  --color-zinc-50: #fbfaf7;
+  --color-zinc-100: #f5f2ec;
+  --color-zinc-200: #e8e3da;
+  --color-zinc-300: #d7d1c7;
+  --color-zinc-400: #a29b92;
+  --color-zinc-500: #716a63;
+  --color-zinc-600: #58524c;
+  --color-zinc-700: #403b37;
+  --color-zinc-800: #2c2826;
+  --color-zinc-900: #1e1b19;
+  --color-zinc-950: #100e0d;
+  --color-neutral-50: #fbfaf7;
+  --color-neutral-100: #f5f2ec;
+  --color-neutral-200: #e8e3da;
+  --color-neutral-300: #d7d1c7;
+  --color-neutral-400: #a29b92;
+  --color-neutral-500: #716a63;
+  --color-neutral-600: #58524c;
+  --color-neutral-700: #403b37;
+  --color-neutral-800: #2c2826;
+  --color-neutral-900: #1e1b19;
+  --color-neutral-950: #100e0d;
 
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Portal member (/member): palet NüHabit mobile — White Beige ground, Deep
-     Forest Green, Pale Lime accent; Outfit untuk judul, Manrope untuk isi. */
-  --color-nh-beige: #f3ece2;
-  --color-nh-cream: #fffaf2;
-  --color-nh-raised: #ece5d8;
-  --color-nh-line: #e3dbcc;
-  --color-nh-ink: #241b16;
-  --color-nh-ink-soft: #33271f;
-  --color-nh-forest: #3d2b20;
-  --color-nh-lime: #d6b47a;
-  --color-nh-lime-soft: #f2e3c6;
-  --color-nh-lettuce: #c49a5c;
-  --color-nh-muted: #75665a;
-  --color-nh-ok: #4d8a1c;
-  --color-nh-warn: #9c7a14;
+  /* Portal member (/member): palet Paddy — kanvas cream, Berry untuk teks merek,
+     Sunny sebagai aksen cerah (nama token `lime` dipertahankan untuk komponen);
+     Roundo untuk judul, Nunito untuk isi. */
+  --color-nh-beige: #fbf5ec;
+  --color-nh-cream: #fffdf9;
+  --color-nh-raised: #f3ede4;
+  --color-nh-line: #ece5da;
+  --color-nh-ink: #2a1024;
+  --color-nh-ink-soft: #3a1832;
+  --color-nh-forest: #b8045a;
+  --color-nh-lime: #ffcf3f;
+  --color-nh-lime-soft: #fff1c2;
+  --color-nh-lettuce: #f4529a;
+  --color-nh-muted: #716a63;
+  --color-nh-ok: #2f8a4f;
+  --color-nh-warn: #9c6a00;
   --color-nh-danger: #d13b40;
-  --font-nh-display: "Playfair Display", Georgia, ui-serif, serif;
-  --font-nh-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-nh-display: "Roundo", "Nunito", ui-rounded, system-ui, sans-serif;
+  --font-nh-body: "Nunito", ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 1.5rem;
   --radius-hero: 1.75rem;
   --radius-pill: 9999px;
 
-  --shadow-card: 0 1px 2px rgb(61 43 32 / 0.03), 0 10px 30px -14px rgb(61 43 32 / 0.12);
-  --shadow-float: 0 14px 40px -12px rgb(36 27 22 / 0.28);
-  --shadow-up: 0 -10px 30px -14px rgb(36 27 22 / 0.25);
+  --shadow-card: 0 1px 2px rgb(42 16 36 / 0.03), 0 10px 30px -14px rgb(42 16 36 / 0.12);
+  --shadow-float: 0 14px 40px -12px rgb(42 16 36 / 0.28);
+  --shadow-up: 0 -10px 30px -14px rgb(42 16 36 / 0.25);
+  /* Bayangan "stiker" ala Paddy: offset tegas tanpa blur. */
+  --shadow-sticker: 3px 3px 0 0 #2a1024;
 
-  /* Warna merek bernama, untuk kode baru. */
-  --color-forest: #3d2b20;
-  --color-everglade: #5a4334;
-  --color-jungle: #33271f;
-  --color-lettuce: #c49a5c;
-  --color-lemon: #f2e3c6;
-  --color-mint: #fffaf2;
-  --color-ochre: #b8893f;
-  --font-display: "Playfair Display", Georgia, ui-serif, serif;
+  /* Warna merek bernama, untuk kode baru. Nama lama (forest, lime, …) dipertahankan
+     karena dipakai komponen; nilainya kini palet Paddy. */
+  --color-forest: #b8045a;
+  --color-everglade: #6d4bd8;
+  --color-jungle: #2a1024;
+  --color-lettuce: #19804b;
+  --color-lemon: #fff1c2;
+  --color-mint: #fffdf9;
+  --color-ochre: #f5a524;
+  --color-berry: #8c0545;
+  --color-bubblegum: #fca9cd;
+  --color-sunny: #ffcf3f;
+  --color-lilac: #8b6ae6;
+  --color-grass: #19804b;
+  --color-sky: #4fa8e8;
+  --color-tangerine: #f47c20;
+  --color-navy: #232c6b;
+  --font-display: "Roundo", "Nunito", ui-rounded, system-ui, sans-serif;
 }
 
 /* Bind the `dark:` variant to our explicit theme attribute (manual + auto). */
@@ -123,9 +134,9 @@
 
 /* Expose CSS variables to Tailwind's utility generator.
    Penamaan: shadcn `muted` tetap latar abu (bg-muted) dan teks sekunder memakai
-   `text-muted-foreground`. `accent` = isian Pale Lime; teks di atasnya selalu
-   `text-accent-foreground` (Deep Forest). Lime tidak pernah jadi teks/ikon di
-   permukaan terang (kontras 1.03 di beige); di sana pakai `text-forest`. */
+   `text-muted-foreground`. `accent` = isian Paddy Magenta; teks di atasnya selalu
+   `text-accent-foreground` (putih, kontras 5.9). Untuk teks/ikon merek di permukaan
+   terang pakai `text-brand-text` / `text-forest` (Berry #b8045a, kontras 7.2 di cream). */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -177,9 +188,9 @@
 
 :root {
   /* Brand inputs — overridden at runtime by ThemeProvider. */
-  --brand-primary: #d6b47a;
-  --brand-secondary: #3d2b20;
-  --primary-foreground: #3d2b20;
+  --brand-primary: #e3066f;
+  --brand-secondary: #8b6ae6;
+  --primary-foreground: #ffffff;
 
   /* Derived brand scales (perceptual mix in OKLCH). */
   --primary-50: color-mix(in oklch, var(--brand-primary) 8%, white);
@@ -198,54 +209,54 @@
   --brand-secondary-500: var(--brand-secondary);
   --brand-secondary-600: color-mix(in oklch, var(--brand-secondary) 88%, black);
 
-  /* Token merek. Kontras (WCAG 2.x): forest di lime 14.0, muted di beige 4.75,
-     muted di mint 5.5, on-ink-muted di ink 9.6, lime di ink 15.5, info di
-     info-soft 10.0, success 4.5, warning 4.9, danger 5.4 pada tint masing-masing. */
+  /* Token merek. Kontras (WCAG 2.x): putih di magenta 5.9, berry di cream 7.2,
+     berry di pink-100 5.5, muted di cream 4.9, on-ink-muted di plum ink 9.9,
+     info di info-soft 4.9, success 4.5, warning 4.9, danger 5.4 pada tint masing-masing. */
   --wit-accent-strong: var(--brand-primary);
   --wit-accent-dark: color-mix(in oklch, var(--brand-primary) 88%, black);
-  --wit-accent-soft: #f2e3c6;
-  --wit-accent-foreground: #3d2b20;
-  --wit-brand-text: #3d2b20;
-  --wit-info: #5a4334;
-  --wit-info-soft: #efe5da;
+  --wit-accent-soft: #fee6f0;
+  --wit-accent-foreground: #ffffff;
+  --wit-brand-text: #b8045a;
+  --wit-info: #6d4bd8;
+  --wit-info-soft: #efeafd;
   --wit-success: #3f7a12;
   --wit-success-soft: #e6f2d8;
   --wit-warning: #835f00;
   --wit-warning-soft: #f7ecc8;
   --wit-danger: #b3262c;
   --wit-danger-soft: #fbe5e5;
-  --wit-ink: #241b16;
-  --wit-ink-2: #33271f;
-  --wit-ink-3: #5a4334;
-  --wit-on-ink-muted: #c9bcae;
-  --wit-surface: #f3ece2;
-  --wit-surface-2: #f8f4ee;
-  --wit-body: #3a302a;
-  --wit-silver: #b9b0a2;
-  --wit-chart-muted: #d4cbbb;
+  --wit-ink: #2a1024;
+  --wit-ink-2: #3a1832;
+  --wit-ink-3: #5b2a4d;
+  --wit-on-ink-muted: #d9bfd0;
+  --wit-surface: #fbf5ec;
+  --wit-surface-2: #fdf9f3;
+  --wit-body: #403b37;
+  --wit-silver: #b5aea6;
+  --wit-chart-muted: #d7d1c7;
 
   /* Semantic — light (shadcn). */
-  --background: #fffaf2;
-  --foreground: #241b16;
-  --card: #fffaf2;
-  --card-foreground: #241b16;
-  --popover: #fffaf2;
-  --popover-foreground: #241b16;
+  --background: #fffdf9;
+  --foreground: #2a1024;
+  --card: #fffdf9;
+  --card-foreground: #2a1024;
+  --popover: #fffdf9;
+  --popover-foreground: #2a1024;
   --primary: var(--wit-accent-strong);
-  --secondary: #f3ece2;
-  --secondary-foreground: #241b16;
-  --muted: #f8f4ee;
-  --muted-foreground: #75665a;
+  --secondary: #fbf5ec;
+  --secondary-foreground: #2a1024;
+  --muted: #fdf9f3;
+  --muted-foreground: #716a63;
   --destructive: #b3262c;
   --success: #3f7a12;
   --warning: #835f00;
-  --border: #e3dbcc;
-  --input: #e3dbcc;
-  --ring: #5a4334;
+  --border: #ece5da;
+  --input: #ece5da;
+  --ring: #e3066f;
 
   /* Legacy glass tokens: kartu WIT tidak memakai kaca, tapi beberapa modul
      (Arkiv OS desktop) masih membacanya. */
-  --glass-bg: #fffaf2;
+  --glass-bg: #fffdf9;
   --glass-border: transparent;
   --glass-blur: 0px;
   --glass-saturate: 1;
@@ -253,15 +264,15 @@
   --glass-highlight: 0 0 #0000;
 
   /* Chrome — overridden by company appearance. */
-  --sidebar-background: #241b16;
-  --sidebar-foreground: #fffaf2;
-  --sidebar-active-background: #d6b47a;
-  --sidebar-active-foreground: #3d2b20;
+  --sidebar-background: #2a1024;
+  --sidebar-foreground: #fffdf9;
+  --sidebar-active-background: #e3066f;
+  --sidebar-active-foreground: #ffffff;
   --sidebar-border: transparent;
   --navbar-background: transparent;
-  --navbar-foreground: #241b16;
+  --navbar-foreground: #2a1024;
   --navbar-border: transparent;
-  --font-sans-stack: "Manrope", Inter, system-ui, sans-serif;
+  --font-sans-stack: Nunito, Inter, system-ui, sans-serif;
   --font-size-base: 16px;
 
   /* Shape + motion. */
@@ -272,42 +283,42 @@
   --ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* Kanvas halaman: White Beige polos. */
+  /* Kanvas halaman: Paddy Cream polos. */
   --page-mesh: var(--wit-surface);
 }
 
 /* !important: ThemeProvider writes the Appearance colours inline on <html>,
    and inline values would otherwise keep light surfaces in dark mode. */
 [data-theme="dark"] {
-  --wit-brand-text: #d6b47a;
-  --background: #14100d !important;
-  --foreground: #f4eee6 !important;
-  --card: #1f1813 !important;
-  --card-foreground: #f4eee6 !important;
-  --popover: #1f1813;
-  --popover-foreground: #f4eee6;
-  --secondary: #2a211b;
-  --secondary-foreground: #f4eee6;
-  --muted: #2a211b;
-  --muted-foreground: #b3a597;
-  --border: #3a2e25 !important;
-  --input: #45372c !important;
+  --wit-brand-text: #f97db3;
+  --background: #170b14 !important;
+  --foreground: #f8f0f4 !important;
+  --card: #22121d !important;
+  --card-foreground: #f8f0f4 !important;
+  --popover: #22121d;
+  --popover-foreground: #f8f0f4;
+  --secondary: #2f1a29;
+  --secondary-foreground: #f8f0f4;
+  --muted: #2f1a29;
+  --muted-foreground: #bfa9b7;
+  --border: #432739 !important;
+  --input: #4f3045 !important;
 
-  --wit-surface: #14100d;
-  --wit-surface-2: #2a211b;
-  --wit-body: #e2d9cf;
-  --wit-accent-soft: #3d3020;
-  --wit-info: #d9c2a3;
-  --wit-info-soft: #261d17;
-  --wit-success: #c49a5c;
-  --wit-success-soft: #182a12;
+  --wit-surface: #170b14;
+  --wit-surface-2: #2f1a29;
+  --wit-body: #ecdde5;
+  --wit-accent-soft: #4a1430;
+  --wit-info: #c4b2f5;
+  --wit-info-soft: #211a3a;
+  --wit-success: #7bd69f;
+  --wit-success-soft: #122a1c;
   --wit-warning: #e5b93a;
   --wit-warning-soft: #2e2208;
   --wit-danger: #f28b8f;
   --wit-danger-soft: #331415;
-  --wit-ink: #0d0a08;
+  --wit-ink: #1a0614;
 
-  --glass-bg: #1f1813;
+  --glass-bg: #22121d;
   --surface-subtle: rgba(255, 255, 255, 0.06);
   --surface-hover: rgba(255, 255, 255, 0.1);
 }
@@ -315,35 +326,35 @@
 /* Auto mode follows the OS when nothing explicit is chosen. */
 @media (prefers-color-scheme: dark) {
   [data-theme="auto"] {
-    --wit-brand-text: #d6b47a;
-    --background: #14100d !important;
-    --foreground: #f4eee6 !important;
-    --card: #1f1813 !important;
-    --card-foreground: #f4eee6 !important;
-    --popover: #1f1813;
-    --popover-foreground: #f4eee6;
-    --secondary: #2a211b;
-    --secondary-foreground: #f4eee6;
-    --muted: #2a211b;
-    --muted-foreground: #b3a597;
-    --border: #3a2e25 !important;
-    --input: #45372c !important;
+    --wit-brand-text: #f97db3;
+    --background: #170b14 !important;
+    --foreground: #f8f0f4 !important;
+    --card: #22121d !important;
+    --card-foreground: #f8f0f4 !important;
+    --popover: #22121d;
+    --popover-foreground: #f8f0f4;
+    --secondary: #2f1a29;
+    --secondary-foreground: #f8f0f4;
+    --muted: #2f1a29;
+    --muted-foreground: #bfa9b7;
+    --border: #432739 !important;
+    --input: #4f3045 !important;
 
-    --wit-surface: #14100d;
-    --wit-surface-2: #2a211b;
-    --wit-body: #e2d9cf;
-    --wit-accent-soft: #3d3020;
-    --wit-info: #d9c2a3;
-    --wit-info-soft: #261d17;
-    --wit-success: #c49a5c;
-    --wit-success-soft: #182a12;
+    --wit-surface: #170b14;
+    --wit-surface-2: #2f1a29;
+    --wit-body: #ecdde5;
+    --wit-accent-soft: #4a1430;
+    --wit-info: #c4b2f5;
+    --wit-info-soft: #211a3a;
+    --wit-success: #7bd69f;
+    --wit-success-soft: #122a1c;
     --wit-warning: #e5b93a;
     --wit-warning-soft: #2e2208;
     --wit-danger: #f28b8f;
     --wit-danger-soft: #331415;
-    --wit-ink: #0d0a08;
+    --wit-ink: #1a0614;
 
-    --glass-bg: #1f1813;
+    --glass-bg: #22121d;
     --surface-subtle: rgba(255, 255, 255, 0.06);
     --surface-hover: rgba(255, 255, 255, 0.1);
   }
@@ -376,11 +387,11 @@ body {
 }
 
 ::selection {
-  background: #d6b47a;
-  color: #3d2b20;
+  background: #fca9cd;
+  color: #52022a;
 }
 
-/* Judul memakai Playfair Display (brand Mizu: serif elegan), isi Manrope.
+/* Judul memakai Roundo (brand Paddy: bulat, tebal, ceria), isi Nunito.
    Angka di judul tetap rata (lining) supaya nominal/statistik mudah dibaca. */
 :where(h1, h2, h3, [data-slot="card-title"], [data-slot="dialog-title"]) {
   font-family: var(--font-display);
@@ -705,8 +716,8 @@ select:focus-visible,
 [data-slot="select-trigger"]:focus-visible,
 [data-slot="textarea"]:focus,
 [data-slot="textarea"]:focus-visible {
-  border-color: #5a4334 !important;
-  box-shadow: 0 0 0 3px rgb(32 59 50 / 0.18) !important;
+  border-color: #e3066f !important;
+  box-shadow: 0 0 0 3px rgb(227 6 111 / 0.18) !important;
   outline: none !important;
 }
 
@@ -1330,21 +1341,21 @@ hr {
     [class^="bg-pink-100/"],
     [class*=" bg-pink-100/"]
   ) {
-    background-color: color-mix(in oklch, #c49a5c 14%, transparent) !important;
-    border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important;
+    background-color: color-mix(in oklch, #f4529a 14%, transparent) !important;
+    border-color: color-mix(in oklch, #f4529a 30%, transparent) !important;
   }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .hover\:bg-pink-50:hover,
     [class*="hover:bg-pink-50/"]:hover,
     .hover\:bg-pink-100:hover,
     [class*="hover:bg-pink-100/"]:hover
-  ) { background-color: color-mix(in oklch, #c49a5c 22%, transparent) !important; }
+  ) { background-color: color-mix(in oklch, #f4529a 22%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .text-pink-600,
     .text-pink-700,
     .text-pink-800,
     .text-pink-900
-  ) { color: color-mix(in oklch, #c49a5c 42%, white) !important; }
+  ) { color: color-mix(in oklch, #f4529a 42%, white) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .border-pink-100,
     [class*=" border-pink-100/"],
@@ -1352,7 +1363,7 @@ hr {
     [class*=" border-pink-200/"],
     .border-pink-300,
     [class*=" border-pink-300/"]
-  ) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
+  ) { border-color: color-mix(in oklch, #f4529a 30%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .bg-rose-50,
     [class^="bg-rose-50/"],
@@ -1472,17 +1483,17 @@ hr {
     .from-pink-50,
     .from-pink-100,
     .from-pink-200
-  ) { --tw-gradient-from: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
+  ) { --tw-gradient-from: color-mix(in oklch, #f4529a 14%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .via-pink-50,
     .via-pink-100,
     .via-pink-200
-  ) { --tw-gradient-via: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
+  ) { --tw-gradient-via: color-mix(in oklch, #f4529a 14%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .to-pink-50,
     .to-pink-100,
     .to-pink-200
-  ) { --tw-gradient-to: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
+  ) { --tw-gradient-to: color-mix(in oklch, #f4529a 14%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .from-amber-50,
     .from-amber-100,
@@ -1792,13 +1803,13 @@ hr {
     .divide-pink-100,
     .divide-pink-200,
     .divide-pink-300
-  ) > :not(:last-child) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
+  ) > :not(:last-child) { border-color: color-mix(in oklch, #f4529a 30%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .ring-pink-50,
     .ring-pink-100,
     .ring-pink-200,
     .ring-pink-300
-  ) { --tw-ring-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
+  ) { --tw-ring-color: color-mix(in oklch, #f4529a 30%, transparent) !important; }
   [data-theme="auto"] .arkiv-dashboard-theme :is(
     .divide-rose-50,
     .divide-rose-100,
@@ -2312,21 +2323,21 @@ hr {
   [class^="bg-pink-100/"],
   [class*=" bg-pink-100/"]
 ) {
-  background-color: color-mix(in oklch, #c49a5c 14%, transparent) !important;
-  border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important;
+  background-color: color-mix(in oklch, #f4529a 14%, transparent) !important;
+  border-color: color-mix(in oklch, #f4529a 30%, transparent) !important;
 }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .hover\:bg-pink-50:hover,
   [class*="hover:bg-pink-50/"]:hover,
   .hover\:bg-pink-100:hover,
   [class*="hover:bg-pink-100/"]:hover
-) { background-color: color-mix(in oklch, #c49a5c 22%, transparent) !important; }
+) { background-color: color-mix(in oklch, #f4529a 22%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .text-pink-600,
   .text-pink-700,
   .text-pink-800,
   .text-pink-900
-) { color: color-mix(in oklch, #c49a5c 42%, white) !important; }
+) { color: color-mix(in oklch, #f4529a 42%, white) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .border-pink-100,
   [class*=" border-pink-100/"],
@@ -2334,7 +2345,7 @@ hr {
   [class*=" border-pink-200/"],
   .border-pink-300,
   [class*=" border-pink-300/"]
-) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
+) { border-color: color-mix(in oklch, #f4529a 30%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .bg-rose-50,
   [class^="bg-rose-50/"],
@@ -2454,17 +2465,17 @@ hr {
   .from-pink-50,
   .from-pink-100,
   .from-pink-200
-) { --tw-gradient-from: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
+) { --tw-gradient-from: color-mix(in oklch, #f4529a 14%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .via-pink-50,
   .via-pink-100,
   .via-pink-200
-) { --tw-gradient-via: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
+) { --tw-gradient-via: color-mix(in oklch, #f4529a 14%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .to-pink-50,
   .to-pink-100,
   .to-pink-200
-) { --tw-gradient-to: color-mix(in oklch, #c49a5c 14%, transparent) !important; }
+) { --tw-gradient-to: color-mix(in oklch, #f4529a 14%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .from-amber-50,
   .from-amber-100,
@@ -2774,13 +2785,13 @@ hr {
   .divide-pink-100,
   .divide-pink-200,
   .divide-pink-300
-) > :not(:last-child) { border-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
+) > :not(:last-child) { border-color: color-mix(in oklch, #f4529a 30%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .ring-pink-50,
   .ring-pink-100,
   .ring-pink-200,
   .ring-pink-300
-) { --tw-ring-color: color-mix(in oklch, #c49a5c 30%, transparent) !important; }
+) { --tw-ring-color: color-mix(in oklch, #f4529a 30%, transparent) !important; }
 [data-theme="dark"] .arkiv-dashboard-theme :is(
   .divide-rose-50,
   .divide-rose-100,
@@ -2805,11 +2816,11 @@ hr {
 
 /* Datepicker — dark surface when portaled inside a dark theme. */
 [data-theme="dark"] .react-datepicker {
-  background-color: #1f1813;
+  background-color: #22121d;
   border-color: rgba(148, 163, 184, 0.28);
   color: #e5e7eb;
 }
-[data-theme="dark"] .react-datepicker__header { background-color: #1f1813; }
+[data-theme="dark"] .react-datepicker__header { background-color: #22121d; }
 [data-theme="dark"] .react-datepicker__current-month { color: #f1f5f9; }
 [data-theme="dark"] .react-datepicker__day-name { color: #94a3b8; }
 [data-theme="dark"] .react-datepicker__day { color: #cbd5e1; }

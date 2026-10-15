@@ -167,6 +167,11 @@ export function CalculateConfirmDialog({
 export interface CalculationResult {
   count: number;
   employees: string[];
+  /** Periode absensi yang dipakai + peringatan bila belum di-closing. */
+  periodLabel?: string;
+  periodWarning?: string;
+  /** Karyawan yang biayanya masuk "Tanpa toko" (belum punya penempatan). */
+  warnings?: { employee_id: string; full_name: string; reason: string }[];
 }
 
 export function CalculationResultDialog({
@@ -197,6 +202,14 @@ export function CalculationResultDialog({
               <span className="text-lg font-semibold">Perhitungan Berhasil!</span>
             </div>
 
+            {result.periodWarning ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                ⚠️ {result.periodWarning}
+              </div>
+            ) : result.periodLabel ? (
+              <p className="text-center text-xs text-gray-500">Absensi periode {result.periodLabel} (sudah di-closing)</p>
+            ) : null}
+
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-2">Karyawan yang dihitung:</p>
               <p className="text-2xl font-bold text-green-700">{result.count} Karyawan</p>
@@ -212,6 +225,26 @@ export function CalculationResultDialog({
                 </div>
               )}
             </div>
+
+            {(result.warnings?.length ?? 0) > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-800">
+                  {result.warnings?.length} karyawan belum punya toko
+                </p>
+                <p className="mb-2 text-xs text-amber-700">
+                  Biayanya masuk kelompok &quot;Tanpa toko&quot; di laporan Biaya Gaji per Toko dan jurnal. Atur di
+                  HRIS → Master Data → Penempatan Karyawan, lalu hitung ulang.
+                </p>
+                <ul className="space-y-0.5 text-sm text-amber-900">
+                  {result.warnings?.map((w) => (
+                    <li key={w.employee_id}>
+                      {w.full_name}
+                      <span className="text-xs text-amber-700"> — {w.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="flex justify-end pt-4">
               <Button onClick={onClose} className="bg-pink-600 hover:bg-pink-700">

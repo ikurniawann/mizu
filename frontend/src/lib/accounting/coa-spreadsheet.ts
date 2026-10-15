@@ -81,17 +81,17 @@ const CODE_OVERRIDES: Record<string, string> = {
 };
 
 /**
- * Detect MIZU layout: first column looks like spaced account code,
+ * Detect PADDY layout: first column looks like spaced account code,
  * name lives in one of columns B–E (no header row with "code").
  */
-export function isMizuCoaLayout(rows: unknown[][]): boolean {
+export function isPaddyCoaLayout(rows: unknown[][]): boolean {
   if (rows.length < 2) return false;
   const first = cell(rows[0]?.[0]);
   if (/^code$/i.test(first) || /^kode/i.test(first)) return false;
   return Boolean(normalizeAccountCode(first));
 }
 
-export function parseMizuCoaSheet(rows: unknown[][]): {
+export function parsePaddyCoaSheet(rows: unknown[][]): {
   rows: ParsedCoaRow[];
   issues: CoaParseIssue[];
 } {
@@ -291,7 +291,7 @@ export function parseStandardCoaSheet(matrix: unknown[][]): {
 }
 
 export async function parseCoaSpreadsheet(buffer: Buffer) {
-  // Prefer sheet named COA if present (MIZU workbook), else the first sheet.
+  // Prefer sheet named COA if present (PADDY workbook), else the first sheet.
   const matrix = await parseXlsxToMatrix(buffer, {
     pickSheet: (wb) =>
       wb.worksheets.find((ws) => ws.name.toLowerCase() === "coa") ?? wb.worksheets[0],
@@ -302,7 +302,7 @@ export async function parseCoaSpreadsheet(buffer: Buffer) {
       issues: [{ row: 0, message: "Workbook tidak punya sheet" }] as CoaParseIssue[],
     };
   }
-  if (isMizuCoaLayout(matrix)) return parseMizuCoaSheet(matrix);
+  if (isPaddyCoaLayout(matrix)) return parsePaddyCoaSheet(matrix);
   return parseStandardCoaSheet(matrix);
 }
 

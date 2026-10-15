@@ -2,7 +2,7 @@ import { PublicSpaBookingStatus } from "@/features/spa/components/public-booking
 import { SiteLayout } from "@/features/site/site-layout";
 
 export const metadata = {
-  title: "Status booking — Mizu",
+  title: "Status booking — Paddy",
   robots: { index: false, follow: false },
 };
 

@@ -11,6 +11,8 @@ export const IAM = {
   itemsInventory: ["items.product.inventory", "items.raw-material.inventory"],
   itemsApproval: ["items.product.approval", "items.raw-material.approval"],
   itemsReports: ["items.reports"],
+  /** Items → Pembelian → Pengaturan Pembelian (aturan PO wajib dari PR). */
+  itemsPurchasingSettings: ["items.raw-material.purchasing.settings", "items.product.purchasing.settings"],
   pos: ["pos"],
   posOperations: ["pos.operations", "pos.cashier.central"],
   /** POS → Operasional → Tagihan (tagihan member, 2026-10-01). */
@@ -24,6 +26,8 @@ export const IAM = {
   hrisKepegawaian: ["hris.kepegawaian"],
   hrisWorkforce: ["hris.workforce"],
   hrisCompensation: ["hris.compensation"],
+  /** HRIS → Master Data → Penempatan Karyawan (karyawan multi-toko, 2026-10-15). */
+  hrisPlacements: ["hris.master.placements"],
   hrisPerformance: ["hris.performance"],
   hrisRecruitment: ["hris.recruitment"],
   accounting: ["accounting"],
@@ -120,7 +124,7 @@ export const IAM = {
   siteContent: ["site.content"],
   siteArticles: ["site.articles"],
   siteEvents: ["site.events"],
-  /** Spa (Mizu): booking, terapis, treatment, komisi, outlet. */
+  /** Spa (Paddy): booking, terapis, treatment, komisi, outlet. */
   spa: ["spa"],
   spaBookings: ["spa.bookings", "spa.book-order"],
   spaCustomer: ["spa.customer"],

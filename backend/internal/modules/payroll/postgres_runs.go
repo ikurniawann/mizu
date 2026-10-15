@@ -17,10 +17,10 @@ import (
 // this module.
 
 // runDetailsJSON is the o2m embed of getRun (natural order, as json_agg).
-const runDetailsJSON = `COALESCE((SELECT json_agg(e) FROM (
-     SELECT id, employee_id, net_salary, gross_salary, total_deductions, pph21_deduction,
-            status, payslip_sent, payslip_sent_at
-       FROM hris.payroll_details WHERE payroll_run_id = r.id) e), '[]'::json) AS payroll_details`
+var runDetailsJSON = `COALESCE((SELECT json_agg(e) FROM (
+     SELECT pd.id, pd.employee_id, pd.net_salary, pd.gross_salary, pd.total_deductions, pd.pph21_deduction,
+            pd.status, pd.payslip_sent, pd.payslip_sent_at, ` + detailAllocationsJSON("pd") + ` AS allocations
+       FROM hris.payroll_details pd WHERE pd.payroll_run_id = r.id) e), '[]'::json) AS payroll_details`
 
 func listRunRows(ctx context.Context, q database.Querier, year *int, status *string) ([]*obj, error) {
 	where, args := []string{}, []any{}

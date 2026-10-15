@@ -12,6 +12,8 @@
     "db:migrate": "go -C backend run ./cmd/migrate",
     "db:migrate:apply": "go -C backend run ./cmd/migrate -apply",
     "db:seed": "pnpm --dir backend/database run",
+    "db:seed:paddy-demo": "pnpm --dir backend/database run db:seed:paddy-demo",
+    "db:seed:paddy-full": "pnpm --dir backend/database run db:seed:paddy-full",
     "pos:nfc-bridge": "npm --prefix tools/pos-nfc-bridge start",
     "pos:nfc-bridge:install": "npm install --prefix tools/pos-nfc-bridge",
     "pos:print-worker": "node tools/pos-print-worker/pos-print-worker.mjs"

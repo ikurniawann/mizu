@@ -23,13 +23,13 @@ func str(v *string) any {
 
 func TestParseAmount(t *testing.T) {
 	cases := map[string]any{
-		"Rp 1.234.567":   float64(1_234_567),
-		"1.500":          float64(1_500),
-		"1.234.567,50":   float64(1_234_568),
-		"1,234,567.00":   float64(1_234_567),
-		"250000":         float64(250_000),
-		"0":              nil,
-		"abc":            nil,
+		"Rp 1.234.567":    float64(1_234_567),
+		"1.500":           float64(1_500),
+		"1.234.567,50":    float64(1_234_568),
+		"1,234,567.00":    float64(1_234_567),
+		"250000":          float64(250_000),
+		"0":               nil,
+		"abc":             nil,
 		"Rp 1.234.567,50": float64(1_234_568),
 	}
 	for in, want := range cases {

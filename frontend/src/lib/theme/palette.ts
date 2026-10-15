@@ -48,8 +48,8 @@ export function contrastRatio(a: string, b: string): number {
 }
 
 const LIGHT_TEXT = "#ffffff";
-/** Teks gelap di atas warna terang: Deep Forest Green (brand), hitam bila forest kurang kontras. */
-const BRAND_DARK_TEXT = "#3d2b20";
+/** Teks gelap di atas warna terang: Plum Ink Paddy, hitam bila plum kurang kontras. */
+const BRAND_DARK_TEXT = "#2a1024";
 const DARK_TEXT = "#000000";
 const AA_MIN = 4.5;
 

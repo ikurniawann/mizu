@@ -1,14 +1,14 @@
 {
   "id": "/member",
-  "name": "Mizu Member",
-  "short_name": "Mizu",
-  "description": "Your Mizu ARK Coin balance, XP, offers, and membership card.",
+  "name": "Paddy Member",
+  "short_name": "Paddy",
+  "description": "Your Paddy ARK Coin balance, XP, offers, and membership card.",
   "start_url": "/member",
   "scope": "/member",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f3ece2",
-  "theme_color": "#f3ece2",
+  "background_color": "#fbf5ec",
+  "theme_color": "#fbf5ec",
   "lang": "en",
   "icons": [
     {

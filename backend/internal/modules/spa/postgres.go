@@ -2,6 +2,7 @@ package spa
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -184,10 +185,10 @@ func (s store) treatments(ctx context.Context, q Q, activeOnly bool, id string) 
 	}
 	list, err := many(ctx, q, func(r pgx.Row) (Treatment, error) {
 		var t Treatment
-		err := r.Scan(&t.ID, &t.Code, &t.Name, &t.Category, &t.Description, &t.IsActive, &t.SortOrder)
+		err := r.Scan(&t.ID, &t.Code, &t.Name, &t.Category, &t.Description, &t.IsActive, &t.SortOrder, &t.Customizable)
 		t.Variants = []Variant{}
 		return t, err
-	}, `SELECT t.id::text, t.code, t.name, t.category, t.description, t.is_active, t.sort_order
+	}, `SELECT t.id::text, t.code, t.name, t.category, t.description, t.is_active, t.sort_order, t.customizable
 	      FROM spa.treatments t WHERE `+w.sql()+` ORDER BY t.sort_order, t.name`, w.args...)
 	if err != nil || len(list) == 0 {
 		return list, err
@@ -240,6 +241,7 @@ func (s store) treatment(ctx context.Context, q Q, id string) (*Treatment, error
 type treatmentInput struct {
 	Code, Name, Category, Description *string
 	IsActive                          *bool
+	Customizable                      *bool
 	SortOrder                         *int
 	Variants                          []variantInput // nil = unchanged
 }
@@ -255,17 +257,19 @@ type variantInput struct {
 
 func (store) insertTreatment(ctx context.Context, q Q, in treatmentInput) (string, error) {
 	var id string
-	err := q.QueryRow(ctx, `INSERT INTO spa.treatments (code, name, category, description, is_active, sort_order)
-	  VALUES ($1, $2, $3, $4, $5, $6) RETURNING id::text`,
-		*in.Code, *in.Name, deref(in.Category), deref(in.Description), in.IsActive == nil || *in.IsActive, derefInt(in.SortOrder)).Scan(&id)
+	err := q.QueryRow(ctx, `INSERT INTO spa.treatments (code, name, category, description, is_active, sort_order, customizable)
+	  VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id::text`,
+		*in.Code, *in.Name, deref(in.Category), deref(in.Description), in.IsActive == nil || *in.IsActive, derefInt(in.SortOrder),
+		in.Customizable != nil && *in.Customizable).Scan(&id)
 	return id, err
 }
 
 func (store) updateTreatment(ctx context.Context, q Q, id string, in treatmentInput) (bool, error) {
 	tag, err := q.Exec(ctx, `UPDATE spa.treatments SET code = COALESCE($2, code), name = COALESCE($3, name),
 	    category = COALESCE($4, category), description = COALESCE($5, description),
-	    is_active = COALESCE($6, is_active), sort_order = COALESCE($7, sort_order), updated_at = now()
-	  WHERE id = $1`, id, in.Code, in.Name, in.Category, in.Description, in.IsActive, in.SortOrder)
+	    is_active = COALESCE($6, is_active), sort_order = COALESCE($7, sort_order),
+	    customizable = COALESCE($8, customizable), updated_at = now()
+	  WHERE id = $1`, id, in.Code, in.Name, in.Category, in.Description, in.IsActive, in.SortOrder, in.Customizable)
 	return tag.RowsAffected() > 0, err
 }
 
@@ -331,16 +335,17 @@ type variantRow struct {
 	Category      string
 	TreatmentOn   bool
 	PosProductID  *string
+	Customizable  bool
 }
 
 func (store) variants(ctx context.Context, q Q, ids []string, branchID string) (map[string]variantRow, error) {
 	list, err := many(ctx, q, func(r pgx.Row) (variantRow, error) {
 		var v variantRow
 		err := r.Scan(&v.ID, &v.Name, &v.DurationMin, &v.Price, &v.IsActive,
-			&v.TreatmentID, &v.TreatmentCode, &v.TreatmentName, &v.Category, &v.TreatmentOn, &v.PosProductID)
+			&v.TreatmentID, &v.TreatmentCode, &v.TreatmentName, &v.Category, &v.TreatmentOn, &v.PosProductID, &v.Customizable)
 		return v, err
 	}, `SELECT v.id::text, v.name, v.duration_min, COALESCE(p.price_idr, v.price_idr), v.is_active,
-	        t.id::text, t.code, t.name, t.category, t.is_active, m.pos_product_id::text
+	        t.id::text, t.code, t.name, t.category, t.is_active, m.pos_product_id::text, t.customizable
 	   FROM spa.treatment_variants v
 	   JOIN spa.treatments t ON t.id = v.treatment_id
 	   LEFT JOIN spa.variant_outlet_prices p ON p.variant_id = v.id AND p.branch_id = $2
@@ -378,9 +383,9 @@ func (store) publicTreatments(ctx context.Context, q Q, branchID string) ([]Publ
 	}
 	rows, err := many(ctx, q, func(r pgx.Row) (row, error) {
 		var x row
-		err := r.Scan(&x.t.ID, &x.t.Name, &x.t.Category, &x.t.Description, &x.v.ID, &x.v.Name, &x.v.DurationMin, &x.v.PriceIDR)
+		err := r.Scan(&x.t.ID, &x.t.Name, &x.t.Category, &x.t.Description, &x.t.Customizable, &x.v.ID, &x.v.Name, &x.v.DurationMin, &x.v.PriceIDR)
 		return x, err
-	}, `SELECT t.id::text, t.name, t.category, t.description, v.id::text, v.name, v.duration_min, COALESCE(p.price_idr, v.price_idr)
+	}, `SELECT t.id::text, t.name, t.category, t.description, t.customizable, v.id::text, v.name, v.duration_min, COALESCE(p.price_idr, v.price_idr)
 	   FROM spa.treatments t JOIN spa.treatment_variants v ON v.treatment_id = t.id
 	   LEFT JOIN spa.variant_outlet_prices p ON p.variant_id = v.id AND p.branch_id = $1
 	  WHERE t.is_active AND v.is_active
@@ -656,7 +661,12 @@ func (store) bookingIDOfItem(ctx context.Context, q Q, itemID string) (string, e
 
 const itemColumns = `i.id::text, i.variant_id::text, i.treatment_name, i.variant_name, i.duration_min,
 	i.price_idr::float8, i.therapist_id::text, e.full_name, i.status, i.started_at, i.completed_at,
-	i.commission_idr::float8`
+	i.commission_idr::float8, ` + itemDesignColumns
+
+// itemDesignColumns are the item's case design and whether its treatment
+// takes one (scanned by scanDesign).
+const itemDesignColumns = `COALESCE((SELECT dt.customizable FROM spa.treatment_variants dv
+	  JOIN spa.treatments dt ON dt.id = dv.treatment_id WHERE dv.id = i.variant_id), false), i.design`
 
 const itemJoins = `LEFT JOIN spa.therapists t ON t.id = i.therapist_id
 	LEFT JOIN hris.employees e ON e.id = t.employee_id`
@@ -664,11 +674,54 @@ const itemJoins = `LEFT JOIN spa.therapists t ON t.id = i.therapist_id
 func scanItem(r pgx.Row, extra ...any) (Item, error) {
 	var it Item
 	var started, completed *time.Time
+	var design []byte
 	dest := append([]any{&it.ID, &it.VariantID, &it.TreatmentName, &it.VariantName, &it.DurationMin,
-		&it.PriceIDR, &it.TherapistID, &it.TherapistName, &it.Status, &started, &completed, &it.CommissionIDR}, extra...)
+		&it.PriceIDR, &it.TherapistID, &it.TherapistName, &it.Status, &started, &completed, &it.CommissionIDR,
+		&it.Customizable, &design}, extra...)
 	err := r.Scan(dest...)
 	it.StartedAt, it.CompletedAt = httpx.NewJSTime(started), httpx.NewJSTime(completed)
+	if err == nil {
+		it.Design, err = decodeDesign(design)
+	}
 	return it, err
+}
+
+// decodeDesign reads a stored design snapshot (NULL = none).
+func decodeDesign(raw []byte) (*Design, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var d Design
+	if err := json.Unmarshal(raw, &d); err != nil {
+		return nil, err
+	}
+	if d.Stickers == nil {
+		d.Stickers = []DesignSticker{}
+	}
+	return &d, nil
+}
+
+// encodeDesign is the jsonb parameter of a design (nil = NULL).
+func encodeDesign(d *Design) (*string, error) {
+	if d == nil {
+		return nil, nil
+	}
+	raw, err := json.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+	s := string(raw)
+	return &s, nil
+}
+
+// setItemDesign stores (or clears) an item's design.
+func (store) setItemDesign(ctx context.Context, q Q, itemID string, d *Design) error {
+	raw, err := encodeDesign(d)
+	if err != nil {
+		return err
+	}
+	_, err = q.Exec(ctx, `UPDATE spa.booking_items SET design = $2::jsonb, updated_at = now() WHERE id = $1`, itemID, raw)
+	return err
 }
 
 func (store) items(ctx context.Context, q Q, bookingID string) ([]Item, error) {
@@ -750,15 +803,20 @@ type newItem struct {
 	StartsAt    time.Time // ephemeral planning value; not stored on the item
 	Status      string
 	SortOrder   int
+	Design      *Design // normalized case design (customizable treatments only)
 }
 
 func (store) insertItem(ctx context.Context, q Q, it newItem) (string, error) {
+	design, err := encodeDesign(it.Design)
+	if err != nil {
+		return "", err
+	}
 	var id string
-	err := q.QueryRow(ctx, `INSERT INTO spa.booking_items (booking_id, variant_id, treatment_name, variant_name, duration_min,
-	    price_idr, therapist_id, status, sort_order)
-	  VALUES ($1, $2, $3, $4, $5, $6, $7::uuid, $8, $9) RETURNING id::text`,
+	err = q.QueryRow(ctx, `INSERT INTO spa.booking_items (booking_id, variant_id, treatment_name, variant_name, duration_min,
+	    price_idr, therapist_id, status, sort_order, design)
+	  VALUES ($1, $2, $3, $4, $5, $6, $7::uuid, $8, $9, $10::jsonb) RETURNING id::text`,
 		it.BookingID, it.Variant.ID, it.Variant.TreatmentName, it.Variant.Name, it.Variant.DurationMin,
-		it.Variant.Price, it.TherapistID, it.Status, it.SortOrder).Scan(&id)
+		it.Variant.Price, it.TherapistID, it.Status, it.SortOrder, design).Scan(&id)
 	return id, err
 }
 
@@ -1079,10 +1137,15 @@ func (store) publicBookingByToken(ctx context.Context, q Q, token string, now ti
 	}
 	items, err := many(ctx, q, func(r pgx.Row) (PublicItem, error) {
 		var item PublicItem
-		err := r.Scan(&item.VariantID, &item.TreatmentName, &item.VariantName, &item.DurationMin, &item.PriceIDR)
+		var design []byte
+		err := r.Scan(&item.VariantID, &item.TreatmentName, &item.VariantName, &item.DurationMin, &item.PriceIDR,
+			&item.Customizable, &design)
+		if err == nil {
+			item.Design, err = decodeDesign(design)
+		}
 		return item, err
-	}, `SELECT variant_id::text, treatment_name, variant_name, duration_min, price_idr
-	      FROM spa.booking_items WHERE booking_id = $1 ORDER BY sort_order`, bookingID)
+	}, `SELECT i.variant_id::text, i.treatment_name, i.variant_name, i.duration_min, i.price_idr, `+itemDesignColumns+`
+	      FROM spa.booking_items i WHERE i.booking_id = $1 ORDER BY i.sort_order`, bookingID)
 	if err != nil {
 		return nil, err
 	}

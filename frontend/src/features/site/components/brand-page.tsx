@@ -9,23 +9,23 @@ export function BrandPage({ brand }: { brand: BrandContent }) {
     <>
       <Section className="pb-6">
         <Container>
-          <SectionHeading as="h1" kicker="Tentang" title={brand.title} text={brand.intro} />
+          <SectionHeading as="h1" kicker="Tentang Paddy" title={brand.title} text={brand.intro} />
         </Container>
       </Section>
       <Section className="pt-4">
         <Container className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-12">
           <div className="space-y-8">
             <Markdown source={brand.story_md} className="prose-site" />
-            <BookingButton>Booking treatment</BookingButton>
+            <BookingButton>Booking Paddy Experience</BookingButton>
           </div>
-          <Picture src={photoOr(brand.image_url, SITE_PHOTOS.hero)} alt="" className="aspect-[4/5] w-full rounded-card" />
+          <Picture src={photoOr(brand.image_url, SITE_PHOTOS.hero)} alt="" className="aspect-[4/5] w-full rounded-card border-2 border-navy shadow-[6px_6px_0_0_var(--color-navy)]" />
         </Container>
       </Section>
       {brand.values.length > 0 ? (
         <Section className="pt-0">
           <Container className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {brand.values.map((v, i) => (
-              <Tile key={`${v.title}-${i}`} className="space-y-2">
+              <Tile key={`${v.title}-${i}`} className={`space-y-2 border-2 border-navy ${["bg-sunny/40", "bg-bubblegum/40", "bg-lilac/25"][i % 3]}`}>
                 <h2 className="font-display text-xl font-semibold">{v.title}</h2>
                 <p className="text-sm text-body">{v.text}</p>
               </Tile>

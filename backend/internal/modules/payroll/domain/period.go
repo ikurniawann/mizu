@@ -122,6 +122,11 @@ type AttendanceRow struct {
 	IsLate        *bool
 	LateMinutes   any // numeric text or nil
 	OvertimeHours any
+	// BranchID is the store the day was worked at (nil when not recorded)
+	// and WorkHours its work hours (nil without a clock-out); the store
+	// allocation of the slip reads them.
+	BranchID  *string
+	WorkHours *float64
 }
 
 // OvertimeRequest is an approved overtime request.

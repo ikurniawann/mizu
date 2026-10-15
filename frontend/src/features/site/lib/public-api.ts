@@ -4,6 +4,7 @@ import { backendUrl } from "@/lib/env";
 import { withDefaults } from "../content-defaults";
 import { addDays, weekWindow, type PublicSession, type PublicTimetable } from "./timetable";
 import type { PublicOutlet, PublicTreatment } from "@/features/spa/types";
+import type { ExperienceCatalog } from "@/features/spa/experience";
 import type { Article, BranchProfile, BranchSummary, ContentByKey, ContentKey, PublicPlansView, SiteEvent } from "../types";
 
 /**
@@ -97,6 +98,12 @@ async function loadList<T>(path: string): Promise<Loaded<T[]>> {
 /** Spa outlets open for online booking (GET /api/public/spa/outlets). */
 export function fetchSpaOutlets(): Promise<Loaded<PublicOutlet[]>> {
   return loadList<PublicOutlet>("/api/public/spa/outlets");
+}
+
+/** The custom case design catalog (backgrounds, sticker themes, fonts); null when unavailable. */
+export async function fetchExperienceCatalog(): Promise<ExperienceCatalog | null> {
+  const data = await readApi<ExperienceCatalog>("/api/public/spa/experience-catalog");
+  return data && Array.isArray(data.backgrounds) && Array.isArray(data.themes) ? data : null;
 }
 
 /** The treatment menu of one outlet, with that outlet's prices. */

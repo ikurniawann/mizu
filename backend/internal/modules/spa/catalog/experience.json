@@ -1,0 +1,651 @@
+{
+ "_note": "Katalog desain Paddy Experience (custom case). Disalin dari The Experience Room https://theexperienceroom.paddy.id/product-category/customization/ pada 2026-10-14. Gambar ada di frontend/public/experience/.",
+ "price": 119000,
+ "layouts": [
+  {
+   "code": "2",
+   "name": "Layout 2 gambar",
+   "slots": 2
+  },
+  {
+   "code": "3",
+   "name": "Layout 3 gambar",
+   "slots": 3
+  }
+ ],
+ "brands": [
+  {
+   "code": "apple",
+   "name": "Apple",
+   "models": [
+    "Iphone 17 Promax",
+    "Iphone 17 Pro",
+    "Iphone 17 Air",
+    "Iphone 17",
+    "Iphone 16 Promax",
+    "Iphone 16 Pro",
+    "Iphone 16 Plus",
+    "Iphone 16",
+    "Iphone 15",
+    "Iphone 15 Plus",
+    "Iphone 15 Pro",
+    "Iphone 15 Promax",
+    "Iphone 14 Promax",
+    "Iphone 14 Pro",
+    "Iphone 14 Plus",
+    "Iphone 14",
+    "Iphone 13 Promax",
+    "Iphone 13 Pro",
+    "Iphone 13 Mini",
+    "Iphone 13",
+    "Iphone 12 Promax",
+    "Iphone 12 Pro",
+    "Iphone 12 Mini",
+    "Iphone 12",
+    "Iphone 11 Promax",
+    "Iphone 11 Pro",
+    "Iphone 11",
+    "Iphone XR",
+    "Iphone XS Max",
+    "Iphone X"
+   ]
+  },
+  {
+   "code": "samsung",
+   "name": "Samsung",
+   "models": [
+    "Samsung A54 5G",
+    "Samsung A56/A36",
+    "Samsung A55",
+    "Samsung A15",
+    "Samsung A36",
+    "Samsung A24 4G",
+    "Samsung A14 5G",
+    "Samsung A52 4G",
+    "Samsung S21 FE",
+    "Samsung A73 5G",
+    "Samsung A34 5G",
+    "Samsung A33 5G",
+    "Samsung S23",
+    "Samsung A32 4G",
+    "Samsung A53 4G",
+    "Samsung A05S",
+    "Samsung A13 4G",
+    "Samsung A51 4G",
+    "Samsung A30S",
+    "Samsung A25",
+    "Samsung A22",
+    "Samsung A12",
+    "Samsung S22",
+    "Samsung S23 ULTRA",
+    "Samsung S23 FE",
+    "Samsung S20 FE",
+    "Samsung A05",
+    "Samsung A35",
+    "Samsung A23",
+    "Samsung S24",
+    "Samsung S24 FE",
+    "Samsung S25"
+   ]
+  },
+  {
+   "code": "xiaomi",
+   "name": "Xiaomi",
+   "models": [
+    "Xiaomi Redmi Note 10",
+    "Xiaomi Redmi Note 10 Pro",
+    "Xiaomi Redmi 12",
+    "Xiaomi Mi12 Lite",
+    "Xiaomi Redmi Note 12"
+   ]
+  },
+  {
+   "code": "oppo",
+   "name": "Oppo",
+   "models": [
+    "Oppo A95",
+    "Oppo A74 4G"
+   ]
+  },
+  {
+   "code": "vivo",
+   "name": "Vivo",
+   "models": [
+    "Vivo Y33T",
+    "Vivo Y21",
+    "Vivo Y21A",
+    "Vivo Y21S",
+    "Vivo Y21T",
+    "Vivo Y33S",
+    "Vivo Y12S",
+    "Vivo Y20",
+    "Vivo Y20S",
+    "Vivo Y20A"
+   ]
+  }
+ ],
+ "backgrounds": [
+  {
+   "code": "will-be-free",
+   "name": "Will Be Free",
+   "image": "/experience/backgrounds/will-be-free.webp"
+  },
+  {
+   "code": "star-gummies",
+   "name": "Star Gummies",
+   "image": "/experience/backgrounds/star-gummies.webp"
+  },
+  {
+   "code": "star-dots",
+   "name": "Star Dots",
+   "image": "/experience/backgrounds/star-dots.webp"
+  },
+  {
+   "code": "polkafun",
+   "name": "Polkafun",
+   "image": "/experience/backgrounds/polkafun.webp"
+  },
+  {
+   "code": "orange-stars",
+   "name": "Orange Stars",
+   "image": "/experience/backgrounds/orange-stars.webp"
+  },
+  {
+   "code": "newspaper-print",
+   "name": "Newspaper Print",
+   "image": "/experience/backgrounds/newspaper-print.webp"
+  },
+  {
+   "code": "green-stars",
+   "name": "Green Stars",
+   "image": "/experience/backgrounds/green-stars.webp"
+  },
+  {
+   "code": "brown-picnic",
+   "name": "Brown Picnic",
+   "image": "/experience/backgrounds/brown-picnic.webp"
+  },
+  {
+   "code": "blue-gradient",
+   "name": "Blue Gradient",
+   "image": "/experience/backgrounds/blue-gradient.webp"
+  },
+  {
+   "code": "black-sky",
+   "name": "Black Sky",
+   "image": "/experience/backgrounds/black-sky.webp"
+  },
+  {
+   "code": "transparant-background",
+   "name": "Transparent Background",
+   "image": "/experience/backgrounds/transparant-background.webp"
+  }
+ ],
+ "themes": [
+  {
+   "code": "backyard-pals",
+   "name": "Backyard Pals",
+   "cover": "/experience/themes/backyard-pals.webp",
+   "stickers": [
+    {
+     "code": "backyard-pals-a",
+     "name": "Backyard Pals A",
+     "image": "/experience/stickers/backyard-pals/backyard-pals-a.webp"
+    },
+    {
+     "code": "backyard-pals-b",
+     "name": "Backyard Pals B",
+     "image": "/experience/stickers/backyard-pals/backyard-pals-b.webp"
+    },
+    {
+     "code": "backyard-pals-c",
+     "name": "Backyard Pals C",
+     "image": "/experience/stickers/backyard-pals/backyard-pals-c.webp"
+    },
+    {
+     "code": "backyard-pals-d",
+     "name": "Backyard Pals D",
+     "image": "/experience/stickers/backyard-pals/backyard-pals-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "baking-pals",
+   "name": "Baking Pals",
+   "cover": "/experience/themes/baking-pals.webp",
+   "stickers": [
+    {
+     "code": "baking-pals-a",
+     "name": "Baking Pals A",
+     "image": "/experience/stickers/baking-pals/baking-pals-a.webp"
+    },
+    {
+     "code": "baking-pals-b",
+     "name": "Baking Pals B",
+     "image": "/experience/stickers/baking-pals/baking-pals-b.webp"
+    },
+    {
+     "code": "baking-pals-c",
+     "name": "Baking Pals C",
+     "image": "/experience/stickers/baking-pals/baking-pals-c.webp"
+    },
+    {
+     "code": "baking-pals-d",
+     "name": "Baking Pals D",
+     "image": "/experience/stickers/baking-pals/baking-pals-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "brunch-time",
+   "name": "Brunch Time",
+   "cover": "/experience/themes/brunch-time.webp",
+   "stickers": [
+    {
+     "code": "brunch-time-a",
+     "name": "Brunch Time A",
+     "image": "/experience/stickers/brunch-time/brunch-time-a.webp"
+    },
+    {
+     "code": "brunch-time-b",
+     "name": "Brunch Time B",
+     "image": "/experience/stickers/brunch-time/brunch-time-b.webp"
+    },
+    {
+     "code": "brunch-time-c",
+     "name": "Brunch Time C",
+     "image": "/experience/stickers/brunch-time/brunch-time-c.webp"
+    },
+    {
+     "code": "brunch-time-d",
+     "name": "Brunch Time D",
+     "image": "/experience/stickers/brunch-time/brunch-time-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "chillin-time",
+   "name": "Chillin Time",
+   "cover": "/experience/themes/chillin-time.webp",
+   "stickers": [
+    {
+     "code": "chillin-time-a",
+     "name": "Chillin Time A",
+     "image": "/experience/stickers/chillin-time/chillin-time-a.webp"
+    },
+    {
+     "code": "chillin-time-b",
+     "name": "Chillin Time B",
+     "image": "/experience/stickers/chillin-time/chillin-time-b.webp"
+    },
+    {
+     "code": "chillin-time-c",
+     "name": "Chillin Time C",
+     "image": "/experience/stickers/chillin-time/chillin-time-c.webp"
+    },
+    {
+     "code": "chillin-time-d",
+     "name": "Chillin Time D",
+     "image": "/experience/stickers/chillin-time/chillin-time-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "drinks-it",
+   "name": "Drinks It !",
+   "cover": "/experience/themes/drinks-it.webp",
+   "stickers": [
+    {
+     "code": "drinks-a",
+     "name": "Drinks A",
+     "image": "/experience/stickers/drinks-it/drinks-a.webp"
+    },
+    {
+     "code": "drinks-b",
+     "name": "Drinks B",
+     "image": "/experience/stickers/drinks-it/drinks-b.webp"
+    },
+    {
+     "code": "drinks-c",
+     "name": "Drinks C",
+     "image": "/experience/stickers/drinks-it/drinks-c.webp"
+    },
+    {
+     "code": "drinks-d",
+     "name": "Drinks D",
+     "image": "/experience/stickers/drinks-it/drinks-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "fuzzy-farmhouse",
+   "name": "Fuzzy Farmhouse",
+   "cover": "/experience/themes/fuzzy-farmhouse.webp",
+   "stickers": [
+    {
+     "code": "fuzzy-farmhouse-a",
+     "name": "Fuzzy Farmhouse A",
+     "image": "/experience/stickers/fuzzy-farmhouse/fuzzy-farmhouse-a.webp"
+    },
+    {
+     "code": "fuzzy-farmhouse-b",
+     "name": "Fuzzy Farmhouse B",
+     "image": "/experience/stickers/fuzzy-farmhouse/fuzzy-farmhouse-b.webp"
+    },
+    {
+     "code": "fuzzy-farmhouse-c",
+     "name": "Fuzzy Farmhouse C",
+     "image": "/experience/stickers/fuzzy-farmhouse/fuzzy-farmhouse-c.webp"
+    },
+    {
+     "code": "fuzzy-farmhouse-d",
+     "name": "Fuzzy Farmhouse D",
+     "image": "/experience/stickers/fuzzy-farmhouse/fuzzy-farmhouse-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "galactic-adventures",
+   "name": "Galactic Adventures",
+   "cover": "/experience/themes/galactic-adventures.webp",
+   "stickers": [
+    {
+     "code": "galatic-a",
+     "name": "Galatic A",
+     "image": "/experience/stickers/galactic-adventures/galatic-a.webp"
+    },
+    {
+     "code": "galatic-b",
+     "name": "Galatic B",
+     "image": "/experience/stickers/galactic-adventures/galatic-b.webp"
+    },
+    {
+     "code": "galatic-c",
+     "name": "Galatic C",
+     "image": "/experience/stickers/galactic-adventures/galatic-c.webp"
+    },
+    {
+     "code": "galatic-d",
+     "name": "Galatic D",
+     "image": "/experience/stickers/galactic-adventures/galatic-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "heart-space",
+   "name": "Heart Space",
+   "cover": "/experience/themes/heart-space.webp",
+   "stickers": [
+    {
+     "code": "heart-space-a",
+     "name": "Heart Space A",
+     "image": "/experience/stickers/heart-space/heart-space-a.webp"
+    },
+    {
+     "code": "heart-space-b",
+     "name": "Heart Space B",
+     "image": "/experience/stickers/heart-space/heart-space-b.webp"
+    },
+    {
+     "code": "heart-space-c",
+     "name": "Heart Space C",
+     "image": "/experience/stickers/heart-space/heart-space-c.webp"
+    },
+    {
+     "code": "heart-space-d",
+     "name": "Heart Space D",
+     "image": "/experience/stickers/heart-space/heart-space-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "its-makeover-time",
+   "name": "It's Makeover Time!",
+   "cover": "/experience/themes/its-makeover-time.webp",
+   "stickers": [
+    {
+     "code": "make-over-a",
+     "name": "Make Over A",
+     "image": "/experience/stickers/its-makeover-time/make-over-a.webp"
+    },
+    {
+     "code": "make-over-b",
+     "name": "Make Over B",
+     "image": "/experience/stickers/its-makeover-time/make-over-b.webp"
+    },
+    {
+     "code": "make-over-c",
+     "name": "Make Over C",
+     "image": "/experience/stickers/its-makeover-time/make-over-c.webp"
+    },
+    {
+     "code": "make-over-d",
+     "name": "Make Over D",
+     "image": "/experience/stickers/its-makeover-time/make-over-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "nintendo-let-s-go",
+   "name": "Nintendo ! Let's go !",
+   "cover": "/experience/themes/nintendo-let-s-go.webp",
+   "stickers": [
+    {
+     "code": "nintendo-a",
+     "name": "Nintendo A",
+     "image": "/experience/stickers/nintendo-let-s-go/nintendo-a.webp"
+    },
+    {
+     "code": "nintendo-b",
+     "name": "Nintendo B",
+     "image": "/experience/stickers/nintendo-let-s-go/nintendo-b.webp"
+    },
+    {
+     "code": "nintendo-c",
+     "name": "Nintendo C",
+     "image": "/experience/stickers/nintendo-let-s-go/nintendo-c.webp"
+    },
+    {
+     "code": "nintendo-d",
+     "name": "Nintendo D",
+     "image": "/experience/stickers/nintendo-let-s-go/nintendo-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "now-playing",
+   "name": "Now Playing",
+   "cover": "/experience/themes/now-playing.webp",
+   "stickers": [
+    {
+     "code": "now-playing-a",
+     "name": "Now Playing A",
+     "image": "/experience/stickers/now-playing/now-playing-a.webp"
+    },
+    {
+     "code": "now-playing-b",
+     "name": "Now Playing B",
+     "image": "/experience/stickers/now-playing/now-playing-b.webp"
+    },
+    {
+     "code": "now-playing-c",
+     "name": "Now Playing C",
+     "image": "/experience/stickers/now-playing/now-playing-c.webp"
+    },
+    {
+     "code": "now-playing-d",
+     "name": "Now Playing D",
+     "image": "/experience/stickers/now-playing/now-playing-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "picnic-day",
+   "name": "Picnic Day",
+   "cover": "/experience/themes/picnic-day.webp",
+   "stickers": [
+    {
+     "code": "picnic-day-a",
+     "name": "Picnic Day A",
+     "image": "/experience/stickers/picnic-day/picnic-day-a.webp"
+    },
+    {
+     "code": "picnic-day-b",
+     "name": "Picnic Day B",
+     "image": "/experience/stickers/picnic-day/picnic-day-b.webp"
+    },
+    {
+     "code": "picnic-day-c",
+     "name": "Picnic Day C",
+     "image": "/experience/stickers/picnic-day/picnic-day-c.webp"
+    },
+    {
+     "code": "picnic-day-d",
+     "name": "Picnic Day D",
+     "image": "/experience/stickers/picnic-day/picnic-day-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "plants-are-friends",
+   "name": "Plants are Friends",
+   "cover": "/experience/themes/plants-are-friends.webp",
+   "stickers": [
+    {
+     "code": "plants-are-friends-a",
+     "name": "Plants are Friends A",
+     "image": "/experience/stickers/plants-are-friends/plants-are-friends-a.webp"
+    },
+    {
+     "code": "plants-are-friends-b",
+     "name": "Plants are Friends B",
+     "image": "/experience/stickers/plants-are-friends/plants-are-friends-b.webp"
+    },
+    {
+     "code": "plants-are-friends-c",
+     "name": "Plants are Friends C",
+     "image": "/experience/stickers/plants-are-friends/plants-are-friends-c.webp"
+    },
+    {
+     "code": "plants-are-friends-d",
+     "name": "Plants are Friends D",
+     "image": "/experience/stickers/plants-are-friends/plants-are-friends-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "savoring-sushi",
+   "name": "Savoring Sushi",
+   "cover": "/experience/themes/savoring-sushi.webp",
+   "stickers": [
+    {
+     "code": "savoring-sushi-a",
+     "name": "Savoring Sushi A",
+     "image": "/experience/stickers/savoring-sushi/savoring-sushi-a.webp"
+    },
+    {
+     "code": "savoring-sushi-b",
+     "name": "Savoring Sushi B",
+     "image": "/experience/stickers/savoring-sushi/savoring-sushi-b.webp"
+    },
+    {
+     "code": "savoring-sushi-c",
+     "name": "Savoring Sushi C",
+     "image": "/experience/stickers/savoring-sushi/savoring-sushi-c.webp"
+    },
+    {
+     "code": "savoring-sushi-d",
+     "name": "Savoring Sushi D",
+     "image": "/experience/stickers/savoring-sushi/savoring-sushi-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "seasons-of-plenty",
+   "name": "Seasons of Plenty",
+   "cover": "/experience/themes/seasons-of-plenty.webp",
+   "stickers": [
+    {
+     "code": "seasons-of-plenty-a",
+     "name": "Seasons of Plenty A",
+     "image": "/experience/stickers/seasons-of-plenty/seasons-of-plenty-a.webp"
+    },
+    {
+     "code": "seasons-of-plenty-b",
+     "name": "Seasons of Plenty B",
+     "image": "/experience/stickers/seasons-of-plenty/seasons-of-plenty-b.webp"
+    },
+    {
+     "code": "seasons-of-plenty-c",
+     "name": "Seasons of Plenty C",
+     "image": "/experience/stickers/seasons-of-plenty/seasons-of-plenty-c.webp"
+    },
+    {
+     "code": "seasons-of-plenty-d",
+     "name": "Seasons of Plenty D",
+     "image": "/experience/stickers/seasons-of-plenty/seasons-of-plenty-d.webp"
+    }
+   ]
+  },
+  {
+   "code": "tiny-trinkets",
+   "name": "Tiny Trinkets",
+   "cover": "/experience/themes/tiny-trinkets.webp",
+   "stickers": [
+    {
+     "code": "tiny-trinkets-a",
+     "name": "Tiny Trinkets A",
+     "image": "/experience/stickers/tiny-trinkets/tiny-trinkets-a.webp"
+    },
+    {
+     "code": "tiny-trinkets-b",
+     "name": "Tiny Trinkets B",
+     "image": "/experience/stickers/tiny-trinkets/tiny-trinkets-b.webp"
+    },
+    {
+     "code": "tiny-trinkets-c",
+     "name": "Tiny Trinkets C",
+     "image": "/experience/stickers/tiny-trinkets/tiny-trinkets-c.webp"
+    },
+    {
+     "code": "tiny-trinkets-d",
+     "name": "Tiny Trinkets D",
+     "image": "/experience/stickers/tiny-trinkets/tiny-trinkets-d.webp"
+    }
+   ]
+  }
+ ],
+ "fonts": [
+  {
+   "code": "ala-nkcthi",
+   "name": "Ala Nkcthi",
+   "sample": "/experience/fonts/ala-nkcthi.webp"
+  },
+  {
+   "code": "cairo",
+   "name": "Cairo",
+   "sample": "/experience/fonts/cairo.webp"
+  },
+  {
+   "code": "daydream",
+   "name": "Daydream",
+   "sample": "/experience/fonts/daydream.webp"
+  },
+  {
+   "code": "rabbit-on-the-moon",
+   "name": "Rabbit on the Moon",
+   "sample": "/experience/fonts/rabbit-on-the-moon.webp"
+  },
+  {
+   "code": "doyle",
+   "name": "Doyle",
+   "sample": "/experience/fonts/doyle.webp"
+  },
+  {
+   "code": "febuary-delight",
+   "name": "February Delight",
+   "sample": "/experience/fonts/febuary-delight.webp"
+  }
+ ],
+ "name_max_length": 12
+}

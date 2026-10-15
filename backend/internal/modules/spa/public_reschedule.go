@@ -34,13 +34,14 @@ type PublicLookup struct {
 	Grant       string `json:"grant"`
 }
 
-var bookingCodePattern = regexp.MustCompile(`^MZ-\d{6}-[A-Z0-9]{4}$`)
+var bookingCodePattern = regexp.MustCompile(`^(?:PD|MZ)-\d{6}-[A-Z0-9]{4}$`)
 
-// normalizeBookingCode accepts "mz 261012 fh2u", "MZ-261012-FH2U", …
+// normalizeBookingCode accepts "pd 261012 fh2u", "PD-261012-FH2U", … (and
+// legacy "MZ-…" codes).
 func normalizeBookingCode(raw string) string {
 	s := strings.ToUpper(strings.Join(strings.Fields(raw), ""))
 	s = strings.ReplaceAll(s, "-", "")
-	if len(s) == 12 && strings.HasPrefix(s, "MZ") {
+	if len(s) == 12 && (strings.HasPrefix(s, domain.BookingPrefix) || strings.HasPrefix(s, domain.LegacyBookingPrefix)) {
 		s = s[:2] + "-" + s[2:8] + "-" + s[8:]
 	}
 	return s

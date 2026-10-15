@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, FileText, Filter, Search } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle, FileText, Filter, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { PurchasingListSection } from "@/features/purchasing/components/shared/purchasing-list-section";
 import { PurchasingPageHeader } from "@/features/purchasing/components/shared/purchasing-page-header";
 import { PurchasingTablePagination } from "@/features/purchasing/components/shared/purchasing-table-pagination";
+import { PurchasingRulesLink, usePurchasingSettings } from "@/features/purchasing/settings";
+import { RM_ROUTES } from "@/lib/purchasing/item-routes";
 import type { SendVia } from "@/lib/purchasing/po-ui-status";
 import type { POStatus, PurchaseOrderWithStats } from "@/types/purchasing";
 import { useApprovePurchaseOrder, useCancelPurchaseOrder, useSendPurchaseOrder } from "../mutations";
@@ -57,6 +60,9 @@ export function PurchaseOrdersPage() {
   const total = listQuery.data?.pagination?.total ?? listQuery.data?.total ?? 0;
   const totalPages =
     listQuery.data?.pagination?.total_pages ?? listQuery.data?.total_pages ?? Math.ceil(total / PAGE_SIZE);
+
+  // PO langsung (tanpa PR) hanya bila aturan Pengaturan Pembelian mengizinkan.
+  const directPoAllowed = usePurchasingSettings().data?.po_requires_pr_raw_material === false;
 
   const approveMutation = useApprovePurchaseOrder();
   const sendMutation = useSendPurchaseOrder();
@@ -138,7 +144,24 @@ export function PurchaseOrdersPage() {
     <div className="space-y-6">
       <PurchasingPageHeader
         title="Purchase Order"
-        description={`Kelola purchase order dari purchase request yang disetujui hingga penerimaan barang, total ${total}`}
+        description={`${
+          directPoAllowed
+            ? "Kelola purchase order langsung atau dari purchase request yang disetujui"
+            : "Kelola purchase order dari purchase request yang disetujui"
+        } hingga penerimaan barang, total ${total}`}
+        actions={
+          <>
+            <PurchasingRulesLink />
+            {directPoAllowed && (
+              <Link href={RM_ROUTES.purchasingPoInsert}>
+                <Button className="purchasing-main-button w-full sm:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Buat Purchase Order
+                </Button>
+              </Link>
+            )}
+          </>
+        }
       />
 
       <PurchasingListSection

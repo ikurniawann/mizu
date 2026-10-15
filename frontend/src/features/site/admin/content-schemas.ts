@@ -84,7 +84,7 @@ export const CONTENT_SCHEMAS: Record<ContentKey, ContentSchema> = {
     ],
   },
   brand: {
-    label: "Tentang Mizu",
+    label: "Tentang Paddy",
     description: "Cerita merek dalam markdown dan nilai-nilai.",
     fields: [
       text("title", "Judul"),

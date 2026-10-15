@@ -74,6 +74,10 @@ export interface JournalEntryLineItem {
   amount: number;
   memo: string | null;
   sort_order: number;
+  /** Toko/cost center baris (jurnal payroll per toko); null = tingkat perusahaan */
+  branch_id?: string | null;
+  branch_code?: string | null;
+  branch_name?: string | null;
 }
 
 export interface JournalEntryItem {

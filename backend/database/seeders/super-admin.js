@@ -62,7 +62,7 @@ async function main() {
   }
 
   // Dibaca setelah loadEnv() supaya nilai di .env / .env.local ikut terpakai.
-  const EMAIL = process.env.SUPER_USER_EMAIL || "super@arkivworld.com";
+  const EMAIL = process.env.SUPER_USER_EMAIL || "super@paddy.id";
   const PASSWORD = seedPassword("SUPER_USER_PASSWORD");
   const FULL_NAME = process.env.SUPER_USER_NAME || "Super Admin";
   const NIP = process.env.SUPER_USER_NIP || "SUPERADMIN";

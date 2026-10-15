@@ -8,6 +8,7 @@ import { IAM } from "@/lib/iam/prefixes";
 import { createServerPgClient } from "@/lib/pg/create-client";
 import { parsePurchasingModuleType } from "@/lib/purchasing/module-scope";
 import { createPurchaseOrder, parsePoCreateBody } from "@/lib/purchasing/po-create";
+import { getPurchasingSettings } from "@/lib/purchasing/po-rules-server";
 import { listPurchaseOrders } from "@/lib/purchasing/po-queries";
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -41,6 +42,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     (body as { module_type?: string } | null)?.module_type
   );
   const input = parsePoCreateBody(body, moduleType);
-  const data = await createPurchaseOrder(db, moduleType, input, await getApiUserScope());
+  const data = await createPurchaseOrder(db, moduleType, input, await getApiUserScope(), getPurchasingSettings);
   return NextResponse.json({ success: true, data, message: "PO berhasil dibuat" }, { status: 201 });
 }, "purchasing.po.create");

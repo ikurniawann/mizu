@@ -185,6 +185,11 @@ function AppSidebarContent({
           railExpanded ? "w-60" : "w-[76px]"
         }`}
       >
+        {/* Tekstur doodle Paddy di pucuk rail (dekoratif, memudar ke bawah). */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-28 rounded-t-hero bg-[url('/brand/pattern.png')] bg-[length:340px_auto] opacity-25 [mask-image:linear-gradient(to_bottom,black,transparent)]"
+        />
         <RailHeader expanded={railExpanded} />
         <AppSidebarNav navItems={navItems} collapsed={!railExpanded} />
         <RailWorkspace
@@ -252,7 +257,7 @@ function AppSidebarContent({
               <Link
                 href="/os"
                 className={cn(ROUND_BUTTON, "hidden sm:inline-flex")}
-                title="Buka Mizu OS desktop"
+                title="Buka Paddy OS desktop"
                 aria-label="Buka desktop"
               >
                 <MonitorSmartphone className="size-5" />
@@ -352,11 +357,11 @@ function RailHeader({ expanded }: { expanded: boolean }) {
       {expanded ? (
         <>
           {/* Wordmark putih di permukaan gelap (Logo Colorways, brand guideline). */}
-          <Image src="/brand/wordmark-white.png" width={640} height={165} alt="" className="h-auto w-32 select-none" draggable={false} />
-          <span className="mt-2 block truncate text-[11px] text-on-ink-muted">Operasional bisnis</span>
+          <Image src="/brand/wordmark-white.png" width={640} height={165} alt="" className="relative h-auto w-36 select-none" draggable={false} />
+          <span className="relative mt-2 block truncate text-[11px] font-bold text-sunny">Your Adorable Companion</span>
         </>
       ) : (
-        <Image src="/brand/mark-lime.png" width={210} height={210} alt="" className="h-auto w-9 select-none" draggable={false} />
+        <Image src="/brand/mark-lime.png" width={210} height={210} alt="" className="relative h-auto w-10 -rotate-6 select-none" draggable={false} />
       )}
     </Link>
   );

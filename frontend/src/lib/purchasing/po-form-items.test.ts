@@ -4,15 +4,21 @@ import {
   buildCreatePOPayload,
   buildUpdatePOPayload,
   emptyPOForm,
+  emptyPOItem,
+  lowStockPOItem,
   mapPOItemToForm,
   mapPRItemToForm,
   poFormFromExisting,
   poFormTotals,
   priceLookupUnitId,
+  prItemsToPOItems,
+  purchaseUnitOptions,
   resolveSatuanIdFromPrItem,
   validatePOForm,
+  withMaterial,
   withPurchasePrice,
   withQtyOrPrice,
+  withUnit,
 } from "./po-form-items";
 
 const units = [
@@ -124,5 +130,83 @@ describe("form totals, validation, payloads", () => {
       "2026-10-04"
     );
     expect(form).toMatchObject({ supplier_id: "s1", tanggal_po: "2026-09-01", ppn_persen: 0, diskon_persen: 5 });
+  });
+});
+
+describe("direct PO rows (rule off)", () => {
+  const susu = {
+    id: "m2",
+    nama: "Susu UHT",
+    satuan_besar_id: "u-krt",
+    satuan_kecil_id: "u-pcs",
+    konversi_factor: 24,
+    unit_conversions: [
+      { satuan_id: "u-pcs", qty_in_base_unit: 1, is_base: true, satuan: { nama: "Pcs" } },
+      { satuan_id: "u-krt", qty_in_base_unit: 24, is_purchase_default: true, satuan: { nama: "Karton" } },
+    ],
+  } as unknown as RawMaterialWithStock;
+
+  it("lists purchase units with pack labels, falling back to legacy big/small units", () => {
+    expect(purchaseUnitOptions(susu, units)).toEqual([
+      { value: "u-pcs", label: "Pcs", factor: 1 },
+      { value: "u-krt", label: "Karton (24 Pcs)", factor: 24 },
+    ]);
+    expect(purchaseUnitOptions(materials[0], units)).toEqual([{ value: "u-kg", label: "Kilogram", factor: 1 }]);
+    expect(purchaseUnitOptions(undefined, units)).toEqual([]);
+  });
+
+  it("picks a material with its default purchase pack and resets the price", () => {
+    const row = withMaterial({ ...emptyPOItem("r1"), harga_satuan: 99, subtotal: 99, pr_item_id: "old" }, susu, units);
+    expect(row).toMatchObject({
+      id: "r1",
+      raw_material_id: "m2",
+      raw_material_name: "Susu UHT",
+      satuan_id: "u-krt",
+      raw_material_unit: "Karton (24 Pcs)",
+      harga_satuan: 0,
+      subtotal: 0,
+      qty_ordered: 1,
+    });
+    expect(row.pr_item_id).toBeUndefined();
+    expect(withUnit({ ...row, harga_satuan: 5 }, "u-pcs", "Pcs")).toMatchObject({ satuan_id: "u-pcs", harga_satuan: 0, raw_material_unit: "Pcs" });
+  });
+
+  it("prefills a low-stock row in whole purchase packs", () => {
+    expect(lowStockPOItem(susu, 50, units)).toMatchObject({ raw_material_id: "m2", satuan_id: "u-krt", qty_ordered: 3 });
+    expect(lowStockPOItem(susu, 0, units).qty_ordered).toBe(1);
+  });
+
+  it("reads numeric pack columns sent as strings by the API", () => {
+    const fromApi = {
+      ...susu,
+      konversi_factor: "24.0000",
+      unit_conversions: susu.unit_conversions?.map((c) => ({ ...c, qty_in_base_unit: String(c.qty_in_base_unit) })),
+    } as unknown as RawMaterialWithStock;
+    expect(lowStockPOItem(fromApi, 250, units)).toMatchObject({ satuan_id: "u-krt", qty_ordered: 11 });
+    expect(purchaseUnitOptions(fromApi, units)).toEqual([
+      { value: "u-pcs", label: "Pcs", factor: 1 },
+      { value: "u-krt", label: "Karton (24 Pcs)", factor: 24 },
+    ]);
+  });
+
+  it("maps approved PR items with the material name", () => {
+    const [row] = prItemsToPOItems([{ id: "pri", raw_material_id: "m1", qty: 2, unit: "KG", description: "catatan" }], materials, units);
+    expect(row).toMatchObject({ pr_item_id: "pri", raw_material_name: "Gula", satuan_id: "u-kg", qty_ordered: 2 });
+  });
+
+  it("validates direct POs without a PR: supplier, items, material, unit, qty", () => {
+    const form = { ...emptyPOForm(undefined, "2026-10-04"), supplier_id: "s1" };
+    const direct = { requirePr: false };
+    const row = withQtyOrPrice(withMaterial(emptyPOItem("r1"), susu, units), "harga_satuan", 1000);
+    expect(validatePOForm({ ...form, supplier_id: "" }, [row], false, direct)).toBe("Pilih supplier terlebih dahulu");
+    expect(validatePOForm(form, [], false, direct)).toBe("Tambahkan minimal 1 item");
+    expect(validatePOForm(form, [emptyPOItem()], false, direct)).toBe("Pilih bahan baku untuk semua item");
+    expect(validatePOForm(form, [{ ...row, satuan_id: undefined }], false, direct)).toBe("Pilih satuan untuk semua item");
+    expect(validatePOForm(form, [{ ...row, qty_ordered: 0 }], false, direct)).toMatch(/Lengkapi jumlah/);
+    expect(validatePOForm(form, [row], false, direct)).toBeNull();
+    expect(validatePOForm(form, [row], false)).toMatch(/purchase request/);
+    expect(buildCreatePOPayload(form, [row]).items).toEqual([
+      { raw_material_id: "m2", pr_item_id: undefined, satuan_id: "u-krt", qty_ordered: 1, harga_satuan: 1000, notes: "" },
+    ]);
   });
 });

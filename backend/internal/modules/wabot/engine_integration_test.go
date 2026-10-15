@@ -184,7 +184,7 @@ func setupBot(t *testing.T) *botEnv {
 	}
 	sender := &memSender{}
 	svc := txSpa{svc: spa.NewService(tx, app.SpaPorts(), deps)}
-	ports := wabot.Ports{Spa: svc, Sender: sender, AppURL: "https://mizu.test"}
+	ports := wabot.Ports{Spa: svc, Sender: sender, AppURL: "https://paddy.test"}
 	return &botEnv{t: t, ctx: ctx, tx: tx, engine: wabot.NewEngine(ports, deps.Log, deps.Now), conv: conv, phone: phone,
 		branch: org.BranchID, sender: sender, at: fixedNow, spa: svc, variant: variant}
 }
@@ -244,16 +244,16 @@ func TestBotBooksTwoGuestsByMenu(t *testing.T) {
 	if m == nil {
 		t.Fatalf("no slot menu:\n%s", r)
 	}
-	// Groups are assigned by Mizu (no therapist question); the WhatsApp
+	// Groups are assigned by Paddy (no therapist question); the WhatsApp
 	// profile name fills the name step, so the summary follows directly.
 	r = e.say("1")
-	e.wants(r, "dipilihkan oleh Mizu", "Fajar Bot", "2 orang", "Rp 300.000", "Balas *ya*")
+	e.wants(r, "dipilihkan oleh Paddy", "Fajar Bot", "2 orang", "Rp 300.000", "Balas *ya*")
 	r = e.say("1")
 	// Online payment is off in this test, so no payment question is asked.
 	if strings.Contains(r, "Bayar online") {
 		t.Fatalf("online payment offered while disabled:\n%s", r)
 	}
-	e.wants(r, "Kode booking", "https://mizu.test/booking/spa/status/", "di outlet")
+	e.wants(r, "Kode booking", "https://paddy.test/booking/spa/status/", "di toko")
 	var n int
 	var source, status, name string
 	if err := e.tx.QueryRow(e.ctx, `SELECT count(*), min(source), min(status), min(customer_name) FROM spa.bookings
@@ -265,7 +265,7 @@ func TestBotBooksTwoGuestsByMenu(t *testing.T) {
 	}
 	// Done state: status question and a thank-you.
 	r = e.say("status")
-	e.wants(r, "Booking terakhir", "https://mizu.test/booking/spa/status/")
+	e.wants(r, "Booking terakhir", "https://paddy.test/booking/spa/status/")
 	var active bool
 	var reason *string
 	if err := e.tx.QueryRow(e.ctx, `SELECT bot_active, bot_handover_reason FROM crm.wa_conversations WHERE id = $1::uuid`, e.conv).Scan(&active, &reason); err != nil {
@@ -290,13 +290,13 @@ func TestBotSingleGuestPicksTherapist(t *testing.T) {
 	e.say("1")
 	e.say("1")
 	r := e.say("besok jam 2 siang") // free text: date + exact time, auto-picked
-	e.wants(r, "Pilihkan oleh Mizu", "Terapis S. (wanita)", "Terapis D. (wanita)")
+	e.wants(r, "Pilihkan oleh Paddy", "Terapis S. (wanita)", "Terapis D. (wanita)")
 	picked := regexp.MustCompile(`(?m)^2\. (Terapis \w\.)`).FindStringSubmatch(r)
 	if picked == nil {
 		t.Fatalf("no therapist menu:\n%s", r)
 	}
 	r = e.say("2")
-	e.wants(r, "jam *14.00* WIB", "Terapis: *"+picked[1])
+	e.wants(r, "jam *14.00* WIB", "Crew: *"+picked[1])
 	r = e.say("ya")
 	e.wants(r, "Kode booking")
 	var status string
@@ -367,7 +367,7 @@ func (e *botEnv) newConv(phone, name string) *botEnv {
 	}
 	c := *e
 	c.conv, c.phone, c.sender = conv, phone, &memSender{}
-	c.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: c.sender, AppURL: "https://mizu.test"}, nil, func() time.Time { return fixedNow })
+	c.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: c.sender, AppURL: "https://paddy.test"}, nil, func() time.Time { return fixedNow })
 	return &c
 }
 
@@ -582,7 +582,7 @@ func TestBotKeepsTreatmentsNamedBeforeOutlet(t *testing.T) {
 	r := g.say("halo, mau reflexology buat 2 orang besok") // Indonesian detected: no language question
 	g.wants(r, "nama")
 	r = g.say("1")
-	g.wants(r, "Mau datang ke outlet mana?")
+	g.wants(r, "Mau datang ke toko Paddy mana?")
 	name := "Go Test B" + smallSuffix(e, second)
 	r = g.say("di " + name + " saja")
 	// Outlet matched from text, treatments applied from the pending list: straight to the time question.
@@ -638,7 +638,7 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 		t.Fatal(err)
 	}
 	ai := &fakeAnswerer{}
-	e.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: e.sender, Extractor: ai, AppURL: "https://mizu.test"}, nil, func() time.Time { return fixedNow })
+	e.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: e.sender, Extractor: ai, AppURL: "https://paddy.test"}, nil, func() time.Time { return fixedNow })
 	r := e.say("Kalau alamatnya dimana ya?")
 	e.wants(r, "📍", "Jl. Uji No. 7, Bandung", "google.com/maps", "buka 10.00–20.00", "Lanjut booking — Boleh tahu nama")
 	r = e.say("jam buka sampai jam berapa")
@@ -646,7 +646,7 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 	r = e.say("harga reflexology berapa?")
 	e.wants(r, "Daftar harga", "Reflexology · 45 menit — Rp 150.000")
 	r = e.say("bisa bayar pakai qris?")
-	e.wants(r, "di outlet setelah treatment")
+	e.wants(r, "di toko setelah layanan")
 	r = e.say("kalau mau ubah jadwal gimana")
 	e.wants(r, "1 jam sebelum")
 	r = e.say("ada ruang keluarga ga?")
@@ -717,13 +717,13 @@ func TestBotEnglishFlow(t *testing.T) {
 	r := e.say("Hi, I'd like to book a massage for 2 people tomorrow afternoon")
 	e.wants(r, "booking assistant", "May I have your name", "1. Use *Fajar Bot*")
 	r = e.say("1")
-	e.wants(r, "Choose a treatment", "Reply with *one number*")
+	e.wants(r, "Choose a Paddy Experience service", "Reply with *one number*")
 	r = e.say("1")
 	e.wants(r, "Times still available on *Friday, 9 Oct 2026*", "(afternoon)")
 	r = e.say("1")
 	e.wants(r, "Here's your booking summary", "2 people", "• Name: *Fajar Bot*", "Reply *yes* to book")
 	r = e.say("yes")
-	e.wants(r, "Booking confirmed ✅", "Booking codes:", "Schedule: Friday, 9 Oct 2026", "see you at Mizu")
+	e.wants(r, "Booking confirmed ✅", "Booking codes:", "Schedule: Friday, 9 Oct 2026", "see you at Paddy")
 	r = e.say("where are you located?")
 	e.wants(r, "📍", "(open 10.00–20.00)")
 }
@@ -734,7 +734,8 @@ func TestBotLanguageMenu(t *testing.T) {
 	r := e.say("halo")
 	e.wants(r, "Pilih bahasa / choose a language")
 	r = e.say("2")
-	e.wants(r, "I'm Mizu Assistant", "May I have your name")
+	// The bot name comes from crm_settings.bot_name (migration default; seeders/paddy-branding.js sets "Paddy Assistant").
+	e.wants(r, "Assistant, Paddy Experience's booking assistant", "May I have your name")
 	e2 := e.newConv("6281255500777", "Siti Aminah")
 	e2.say("...")
 	r = e2.say("ok")
@@ -759,7 +760,7 @@ func TestBotBackAndNewBooking(t *testing.T) {
 	r := e.say("1")
 	e.wants(r, "Mau datang kapan?")
 	r = e.say("kembali")
-	e.wants(r, "Oke, kembali satu langkah.", "Pilih treatment")
+	e.wants(r, "Oke, kembali satu langkah.", "Pilih layanan")
 	r = e.say("kembali")
 	e.wants(r, "Untuk berapa orang?")
 	e.say("1")
@@ -791,7 +792,7 @@ func TestBotBackAndNewBooking(t *testing.T) {
 func TestBotOffScriptMessages(t *testing.T) {
 	e := setupBot(t)
 	ai := &fakeAnswerer{}
-	e.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: e.sender, Extractor: ai, AppURL: "https://mizu.test"}, nil, func() time.Time { return fixedNow })
+	e.engine = wabot.NewEngine(wabot.Ports{Spa: e.spa, Sender: e.sender, Extractor: ai, AppURL: "https://paddy.test"}, nil, func() time.Time { return fixedNow })
 	e.start()
 	e.say("2")
 	r := e.say("Halo coba ulang ya") // command inside a short sentence (no AI needed)
@@ -832,14 +833,14 @@ func TestBotDepositFlow(t *testing.T) {
 	e.say("1")
 	e.say("besok jam 10 pagi")
 	r := e.say("0")
-	e.wants(r, "ringkasan", "Booking fee (DP): *Rp 100.000*", "Sisa: *Rp 50.000* dibayar di outlet")
+	e.wants(r, "ringkasan", "Booking fee (DP): *Rp 100.000*", "Sisa: *Rp 50.000* dibayar di toko")
 	r = e.say("ya")
-	e.wants(r, "Kode booking", "Jadwal dikunci setelah DP *Rp 100.000* dibayar", "bayar=dp-simulasi", "Sisa *Rp 50.000* dibayar di outlet")
+	e.wants(r, "Kode booking", "Jadwal dikunci setelah DP *Rp 100.000* dibayar", "bayar=dp-simulasi", "Sisa *Rp 50.000* dibayar di toko")
 	if strings.Contains(r, "Mau bayar bagaimana?") {
 		t.Fatalf("no payment menu with a deposit:\n%s", r)
 	}
 	r = e.say("sudah bayar")
-	e.wants(r, "DP *MZ-", "belum terlihat")
+	e.wants(r, "DP *PD-", "belum terlihat")
 	var token string
 	if err := e.tx.QueryRow(e.ctx, `SELECT public_token::text FROM spa.bookings WHERE customer_phone = $1 AND source = 'whatsapp'`, e.local()).Scan(&token); err != nil {
 		t.Fatal(err)
@@ -848,7 +849,7 @@ func TestBotDepositFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 	r = e.say("sudah bayar")
-	e.wants(r, "DP untuk booking *MZ-", "sudah kami terima ✅", "Sisa *Rp 50.000*")
+	e.wants(r, "DP untuk booking *PD-", "sudah kami terima ✅", "Sisa *Rp 50.000*")
 }
 
 // e2Enabled reports whether the deposit policy is active in this run
@@ -906,7 +907,7 @@ func TestBotGuestChoosesRoom(t *testing.T) {
 	e.say("1")
 	e.say("1")
 	e.say("besok jam 10 pagi")
-	r := e.say("0") // therapist chosen by Mizu → the room question
+	r := e.say("0") // crew member chosen by Paddy → the room question
 	e.wants(r, "Mau pakai room tertentu?", "Tanpa room khusus", "VIP Bot · 2 orang · Rp 100.000")
 	r = e.say("1")
 	e.wants(r, "ringkasan", "Room: *VIP Bot* — Rp 100.000", "Total: *Rp 250.000*")
@@ -959,7 +960,7 @@ func TestBotSendsBookingQRAfterPayment(t *testing.T) {
 		t.Fatalf("images = %d", len(e.sender.images))
 	}
 	img := e.sender.images[0]
-	if !strings.Contains(img.caption, "QR booking *"+n.Code+"*") || !strings.Contains(img.caption, "Tunjukkan QR ini ke resepsionis") ||
+	if !strings.Contains(img.caption, "QR booking *"+n.Code+"*") || !strings.Contains(img.caption, "Tunjukkan QR ini ke kasir") ||
 		!strings.HasSuffix(img.link, "/api/public/spa/bookings/"+n.Token+"/qr.png") || len(img.png) < 100 || string(img.png[1:4]) != "PNG" {
 		t.Fatalf("QR image = %q %q %d bytes", img.caption, img.link, len(img.png))
 	}
@@ -974,8 +975,8 @@ func TestBotSendsBookingQRAfterPayment(t *testing.T) {
 // they go out once the guest has chatted.
 func TestBotSkipsProactiveNoticesToNewNumbers(t *testing.T) {
 	e := setupBot(t)
-	n := spa.BookingNotice{ID: "0b6f1c2e-0000-4000-8000-0000000000ab", Code: "MZ-TEST-NEW", CustomerName: "Baru", CustomerPhone: "081377778888",
-		BranchName: "Mizu Uji", ScheduledAt: time.Date(2026, 10, 9, 3, 0, 0, 0, time.UTC), Items: []string{"Reflexology · 45 menit"}, TotalIDR: 150000,
+	n := spa.BookingNotice{ID: "0b6f1c2e-0000-4000-8000-0000000000ab", Code: "PD-TEST-NEW", CustomerName: "Baru", CustomerPhone: "081377778888",
+		BranchName: "Paddy Uji", ScheduledAt: time.Date(2026, 10, 9, 3, 0, 0, 0, time.UTC), Items: []string{"Personalisasi Nama & Inisial · 30 menit"}, TotalIDR: 150000,
 		Token: "tok", Source: "public", Status: "assigned", PaymentStatus: "paid"}
 	e.sender.newNumbersBlocked = true
 	if err := e.engine.PaidNotice(e.ctx, e.tx, e.tx, n); err != nil || len(e.sender.sent) != 0 {

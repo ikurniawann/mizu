@@ -32,7 +32,7 @@ for (const name of [".env", ".env.local"]) {
   }
 }
 
-const email = process.env.SUPER_USER_EMAIL || "super@arkivworld.com";
+const email = process.env.SUPER_USER_EMAIL || "super@paddy.id";
 const fullName = process.env.SUPER_USER_NAME || "Arkiv Super Admin";
 const url = process.env.MIGRATE_DATABASE_URL || process.env.DATABASE_URL;
 

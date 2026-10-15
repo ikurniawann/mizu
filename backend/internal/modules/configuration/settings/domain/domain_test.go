@@ -79,7 +79,7 @@ func TestParseAppearance(t *testing.T) {
 	if p.PresetID != "ocean" || p.Sidebar.Border != "#aabbcc" || p.Navbar.Border != DefaultAppearance.Navbar.Border {
 		t.Fatalf("preset and hex: %+v", p)
 	}
-	if ParseAppearance(decode(t, `{"presetId":"unknown"}`)).PresetID != "mizu" {
+	if ParseAppearance(decode(t, `{"presetId":"unknown"}`)).PresetID != "paddy" {
 		t.Fatal("unknown preset falls back")
 	}
 	if len(fontFamilies) != 29 {
@@ -112,7 +112,7 @@ func TestSortWarehouses(t *testing.T) {
 
 func TestBusinessHelpers(t *testing.T) {
 	for in, want := range map[string]string{
-		"  PT Mizu Indah ":       "PT-MIZU-INDAH",
+		"  PT Paddy Indah ":      "PT-PADDY-INDAH",
 		"-a-":                    "A",
 		"Ünïcode café":           "N-CODE-CAF",
 		strings.Repeat("ab", 20): strings.Repeat("AB", 15),
@@ -145,7 +145,7 @@ func TestReceipt(t *testing.T) {
 	if l := ReceiptLines([]any{strings.Repeat("é", 100)}); len([]rune(l[0])) != ReceiptLineMaxChars {
 		t.Fatal("length cap")
 	}
-	if ReceiptLines(nil) == nil || len(ReceiptLines("MIZU")) != 0 {
+	if ReceiptLines(nil) == nil || len(ReceiptLines("PADDY")) != 0 {
 		t.Fatal("non-arrays are []")
 	}
 

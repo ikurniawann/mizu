@@ -17,6 +17,8 @@ export interface TreatmentForm {
   category: string;
   description: string;
   is_active: boolean;
+  /** Layanan custom case: booking-nya membawa desain case (wajib di booking online). */
+  customizable: boolean;
   sort_order: string;
   variants: VariantRow[];
 }
@@ -30,7 +32,7 @@ export function emptyVariantRow(): VariantRow {
 
 export function initialTreatmentForm(treatment: Treatment | null): TreatmentForm {
   if (!treatment) {
-    return { code: "", name: "", category: "", description: "", is_active: true, sort_order: "0", variants: [emptyVariantRow()] };
+    return { code: "", name: "", category: "", description: "", is_active: true, customizable: false, sort_order: "0", variants: [emptyVariantRow()] };
   }
   return {
     code: treatment.code,
@@ -38,6 +40,7 @@ export function initialTreatmentForm(treatment: Treatment | null): TreatmentForm
     category: treatment.category ?? "",
     description: treatment.description ?? "",
     is_active: treatment.is_active,
+    customizable: !!treatment.customizable,
     sort_order: String(treatment.sort_order ?? 0),
     variants: [...treatment.variants]
       .sort((a, b) => a.sort_order - b.sort_order)
@@ -67,10 +70,10 @@ export function parseOutletPrice(raw: string): number | null {
 /** Daftar pesan galat; kosong = valid. */
 export function validateTreatmentForm(form: TreatmentForm): string[] {
   const errors: string[] = [];
-  if (!form.code.trim()) errors.push("Kode treatment wajib diisi.");
+  if (!form.code.trim()) errors.push("Kode layanan wajib diisi.");
   else if (!/^[A-Z0-9][A-Z0-9-]{0,19}$/.test(form.code.trim().toUpperCase())) errors.push("Kode harus 1–20 karakter huruf, angka, atau tanda hubung; diawali huruf atau angka.");
-  if (!form.name.trim()) errors.push("Nama treatment wajib diisi.");
-  if (form.name.trim().length > 120) errors.push("Nama treatment maksimal 120 karakter.");
+  if (!form.name.trim()) errors.push("Nama layanan wajib diisi.");
+  if (form.name.trim().length > 120) errors.push("Nama layanan maksimal 120 karakter.");
   if (form.category.trim().length > 60) errors.push("Kategori maksimal 60 karakter.");
   if (form.description.trim().length > 2000) errors.push("Deskripsi maksimal 2.000 karakter.");
   if (!isInt(form.sort_order.trim() || "0", 0, 9999)) errors.push("Urutan harus bilangan bulat 0–9.999.");
@@ -95,6 +98,7 @@ export function toTreatmentInput(form: TreatmentForm): TreatmentInput {
     category: form.category.trim(),
     description: form.description.trim(),
     is_active: form.is_active,
+    customizable: form.customizable,
     sort_order: Number(form.sort_order.trim() || 0),
     variants: form.variants.map((v, index) => ({
       ...(v.id ? { id: v.id } : {}),

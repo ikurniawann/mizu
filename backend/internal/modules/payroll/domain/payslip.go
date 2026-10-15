@@ -71,3 +71,10 @@ func PayslipFileName(employeeName string, month, year int) string {
 	}
 	return "Slip-Gaji-" + name + "-" + MonthOrNumber(month) + "-" + strconv.Itoa(year) + ".pdf"
 }
+
+// PercentID formats a 0..1 ratio as an Indonesian percentage with one
+// decimal ("62,5%").
+func PercentID(ratio float64) string {
+	whole, frac, _ := strings.Cut(strconv.FormatFloat(math.Round(ratio*1000)/10, 'f', 1, 64), ".")
+	return whole + "," + frac + "%"
+}

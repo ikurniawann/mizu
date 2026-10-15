@@ -112,7 +112,7 @@ func newFixture(t *testing.T) *fixture {
 	tx := testutil.Tx(t)
 	f := &fixture{t: t, tx: tx, mail: &fakeMailer{}, staff: newUUID(t, tx), now: time.Now()}
 	f.dir = testDirectory{q: tx, dept: map[string]string{}}
-	f.svc = NewService(tx, Ports{Directory: f.dir, Mailer: f.mail, AppOrigin: "https://app.example", Brand: "Mizu",
+	f.svc = NewService(tx, Ports{Directory: f.dir, Mailer: f.mail, AppOrigin: "https://app.example", Brand: "Paddy",
 		MailFrom: "Dataroom <x@y.id>", QuotaBytes: 50 * 1024 * 1024 * 1024, MaxFileBytes: 100 * 1024 * 1024}, nil, nil, false)
 	f.mux = testutil.Mux(mod{h: newHandler(f.svc, headerGuard{})})
 	return f
@@ -331,7 +331,7 @@ func TestSharesAdmin(t *testing.T) {
 		!strings.Contains(created.Raw, `"has_pin":true,"url":"https://app.example/share/`+token+`","node_name":"Data Room Investor","node_kind":"folder","access_count":0,"mail":{"sent":2,"failed":[]}}}`) {
 		t.Fatalf("create share: %s", created.Raw)
 	}
-	if len(f.mail.sent) != 2 || f.mail.sent[0].subject != `Dewi Arsip membagikan "Data Room Investor" (Mizu Dataroom)` ||
+	if len(f.mail.sent) != 2 || f.mail.sent[0].subject != `Dewi Arsip membagikan "Data Room Investor" (Paddy Dataroom)` ||
 		!strings.Contains(f.mail.sent[0].html, "dan memasukkan PIN yang diberikan pengirim") {
 		t.Fatalf("mail: %+v", f.mail.sent)
 	}
@@ -407,23 +407,23 @@ func TestVerifyPin(t *testing.T) {
 		t.Fatalf("locked link: %s", r.Raw)
 	}
 	f.fail(f.do(call{method: "GET", target: "/api/share/" + token + "/list", staff: "-"}), 401, "Verifikasi dulu")
-	f.fail(verify("", "203.0.113.1", "mizu.example.com"), 400, "Masukkan PIN")
-	f.fail(verify("1111", "203.0.113.1", "mizu.example.com"), 400, "PIN salah")
+	f.fail(verify("", "203.0.113.1", "paddy.example.com"), 400, "Masukkan PIN")
+	f.fail(verify("1111", "203.0.113.1", "paddy.example.com"), 400, "PIN salah")
 	if got := f.scalar(`SELECT failures::text FROM auth.attempt_limits WHERE scope = 'dataroom_share_pin' AND subject = $1`, "share:"+shareID); got != "1" {
 		t.Fatalf("failures %s", got)
 	}
 	for _, ip := range []string{"198.51.100.1", "198.51.100.2", "198.51.100.3"} {
-		f.fail(verify("2222", ip, "mizu.example.com"), 400, "PIN salah")
+		f.fail(verify("2222", ip, "paddy.example.com"), 400, "PIN salah")
 	}
 	// The fifth failure locks the link for 30 minutes, whatever the IP.
-	f.fail(verify("3333", "198.51.100.7", "mizu.example.com"), 429, "Terlalu banyak percobaan PIN. Coba lagi dalam 30 menit.")
-	f.fail(verify("1234", "192.0.2.50", "mizu.example.com"), 429, "Terlalu banyak percobaan PIN. Coba lagi dalam 30 menit.")
+	f.fail(verify("3333", "198.51.100.7", "paddy.example.com"), 429, "Terlalu banyak percobaan PIN. Coba lagi dalam 30 menit.")
+	f.fail(verify("1234", "192.0.2.50", "paddy.example.com"), 429, "Terlalu banyak percobaan PIN. Coba lagi dalam 30 menit.")
 	if got := f.scalar(`SELECT count(*)::text FROM dataroom.share_access_logs WHERE share_id = $1 AND action = 'pin_failed'`, shareID); got != "5" {
 		t.Fatalf("pin_failed logs %s", got)
 	}
 
 	f.tx.Exec(context.Background(), `DELETE FROM auth.attempt_limits WHERE subject = $1`, "share:"+shareID)
-	ok := f.ok(verify("1234", "203.0.113.1", "mizu.example.com"), 200)
+	ok := f.ok(verify("1234", "203.0.113.1", "paddy.example.com"), 200)
 	if ok.Raw != `{"success":true,"data":{"steps":{"needEmail":false,"needPin":false},"verified":true}}` {
 		t.Fatalf("verified: %s", ok.Raw)
 	}

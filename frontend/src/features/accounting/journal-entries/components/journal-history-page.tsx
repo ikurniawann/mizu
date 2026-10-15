@@ -341,6 +341,15 @@ function HistoryRow({
                         {line.account_code || "—"}
                       </span>
                       <span className="ml-2">{line.account_name || "—"}</span>
+                      {line.branch_name ? (
+                        <Badge
+                          variant="outline"
+                          className="ml-2 border-primary/20 text-[10px] text-brand-text"
+                          title="Toko / cost center"
+                        >
+                          {line.branch_name}
+                        </Badge>
+                      ) : null}
                     </td>
                     <td className="px-2 py-1.5 text-right tabular-nums">
                       {line.entry_side === "DEBIT"

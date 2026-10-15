@@ -154,6 +154,8 @@ INSERT INTO iam.menus (code, menu_name, route_path, icon, menu_type, order_numbe
   ('items.product.purchasing.returns', 'Retur', '/dashboard/product/purchasing/returns', 'truck', 'sidebar', 70, '{"actions":["read","create","update"]}'::jsonb),
   ('items.raw-material.purchasing.returns', 'Retur', '/dashboard/raw-material/purchasing/returns', 'truck', 'sidebar', 70, '{"actions":["read","create","update"]}'::jsonb),
   ('items.product.purchasing.invoice', 'Invoice', '/dashboard/product/purchasing/invoice', 'money', 'sidebar', 80, '{"actions":["read","create","update"]}'::jsonb),
+  ('items.raw-material.purchasing.settings', 'Pengaturan Pembelian', '/dashboard/raw-material/purchasing/settings', 'settings', 'sidebar', 90, '{"actions":["read","update"]}'::jsonb),
+  ('items.product.purchasing.settings', 'Pengaturan Pembelian', '/dashboard/product/purchasing/settings', 'settings', 'sidebar', 90, '{"actions":["read","update"]}'::jsonb),
   ('accounting', 'Accounting', NULL, 'dollar-sign', 'group', 55, '{"actions":["read"]}'::jsonb),
   ('accounting.dashboard', 'Dashboard', NULL, 'home', 'group', 10, '{"actions":["read"]}'::jsonb),
   ('accounting.dashboard.overview', 'Overview', '/dashboard/accounting/reports', 'home', 'sidebar', 10, '{"actions":["read","export"]}'::jsonb),
@@ -242,7 +244,9 @@ WHERE deleted_at IS NULL
     -- SETIAP migrasi menu baru WAJIB menambahkan code-nya ke daftar ini):
     'ess.home', 'ess.overtime', 'ess.loans', 'ess.payroll', 'ess.kpi',
     'ess.announcements', 'ess.team-shifts',
-    -- Spa Mizu (EPIC-052, 8 Okt 2026)
+    -- Spa / Paddy Experience (EPIC-052, 8 Okt 2026)
+    -- Payroll multi-toko (15 Okt 2026): Penempatan Karyawan + Biaya Gaji per Toko
+    'hris.master.placements', 'hris.compensation.store-costs',
     'ess.spa', 'spa', 'spa.bookings', 'spa.book-order', 'spa.customer', 'spa.treatments', 'spa.categories', 'spa.therapists',
     'report', 'report.sales-vs-target',
     'spa.commissions', 'spa.outlets', 'spa.rush-hour', 'spa.trend', 'spa.rating',
@@ -317,4 +321,6 @@ WHERE deleted_at IS NULL
     -- GoFood / GoBiz (EPIC-049, 12 Sep 2026):
     'pos.operations.gofood',
     -- Tagihan Member (1 Okt 2026):
-    'pos.operations.member-bills');
+    'pos.operations.member-bills',
+    -- Pengaturan Pembelian / aturan PO wajib dari PR (14 Okt 2026):
+    'items.raw-material.purchasing.settings', 'items.product.purchasing.settings');

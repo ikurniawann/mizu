@@ -65,7 +65,7 @@ export function MyDayOffCard() {
           </p>
           <p className="text-xs text-muted-foreground">
             Pilih hari liburmu. Maksimal {quota?.max_per_week ?? 2} hari per minggu (termasuk libur tetap dari jadwal shift). Siapa cepat dia dapat; ditolak bila
-            terapis {quota && (quota.min_female > 0 || quota.min_male > 0) ? `wanita (min ${quota.min_female}) atau pria (min ${quota.min_male})` : ""} yang masuk jadi kurang.
+            crew {quota && (quota.min_female > 0 || quota.min_male > 0) ? `wanita (min ${quota.min_female}) atau pria (min ${quota.min_male})` : ""} yang masuk jadi kurang.
           </p>
         </div>
       </div>
@@ -121,7 +121,7 @@ export function MyDayOffCard() {
             <div className="space-y-2 rounded-2xl bg-surface px-4 py-3 text-sm" role="status">
               <p className="font-semibold">{formatDateLong(day.date)}</p>
               <p className="text-xs text-muted-foreground">
-                Masuk di outlet: {day.working_female} wanita · {day.working_male} pria{day.off_count ? ` · ${day.off_count} terapis libur` : ""}
+                Masuk di outlet: {day.working_female} wanita · {day.working_male} pria{day.off_count ? ` · ${day.off_count} crew libur` : ""}
               </p>
               {day.mine === "requested" ? (
                 <Button variant="outline" className="w-full" disabled={cancel.isPending} onClick={() => onCancel(day)}>
