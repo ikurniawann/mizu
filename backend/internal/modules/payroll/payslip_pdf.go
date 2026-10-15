@@ -90,6 +90,7 @@ type payslipDoc struct {
 	employee    EmployeeBrief
 	month, year int
 	paidAt      *time.Time
+	entity      string // the run's entity name; empty for a legacy run
 	amounts     map[string]float64
 	loans       []domain.LoanInstallmentDetail
 	stores      []slipStore
@@ -112,13 +113,14 @@ func (s *service) payslipDocument(ctx context.Context, id string) (*payslipDoc, 
 	var employeeID, loans string
 	doc := &payslipDoc{amounts: map[string]float64{}}
 	raw := make([]*string, len(cols))
-	dest := []any{&employeeID, &doc.month, &doc.year, &doc.paidAt, &loans}
+	dest := []any{&employeeID, &doc.month, &doc.year, &doc.paidAt, &doc.entity, &loans}
 	for i := range raw {
 		dest = append(dest, &raw[i])
 	}
 	err := s.db.QueryRow(ctx, `SELECT pd.employee_id::text, r.period_month, r.period_year, r.paid_at,
-		pd.loan_details::text, `+strings.Join(cols, ", ")+`
+		COALESCE(c.name, ''), pd.loan_details::text, `+strings.Join(cols, ", ")+`
 		FROM hris.payroll_details pd JOIN hris.payroll_runs r ON r.id = pd.payroll_run_id
+		LEFT JOIN configuration.companies c ON c.id = r.company_id
 		WHERE pd.id = $1`, id).Scan(dest...)
 	if database.IsNoRows(err) {
 		return nil, nil
@@ -211,6 +213,9 @@ func buildPayslipPDF(p *payslipDoc) ([]byte, error) {
 	title := "SLIP GAJI"
 	if v := p.company["company_legal_name"]; v != nil && strings.TrimSpace(*v) != "" {
 		title = strings.TrimSpace(*v)
+	}
+	if p.entity != "" {
+		title = p.entity
 	}
 	flow(title, pdfgen.AlignCenter)
 	var place []string

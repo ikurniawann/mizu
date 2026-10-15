@@ -1,6 +1,7 @@
 package payroll
 
 import (
+	"strings"
 	"testing"
 
 	"nuhabit/backend/internal/modules/payroll/domain"
@@ -238,5 +239,31 @@ func TestOnceItemsNotRepeatedAcrossRuns(t *testing.T) {
 	e.call(&e.hr, "POST", "/api/hris/payroll/"+runB+"/calculate", nil, 200)
 	if a, b := loan(runA), loan(runB); a != "0.00" || b != "100000.00" {
 		t.Fatalf("after recalc B: loan A %s B %s", a, b)
+	}
+}
+
+func TestMultiEntityPaidAndPayslip(t *testing.T) {
+	e := setup(t)
+	e.employee("HR Payroll", e.hr.UserID, true)
+	crew := e.employee("Crew", "", true) // no account → no company via Companies()
+	e.salary(crew, e.co, 5_000_000)
+	e.work.placements = map[string][]domain.Placement{crew: {{BranchID: e.store, IsPrimary: true, Start: "2026-01-01"}}}
+
+	id := e.newRun(6, 2099, e.co)
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+id+"/calculate", nil, 200)
+	for _, st := range []string{"processing", "completed", "paid"} {
+		e.call(&e.hr, "PUT", "/api/hris/payroll/"+id, map[string]any{"status": st}, 200)
+	}
+	var companies string
+	e.scalar(&companies, `SELECT (payload->'companies')::text FROM platform.outbox_events
+		WHERE topic = 'payroll.run.paid' AND key = $1`, id)
+	// jsonb renders `"key": value` with a space, so compare ignoring whitespace.
+	flat := strings.ReplaceAll(companies, " ", "")
+	if !strings.Contains(flat, `"company_id":"`+e.co+`"`) || strings.Contains(flat, `"company_id":null`) {
+		t.Fatalf("paid event companies %s", companies)
+	}
+	slips := e.call(&e.hr, "GET", "/api/hris/payslips?payroll_run_id="+id, nil, 200)["data"].([]any)
+	if run := slips[0].(map[string]any)["payroll_run"].(map[string]any); run["company_name"] != "Entitas Uji" {
+		t.Fatalf("payslip run embed %v", run)
 	}
 }

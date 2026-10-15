@@ -268,7 +268,7 @@ func (s *service) markRunPaid(ctx context.Context, userID string, run *runHead, 
 			TotalNet: paid.TotalNet, TotalPph21: paid.TotalPph21, TotalBjtkEmployee: paid.TotalBjtkEmployee,
 			TotalBjtkEmployer: paid.TotalBjtkEmployer, TotalLoanDeduction: totalDeducted, SettledLoans: settled, UserID: userID,
 		}
-		if err := s.splitByCompany(ctx, tx, &event, deductedBy); err != nil {
+		if err := s.splitByCompany(ctx, tx, &event, deductedBy, run.CompanyID); err != nil {
 			return err
 		}
 		return outbox.Publish(ctx, tx, payrollevents.TopicRunPaid, run.ID, event)
@@ -278,8 +278,9 @@ func (s *service) markRunPaid(ctx context.Context, userID string, run *runHead, 
 
 // splitByCompany fills the BPJS and Tapera totals and the per-company
 // split of a paid run from its slips and the installments settled per
-// employee.
-func (s *service) splitByCompany(ctx context.Context, q database.Querier, event *payrollevents.RunPaid, deducted map[string]float64) error {
+// employee. A run with an entity (runCompany) posts everything to it; a
+// legacy run without one splits by each employee's company.
+func (s *service) splitByCompany(ctx context.Context, q database.Querier, event *payrollevents.RunPaid, deducted map[string]float64, runCompany *string) error {
 	slips, err := runSlipShares(ctx, q, event.RunID)
 	if err != nil {
 		return err
@@ -288,8 +289,14 @@ func (s *service) splitByCompany(ctx context.Context, q database.Querier, event 
 	for i, slip := range slips {
 		ids[i] = slip.EmployeeID
 	}
-	companies, err := s.ports.Employees.Companies(ctx, q, ids)
-	if err != nil {
+	var companies map[string]string
+	if runCompany != nil {
+		// A run of one entity posts every slip to that entity.
+		companies = make(map[string]string, len(ids))
+		for _, id := range ids {
+			companies[id] = *runCompany
+		}
+	} else if companies, err = s.ports.Employees.Companies(ctx, q, ids); err != nil {
 		return err
 	}
 	allocations, err := branchCosts(ctx, q, event.RunID)

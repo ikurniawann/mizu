@@ -47,7 +47,6 @@ func TestMultiStoreAllocation(t *testing.T) {
 	for _, id := range []string{multi, single, lost} {
 		e.exec(`INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, fixed_allowance, meal_allowance, ptkp_status,
 			effective_date) VALUES ($1, $2, 4800000, 250000, 333333, 'TK/0', '2026-01-01')`, id, e.co)
-		e.emps.companies[id] = "6f1d5c2e-3333-4a1b-9c1d-00000000000c"
 	}
 	e.work.placements = map[string][]domain.Placement{
 		multi:  {{BranchID: pvj, IsPrimary: true, Start: "2026-01-01"}, {BranchID: kopo, Start: "2099-07-01"}},

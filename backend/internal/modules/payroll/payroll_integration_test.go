@@ -343,7 +343,6 @@ func TestRunLifecycle(t *testing.T) {
 	e := setup(t)
 	hrEmp := e.employee("HR Payroll", e.hr.UserID, true)
 	worker := e.employee("Budi Gaji", "", true)
-	e.emps.companies[worker] = "6f1d5c2e-3333-4a1b-9c1d-00000000000c"
 	e.employee("Tanpa Gaji", "", true)
 	e.exec(`INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, fixed_allowance, ptkp_status, effective_date)
 		VALUES ($1, $2, 10000000, 2000000, 'TK/0', '2026-01-01')`, worker, e.co)
@@ -472,7 +471,7 @@ func TestRunLifecycle(t *testing.T) {
 	if tk <= 0 || kes <= 0 || event.TotalBpjsTkEmployer != tk || event.TotalBpjsKesEmployer != kes || len(event.Companies) != 1 {
 		t.Fatalf("bpjs %v %v event %+v", tk, kes, event)
 	}
-	if c := event.Companies[0]; c.CompanyID == nil || *c.CompanyID != e.emps.companies[worker] || c.TotalGross != 12000000 ||
+	if c := event.Companies[0]; c.CompanyID == nil || *c.CompanyID != e.co || c.TotalGross != 12000000 ||
 		c.TotalNet != 10361155 || c.TotalLoanDeduction != 500000 || c.TotalBpjsTkEmployer != tk || c.TotalBpjsKesEmployer != kes {
 		t.Fatalf("company split %+v", c)
 	}

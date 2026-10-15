@@ -19,8 +19,10 @@ import (
 // payslipRunEmbed is `payroll_run:payroll_runs ( … )`; the NULL employee
 // column holds the employee embed's place before it.
 const payslipRunEmbed = `NULL AS employee,
-	(SELECT row_to_json(e) FROM (SELECT id, run_name, period_month, period_year, status, paid_at
-	   FROM hris.payroll_runs WHERE id = d.payroll_run_id) e) AS payroll_run`
+	(SELECT row_to_json(e) FROM (SELECT r.id, r.run_name, r.period_month, r.period_year, r.status, r.paid_at,
+	        c.name AS company_name
+	   FROM hris.payroll_runs r LEFT JOIN configuration.companies c ON c.id = r.company_id
+	  WHERE r.id = d.payroll_run_id) e) AS payroll_run`
 
 func (s *service) listPayslips(ctx context.Context, a *actor, employeeParam, runID *string, year, month *int) ([]*obj, error) {
 	scope := domain.ResolvePayslipScope(a.Role, a.EmployeeID, employeeParam)
