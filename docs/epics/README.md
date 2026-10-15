@@ -56,6 +56,7 @@ deploying-dev · ready-for-qa · blocked · done).
 | [EPIC-051](./EPIC-051-tagihan-member.md) | Tagihan Member — Cicilan Order Member (POS → Operasional → Tagihan) | ready-for-qa | 2026-10-01 |
 | [EPIC-052](./EPIC-052-mizu-spa-booking-terapis.md) | Mizu Spa — Booking, Terapis, dan Komisi (Fase 1) (`MODULE-SPA`) | ready-for-qa | 2026-10-08 |
 | [EPIC-053](./EPIC-053-wa-booking-bot.md) | Chatbot Booking WhatsApp — booking & bayar lewat chat, serah ke admin (`MODULE-WABOT`) | on-progress | 2026-10-12 |
+| [EPIC-054](./EPIC-054-payroll-multi-entitas.md) | Payroll Multi-Entitas — Filter Entitas & Slip per Entitas (`MODULE-PAYROLL`) | review | 2026-10-15 |
 
 Aturan:
 - Epic + registry ini adalah sumber kebenaran status pekerjaan (canonical).
