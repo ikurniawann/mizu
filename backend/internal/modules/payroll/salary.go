@@ -13,7 +13,8 @@ import (
 )
 
 // Salary structures (lib/hris/employee-salary-repo.ts): one active version
-// per employee, a new version deactivates the previous one. Query errors
+// per employee and paying entity, a new version deactivates the previous one
+// of the same entity. Query errors
 // keep their SQLSTATE here (the repo unwraps them with the code), so the
 // shared constraint mapping applies.
 
@@ -98,16 +99,23 @@ func (s *service) listSalaries(ctx context.Context, employeeID string) ([]*obj, 
 	if err != nil {
 		return nil, err
 	}
+	if err := s.attachCompanies(ctx, rows); err != nil {
+		return nil, err
+	}
 	return rows, s.stitch(ctx, s.db, rows, embed{"employee", "employee_id", salaryListEmp})
 }
 
-func (s *service) createSalary(ctx context.Context, employeeID string, base float64, effective *string, in *salaryInput) (*obj, error) {
+func (s *service) createSalary(ctx context.Context, employeeID, companyID string, base float64, effective *string, in *salaryInput) (*obj, error) {
 	emp, err := s.brief(ctx, employeeID)
 	if err != nil {
 		return nil, err
 	}
 	if emp == nil {
 		return nil, httpx.NotFound("Karyawan tidak ditemukan")
+	}
+	entity, err := s.entityByID(ctx, companyID)
+	if err != nil {
+		return nil, err
 	}
 	now := s.nowISO()
 	endDate := now
@@ -119,7 +127,7 @@ func (s *service) createSalary(ctx context.Context, employeeID string, base floa
 		endDate = iso
 	}
 	if _, err := s.db.Exec(ctx, `UPDATE hris.employee_salary SET is_active = false, end_date = $2, updated_at = $3
-		WHERE employee_id = $1 AND is_active = true`, employeeID, endDate, now); err != nil {
+		WHERE employee_id = $1 AND company_id = $4::uuid AND is_active = true`, employeeID, endDate, now, entity.ID); err != nil {
 		s.log.ErrorContext(ctx, "employee-salary: deactivate previous failed", "employee_id", employeeID, "error", err)
 	}
 	effectiveDate := now
@@ -141,12 +149,12 @@ func (s *service) createSalary(ctx context.Context, employeeID string, base floa
 	notes, _ := in.get("notes")
 	return queryObj(ctx, s.db, `INSERT INTO hris.employee_salary (employee_id, base_salary, fixed_allowance,
 		variable_allowance, transport_allowance, meal_allowance, housing_allowance, loan_deduction, other_deduction,
-		ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled, effective_date, notes)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+		ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled, effective_date, notes, company_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::uuid) RETURNING *`,
 		employeeID, numParam(base), val("fixed_allowance", 0), val("variable_allowance", 0), val("transport_allowance", 0),
 		val("meal_allowance", 0), val("housing_allowance", 0), val("loan_deduction", 0), val("other_deduction", 0),
 		val("ptkp_status", "TK/0"), flag("is_taxable"), flag("bpjs_tk_enrolled"), flag("bpjs_kes_enrolled"),
-		flag("tapera_enrolled"), effectiveDate, notes)
+		flag("tapera_enrolled"), effectiveDate, notes, entity.ID)
 }
 
 func (s *service) getSalary(ctx context.Context, id string) (*obj, error) {
@@ -156,6 +164,9 @@ func (s *service) getSalary(ctx context.Context, id string) (*obj, error) {
 	}
 	if row == nil {
 		return nil, httpx.NotFound("Data salary tidak ditemukan")
+	}
+	if err := s.attachCompanies(ctx, []*obj{row}); err != nil {
+		return nil, err
 	}
 	return row, s.stitch(ctx, s.db, []*obj{row}, embed{"employee", "employee_id", salaryDetailEm})
 }
@@ -214,12 +225,17 @@ func (h *handler) createSalary(w http.ResponseWriter, r *http.Request) error {
 	}
 	base := coerceNum(f, "base_salary", numRule{NumOpts: validate.NumOpts{Positive: true}, Message: salaryRequired})
 	effective := f.Str("effective_date", nullish, validate.StrOpts{Max: 40})
+	company := f.Str("company_id", nullish, validate.StrOpts{})
 	in := &salaryInput{}
 	parseSalaryFields(f, in)
 	if err := issuesErr(f, ""); err != nil {
 		return err
 	}
-	row, err := h.svc.createSalary(r.Context(), *employeeID, *base, effective, in)
+	companyID := ""
+	if company != nil {
+		companyID = *company
+	}
+	row, err := h.svc.createSalary(r.Context(), *employeeID, companyID, *base, effective, in)
 	if err != nil {
 		return err
 	}

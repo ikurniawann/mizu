@@ -58,13 +58,16 @@ func (s *service) loanLimits(ctx context.Context, employeeID string, includePend
 		return domain.Config{}, nil, 0, err
 	}
 	var base *float64
-	salary, err := activeSalary(ctx, s.db, employeeID)
+	salaries, err := activeSalaryEntities(ctx, s.db, employeeID)
 	if err != nil {
 		return domain.Config{}, nil, 0, err
 	}
-	if salary != nil {
-		b := domain.JSNumber(salary.BaseSalary)
-		base = &b
+	if len(salaries) > 0 {
+		total := 0.0
+		for _, sal := range salaries {
+			total += sal.Base
+		}
+		base = &total
 	}
 	filter := `status IN ('pending', 'approved')`
 	if !includePending {

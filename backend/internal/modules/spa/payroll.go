@@ -253,10 +253,10 @@ func (store) therapistPays(ctx context.Context, q Q, onDate string) ([]Therapist
 	        COALESCE(s.base_salary, 0)::float8, COALESCE(s.fixed_allowance, 0)::float8
 	   FROM spa.therapists t JOIN hris.employees e ON e.id = t.employee_id
 	   JOIN configuration.branches br ON br.id = t.home_branch_id
-	   LEFT JOIN LATERAL (SELECT es.base_salary, es.fixed_allowance FROM hris.employee_salary es
+	   LEFT JOIN LATERAL (SELECT sum(es.base_salary) AS base_salary, sum(es.fixed_allowance) AS fixed_allowance
+	                        FROM hris.employee_salary es
 	                       WHERE es.employee_id = t.employee_id AND es.is_active AND es.effective_date <= $1::date
-	                         AND (es.end_date IS NULL OR es.end_date >= $1::date)
-	                       ORDER BY es.effective_date DESC LIMIT 1) s ON true
+	                         AND (es.end_date IS NULL OR es.end_date >= $1::date)) s ON true
 	  ORDER BY br.name, e.full_name`, onDate)
 }
 

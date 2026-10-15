@@ -412,7 +412,7 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 		skip := func(reason string) {
 			out.Summary.Skipped = append(out.Summary.Skipped, skipped{e.ID, e.FullName, reason})
 		}
-		in, records, err := s.payrollInput(ctx, e, run.PeriodMonth, run.PeriodYear, start, end, includeThr, holidays)
+		in, records, err := s.payrollInput(ctx, e, *run.CompanyID, run.PeriodMonth, run.PeriodYear, start, end, includeThr, holidays)
 		if err != nil {
 			return nil, err
 		}
@@ -467,10 +467,10 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 
 // payrollInput loads one employee's period input and the attendance-side
 // records it was built from; nil without an active salary.
-func (s *service) payrollInput(ctx context.Context, e EmployeeBrief, month, year int, start, end string, includeThr bool,
+func (s *service) payrollInput(ctx context.Context, e EmployeeBrief, companyID string, month, year int, start, end string, includeThr bool,
 	holidays map[string]bool) (*domain.Input, domain.WorkforceRecords, error) {
 	var records domain.WorkforceRecords
-	salary, err := activeSalary(ctx, s.db, e.ID)
+	salary, err := activeSalary(ctx, s.db, e.ID, companyID)
 	if err != nil || salary == nil {
 		return nil, records, err
 	}

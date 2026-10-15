@@ -257,15 +257,16 @@ func deleteRunDetails(ctx context.Context, q database.Querier, runID string) err
 	return err
 }
 
-// activeSalary is the newest active salary version, nil when none.
-func activeSalary(ctx context.Context, q database.Querier, employeeID string) (*domain.Salary, error) {
+// activeSalary is the employee's newest active salary paid by companyID,
+// nil when none.
+func activeSalary(ctx context.Context, q database.Querier, employeeID, companyID string) (*domain.Salary, error) {
 	var s domain.Salary
 	var base, fixed, variable, transport, meal, housing *string
 	err := q.QueryRow(ctx, `SELECT base_salary::text, fixed_allowance::text, variable_allowance::text,
 		       transport_allowance::text, meal_allowance::text, housing_allowance::text,
 		       ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled
-		  FROM hris.employee_salary WHERE employee_id = $1 AND is_active = true
-		 ORDER BY effective_date DESC LIMIT 1`, employeeID).
+		  FROM hris.employee_salary WHERE employee_id = $1 AND company_id = $2::uuid AND is_active = true
+		 ORDER BY effective_date DESC LIMIT 1`, employeeID, companyID).
 		Scan(&base, &fixed, &variable, &transport, &meal, &housing,
 			&s.PTKPStatus, &s.IsTaxable, &s.BpjsTkEnrolled, &s.BpjsKesEnrolled, &s.TaperaEnrl)
 	if database.IsNoRows(err) {
@@ -274,6 +275,20 @@ func activeSalary(ctx context.Context, q database.Querier, employeeID string) (*
 	s.BaseSalary, s.FixedAllowance, s.VariableAllowance = textOrNil(base), textOrNil(fixed), textOrNil(variable)
 	s.TransportAllowance, s.MealAllowance, s.HousingAllowance = textOrNil(transport), textOrNil(meal), textOrNil(housing)
 	return &s, err
+}
+
+// activeSalaryEntities are the entities paying the employee an active
+// salary, with each base salary.
+func activeSalaryEntities(ctx context.Context, q database.Querier, employeeID string) ([]domain.EntitySalary, error) {
+	rows, err := q.Query(ctx, `SELECT company_id::text, base_salary::float8 FROM hris.employee_salary
+		WHERE employee_id = $1 AND is_active AND company_id IS NOT NULL ORDER BY company_id`, employeeID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (domain.EntitySalary, error) {
+		var s domain.EntitySalary
+		return s, r.Scan(&s.CompanyID, &s.Base)
+	})
 }
 
 // insertDetail stores one calculated payslip and returns the stored row.

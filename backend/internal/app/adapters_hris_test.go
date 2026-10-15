@@ -79,3 +79,36 @@ func TestHrisAdapters(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// An employee paid by several entities keeps every salary version: the
+// contract sync leaves them alone and the base salary is the total.
+func TestSalarySyncMultiEntity(t *testing.T) {
+	tx := testutil.Tx(t)
+	ctx := context.Background()
+	must := func(err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	var emp, coA, coB string
+	must(tx.QueryRow(ctx, `INSERT INTO hris.employees (full_name, nip, email, phone, join_date)
+		VALUES ('Sinkron', 'SYN-1', 'syn1@test.local', '08', '2024-01-01') RETURNING id::text`).Scan(&emp))
+	must(tx.QueryRow(ctx, `SELECT id::text FROM configuration.companies ORDER BY created_at LIMIT 1`).Scan(&coA))
+	must(tx.QueryRow(ctx, `SELECT id::text FROM configuration.companies WHERE id <> $1 ORDER BY created_at LIMIT 1`, coA).Scan(&coB))
+	_, err := tx.Exec(ctx, `INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, effective_date)
+		VALUES ($1, $2, 1000000, '2026-01-01'), ($1, $3, 1000000, '2026-01-01')`, emp, coA, coB)
+	must(err)
+
+	port := hrisSalarySQL{}
+	if base, err := port.ActiveBaseSalary(ctx, tx, emp); err != nil || base == nil || *base != "2000000.00" {
+		t.Fatalf("total base = %v %v", base, err)
+	}
+	// Two entities: the contract sync leaves both versions untouched.
+	must(port.SyncFromContract(ctx, tx, hris.SalarySync{EmployeeID: emp, BaseSalary: 5000000, StartDate: "2026-06-01"}))
+	var n int
+	must(tx.QueryRow(ctx, `SELECT count(*)::int FROM hris.employee_salary WHERE employee_id = $1 AND is_active AND base_salary = 1000000`, emp).Scan(&n))
+	if n != 2 {
+		t.Fatalf("multi-entity versions after sync = %d, want 2", n)
+	}
+}

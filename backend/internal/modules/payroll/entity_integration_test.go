@@ -54,3 +54,38 @@ func TestRunPerEntityCreate(t *testing.T) {
 		t.Fatalf("legacy company %v", c)
 	}
 }
+
+func TestSalaryPerEntity(t *testing.T) {
+	e := setup(t)
+	pusat, _ := e.entity("Pusat Uji")
+	emp := e.employee("Dua Entitas", "", true)
+	post := func(company string, base int, status int) map[string]any {
+		body := map[string]any{"employee_id": emp, "base_salary": base, "effective_date": "2026-01-01"}
+		if company != "" {
+			body["company_id"] = company
+		}
+		return e.call(&e.hr, "POST", "/api/hris/employee-salary", body, status)
+	}
+	wantErr(t, post("", 1_000_000, 400), "Entitas wajib dipilih")
+	post(e.co, 1_000_000, 200)
+	post(pusat, 2_000_000, 200)
+	// A new version of one entity deactivates only that entity's version.
+	e.call(&e.hr, "POST", "/api/hris/employee-salary",
+		map[string]any{"employee_id": emp, "base_salary": 1_500_000, "effective_date": "2026-03-01", "company_id": e.co}, 200)
+
+	var active int
+	e.scalar(&active, `SELECT count(*)::int FROM hris.employee_salary WHERE employee_id = $1 AND is_active`, emp)
+	if active != 2 {
+		t.Fatalf("active versions = %d, want 2 (one per entity)", active)
+	}
+	rows := e.call(&e.hr, "GET", "/api/hris/employee-salary?employee_id="+emp, nil, 200)["data"].([]any)
+	names := map[string]bool{}
+	for _, r := range rows {
+		if c, ok := r.(map[string]any)["company"].(map[string]any); ok {
+			names[c["name"].(string)] = true
+		}
+	}
+	if !names["Entitas Uji"] || !names["Pusat Uji"] {
+		t.Fatalf("salary rows company embed %v", rows)
+	}
+}

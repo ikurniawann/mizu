@@ -59,9 +59,8 @@ func (c recruitmentContracts) CreateDraft(ctx context.Context, q database.Querie
      LEFT JOIN hris.positions p ON p.id = e.job_title_id
      LEFT JOIN hris.departments d ON d.id = e.department_id
      LEFT JOIN LATERAL (
-       SELECT base_salary FROM hris.employee_salary
+       SELECT sum(base_salary) AS base_salary FROM hris.employee_salary
        WHERE employee_id = e.id AND is_active
-       ORDER BY effective_date DESC LIMIT 1
      ) s ON true
      WHERE e.id = $1`, in.EmployeeID).Scan(&position, &department, &salary)
 	if database.IsNoRows(err) {

@@ -345,8 +345,8 @@ func TestRunLifecycle(t *testing.T) {
 	worker := e.employee("Budi Gaji", "", true)
 	e.emps.companies[worker] = "6f1d5c2e-3333-4a1b-9c1d-00000000000c"
 	e.employee("Tanpa Gaji", "", true)
-	e.exec(`INSERT INTO hris.employee_salary (employee_id, base_salary, fixed_allowance, ptkp_status, effective_date)
-		VALUES ($1, 10000000, 2000000, 'TK/0', '2026-01-01')`, worker)
+	e.exec(`INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, fixed_allowance, ptkp_status, effective_date)
+		VALUES ($1, $2, 10000000, 2000000, 'TK/0', '2026-01-01')`, worker, e.co)
 	e.exec(`INSERT INTO hris.loans (employee_id, loan_type, principal_amount, tenor_months, monthly_installment,
 		remaining_balance, first_installment_month, first_installment_year, status, approved_at)
 		VALUES ($1, 'kasbon', 1500000, 3, 500000, 1500000, 6, 2099, 'approved', now())`, worker)
@@ -601,14 +601,14 @@ func TestEmployeeSalary(t *testing.T) {
 	wantErr(t, e.call(&e.hr, "POST", "/api/hris/employee-salary", map[string]any{
 		"employee_id": "00000000-0000-0000-0000-000000000000", "base_salary": 1}, 404), "Karyawan tidak ditemukan")
 	first := e.call(&e.hr, "POST", "/api/hris/employee-salary", map[string]any{
-		"employee_id": emp, "base_salary": "8000000", "effective_date": "2026-01-01", "fixed_allowance": 0}, 200)
+		"employee_id": emp, "base_salary": "8000000", "effective_date": "2026-01-01", "fixed_allowance": 0, "company_id": e.co}, 200)
 	if first["message"] != "Salary structure berhasil dibuat" || first["data"].(map[string]any)["base_salary"] != "8000000.00" ||
 		first["data"].(map[string]any)["ptkp_status"] != "TK/0" || first["data"].(map[string]any)["employee"] != nil {
 		t.Fatalf("first %v", first)
 	}
 	firstID := first["data"].(map[string]any)["id"].(string)
 	second := e.call(&e.hr, "POST", "/api/hris/employee-salary", map[string]any{
-		"employee_id": emp, "base_salary": 9000000, "effective_date": "2026-07-01", "notes": "naik"}, 200)["data"].(map[string]any)
+		"employee_id": emp, "base_salary": 9000000, "effective_date": "2026-07-01", "notes": "naik", "company_id": e.co}, 200)["data"].(map[string]any)
 	var active bool
 	var end string
 	e.scalar(&active, `SELECT is_active FROM hris.employee_salary WHERE id = $1`, firstID)
@@ -650,7 +650,7 @@ func TestLoans(t *testing.T) {
 	wantErr(t, e.call(&e.hr, "POST", "/api/hris/loans", map[string]any{"employee_id": worker, "loan_type": "loan",
 		"principal_amount": 1000000, "tenor_months": 2}, 400),
 		"Karyawan belum punya struktur gaji aktif — atur gaji dulu sebelum mengajukan pinjaman")
-	e.exec(`INSERT INTO hris.employee_salary (employee_id, base_salary, effective_date) VALUES ($1, 5000000, '2026-01-01')`, worker)
+	e.exec(`INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, effective_date) VALUES ($1, $2, 5000000, '2026-01-01')`, worker, e.co)
 	wantErr(t, e.call(&e.hr, "POST", "/api/hris/loans", map[string]any{"employee_id": worker, "loan_type": "loan",
 		"principal_amount": 6000000, "tenor_months": 3}, 400),
 		"Cicilan Rp 2.000.000/bulan melebihi batas 30% dari gaji pokok (maks Rp 1.500.000)")
@@ -722,7 +722,7 @@ func TestDatabaseErrorMapping(t *testing.T) {
 	t.Run("duplicate salary version", func(t *testing.T) {
 		e := setup(t)
 		emp := e.employee("Dup", "", true)
-		body := map[string]any{"employee_id": emp, "base_salary": 1, "effective_date": "2026-07-01"}
+		body := map[string]any{"employee_id": emp, "base_salary": 1, "effective_date": "2026-07-01", "company_id": e.co}
 		e.call(&e.hr, "POST", "/api/hris/employee-salary", body, 200)
 		wantErr(t, e.call(&e.hr, "POST", "/api/hris/employee-salary", body, 409), "Data sudah ada di sistem")
 	})

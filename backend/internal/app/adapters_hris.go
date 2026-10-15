@@ -112,19 +112,19 @@ type hrisSalarySQL struct{}
 
 var _ hris.SalaryPort = hrisSalarySQL{}
 
+// ActiveBaseSalary is the total base salary over every paying entity.
 func (hrisSalarySQL) ActiveBaseSalary(ctx context.Context, q database.Querier, employeeID string) (*string, error) {
 	var base *string
-	err := q.QueryRow(ctx, `SELECT base_salary::text FROM hris.employee_salary
-		WHERE employee_id = $1 AND is_active ORDER BY effective_date DESC LIMIT 1`, employeeID).Scan(&base)
-	if database.IsNoRows(err) {
-		return nil, nil
-	}
+	err := q.QueryRow(ctx, `SELECT sum(base_salary)::text FROM hris.employee_salary
+		WHERE employee_id = $1 AND is_active`, employeeID).Scan(&base)
 	return base, err
 }
 
 // SyncFromContract is syncSalaryFromContract: a new salary version at the
-// contract's base salary, carrying allowances, PTKP and BPJS flags from the
-// current version (table defaults for a first version). The numeric
+// contract's base salary, carrying the paying entity, allowances, PTKP and
+// BPJS flags from the current version (table defaults for a first version,
+// whose entity is the employee's primary placement company). An employee
+// paid by several entities is left alone: HR versions each entity itself. The numeric
 // parameters are cast explicitly: the TS sends them untyped, so PostgreSQL
 // reads COALESCE($n, 0) as integer and fails on "1500000.00".
 func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, in hris.SalarySync) error {
@@ -132,16 +132,26 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		id                                                     string
 		base                                                   float64
 		fixed, variable, transport, meal, housing, loan, other *string
-		ptkp                                                   *string
+		ptkp, company                                          *string
 		taxable, bpjsTK, bpjsKes, tapera                       *bool
 	)
+	var entities int
+	if err := q.QueryRow(ctx, `SELECT count(DISTINCT company_id)::int FROM hris.employee_salary
+		WHERE employee_id = $1 AND is_active`, in.EmployeeID).Scan(&entities); err != nil {
+		return err
+	}
+	if entities > 1 {
+		// Paid by several entities: HR versions each entity's salary itself.
+		return nil
+	}
 	err := q.QueryRow(ctx, `SELECT id::text, base_salary::float8, fixed_allowance::text, variable_allowance::text,
 		transport_allowance::text, meal_allowance::text, housing_allowance::text, loan_deduction::text,
-		other_deduction::text, ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled
+		other_deduction::text, ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled,
+		company_id::text
 		FROM hris.employee_salary
 		WHERE employee_id = $1 AND is_active = true
 		ORDER BY effective_date DESC LIMIT 1`, in.EmployeeID).Scan(&id, &base, &fixed, &variable, &transport, &meal,
-		&housing, &loan, &other, &ptkp, &taxable, &bpjsTK, &bpjsKes, &tapera)
+		&housing, &loan, &other, &ptkp, &taxable, &bpjsTK, &bpjsKes, &tapera, &company)
 	hasCurrent := err == nil
 	if err != nil && !database.IsNoRows(err) {
 		return err
@@ -161,14 +171,19 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		 transport_allowance, meal_allowance, housing_allowance,
 		 loan_deduction, other_deduction, ptkp_status, is_taxable,
 		 bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled,
-		 effective_date, is_active, notes)
+		 effective_date, is_active, notes, company_id)
 		VALUES ($1, $2,
 		        COALESCE($3::numeric, 0), COALESCE($4::numeric, 0), COALESCE($5::numeric, 0),
 		        COALESCE($6::numeric, 0), COALESCE($7::numeric, 0),
 		        COALESCE($8::numeric, 0), COALESCE($9::numeric, 0),
 		        COALESCE($10::text, 'TK/0'), COALESCE($11::boolean, true),
 		        COALESCE($12::boolean, true), COALESCE($13::boolean, true), COALESCE($14::boolean, true),
-		        $15::date, true, $16)
+		        $15::date, true, $16,
+		        COALESCE($17::uuid, (SELECT b.company_id FROM hris.employee_placements p
+		                               JOIN configuration.branches b ON b.id = p.branch_id
+		                              WHERE p.employee_id = $1 AND p.is_primary
+		                                AND (p.end_date IS NULL OR p.end_date >= $15::date)
+		                              ORDER BY p.start_date DESC LIMIT 1)))
 		ON CONFLICT (employee_id, company_id, effective_date) DO UPDATE SET
 		  base_salary = EXCLUDED.base_salary,
 		  is_active = true,
@@ -176,7 +191,7 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		  notes = EXCLUDED.notes,
 		  updated_at = now()`,
 		in.EmployeeID, in.BaseSalary, fixed, variable, transport, meal, housing, loan, other,
-		ptkp, taxable, bpjsTK, bpjsKes, tapera, in.StartDate, "Sinkron dari kontrak "+in.ContractNumber)
+		ptkp, taxable, bpjsTK, bpjsKes, tapera, in.StartDate, "Sinkron dari kontrak "+in.ContractNumber, company)
 	return err
 }
 
