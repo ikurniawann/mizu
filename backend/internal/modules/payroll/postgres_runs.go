@@ -291,6 +291,36 @@ func activeSalaryEntities(ctx context.Context, q database.Querier, employeeID st
 	})
 }
 
+// onceItems flags the once-per-period items an employee already has on a
+// slip: the loan installment and the late deduction.
+type onceItems struct{ Loan, Late bool }
+
+// onceItemsElsewhere returns, per employee, the once-per-period items already
+// on a slip of another run of the same period. The primary entity is decided
+// per run, so this stops a changed placement or salary between two entity runs
+// from charging the same installment or late deduction twice.
+func onceItemsElsewhere(ctx context.Context, q database.Querier, run *runHead) (map[string]onceItems, error) {
+	rows, err := q.Query(ctx, `SELECT d.employee_id::text, bool_or(COALESCE(d.loan_deduction, 0) > 0),
+			bool_or(COALESCE(d.late_deduction, 0) > 0)
+		FROM hris.payroll_details d JOIN hris.payroll_runs r ON r.id = d.payroll_run_id
+		WHERE r.period_month = $1 AND r.period_year = $2 AND r.id <> $3::uuid
+		GROUP BY d.employee_id`, run.PeriodMonth, run.PeriodYear, run.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]onceItems{}
+	for rows.Next() {
+		var id string
+		var o onceItems
+		if err := rows.Scan(&id, &o.Loan, &o.Late); err != nil {
+			return nil, err
+		}
+		out[id] = o
+	}
+	return out, rows.Err()
+}
+
 // insertDetail stores one calculated payslip and returns the stored row.
 func insertDetail(ctx context.Context, q database.Querier, runID, employeeID string, r domain.Result, in domain.Input) (*obj, error) {
 	breakdown := in.LoanBreakdown

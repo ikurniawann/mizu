@@ -413,6 +413,10 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 	if err != nil {
 		return nil, opaque(err)
 	}
+	elsewhere, err := onceItemsElsewhere(ctx, s.db, run)
+	if err != nil {
+		return nil, opaque(err)
+	}
 
 	out := &calcResult{Data: []*obj{}, Summary: calcSummary{EmployeeNames: []string{}, Skipped: []skipped{},
 		AllocationWarnings: []allocationWarning{}}, AttendancePeriod: period.info()}
@@ -450,6 +454,14 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 		}
 		primary := domain.PrimaryEntity(domain.EntityOf(placements, branchCompany, end), salaries)
 		*in = domain.ApplyMultiEntityPolicy(*in, primary == company, multiEntityPolicy)
+		// Once-per-period items already on another entity's slip of this period
+		// are never repeated.
+		if elsewhere[e.ID].Loan {
+			in.LoanDeduction, in.LoanBreakdown = 0, nil
+		}
+		if elsewhere[e.ID].Late {
+			in.LateDays, in.LateMinutes = 0, 0
+		}
 		result := domain.Calculate(*in, config)
 		var detail *obj
 		var allocation domain.SlipAllocation

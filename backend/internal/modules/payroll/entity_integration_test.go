@@ -147,6 +147,19 @@ func TestMultiEntityCalculate(t *testing.T) {
 	if sumA["other_entity_count"].(float64) != 1 { // Hanya B
 		t.Fatalf("A other entity %v", sumA["other_entity_count"])
 	}
+	if sumB["other_entity_count"].(float64) != 1 { // Hanya A
+		t.Fatalf("B other entity %v", sumB["other_entity_count"])
+	}
+	hrSkipped := false
+	for _, sk := range sumA["skipped"].([]any) {
+		m := sk.(map[string]any)
+		if m["full_name"] == "HR Payroll" && m["reason"] == "Belum ada struktur gaji aktif" {
+			hrSkipped = true
+		}
+	}
+	if !hrSkipped {
+		t.Fatalf("HR Payroll not skipped in A: %v", sumA["skipped"])
+	}
 
 	type slip struct{ gross, pph, bpjsKes, bpjsTk, loan string }
 	read := func(runID, emp string) slip {
@@ -177,5 +190,53 @@ func TestMultiEntityCalculate(t *testing.T) {
 		WHERE payroll_run_id = $1 AND branch_id = $2`, runB, storeA)
 	if leaked != 0 {
 		t.Fatalf("%d allocations of run B at A's store", leaked)
+	}
+}
+
+// A once-per-period item (loan installment, late deduction) already on a slip
+// of another entity's run of the same period is never repeated, even when the
+// primary entity changed between the two calculations.
+func TestOnceItemsNotRepeatedAcrossRuns(t *testing.T) {
+	e := setup(t)
+	e.employee("HR Payroll", e.hr.UserID, true)
+	coA, storeA := e.co, e.store
+	coB, storeB := e.entity("Entitas B")
+	shared := e.employee("Dua Entitas", "", true)
+	e.salary(shared, coA, 1_000_000)
+	e.salary(shared, coB, 9_000_000)
+	e.exec(`INSERT INTO hris.loans (employee_id, loan_type, principal_amount, tenor_months, monthly_installment,
+		remaining_balance, first_installment_month, first_installment_year, status, approved_at)
+		VALUES ($1, 'kasbon', 300000, 3, 100000, 300000, 6, 2099, 'approved', now())`, shared)
+	e.work.placements = map[string][]domain.Placement{
+		shared: {{BranchID: storeA, IsPrimary: true, Start: "2026-01-01"}},
+	}
+	runA, runB := e.newRun(6, 2099, coA), e.newRun(6, 2099, coB)
+	loan := func(runID string) string {
+		var v string
+		e.scalar(&v, `SELECT loan_deduction::text FROM hris.payroll_details WHERE payroll_run_id = $1 AND employee_id = $2`, runID, shared)
+		return v
+	}
+
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runA+"/calculate", nil, 200)
+	if got := loan(runA); got != "100000.00" {
+		t.Fatalf("A loan %s", got)
+	}
+	// The employee moves to B's store: B is now the primary entity, but the
+	// installment is already on A's slip.
+	e.work.placements[shared] = []domain.Placement{{BranchID: storeB, IsPrimary: true, Start: "2026-01-01"}}
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runB+"/calculate", nil, 200)
+	if a, b := loan(runA), loan(runB); a != "100000.00" || b != "0.00" {
+		t.Fatalf("loan A %s B %s", a, b)
+	}
+	// Recalculating A drops its own old details first; A is no longer the
+	// primary entity, so the installment is on neither slip (never twice)...
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runA+"/calculate", nil, 200)
+	if a, b := loan(runA), loan(runB); a != "0.00" || b != "0.00" {
+		t.Fatalf("after recalc A: loan A %s B %s", a, b)
+	}
+	// ...and recalculating the new primary entity picks it up again.
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runB+"/calculate", nil, 200)
+	if a, b := loan(runA), loan(runB); a != "0.00" || b != "100000.00" {
+		t.Fatalf("after recalc B: loan A %s B %s", a, b)
 	}
 }
