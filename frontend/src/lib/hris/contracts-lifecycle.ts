@@ -301,7 +301,7 @@ async function syncSalaryFromContract(client: PoolClient, contract: ContractRow)
              COALESCE($10, 'TK/0'), COALESCE($11, true),
              COALESCE($12, true), COALESCE($13, true), COALESCE($14, true),
              $15::date, true, $16)
-     ON CONFLICT (employee_id, effective_date) DO UPDATE SET
+     ON CONFLICT (employee_id, company_id, effective_date) DO UPDATE SET
        base_salary = EXCLUDED.base_salary,
        is_active = true,
        end_date = NULL,
