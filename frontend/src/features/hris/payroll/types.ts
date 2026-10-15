@@ -26,9 +26,13 @@ export interface PayrollRun {
   approved_at?: string;
   paid_at?: string;
   attendance_period?: PayrollAttendancePeriod;
+  /** Entitas run; null = run lama tanpa entitas. */
+  company_id?: string | null;
+  company?: { id: string; name: string } | null;
 }
 
 export interface CreatePayrollPayload {
+  company_id: string;
   period_month: number;
   period_year: number;
 }
@@ -48,6 +52,9 @@ export interface CalculatePayrollResult {
     total_employees?: number;
     employee_names?: string[];
     allocation_warnings?: AllocationWarning[];
+    skipped?: { employee_id: string; full_name: string; reason: string }[];
+    /** Karyawan aktif yang hanya digaji entitas lain. */
+    other_entity_count?: number;
   };
 }
 
@@ -223,6 +230,7 @@ export interface PayslipDetail extends PayslipAmounts {
     period_month: number;
     period_year: number;
     run_name: string;
+    company_name?: string | null;
   };
 }
 

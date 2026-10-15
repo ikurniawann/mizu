@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeftIcon,
@@ -18,6 +19,7 @@ import { buildPayrollRunCsv } from "@/lib/payroll/ui-run-csv";
 import { usePayrollRun } from "../queries";
 import { useNotifyPayslip } from "../mutations";
 import { AllocationChips } from "./store-breakdown";
+import { CalculationPanel } from "./calculation-panel";
 import { StoreAllocationCard } from "./store-allocation-card";
 
 interface PayrollPageProps {
@@ -92,6 +94,9 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">{payrollRun.run_name}</h1>
+          <Badge variant={payrollRun.company ? "ink" : "muted"} className="mt-1">
+            {payrollRun.company?.name ?? "Run lama (tanpa entitas)"}
+          </Badge>
           <p className="text-sm text-gray-500">
             {monthName(payrollRun.period_month)} {payrollRun.period_year} • {payrollRun.total_employees} karyawan
           </p>
@@ -181,6 +186,17 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
         </Card>
       </div>
 
+      {payrollRun.status === "draft" &&
+        (payrollRun.company_id ? (
+          <CalculationPanel runId={id} hasDetails={details.length > 0} />
+        ) : (
+          <Card variant="soft">
+            <CardContent className="py-4 text-sm text-muted-foreground">
+              Run lama tanpa entitas tidak bisa dihitung ulang — hapus lalu buat payroll per entitas.
+            </CardContent>
+          </Card>
+        ))}
+
       <StoreAllocationCard
         allocation={payrollRun.store_allocation}
         slipCount={details.length}
@@ -210,7 +226,7 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
                 {details.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-gray-500">
-                      Belum ada detail payroll. Klik &quot;Calculate&quot; di halaman sebelumnya.
+                      Belum ada detail payroll. Klik &quot;Hitung Payroll&quot; di atas.
                     </td>
                   </tr>
                 ) : (

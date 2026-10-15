@@ -106,7 +106,7 @@ export function PayslipPage() {
               </p>
             </div>
             <Badge className="bg-blue-100 text-blue-700">
-              {payrollRun?.run_name}
+              {payrollRun?.company_name ? `${payrollRun.run_name} · ${payrollRun.company_name}` : payrollRun?.run_name}
             </Badge>
           </div>
         </CardHeader>

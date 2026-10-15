@@ -19,7 +19,9 @@ import type { EssPayslip } from "../types";
 
 export function payslipPeriodLabel(slip: EssPayslip): string {
   const run = slip.payroll_run;
-  return run ? monthYearLabel(run.period_month ?? 1, run.period_year) : "—";
+  if (!run) return "—";
+  const period = monthYearLabel(run.period_month ?? 1, run.period_year);
+  return run.company_name ? `${period} · ${run.company_name}` : period;
 }
 
 interface RowProps {

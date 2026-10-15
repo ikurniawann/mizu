@@ -126,6 +126,7 @@ export interface EssPayslip extends PayslipAmounts {
     period_year: number;
     status: string;
     paid_at: string | null;
+    company_name?: string | null;
   } | null;
 }
 

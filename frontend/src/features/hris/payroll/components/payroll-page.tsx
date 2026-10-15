@@ -1,24 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { PlusIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { Cog6ToothIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { formatRupiah } from "@/lib/format";
 import { monthName } from "@/lib/hris/month-label";
 import { shortDateId } from "@/lib/hris/attendance-period";
 import type { PayrollRun } from "../types";
 import { usePayrollRuns } from "../queries";
-import { useCalculatePayroll, useUpdatePayrollStatus, useDeletePayrollRun } from "../mutations";
-import {
-  CalculateConfirmDialog,
-  CalculationResultDialog,
-  NewPayrollDialog,
-  type CalculationResult,
-} from "./payroll-run-dialogs";
+import { useUpdatePayrollStatus, useDeletePayrollRun } from "../mutations";
+import { EntityTabs, useEntityParam } from "./entity-tabs";
+import { NewRunForm } from "./new-run-form";
+
+const LEGACY = "legacy";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -56,39 +55,16 @@ function AttendancePeriodCell({ run }: { run: PayrollRun }) {
 
 export function PayrollPage() {
   const router = useRouter();
-  const [showNewDialog, setShowNewDialog] = useState(false);
-  const [calcRunId, setCalcRunId] = useState<string | null>(null);
-  const [calculationResult, setCalculationResult] = useState<CalculationResult | null>(null);
-
   const payrollQuery = usePayrollRuns();
   const payrollRuns = payrollQuery.data ?? [];
-  const loading = payrollQuery.isLoading;
+  const extra = payrollRuns.some((r) => !r.company_id) ? [{ value: LEGACY, label: "Run lama" }] : [];
+  const { entity, setEntity, entities, loading: entitiesLoading } = useEntityParam(extra);
+  const isLegacy = entity === LEGACY;
+  const entityName = entities.find((e) => e.id === entity)?.name ?? "";
+  const runs = payrollRuns.filter((r) => (isLegacy ? !r.company_id : r.company_id === entity));
 
-  const calculateMutation = useCalculatePayroll();
   const updateStatusMutation = useUpdatePayrollStatus();
   const deleteMutation = useDeletePayrollRun();
-
-  function confirmCalculate(includeThr: boolean) {
-    if (!calcRunId) return;
-    const runId = calcRunId;
-    setCalcRunId(null);
-    calculateMutation.mutate(
-      { runId, includeThr },
-      {
-        onSuccess: (result) => {
-          setCalculationResult({
-            count: result.summary?.total_employees || 0,
-            employees: result.summary?.employee_names || [],
-            warnings: result.summary?.allocation_warnings || [],
-            periodLabel: result.attendance_period?.label,
-            periodWarning: result.warning,
-          });
-          toast.success(`Payroll dihitung untuk ${result.summary?.total_employees || 0} karyawan`);
-        },
-        onError: (error) => toast.error(error.message || "Gagal menghitung payroll"),
-      }
-    );
-  }
 
   async function handleUpdateStatus(runId: string, newStatus: string) {
     try {
@@ -111,7 +87,7 @@ export function PayrollPage() {
     }
   }
 
-  if (loading) {
+  if (payrollQuery.isLoading || entitiesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600" />
@@ -121,205 +97,159 @@ export function PayrollPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payroll & Benefits</h1>
-          <p className="text-sm text-gray-500">Kelola penggajian, slip gaji, dan pinjaman karyawan</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/dashboard/hris/payroll/settings")}
-          >
+      <PageHeader
+        kicker="HRIS · Penggajian"
+        title="Payroll & Benefits"
+        description="Proses gaji per entitas: pilih entitas, buat payroll periode, lalu hitung di halaman detail."
+        actions={
+          <Button variant="outline" onClick={() => router.push("/dashboard/hris/payroll/settings")}>
             <Cog6ToothIcon className="w-4 h-4 mr-2" />
             Pengaturan
           </Button>
-          <Button onClick={() => setShowNewDialog(true)} className="bg-pink-600 hover:bg-pink-700">
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Payroll Baru
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {entities.length === 0 && !isLegacy ? (
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Payroll Runs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{payrollRuns.length}</div>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Belum ada entitas aktif. Tambahkan perusahaan di pengaturan struktur bisnis.
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-500">Dalam Draft</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {payrollRuns.filter(r => r.status === "draft").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-500">Completed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {payrollRuns.filter(r => r.status === "completed").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-500">Paid</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {payrollRuns.filter(r => r.status === "paid").length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      ) : (
+        <>
+          <EntityTabs value={entity} entities={entities} extra={extra} onChange={setEntity} />
 
-      {/* Payroll Runs Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Riwayat Payroll</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-500">Periode</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500">Nama</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500">Periode Absensi</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-500">Karyawan</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-500">Total Gross</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-500">Total Net</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-500">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payrollRuns.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-gray-500">
-                      Belum ada payroll run. Klik &quot;Payroll Baru&quot; untuk membuat.
-                    </td>
-                  </tr>
-                ) : (
-                  payrollRuns.map((run) => (
-                    <tr key={run.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        {monthName(run.period_month)} {run.period_year}
-                      </td>
-                      <td className="py-3 px-4">{run.run_name}</td>
-                      <td className="py-3 px-4">
-                        <Badge className={STATUS_COLORS[run.status]}>
-                          {STATUS_LABELS[run.status]}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <AttendancePeriodCell run={run} />
-                      </td>
-                      <td className="text-right py-3 px-4">{run.total_employees || 0}</td>
-                      <td className="text-right py-3 px-4 font-medium">
-                        {formatRupiah(run.total_gross || 0)}
-                      </td>
-                      <td className="text-right py-3 px-4 font-medium text-green-600">
-                        {formatRupiah(run.total_net || 0)}
-                      </td>
-                      <td className="text-right py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => router.push(`/dashboard/hris/payroll/${run.id}`)}
-                          >
-                            <DocumentTextIcon className="w-4 h-4" />
-                          </Button>
-                          {run.status === "draft" && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => setCalcRunId(run.id)}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                Calculate
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleUpdateStatus(run.id, "processing")}
-                                style={{ backgroundColor: '#ea580c', color: 'white' }}
-                                disabled={run.attendance_period?.status === "open"}
-                                title={
-                                  run.attendance_period?.status === "open"
-                                    ? "Closing periode absensi dulu (HRIS → Absensi → Periode Absensi)"
-                                    : undefined
-                                }
-                              >
-                                Process
-                              </Button>
-                            </>
-                          )}
-                          {run.status === "processing" && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleUpdateStatus(run.id, "completed")}
-                              className="bg-green-600 hover:bg-green-700"
-                              disabled={run.attendance_period?.status === "open"}
-                              title={
-                                run.attendance_period?.status === "open"
-                                  ? "Closing periode absensi dulu sebelum menyetujui payroll"
-                                  : undefined
-                              }
-                            >
-                              Approve
-                            </Button>
-                          )}
-                          {run.status === "completed" && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleUpdateStatus(run.id, "paid")}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Mark Paid
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(run.id)}
-                            className="text-red-600 hover:text-red-700 hover:border-red-300"
-                          >
-                            Hapus
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          {isLegacy ? (
+            <Card variant="soft">
+              <CardContent className="py-4 text-sm text-muted-foreground">
+                Run lama dibuat sebelum payroll per entitas. Run yang sudah dibayar tetap sah; run draft tidak bisa
+                dihitung ulang — hapus lalu buat per entitas.
+              </CardContent>
+            </Card>
+          ) : (
+            <NewRunForm companyId={entity} companyName={entityName} />
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <StatCard label="Total payroll run" value={runs.length} />
+            <StatCard label="Dalam draft" value={runs.filter((r) => r.status === "draft").length} />
+            <StatCard label="Completed" value={runs.filter((r) => r.status === "completed").length} />
+            <StatCard label="Paid" value={runs.filter((r) => r.status === "paid").length} />
           </div>
-        </CardContent>
-      </Card>
 
-      <NewPayrollDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
-      <CalculationResultDialog
-        calculating={calculateMutation.isPending}
-        result={calculationResult}
-        onClose={() => setCalculationResult(null)}
-      />
-      <CalculateConfirmDialog
-        open={calcRunId !== null}
-        onCancel={() => setCalcRunId(null)}
-        onConfirm={confirmCalculate}
-      />
+          <Card>
+            <CardHeader>
+              <CardTitle>Riwayat Payroll — {isLegacy ? "Run lama" : entityName}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium text-gray-500">Periode</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500">Nama</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500">Periode Absensi</th>
+                      <th className="text-right py-3 px-4 font-medium text-gray-500">Karyawan</th>
+                      <th className="text-right py-3 px-4 font-medium text-gray-500">Total Gross</th>
+                      <th className="text-right py-3 px-4 font-medium text-gray-500">Total Net</th>
+                      <th className="text-right py-3 px-4 font-medium text-gray-500">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {runs.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-gray-500">
+                          Belum ada payroll untuk entitas ini. Pilih bulan & tahun di atas lalu klik &quot;Buat Payroll&quot;.
+                        </td>
+                      </tr>
+                    ) : (
+                      runs.map((run) => (
+                        <tr key={run.id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            {monthName(run.period_month)} {run.period_year}
+                          </td>
+                          <td className="py-3 px-4">{run.run_name}</td>
+                          <td className="py-3 px-4">
+                            <Badge className={STATUS_COLORS[run.status]}>{STATUS_LABELS[run.status]}</Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <AttendancePeriodCell run={run} />
+                          </td>
+                          <td className="text-right py-3 px-4">{run.total_employees || 0}</td>
+                          <td className="text-right py-3 px-4 font-medium">{formatRupiah(run.total_gross || 0)}</td>
+                          <td className="text-right py-3 px-4 font-medium text-green-600">
+                            {formatRupiah(run.total_net || 0)}
+                          </td>
+                          <td className="text-right py-3 px-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => router.push(`/dashboard/hris/payroll/${run.id}`)}
+                              >
+                                <DocumentTextIcon className="w-4 h-4" />
+                              </Button>
+                              {run.status === "draft" && run.company_id && (
+                                <>
+                                  <Button size="sm" onClick={() => router.push(`/dashboard/hris/payroll/${run.id}`)}>
+                                    Hitung
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ink"
+                                    onClick={() => handleUpdateStatus(run.id, "processing")}
+                                    disabled={run.attendance_period?.status === "open"}
+                                    title={
+                                      run.attendance_period?.status === "open"
+                                        ? "Closing periode absensi dulu (HRIS → Absensi → Periode Absensi)"
+                                        : undefined
+                                    }
+                                  >
+                                    Process
+                                  </Button>
+                                </>
+                              )}
+                              {run.status === "processing" && (
+                                <Button
+                                  size="sm"
+                                  variant="ink"
+                                  onClick={() => handleUpdateStatus(run.id, "completed")}
+                                  disabled={run.attendance_period?.status === "open"}
+                                  title={
+                                    run.attendance_period?.status === "open"
+                                      ? "Closing periode absensi dulu sebelum menyetujui payroll"
+                                      : undefined
+                                  }
+                                >
+                                  Approve
+                                </Button>
+                              )}
+                              {run.status === "completed" && (
+                                <Button size="sm" variant="ink" onClick={() => handleUpdateStatus(run.id, "paid")}>
+                                  Mark Paid
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDelete(run.id)}
+                                className="text-red-600 hover:text-red-700 hover:border-red-300"
+                              >
+                                Hapus
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
