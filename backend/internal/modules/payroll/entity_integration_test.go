@@ -1,6 +1,10 @@
 package payroll
 
-import "testing"
+import (
+	"testing"
+
+	"nuhabit/backend/internal/modules/payroll/domain"
+)
 
 func TestPayrollEntities(t *testing.T) {
 	e := setup(t)
@@ -109,5 +113,69 @@ func TestSalaryPerEntity(t *testing.T) {
 	}
 	if !names["Entitas Uji"] || !names["Pusat Uji"] {
 		t.Fatalf("salary rows company embed %v", rows)
+	}
+}
+
+func TestMultiEntityCalculate(t *testing.T) {
+	e := setup(t)
+	e.employee("HR Payroll", e.hr.UserID, true)
+	coA, storeA := e.co, e.store
+	coB, storeB := e.entity("Entitas B")
+	shared := e.employee("Dua Entitas", "", true)
+	refA := e.employee("Hanya A", "", true)
+	refB := e.employee("Hanya B", "", true)
+	e.salary(shared, coA, 1_000_000)
+	e.salary(shared, coB, 9_000_000)
+	e.salary(refA, coA, 1_000_000)
+	e.salary(refB, coB, 9_000_000)
+	e.exec(`INSERT INTO hris.loans (employee_id, loan_type, principal_amount, tenor_months, monthly_installment,
+		remaining_balance, first_installment_month, first_installment_year, status, approved_at)
+		VALUES ($1, 'kasbon', 300000, 3, 100000, 300000, 6, 2099, 'approved', now())`, shared)
+	// Placed at A's store: A is the primary entity (B pays more).
+	e.work.placements = map[string][]domain.Placement{
+		shared: {{BranchID: storeA, IsPrimary: true, Start: "2026-01-01"}},
+		refA:   {{BranchID: storeA, IsPrimary: true, Start: "2026-01-01"}},
+		refB:   {{BranchID: storeB, IsPrimary: true, Start: "2026-01-01"}},
+	}
+
+	runA, runB := e.newRun(6, 2099, coA), e.newRun(6, 2099, coB)
+	sumA := e.call(&e.hr, "POST", "/api/hris/payroll/"+runA+"/calculate", nil, 200)["summary"].(map[string]any)
+	sumB := e.call(&e.hr, "POST", "/api/hris/payroll/"+runB+"/calculate", nil, 200)["summary"].(map[string]any)
+	if sumA["total_employees"].(float64) != 2 || sumB["total_employees"].(float64) != 2 {
+		t.Fatalf("A %v / B %v", sumA, sumB)
+	}
+	if sumA["other_entity_count"].(float64) != 1 { // Hanya B
+		t.Fatalf("A other entity %v", sumA["other_entity_count"])
+	}
+
+	type slip struct{ gross, pph, bpjsKes, bpjsTk, loan string }
+	read := func(runID, emp string) slip {
+		var s slip
+		if err := e.tx.QueryRow(e.ctx, `SELECT gross_salary::text, pph21_deduction::text, bpjs_kes_deduction::text,
+			bpjs_tk_jht_deduction::text, loan_deduction::text FROM hris.payroll_details
+			WHERE payroll_run_id = $1 AND employee_id = $2`, runID, emp).Scan(&s.gross, &s.pph, &s.bpjsKes, &s.bpjsTk, &s.loan); err != nil {
+			t.Fatalf("slip %s/%s: %v", runID, emp, err)
+		}
+		return s
+	}
+	a, b := read(runA, shared), read(runB, shared)
+	ra, rb := read(runA, refA), read(runB, refB)
+	// K4: each slip's tax/BPJS equals that of an employee paid only by that entity.
+	if a.gross != ra.gross || a.pph != ra.pph || a.bpjsKes != ra.bpjsKes || a.bpjsTk != ra.bpjsTk {
+		t.Fatalf("A slip %+v vs reference %+v", a, ra)
+	}
+	if b.gross != rb.gross || b.pph != rb.pph || b.bpjsKes != rb.bpjsKes || b.bpjsTk != rb.bpjsTk {
+		t.Fatalf("B slip %+v vs reference %+v", b, rb)
+	}
+	// K5 (interim policy): the installment is on the primary entity's slip only.
+	if a.loan != "100000.00" || b.loan != "0.00" {
+		t.Fatalf("loan A %s B %s", a.loan, b.loan)
+	}
+	// B's slip is never allocated to A's store.
+	var leaked int
+	e.scalar(&leaked, `SELECT count(*)::int FROM hris.payroll_detail_allocations
+		WHERE payroll_run_id = $1 AND branch_id = $2`, runB, storeA)
+	if leaked != 0 {
+		t.Fatalf("%d allocations of run B at A's store", leaked)
 	}
 }

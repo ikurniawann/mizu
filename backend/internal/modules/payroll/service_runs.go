@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 
@@ -341,10 +342,16 @@ type skipped struct {
 	Reason     string `json:"reason"`
 }
 
+// multiEntityPolicy is the active multi-entity policy (EPIC-054 K5/K6):
+// change it only once HR has decided, see domain/policy.go.
+const multiEntityPolicy = domain.PolicyPrimaryEntity
+
 type calcSummary struct {
 	TotalEmployees int       `json:"total_employees"`
 	EmployeeNames  []string  `json:"employee_names"`
 	Skipped        []skipped `json:"skipped"`
+	// OtherEntity counts the active employees paid only by other entities.
+	OtherEntity int `json:"other_entity_count"`
 	// AllocationWarnings are the slips whose cost (or part of it) has no
 	// store: no placement and no store on attendance ("Tanpa toko").
 	AllocationWarnings []allocationWarning `json:"allocation_warnings"`
@@ -401,6 +408,11 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 	if err != nil {
 		return nil, err
 	}
+	company := *run.CompanyID
+	branchCompany, err := s.ports.Entities.BranchCompanies(ctx, s.db)
+	if err != nil {
+		return nil, opaque(err)
+	}
 
 	out := &calcResult{Data: []*obj{}, Summary: calcSummary{EmployeeNames: []string{}, Skipped: []skipped{},
 		AllocationWarnings: []allocationWarning{}}, AttendancePeriod: period.info()}
@@ -412,7 +424,23 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 		skip := func(reason string) {
 			out.Summary.Skipped = append(out.Summary.Skipped, skipped{e.ID, e.FullName, reason})
 		}
-		in, records, err := s.payrollInput(ctx, e, *run.CompanyID, run.PeriodMonth, run.PeriodYear, start, end, includeThr, holidays)
+		salaries, err := activeSalaryEntities(ctx, s.db, e.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !slices.ContainsFunc(salaries, func(sal domain.EntitySalary) bool { return sal.CompanyID == company }) {
+			if len(salaries) > 0 {
+				out.Summary.OtherEntity++
+			} else {
+				skip("Belum ada struktur gaji aktif")
+			}
+			continue
+		}
+		placements, err := s.ports.Workforce.Placements(ctx, s.db, e.ID, start, end)
+		if err != nil {
+			return nil, err
+		}
+		in, records, err := s.payrollInput(ctx, e, company, run.PeriodMonth, run.PeriodYear, start, end, includeThr, holidays)
 		if err != nil {
 			return nil, err
 		}
@@ -420,10 +448,8 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 			skip("Belum ada struktur gaji aktif")
 			continue
 		}
-		placements, err := s.ports.Workforce.Placements(ctx, s.db, e.ID, start, end)
-		if err != nil {
-			return nil, err
-		}
+		primary := domain.PrimaryEntity(domain.EntityOf(placements, branchCompany, end), salaries)
+		*in = domain.ApplyMultiEntityPolicy(*in, primary == company, multiEntityPolicy)
 		result := domain.Calculate(*in, config)
 		var detail *obj
 		var allocation domain.SlipAllocation
@@ -435,7 +461,8 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 			}
 			// The store split reads the stored (numeric(12,2)) amounts so the
 			// shares add up to the slip exactly.
-			allocation = domain.AllocateSlip(slipAmounts(detail), branchDays(records.Attendance), placements, start, end)
+			days, scoped := domain.ScopeToCompany(branchDays(records.Attendance), placements, branchCompany, company)
+			allocation = domain.AllocateSlip(slipAmounts(detail), days, scoped, start, end)
 			return insertAllocations(ctx, tx, runID, detail.Str("id"), e.ID, allocation)
 		})
 		if err != nil || detail == nil {

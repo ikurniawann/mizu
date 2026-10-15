@@ -9,16 +9,13 @@ import (
 	"nuhabit/backend/internal/platform/testutil"
 )
 
-// branch inserts a holding, company and store, returning the store id.
+// branch inserts a store under the default entity (e.co), returning its id.
 func (e *env) branch(name string) string {
 	e.t.Helper()
-	sfx := testutil.RandomHex(4)
-	var holding, company, id string
-	e.scalar(&holding, `INSERT INTO configuration.holdings (name, code) VALUES ($1, $2) RETURNING id::text`, "H "+sfx, "H-"+sfx)
-	e.scalar(&company, `INSERT INTO configuration.companies (holding_id, name, code) VALUES ($1, $2, $3) RETURNING id::text`,
-		holding, "Co "+sfx, "CO-"+sfx)
+	var id string
 	e.scalar(&id, `INSERT INTO configuration.branches (company_id, name, code) VALUES ($1, $2, $3) RETURNING id::text`,
-		company, name, "BR-"+sfx)
+		e.co, name, "BR-"+testutil.RandomHex(4))
+	e.ents.branches[id] = e.co
 	return id
 }
 
