@@ -225,3 +225,11 @@ export interface PayslipDetail extends PayslipAmounts {
     run_name: string;
   };
 }
+
+/** Entitas (perusahaan) yang membayar gaji dan memproses payroll. */
+export interface PayrollEntity {
+  id: string;
+  code: string;
+  name: string;
+  holding_name: string;
+}

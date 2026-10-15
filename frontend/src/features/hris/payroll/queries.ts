@@ -8,6 +8,7 @@ import {
   fetchPayslip,
   fetchPayrollSettings,
   fetchStoreCosts,
+  fetchPayrollEntities,
 } from "./api";
 
 export const usePayrollRuns = () =>
@@ -42,3 +43,6 @@ export const usePayrollSettings = (taxYear?: number) =>
     queryKey: payrollQueryKeys.settings(taxYear),
     queryFn: () => fetchPayrollSettings(taxYear),
   });
+
+export const usePayrollEntities = () =>
+  useQuery({ queryKey: payrollQueryKeys.entities(), queryFn: fetchPayrollEntities, staleTime: 5 * 60 * 1000 });

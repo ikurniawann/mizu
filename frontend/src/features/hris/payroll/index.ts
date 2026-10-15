@@ -8,3 +8,4 @@ export { PayrollDetailPage } from "./components/payroll-detail-page";
 export { PayslipPage } from "./components/payslip-page";
 export { PayrollSettingsPage } from "./components/payroll-settings-page";
 export { StoreCostReportPage } from "./components/store-cost-report-page";
+export { EntityTabs, useEntityParam, type ExtraEntityTab } from "./components/entity-tabs";

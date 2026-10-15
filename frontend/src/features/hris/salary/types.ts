@@ -25,11 +25,14 @@ export interface EmployeeSalary {
   is_active?: boolean;
   effective_date?: string;
   notes?: string;
+  company_id?: string | null;
+  company?: { id: string; name: string } | null;
   employee?: SalaryEmployeeLite;
 }
 
 export interface SalaryPayload {
   employee_id?: string;
+  company_id?: string;
   base_salary: number;
   fixed_allowance: number;
   variable_allowance: number;

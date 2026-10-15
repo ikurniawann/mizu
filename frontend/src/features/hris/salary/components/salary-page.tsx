@@ -6,14 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlusIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { formatDate, formatRupiah } from "@/lib/format";
+import { EntityTabs, useEntityParam } from "@/features/hris/payroll";
 import { useSalaryList } from "../queries";
+
+const UNASSIGNED = "unassigned";
 
 export function SalaryPage() {
   const router = useRouter();
 
   const salaryQuery = useSalaryList();
   const salaries = salaryQuery.data ?? [];
-  const loading = salaryQuery.isLoading;
+  const hasUnassigned = salaries.some((s) => !s.company_id);
+  const extra = hasUnassigned ? [{ value: UNASSIGNED, label: "Belum ada entitas" }] : [];
+  const { entity, setEntity, entities, loading: entitiesLoading } = useEntityParam(extra);
+  const visible = salaries.filter((s) => (entity === UNASSIGNED ? !s.company_id : s.company_id === entity));
+  const loading = salaryQuery.isLoading || entitiesLoading;
 
   if (loading) {
     return (
@@ -31,11 +38,18 @@ export function SalaryPage() {
           <h1 className="text-2xl font-bold text-gray-900">Salary Structure</h1>
           <p className="text-sm text-gray-500">Kelola struktur gaji karyawan</p>
         </div>
-        <Button onClick={() => router.push('/dashboard/hris/salary/insert')} className="bg-pink-600 hover:bg-pink-700">
+        <Button onClick={() => router.push(`/dashboard/hris/salary/insert${entity && entity !== UNASSIGNED ? `?entity=${entity}` : ""}`)} className="bg-pink-600 hover:bg-pink-700">
           <PlusIcon className="w-4 h-4 mr-2" />
           Tambah Salary
         </Button>
       </div>
+
+      <EntityTabs value={entity} entities={entities} extra={extra} onChange={setEntity} />
+      {entity === UNASSIGNED && (
+        <p className="text-sm text-muted-foreground">
+          Struktur gaji tanpa entitas tidak ikut dihitung payroll mana pun. Buat versi baru dengan entitas pembayar.
+        </p>
+      )}
 
       {/* Salary Table */}
       <Card>
@@ -58,14 +72,14 @@ export function SalaryPage() {
                 </tr>
               </thead>
               <tbody>
-                {salaries.length === 0 ? (
+                {visible.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-gray-500">
-                      Belum ada salary structure. Klik &quot;Tambah Salary&quot; untuk membuat.
+                      Belum ada struktur gaji untuk entitas ini.
                     </td>
                   </tr>
                 ) : (
-                  salaries.map((salary) => (
+                  visible.map((salary) => (
                     <tr key={salary.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div>

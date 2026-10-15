@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { usePayrollEntities } from "@/features/hris/payroll";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
@@ -16,6 +18,8 @@ import { SalaryAmountFields } from "./salary-amount-fields";
 
 export function NewSalaryPage() {
   const router = useRouter();
+  const params = useSearchParams();
+  const entitiesQuery = usePayrollEntities();
 
   const employeesQuery = useSalaryEmployees();
   const employees = employeesQuery.data ?? [];
@@ -28,11 +32,15 @@ export function NewSalaryPage() {
   const createMutation = useCreateSalary();
   const saving = createMutation.isPending;
 
-  const [formData, setFormData] = useState({ ...EMPTY_SALARY_FORM, employee_id: "" });
+  const [formData, setFormData] = useState({
+    ...EMPTY_SALARY_FORM,
+    employee_id: "",
+    company_id: params.get("entity") ?? "",
+  });
 
   async function handleSave() {
-    if (!formData.employee_id || !formData.base_salary) {
-      toast.error("Karyawan dan gaji pokok wajib diisi");
+    if (!formData.employee_id || !formData.company_id || !formData.base_salary) {
+      toast.error("Karyawan, entitas pembayar, dan gaji pokok wajib diisi");
       return;
     }
 
@@ -40,12 +48,13 @@ export function NewSalaryPage() {
       await createMutation.mutateAsync({
         ...formToSalaryPayload(formData),
         employee_id: formData.employee_id,
+        company_id: formData.company_id,
         notes: undefined,
       });
 
       toast.success("Salary structure berhasil dibuat");
       setTimeout(() => {
-        router.push("/dashboard/hris/salary");
+        router.push(`/dashboard/hris/salary?entity=${formData.company_id}`);
       }, 1000);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
@@ -92,6 +101,28 @@ export function NewSalaryPage() {
                 allowClear
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="company_id">Entitas pembayar *</Label>
+            <div className="mt-1">
+              <Select value={formData.company_id} onValueChange={(v) => setFormData({ ...formData, company_id: String(v) })}>
+                <SelectTrigger id="company_id">
+                  <SelectValue placeholder={entitiesQuery.isLoading ? "Memuat entitas…" : "Pilih entitas"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(entitiesQuery.data ?? []).map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Karyawan yang digaji beberapa entitas dibuatkan satu struktur gaji per entitas (mis. A Rp1jt, B Rp1jt);
+              tiap entitas menerbitkan slip sendiri.
+            </p>
           </div>
 
           <SalaryAmountFields

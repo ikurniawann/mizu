@@ -122,6 +122,11 @@ function EditSalaryForm({ salary }: { salary: EmployeeSalary }) {
               <p className="text-sm text-gray-500">Departemen</p>
               <p>{employee?.department?.name || "-"}</p>
             </div>
+            <div>
+              <p className="text-sm text-gray-500">Entitas pembayar</p>
+              <p className="font-semibold">{salary.company?.name ?? "Belum ada entitas"}</p>
+              <p className="text-xs text-muted-foreground">Ganti entitas = buat struktur gaji baru.</p>
+            </div>
           </div>
         </CardContent>
       </Card>

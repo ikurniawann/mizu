@@ -6,6 +6,7 @@ import type {
   PayrollRunDetail,
   PayslipDetail,
   StoreCostReport,
+  PayrollEntity,
 } from "./types";
 
 export const fetchPayrollRuns = () =>
@@ -74,3 +75,6 @@ export const fetchPayrollSettings = (taxYear?: number) =>
 
 export const savePayrollSettings = (payload: SavePayrollSettingsPayload) =>
   apiPut<{ data: PayrollSettingsData }>("/api/hris/payroll-settings", payload);
+
+export const fetchPayrollEntities = () =>
+  apiGet<{ data: PayrollEntity[] }>("/api/hris/payroll/entities").then((res) => res.data || []);

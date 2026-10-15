@@ -1,5 +1,6 @@
 export const payrollQueryKeys = {
   all: ["hris", "payroll"] as const,
+  entities: () => ["hris", "payroll", "entities"] as const,
   runs: () => ["hris", "payroll", "runs"] as const,
   run: (id: string) => ["hris", "payroll", "run", id] as const,
   payslip: (payrollRunId: string, employeeId: string) =>
