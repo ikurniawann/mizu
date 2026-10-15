@@ -169,7 +169,7 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		        COALESCE($10::text, 'TK/0'), COALESCE($11::boolean, true),
 		        COALESCE($12::boolean, true), COALESCE($13::boolean, true), COALESCE($14::boolean, true),
 		        $15::date, true, $16)
-		ON CONFLICT (employee_id, effective_date) DO UPDATE SET
+		ON CONFLICT (employee_id, company_id, effective_date) DO UPDATE SET
 		  base_salary = EXCLUDED.base_salary,
 		  is_active = true,
 		  end_date = NULL,
