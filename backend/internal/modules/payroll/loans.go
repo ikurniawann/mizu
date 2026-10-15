@@ -58,16 +58,10 @@ func (s *service) loanLimits(ctx context.Context, employeeID string, includePend
 		return domain.Config{}, nil, 0, err
 	}
 	var base *float64
-	salaries, err := activeSalaryEntities(ctx, s.db, employeeID)
-	if err != nil {
+	// Total over every active row, including one with no entity yet.
+	if err := s.db.QueryRow(ctx, `SELECT sum(base_salary)::float8 FROM hris.employee_salary
+		WHERE employee_id = $1 AND is_active`, employeeID).Scan(&base); err != nil {
 		return domain.Config{}, nil, 0, err
-	}
-	if len(salaries) > 0 {
-		total := 0.0
-		for _, sal := range salaries {
-			total += sal.Base
-		}
-		base = &total
 	}
 	filter := `status IN ('pending', 'approved')`
 	if !includePending {

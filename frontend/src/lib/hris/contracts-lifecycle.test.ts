@@ -94,7 +94,7 @@ describe("syncSalaryFromContract", () => {
     const { client, query } = fakeClient(2);
     await syncSalaryFromContract(client, draft);
     expect(query).toHaveBeenCalledTimes(1);
-    expect(query.mock.calls[0][0]).toContain("count(DISTINCT company_id)");
+    expect(query.mock.calls[0][0]).toContain("count(DISTINCT COALESCE(company_id::text, ''))");
   });
 
   it("satu entitas: versi aktif dibaca lalu versi baru membawa company_id-nya", async () => {

@@ -136,7 +136,7 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		taxable, bpjsTK, bpjsKes, tapera                       *bool
 	)
 	var entities int
-	if err := q.QueryRow(ctx, `SELECT count(DISTINCT company_id)::int FROM hris.employee_salary
+	if err := q.QueryRow(ctx, `SELECT count(DISTINCT COALESCE(company_id::text, ''))::int FROM hris.employee_salary
 		WHERE employee_id = $1 AND is_active`, in.EmployeeID).Scan(&entities); err != nil {
 		return err
 	}

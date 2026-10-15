@@ -55,6 +55,28 @@ func TestRunPerEntityCreate(t *testing.T) {
 	}
 }
 
+// A legacy salary with no entity yet is superseded once HR assigns one, so
+// totals are not double counted; it still counts for the loan limit until then.
+func TestSalaryNullCompanySuperseded(t *testing.T) {
+	e := setup(t)
+	emp := e.employee("Tanpa Entitas", "", true)
+	e.exec(`INSERT INTO hris.employee_salary (employee_id, base_salary, effective_date) VALUES ($1, 5000000, '2026-01-01')`, emp)
+	// Only a NULL-company salary: the loan limit still sees it (30% of 5.000.000).
+	wantErr(t, e.call(&e.hr, "POST", "/api/hris/loans", map[string]any{"employee_id": emp, "loan_type": "loan",
+		"principal_amount": 6000000, "tenor_months": 3}, 400),
+		"Cicilan Rp 2.000.000/bulan melebihi batas 30% dari gaji pokok (maks Rp 1.500.000)")
+
+	e.call(&e.hr, "POST", "/api/hris/employee-salary",
+		map[string]any{"employee_id": emp, "base_salary": 6_000_000, "effective_date": "2026-03-01", "company_id": e.co}, 200)
+	var active int
+	var company string
+	e.scalar(&active, `SELECT count(*)::int FROM hris.employee_salary WHERE employee_id = $1 AND is_active`, emp)
+	e.scalar(&company, `SELECT COALESCE(company_id::text, '') FROM hris.employee_salary WHERE employee_id = $1 AND is_active`, emp)
+	if active != 1 || company != e.co {
+		t.Fatalf("active rows = %d (company %q), want only the %s one", active, company, e.co)
+	}
+}
+
 func TestSalaryPerEntity(t *testing.T) {
 	e := setup(t)
 	pusat, _ := e.entity("Pusat Uji")

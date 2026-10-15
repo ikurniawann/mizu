@@ -127,7 +127,7 @@ func (s *service) createSalary(ctx context.Context, employeeID, companyID string
 		endDate = iso
 	}
 	if _, err := s.db.Exec(ctx, `UPDATE hris.employee_salary SET is_active = false, end_date = $2, updated_at = $3
-		WHERE employee_id = $1 AND company_id = $4::uuid AND is_active = true`, employeeID, endDate, now, entity.ID); err != nil {
+		WHERE employee_id = $1 AND (company_id = $4::uuid OR company_id IS NULL) AND is_active = true`, employeeID, endDate, now, entity.ID); err != nil {
 		s.log.ErrorContext(ctx, "employee-salary: deactivate previous failed", "employee_id", employeeID, "error", err)
 	}
 	effectiveDate := now

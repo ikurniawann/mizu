@@ -269,7 +269,7 @@ export async function syncSalaryFromContract(client: PoolClient, contract: Contr
   if (contractBase === null || contractBase <= 0) return;
 
   const { rows: entityRows } = await client.query<{ entities: number }>(
-    `SELECT count(DISTINCT company_id)::int AS entities FROM hris.employee_salary
+    `SELECT count(DISTINCT COALESCE(company_id::text, ''))::int AS entities FROM hris.employee_salary
      WHERE employee_id = $1 AND is_active = true`,
     [contract.employee_id]
   );

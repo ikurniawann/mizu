@@ -75,7 +75,8 @@ type KPISummary struct {
 // write runs on the caller's transaction: activating a contract must not
 // leave the salary structure out of sync.
 type SalaryPort interface {
-	// ActiveBaseSalary is the newest active base salary (numeric text).
+	// ActiveBaseSalary is the total of the active base salaries across all
+	// paying entities (numeric text), nil when there is none.
 	ActiveBaseSalary(ctx context.Context, q database.Querier, employeeID string) (*string, error)
 	// SyncFromContract versions the salary to the contract's base salary.
 	SyncFromContract(ctx context.Context, q database.Querier, in SalarySync) error

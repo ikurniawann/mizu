@@ -91,11 +91,12 @@ func TestSalarySyncMultiEntity(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	var emp, coA, coB string
+	var emp, holding, coA, coB string
 	must(tx.QueryRow(ctx, `INSERT INTO hris.employees (full_name, nip, email, phone, join_date)
 		VALUES ('Sinkron', 'SYN-1', 'syn1@test.local', '08', '2024-01-01') RETURNING id::text`).Scan(&emp))
-	must(tx.QueryRow(ctx, `SELECT id::text FROM configuration.companies ORDER BY created_at LIMIT 1`).Scan(&coA))
-	must(tx.QueryRow(ctx, `SELECT id::text FROM configuration.companies WHERE id <> $1 ORDER BY created_at LIMIT 1`, coA).Scan(&coB))
+	must(tx.QueryRow(ctx, `INSERT INTO configuration.holdings (name, code) VALUES ('Sinkron Group', 'H-SYN') RETURNING id::text`).Scan(&holding))
+	must(tx.QueryRow(ctx, `INSERT INTO configuration.companies (holding_id, name, code) VALUES ($1, 'Sinkron A', 'SYN-A') RETURNING id::text`, holding).Scan(&coA))
+	must(tx.QueryRow(ctx, `INSERT INTO configuration.companies (holding_id, name, code) VALUES ($1, 'Sinkron B', 'SYN-B') RETURNING id::text`, holding).Scan(&coB))
 	_, err := tx.Exec(ctx, `INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, effective_date)
 		VALUES ($1, $2, 1000000, '2026-01-01'), ($1, $3, 1000000, '2026-01-01')`, emp, coA, coB)
 	must(err)
