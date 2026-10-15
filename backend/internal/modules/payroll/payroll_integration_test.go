@@ -151,16 +151,59 @@ func (fakeSettings) GetMany(_ context.Context, _ database.Querier, keys []string
 	return map[string]*string{"company_legal_name": &name}, nil
 }
 
+// fakeEntities is the business hierarchy the test registers.
+type fakeEntities struct {
+	list     []Entity
+	branches map[string]string // branch id → company id
+}
+
+func (f *fakeEntities) List(context.Context, database.Querier) ([]Entity, error) { return f.list, nil }
+
+func (f *fakeEntities) BranchCompanies(context.Context, database.Querier) (map[string]string, error) {
+	return f.branches, nil
+}
+
+// entity inserts a holding, company and one store, and registers them.
+func (e *env) entity(name string) (company, branch string) {
+	e.t.Helper()
+	sfx := testutil.RandomHex(4)
+	var holding string
+	e.scalar(&holding, `INSERT INTO configuration.holdings (name, code) VALUES ($1, $2) RETURNING id::text`, name+" Group", "H-"+sfx)
+	e.scalar(&company, `INSERT INTO configuration.companies (holding_id, name, code) VALUES ($1, $2, $3) RETURNING id::text`,
+		holding, name, "CO-"+sfx)
+	e.scalar(&branch, `INSERT INTO configuration.branches (company_id, name, code) VALUES ($1, $2, $3) RETURNING id::text`,
+		company, name+" Toko", "BR-"+sfx)
+	e.ents.list = append(e.ents.list, Entity{ID: company, Code: "CO-" + sfx, Name: name, HoldingName: name + " Group", IsActive: true})
+	e.ents.branches[branch] = company
+	return company, branch
+}
+
+// salary inserts an active salary of employeeID paid by companyID.
+func (e *env) salary(employeeID, companyID string, base int) {
+	e.t.Helper()
+	e.exec(`INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, ptkp_status, effective_date)
+		VALUES ($1, $2, $3, 'TK/0', '2026-01-01')`, employeeID, companyID, base)
+}
+
+// newRun creates a draft run of companyID and returns its id.
+func (e *env) newRun(month, year int, companyID string) string {
+	e.t.Helper()
+	body := map[string]any{"period_month": month, "period_year": year, "company_id": companyID}
+	return e.call(&e.hr, "POST", "/api/hris/payroll", body, 200)["data"].(map[string]any)["id"].(string)
+}
+
 type env struct {
-	t     *testing.T
-	ctx   context.Context
-	tx    pgx.Tx
-	mux   http.Handler
-	emps  *fakeEmployees
-	depts *fakeDepartments
-	work  *fakeWorkforce
-	hr    testutil.Staff
-	staff testutil.Staff
+	t         *testing.T
+	ctx       context.Context
+	tx        pgx.Tx
+	mux       http.Handler
+	emps      *fakeEmployees
+	depts     *fakeDepartments
+	work      *fakeWorkforce
+	hr        testutil.Staff
+	staff     testutil.Staff
+	ents      *fakeEntities
+	co, store string // default entity and its store
 }
 
 var fixedNow = time.Date(2026, 10, 4, 10, 0, 0, 0, time.UTC)
@@ -181,12 +224,14 @@ func setup(t *testing.T, periods ...AttendancePeriods) *env {
 	e := &env{t: t, ctx: ctx, tx: tx, hr: hr, staff: staff,
 		emps:  &fakeEmployees{byUser: map[string]string{}, briefs: map[string]EmployeeBrief{}, roles: map[string]string{}, companies: map[string]string{}},
 		depts: &fakeDepartments{},
+		ents:  &fakeEntities{branches: map[string]string{}},
 		work:  &fakeWorkforce{records: map[string]domain.WorkforceRecords{}, holidays: map[string]bool{}}}
-	ports := Ports{Employees: e.emps, Departments: e.depts, Workforce: e.work, Settings: fakeSettings{}}
+	ports := Ports{Employees: e.emps, Departments: e.depts, Workforce: e.work, Settings: fakeSettings{}, Entities: e.ents}
 	if len(periods) > 0 {
 		ports.AttendancePeriods = periods[0]
 	}
 	e.mux = testutil.Mux(NewOn(deps, tx, ports))
+	e.co, e.store = e.entity("Entitas Uji")
 	return e
 }
 

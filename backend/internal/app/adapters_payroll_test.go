@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"slices"
 	"testing"
 
+	"nuhabit/backend/internal/modules/payroll"
 	"nuhabit/backend/internal/platform/testutil"
 )
 
@@ -71,6 +73,16 @@ func TestPayrollAdapters(t *testing.T) {
 	must(err)
 	if got, err := ports.Employees.Companies(ctx, tx, []string{head}); err != nil || got[head] != branchCompany {
 		t.Fatalf("companies by branch %v %v", got, err)
+	}
+	entities, err := ports.Entities.List(ctx, tx)
+	must(err)
+	if !slices.ContainsFunc(entities, func(en payroll.Entity) bool {
+		return en.ID == branchCompany && en.Name != "" && en.HoldingName != ""
+	}) {
+		t.Fatalf("entities %+v missing %s", entities, branchCompany)
+	}
+	if bc, err := ports.Entities.BranchCompanies(ctx, tx); err != nil || bc[branch] != branchCompany {
+		t.Fatalf("branch companies %v %v", bc[branch], err)
 	}
 	if all, err := ports.Departments.All(ctx, tx); err != nil || len(all) == 0 {
 		t.Fatalf("departments %v", err)

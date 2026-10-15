@@ -2381,6 +2381,11 @@
   },
   {
     "module": "payroll",
+    "method": "GET",
+    "path": "/api/hris/payroll/entities"
+  },
+  {
+    "module": "payroll",
     "method": "DELETE",
     "path": "/api/hris/payroll/{id}"
   },

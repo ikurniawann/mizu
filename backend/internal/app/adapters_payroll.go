@@ -23,7 +23,41 @@ import (
 
 func payrollPorts() payroll.Ports {
 	return payroll.Ports{Employees: payrollEmployees{}, Departments: payrollDepartmentsSQL{}, Workforce: payrollWorkforceSQL{},
-		Settings: kit.AppSettings{}, KPI: payrollKPISQL{}, AttendancePeriods: payrollAttendancePeriods{}}
+		Settings: kit.AppSettings{}, KPI: payrollKPISQL{}, AttendancePeriods: payrollAttendancePeriods{},
+		Entities: payrollEntitiesSQL{}}
+}
+
+// payrollEntitiesSQL reads the companies and branches payroll runs per entity.
+type payrollEntitiesSQL struct{}
+
+func (payrollEntitiesSQL) List(ctx context.Context, q database.Querier) ([]payroll.Entity, error) {
+	rows, err := q.Query(ctx, `SELECT c.id::text, COALESCE(c.code, ''), c.name, h.name, COALESCE(c.is_active, false)
+		FROM configuration.companies c JOIN configuration.holdings h ON h.id = c.holding_id
+		ORDER BY h.name, c.name`)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (payroll.Entity, error) {
+		var e payroll.Entity
+		return e, r.Scan(&e.ID, &e.Code, &e.Name, &e.HoldingName, &e.IsActive)
+	})
+}
+
+func (payrollEntitiesSQL) BranchCompanies(ctx context.Context, q database.Querier) (map[string]string, error) {
+	rows, err := q.Query(ctx, `SELECT id::text, company_id::text FROM configuration.branches WHERE company_id IS NOT NULL`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var branch, company string
+		if err := rows.Scan(&branch, &company); err != nil {
+			return nil, err
+		}
+		out[branch] = company
+	}
+	return out, rows.Err()
 }
 
 // payrollAttendancePeriods reads the HRIS attendance period of a payroll

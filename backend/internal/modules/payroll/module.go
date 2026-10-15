@@ -77,6 +77,7 @@ func (h *handler) routes() []module.Route {
 	return []module.Route{
 		route("GET /api/hris/payroll", h.listRuns),
 		route("POST /api/hris/payroll", h.createRun),
+		route("GET /api/hris/payroll/entities", h.listEntities),
 		route("GET /api/hris/payroll/{id}", h.getRun),
 		route("PUT /api/hris/payroll/{id}", h.updateRun),
 		route("DELETE /api/hris/payroll/{id}", h.deleteRun),

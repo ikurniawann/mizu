@@ -116,12 +116,31 @@ type AttendancePeriods interface {
 	ForMonth(ctx context.Context, q database.Querier, year, month int) (*AttendancePeriod, error)
 }
 
+// Entity is a configuration.companies row: an entity that pays salaries
+// and runs payroll, with its holding's name.
+type Entity struct {
+	ID          string
+	Code        string
+	Name        string
+	HoldingName string
+	IsActive    bool
+}
+
+// Entities reads the business hierarchy (configuration context).
+type Entities interface {
+	// List is every company ordered by holding name, then company name.
+	List(ctx context.Context, q database.Querier) ([]Entity, error)
+	// BranchCompanies maps every branch id to its company id.
+	BranchCompanies(ctx context.Context, q database.Querier) (map[string]string, error)
+}
+
 // Ports bundles the adapters the module needs.
 type Ports struct {
 	Employees   Employees
 	Departments Departments
 	Workforce   Workforce
 	Settings    AppSettings
+	Entities    Entities // companies and branches (payroll per entity)
 	// KPI reads what the KPI snapshot measures in other contexts.
 	KPI KPISources
 	// AttendancePeriods gives the attendance period of a run; nil means the
