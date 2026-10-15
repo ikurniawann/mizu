@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   ArrowLeftIcon,
   DocumentTextIcon,
@@ -16,6 +17,7 @@ import { formatRupiah } from "@/lib/format";
 import { monthName } from "@/lib/hris/month-label";
 import { shortDateId } from "@/lib/hris/attendance-period";
 import { buildPayrollRunCsv } from "@/lib/payroll/ui-run-csv";
+import { withEntitySlug } from "@/lib/payroll/entity-slug";
 import { usePayrollRun } from "../queries";
 import { useNotifyPayslip } from "../mutations";
 import { AllocationChips } from "./store-breakdown";
@@ -57,7 +59,7 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `payroll-${payrollRun?.period_month}-${payrollRun?.period_year}.csv`;
+    a.download = `${withEntitySlug(`payroll-${payrollRun?.period_month}-${payrollRun?.period_year}`, payrollRun?.company?.name)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
 
@@ -87,31 +89,38 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Button variant="ghost" size="sm" onClick={() => router.push("/dashboard/hris/payroll")}>
           <ArrowLeftIcon className="w-4 h-4 mr-1" />
           Kembali
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{payrollRun.run_name}</h1>
-          <Badge variant={payrollRun.company ? "ink" : "muted"} className="mt-1">
-            {payrollRun.company?.name ?? "Run lama (tanpa entitas)"}
-          </Badge>
-          <p className="text-sm text-gray-500">
-            {monthName(payrollRun.period_month)} {payrollRun.period_year} • {payrollRun.total_employees} karyawan
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/dashboard/hris/payroll/store-costs?run=${id}`)}
-        >
-          <BuildingStorefrontIcon className="w-4 h-4 mr-2" />
-          Biaya per Toko
-        </Button>
-        <Button onClick={handleExportCSV} variant="outline">
-          <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+        <PageHeader
+          className="mb-0"
+          title={payrollRun.run_name}
+          description={
+            <>
+              <Badge variant={payrollRun.company ? "ink" : "muted"} className="mr-2 align-middle">
+                {payrollRun.company?.name ?? "Run lama (tanpa entitas)"}
+              </Badge>
+              {monthName(payrollRun.period_month)} {payrollRun.period_year} • {payrollRun.total_employees} karyawan
+            </>
+          }
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/dashboard/hris/payroll/store-costs?run=${id}`)}
+              >
+                <BuildingStorefrontIcon className="w-4 h-4 mr-2" />
+                Biaya per Toko
+              </Button>
+              <Button onClick={handleExportCSV} variant="outline">
+                <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </>
+          }
+        />
       </div>
 
       {payrollRun.attendance_period && (

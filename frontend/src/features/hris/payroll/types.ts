@@ -165,7 +165,15 @@ export interface StoreCostEmployee extends StoreCostAmounts {
 
 /** GET /api/hris/payroll/{id}/store-costs */
 export interface StoreCostReport {
-  run: { id: string; run_name: string; period_month: number; period_year: number; status: string };
+  run: {
+    id: string;
+    run_name: string;
+    period_month: number;
+    period_year: number;
+    status: string;
+    /** Entitas pembayar run; null untuk run lama tanpa entitas. */
+    company_name: string | null;
+  };
   stores: StoreCostStore[];
   totals: StoreCostAmounts & { employee_count: number };
   employees: StoreCostEmployee[];

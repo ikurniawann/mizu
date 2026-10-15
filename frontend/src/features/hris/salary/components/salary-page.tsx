@@ -16,10 +16,12 @@ export function SalaryPage() {
 
   const salaryQuery = useSalaryList();
   const salaries = salaryQuery.data ?? [];
-  const hasUnassigned = salaries.some((s) => !s.company_id);
+  // Only an active version without an entity needs HR's attention.
+  const unassigned = salaries.filter((s) => s.is_active !== false && !s.company_id);
+  const hasUnassigned = unassigned.length > 0;
   const extra = hasUnassigned ? [{ value: UNASSIGNED, label: "Belum ada entitas" }] : [];
   const { entity, setEntity, entities, loading: entitiesLoading } = useEntityParam(extra);
-  const visible = salaries.filter((s) => (entity === UNASSIGNED ? !s.company_id : s.company_id === entity));
+  const visible = entity === UNASSIGNED ? unassigned : salaries.filter((s) => s.company_id === entity);
   const loading = salaryQuery.isLoading || entitiesLoading;
 
   if (loading) {

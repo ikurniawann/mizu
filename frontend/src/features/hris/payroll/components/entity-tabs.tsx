@@ -26,7 +26,7 @@ export function useEntityParam(extra: ExtraEntityTab[] = []) {
   const known = entities.some((e) => e.id === requested) || extra.some((x) => x.value === requested);
   const entity = known ? requested : (entities[0]?.id ?? extra[0]?.value ?? "");
   const setEntity = (value: string) => router.replace(`${pathname}?entity=${value}`);
-  return { entity, setEntity, entities, loading: entitiesQuery.isLoading };
+  return { entity, setEntity, entities, loading: entitiesQuery.isLoading, error: entitiesQuery.isError };
 }
 
 /** Pilihan entitas sebagai pill tabs (kit `Tabs`), bukan popup. */

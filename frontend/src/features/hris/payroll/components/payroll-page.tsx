@@ -58,7 +58,7 @@ export function PayrollPage() {
   const payrollQuery = usePayrollRuns();
   const payrollRuns = payrollQuery.data ?? [];
   const extra = payrollRuns.some((r) => !r.company_id) ? [{ value: LEGACY, label: "Run lama" }] : [];
-  const { entity, setEntity, entities, loading: entitiesLoading } = useEntityParam(extra);
+  const { entity, setEntity, entities, loading: entitiesLoading, error: entitiesError } = useEntityParam(extra);
   const isLegacy = entity === LEGACY;
   const entityName = entities.find((e) => e.id === entity)?.name ?? "";
   const runs = payrollRuns.filter((r) => (isLegacy ? !r.company_id : r.company_id === entity));
@@ -109,7 +109,13 @@ export function PayrollPage() {
         }
       />
 
-      {entities.length === 0 && !isLegacy ? (
+      {entitiesError ? (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-danger">
+            Gagal memuat entitas — muat ulang halaman.
+          </CardContent>
+        </Card>
+      ) : entities.length === 0 && !isLegacy ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Belum ada entitas aktif. Tambahkan perusahaan di pengaturan struktur bisnis.

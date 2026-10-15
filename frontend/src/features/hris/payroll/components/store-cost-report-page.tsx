@@ -12,6 +12,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatRupiah } from "@/lib/format";
 import { monthName } from "@/lib/hris/month-label";
+import { withEntitySlug } from "@/lib/payroll/entity-slug";
 import { ALLOCATION_BASIS_LABEL, NO_STORE_LABEL, formatQty, formatRatio } from "@/lib/payroll/store-allocation";
 import { downloadStoreCosts } from "../api";
 import { usePayrollRuns, useStoreCosts } from "../queries";
@@ -60,7 +61,8 @@ export function StoreCostReportPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `biaya-gaji-per-toko-${data.run.period_year}-${String(data.run.period_month).padStart(2, "0")}.${format}`;
+      const base = `biaya-gaji-per-toko-${data.run.period_year}-${String(data.run.period_month).padStart(2, "0")}`;
+      a.download = `${withEntitySlug(base, data.run.company_name)}.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -80,17 +82,27 @@ export function StoreCostReportPage() {
       <PageHeader
         kicker="HRIS · Penggajian"
         title="Biaya Gaji per Toko"
-        description="Biaya tenaga kerja per toko dari slip gaji yang dibagi sesuai jam/hari hadir karyawan di tiap toko."
+        description={
+          <>
+            Biaya tenaga kerja per toko dari slip gaji yang dibagi sesuai jam/hari hadir karyawan di tiap toko.
+            {data && (
+              <span className="mt-1 block font-medium text-foreground">
+                {data.run.company_name ?? "Run lama (tanpa entitas)"} · {monthName(data.run.period_month)}{" "}
+                {data.run.period_year}
+              </span>
+            )}
+          </>
+        }
         actions={
           <>
             <Select value={runId} onValueChange={(v) => router.replace(`/dashboard/hris/payroll/store-costs?run=${v}`)}>
-              <SelectTrigger className="w-60">
+              <SelectTrigger className="w-72 max-w-full">
                 <SelectValue placeholder={runs.isLoading ? "Memuat run…" : "Pilih periode payroll"} />
               </SelectTrigger>
               <SelectContent>
                 {runList.map((r) => (
                   <SelectItem key={r.id} value={r.id}>
-                    {monthName(r.period_month)} {r.period_year} · {STATUS_LABEL[r.status] ?? r.status}
+                    {monthName(r.period_month)} {r.period_year} · {STATUS_LABEL[r.status] ?? r.status} · {r.company?.name ?? "Run lama"}
                   </SelectItem>
                 ))}
               </SelectContent>
