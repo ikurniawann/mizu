@@ -255,16 +255,25 @@ interface SalaryVersionRow {
   bpjs_tk_enrolled: boolean | null;
   bpjs_kes_enrolled: boolean | null;
   tapera_enrolled: boolean | null;
+  company_id: string | null;
 }
 
 /**
  * EPIC-008 Fase C: sinkronkan snapshot gaji kontrak → struktur gaji payroll
  * (versi baru hris.employee_salary) agar dua sumber gaji tidak menyimpang.
- * Hanya bila kontrak mencantumkan gaji pokok.
+ * Hanya bila kontrak mencantumkan gaji pokok. Karyawan yang digaji beberapa
+ * entitas tidak disentuh: HR memversikan gaji tiap entitas sendiri.
  */
-async function syncSalaryFromContract(client: PoolClient, contract: ContractRow) {
+export async function syncSalaryFromContract(client: PoolClient, contract: ContractRow) {
   const contractBase = contract.base_salary !== null ? Number(contract.base_salary) : null;
   if (contractBase === null || contractBase <= 0) return;
+
+  const { rows: entityRows } = await client.query<{ entities: number }>(
+    `SELECT count(DISTINCT company_id)::int AS entities FROM hris.employee_salary
+     WHERE employee_id = $1 AND is_active = true`,
+    [contract.employee_id]
+  );
+  if ((entityRows[0]?.entities ?? 0) > 1) return;
 
   const { rows } = await client.query<SalaryVersionRow>(
     `SELECT * FROM hris.employee_salary
@@ -286,21 +295,27 @@ async function syncSalaryFromContract(client: PoolClient, contract: ContractRow)
     );
   }
   // Tunjangan/PTKP/flag BPJS dibawa dari versi sebelumnya (kontrak hanya
-  // menyimpan gaji pokok); karyawan baru memakai default tabel.
+  // menyimpan gaji pokok); karyawan baru memakai default tabel dan entitas
+  // penempatan utamanya.
   await client.query(
     `INSERT INTO hris.employee_salary
        (employee_id, base_salary, fixed_allowance, variable_allowance,
         transport_allowance, meal_allowance, housing_allowance,
         loan_deduction, other_deduction, ptkp_status, is_taxable,
         bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled,
-        effective_date, is_active, notes)
+        effective_date, is_active, notes, company_id)
      VALUES ($1, $2,
              COALESCE($3, 0), COALESCE($4, 0), COALESCE($5, 0),
              COALESCE($6, 0), COALESCE($7, 0),
              COALESCE($8, 0), COALESCE($9, 0),
              COALESCE($10, 'TK/0'), COALESCE($11, true),
              COALESCE($12, true), COALESCE($13, true), COALESCE($14, true),
-             $15::date, true, $16)
+             $15::date, true, $16,
+             COALESCE($17::uuid, (SELECT b.company_id FROM hris.employee_placements p
+                                    JOIN configuration.branches b ON b.id = p.branch_id
+                                   WHERE p.employee_id = $1 AND p.is_primary
+                                     AND (p.end_date IS NULL OR p.end_date >= $15::date)
+                                   ORDER BY p.start_date DESC LIMIT 1)))
      ON CONFLICT (employee_id, company_id, effective_date) DO UPDATE SET
        base_salary = EXCLUDED.base_salary,
        is_active = true,
@@ -324,6 +339,7 @@ async function syncSalaryFromContract(client: PoolClient, contract: ContractRow)
       current?.tapera_enrolled ?? null,
       contract.start_date,
       `Sinkron dari kontrak ${contract.contract_number}`,
+      current?.company_id ?? null,
     ]
   );
 }

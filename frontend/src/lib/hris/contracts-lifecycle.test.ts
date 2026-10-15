@@ -7,6 +7,7 @@ const {
   employmentStatusOnActivate,
   mergeDraftEdit,
   renewalStartDate,
+  syncSalaryFromContract,
 } = await import("./contracts-lifecycle");
 
 const draft = {
@@ -80,5 +81,31 @@ describe("contractActionSchema", () => {
     const parsed = contractActionSchema.safeParse({ action: "hapus" });
     expect(parsed.success).toBe(false);
     expect(parsed.error?.issues[0].message).toBe("Aksi tidak dikenal");
+  });
+});
+
+describe("syncSalaryFromContract", () => {
+  const fakeClient = (entities: number) => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ entities }] });
+    return { client: { query } as unknown as Parameters<typeof syncSalaryFromContract>[0], query };
+  };
+
+  it("karyawan digaji lebih dari satu entitas: tidak mengubah apa pun", async () => {
+    const { client, query } = fakeClient(2);
+    await syncSalaryFromContract(client, draft);
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(query.mock.calls[0][0]).toContain("count(DISTINCT company_id)");
+  });
+
+  it("satu entitas: versi aktif dibaca lalu versi baru membawa company_id-nya", async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ entities: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: "s1", base_salary: "4000000", company_id: "co-1" }] })
+      .mockResolvedValue({ rows: [] });
+    await syncSalaryFromContract({ query } as unknown as Parameters<typeof syncSalaryFromContract>[0], draft);
+    const insert = query.mock.calls.find(([sql]) => String(sql).includes("INSERT INTO hris.employee_salary"));
+    expect(insert).toBeDefined();
+    expect(insert![1][insert![1].length - 1]).toBe("co-1");
   });
 });
