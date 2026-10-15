@@ -128,7 +128,7 @@ type Entity struct {
 
 // Entities reads the business hierarchy (configuration context).
 type Entities interface {
-	// List is every company ordered by holding name, then company name.
+	// List is every company ordered by company name, then holding name.
 	List(ctx context.Context, q database.Querier) ([]Entity, error)
 	// BranchCompanies maps every branch id to its company id.
 	BranchCompanies(ctx context.Context, q database.Querier) (map[string]string, error)

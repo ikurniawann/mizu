@@ -104,6 +104,9 @@ func TestMultiStoreAllocation(t *testing.T) {
 	rep := e.call(&e.hr, "GET", "/api/hris/payroll/"+runID+"/store-costs", nil, 200)["data"].(map[string]any)
 	var totalGross float64
 	e.scalar(&totalGross, `SELECT total_gross::float8 FROM hris.payroll_runs WHERE id = $1`, runID)
+	if run := rep["run"].(map[string]any); run["company_name"] != "Entitas Uji" {
+		t.Fatalf("report run %v, want the run's company name", run)
+	}
 	totals := rep["totals"].(map[string]any)
 	if totals["gross_amount"] != totalGross || totals["employee_count"] != 3.0 || len(rep["employees"].([]any)) != 4 {
 		t.Fatalf("report totals %v (gross %v)", totals, totalGross)
@@ -128,7 +131,7 @@ func TestMultiStoreAllocation(t *testing.T) {
 	}
 	csv := e.raw(&e.hr, "GET", "/api/hris/payroll/"+runID+"/store-costs/export", nil)
 	if csv.Code != 200 || !strings.Contains(csv.Body.String(), "Paddy PVJ Test") ||
-		!strings.Contains(csv.Header().Get("Content-Disposition"), "biaya-gaji-per-toko-2099-07.csv") {
+		!strings.Contains(csv.Header().Get("Content-Disposition"), "biaya-gaji-per-toko-2099-07-entitas-uji.csv") {
 		t.Fatalf("csv %d %s", csv.Code, csv.Header())
 	}
 	xl := e.raw(&e.hr, "GET", "/api/hris/payroll/"+runID+"/store-costs/export?format=xlsx", nil)

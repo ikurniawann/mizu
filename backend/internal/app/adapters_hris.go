@@ -23,13 +23,21 @@ type hrisPayrollSQL struct{}
 
 var _ hris.PayrollReads = hrisPayrollSQL{}
 
+// LatestPaidPayslip covers the employee's newest paid period. A period can
+// hold one paid run per entity (EPIC-054), so the net salary is the sum of
+// that period's slips; the run name and paid-at stay those of its latest paid
+// run, so the payslip still names one real run.
 func (hrisPayrollSQL) LatestPaidPayslip(ctx context.Context, q database.Querier, employeeID string) (*hris.Payslip, error) {
 	var p hris.Payslip
-	err := q.QueryRow(ctx, `SELECT pd.net_salary::text, pr.run_name, pr.period_month, pr.period_year, pr.paid_at::text
+	err := q.QueryRow(ctx, `SELECT sum(pd.net_salary)::text,
+		(array_agg(pr.run_name ORDER BY pr.paid_at DESC NULLS LAST, pr.created_at DESC))[1],
+		pr.period_month, pr.period_year,
+		(array_agg(pr.paid_at ORDER BY pr.paid_at DESC NULLS LAST, pr.created_at DESC))[1]::text
 		FROM hris.payroll_details pd
 		JOIN hris.payroll_runs pr ON pr.id = pd.payroll_run_id
 		WHERE pd.employee_id = $1 AND pr.status = 'paid'
-		ORDER BY pr.period_year DESC, pr.period_month DESC, pr.paid_at DESC NULLS LAST
+		GROUP BY pr.period_year, pr.period_month
+		ORDER BY pr.period_year DESC, pr.period_month DESC
 		LIMIT 1`, employeeID).Scan(&p.NetSalary, &p.RunName, &p.PeriodMonth, &p.PeriodYear, &p.PaidAt)
 	if database.IsNoRows(err) {
 		return nil, nil

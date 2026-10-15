@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -91,6 +92,8 @@ type storeCostRun struct {
 	PeriodMonth int    `json:"period_month"`
 	PeriodYear  int    `json:"period_year"`
 	Status      string `json:"status"`
+	// CompanyName is the run's paying entity; nil for a legacy run without one.
+	CompanyName *string `json:"company_name"`
 }
 
 type storeCostTotals struct {
@@ -112,8 +115,9 @@ const noStoreLabel = "Tanpa toko"
 
 func (s *service) storeCostReport(ctx context.Context, runID string) (*storeCostReport, error) {
 	var out storeCostReport
-	err := s.db.QueryRow(ctx, `SELECT id::text, run_name, period_month, period_year, status FROM hris.payroll_runs WHERE id::text = $1`, runID).
-		Scan(&out.Run.ID, &out.Run.RunName, &out.Run.PeriodMonth, &out.Run.PeriodYear, &out.Run.Status)
+	err := s.db.QueryRow(ctx, `SELECT r.id::text, r.run_name, r.period_month, r.period_year, r.status, c.name
+		FROM hris.payroll_runs r LEFT JOIN configuration.companies c ON c.id = r.company_id WHERE r.id::text = $1`, runID).
+		Scan(&out.Run.ID, &out.Run.RunName, &out.Run.PeriodMonth, &out.Run.PeriodYear, &out.Run.Status, &out.Run.CompanyName)
 	if err != nil {
 		if database.IsNoRows(err) {
 			return nil, httpx.NotFound("Payroll run tidak ditemukan")
@@ -269,6 +273,11 @@ func (h *handler) exportStoreCosts(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 	name := "biaya-gaji-per-toko-" + strconv.Itoa(rep.Run.PeriodYear) + "-" + twoDigits(rep.Run.PeriodMonth)
+	if rep.Run.CompanyName != nil {
+		if slug := fileSlug(*rep.Run.CompanyName); slug != "" {
+			name += "-" + slug
+		}
+	}
 	var data []byte
 	contentType := "text/csv;charset=utf-8"
 	switch r.URL.Query().Get("format") {
@@ -287,6 +296,25 @@ func (h *handler) exportStoreCosts(w http.ResponseWriter, r *http.Request) error
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
 	return nil
+}
+
+// fileSlug lower-cases name and joins its letters and digits with dashes, for
+// a download filename.
+func fileSlug(name string) string {
+	var b strings.Builder
+	dash := false
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			if dash && b.Len() > 0 {
+				b.WriteByte('-')
+			}
+			b.WriteRune(r)
+			dash = false
+		} else {
+			dash = true
+		}
+	}
+	return b.String()
 }
 
 func twoDigits(n int) string {
@@ -349,7 +377,11 @@ func storeCostsCSV(rep *storeCostReport) string {
 func storeCostsXLSX(rep *storeCostReport, now time.Time) ([]byte, error) {
 	wb := xlsx.NewReport(now)
 	ws := wb.Sheet("Ringkasan per Toko")
-	row := ws.TitleBlock("Biaya Gaji per Toko — "+periodTitle(rep), rep.Run.RunName+" (status: "+rep.Run.Status+")",
+	runLine := rep.Run.RunName + " (status: " + rep.Run.Status + ")"
+	if rep.Run.CompanyName != nil {
+		runLine = *rep.Run.CompanyName + " · " + runLine
+	}
+	row := ws.TitleBlock("Biaya Gaji per Toko — "+periodTitle(rep), runLine,
 		"Total biaya tenaga kerja = gaji kotor + beban perusahaan (BPJS & Tapera pemberi kerja).")
 	cols := []xlsx.Col{
 		{Header: "Toko", Width: 24}, {Header: "Jumlah Karyawan", Width: 12, Fmt: xlsx.FmtNum},

@@ -33,7 +33,7 @@ type payrollEntitiesSQL struct{}
 func (payrollEntitiesSQL) List(ctx context.Context, q database.Querier) ([]payroll.Entity, error) {
 	rows, err := q.Query(ctx, `SELECT c.id::text, COALESCE(c.code, ''), c.name, h.name, COALESCE(c.is_active, false)
 		FROM configuration.companies c JOIN configuration.holdings h ON h.id = c.holding_id
-		ORDER BY h.name, c.name`)
+		ORDER BY c.name, h.name`)
 	if err != nil {
 		return nil, err
 	}

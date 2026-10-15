@@ -442,6 +442,10 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 		if !slices.ContainsFunc(salaries, func(sal domain.EntitySalary) bool { return sal.CompanyID == company }) {
 			if len(salaries) > 0 {
 				out.Summary.OtherEntity++
+			} else if noEntity, err := hasActiveSalaryWithoutEntity(ctx, s.db, e.ID); err != nil {
+				return nil, err
+			} else if noEntity {
+				skip("Struktur gaji belum punya entitas — buat versi dengan entitas pembayar")
 			} else {
 				skip("Belum ada struktur gaji aktif")
 			}

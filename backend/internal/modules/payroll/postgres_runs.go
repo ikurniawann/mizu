@@ -291,6 +291,15 @@ func activeSalaryEntities(ctx context.Context, q database.Querier, employeeID st
 	})
 }
 
+// hasActiveSalaryWithoutEntity reports an active salary version that names no
+// paying entity (legacy rows): no entity run picks it up until HR assigns one.
+func hasActiveSalaryWithoutEntity(ctx context.Context, q database.Querier, employeeID string) (bool, error) {
+	var ok bool
+	err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM hris.employee_salary
+		WHERE employee_id = $1 AND is_active AND company_id IS NULL)`, employeeID).Scan(&ok)
+	return ok, err
+}
+
 // onceItems flags the once-per-period items an employee already has on a
 // slip: the loan installment and the late deduction.
 type onceItems struct{ Loan, Late bool }

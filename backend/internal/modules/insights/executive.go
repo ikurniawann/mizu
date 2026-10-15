@@ -306,10 +306,16 @@ var monthNamesID = []string{"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ag
 func (s *Service) payrollLast(ctx context.Context) (*payrollLast, error) {
 	var p payrollLast
 	var month, year *int
-	err := s.db.QueryRow(ctx, `SELECT run_name, period_month, period_year, status,
-	        COALESCE(total_net, 0)::float8 AS total_net, paid_at::text
+	// The newest period can hold one run per entity (EPIC-054): the total is
+	// the sum over that period's runs; the name, status and paid-at stay those
+	// of its latest run, so the card still names one real run.
+	err := s.db.QueryRow(ctx, `SELECT (array_agg(run_name ORDER BY created_at DESC))[1], period_month, period_year,
+	        (array_agg(status ORDER BY created_at DESC))[1],
+	        COALESCE(sum(total_net), 0)::float8 AS total_net,
+	        (array_agg(paid_at ORDER BY created_at DESC))[1]::text
 	   FROM payroll_runs
-	  ORDER BY period_year DESC, period_month DESC, created_at DESC
+	  GROUP BY period_year, period_month
+	  ORDER BY period_year DESC, period_month DESC
 	  LIMIT 1`).Scan(&p.RunName, &month, &year, &p.Status, &p.TotalNet, &p.PaidAt)
 	if database.IsNoRows(err) {
 		return nil, nil

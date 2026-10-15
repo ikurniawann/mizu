@@ -125,6 +125,11 @@ func TestMultiEntityCalculate(t *testing.T) {
 	shared := e.employee("Dua Entitas", "", true)
 	refA := e.employee("Hanya A", "", true)
 	refB := e.employee("Hanya B", "", true)
+	// Only an active salary without a paying entity: excluded from every
+	// entity run, with a reason that tells HR what to fix.
+	noEntity := e.employee("Tanpa Entitas", "", true)
+	e.exec(`INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, ptkp_status, effective_date)
+		VALUES ($1, NULL, 4000000, 'TK/0', '2026-01-01')`, noEntity)
 	e.salary(shared, coA, 1_000_000)
 	e.salary(shared, coB, 9_000_000)
 	e.salary(refA, coA, 1_000_000)
@@ -160,6 +165,20 @@ func TestMultiEntityCalculate(t *testing.T) {
 	}
 	if !hrSkipped {
 		t.Fatalf("HR Payroll not skipped in A: %v", sumA["skipped"])
+	}
+	skipReason := func(sum map[string]any, name string) string {
+		for _, sk := range sum["skipped"].([]any) {
+			if m := sk.(map[string]any); m["full_name"] == name {
+				return m["reason"].(string)
+			}
+		}
+		return ""
+	}
+	const noEntityReason = "Struktur gaji belum punya entitas — buat versi dengan entitas pembayar"
+	for name, sum := range map[string]map[string]any{"A": sumA, "B": sumB} {
+		if got := skipReason(sum, "Tanpa Entitas"); got != noEntityReason {
+			t.Fatalf("run %s skip reason for the NULL-company salary = %q, want %q", name, got, noEntityReason)
+		}
 	}
 
 	type slip struct{ gross, pph, bpjsKes, bpjsTk, loan string }
@@ -239,6 +258,57 @@ func TestOnceItemsNotRepeatedAcrossRuns(t *testing.T) {
 	e.call(&e.hr, "POST", "/api/hris/payroll/"+runB+"/calculate", nil, 200)
 	if a, b := loan(runA), loan(runB); a != "0.00" || b != "100000.00" {
 		t.Fatalf("after recalc B: loan A %s B %s", a, b)
+	}
+}
+
+// The late deduction is also once per period: charged on one entity's slip,
+// never repeated on the other's, however the primary entity moves.
+func TestLateDeductionNotRepeatedAcrossRuns(t *testing.T) {
+	e := setup(t)
+	e.employee("HR Payroll", e.hr.UserID, true)
+	coA, storeA := e.co, e.store
+	coB, storeB := e.entity("Entitas B")
+	shared := e.employee("Dua Entitas", "", true)
+	e.salary(shared, coA, 1_000_000)
+	e.salary(shared, coB, 9_000_000)
+	// A flat deduction per late day; the test database has no settings row yet.
+	e.call(&e.hr, "PUT", "/api/hris/payroll-settings", map[string]any{
+		"settings": map[string]any{"late_deduction_mode": "flat", "late_deduction_amount": 50_000}}, 200)
+	late := true
+	minutes := "15"
+	e.work.records[shared] = domain.WorkforceRecords{Attendance: []domain.AttendanceRow{
+		{Date: "2099-06-10", Status: "late", IsLate: &late, LateMinutes: minutes}}}
+	e.work.placements = map[string][]domain.Placement{
+		shared: {{BranchID: storeA, IsPrimary: true, Start: "2026-01-01"}},
+	}
+	runA, runB := e.newRun(6, 2099, coA), e.newRun(6, 2099, coB)
+	lateOf := func(runID string) string {
+		var v string
+		e.scalar(&v, `SELECT late_deduction::text FROM hris.payroll_details WHERE payroll_run_id = $1 AND employee_id = $2`, runID, shared)
+		return v
+	}
+
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runA+"/calculate", nil, 200)
+	if got := lateOf(runA); got != "50000.00" {
+		t.Fatalf("A late deduction %s", got)
+	}
+	// The employee moves to B's store: B is now the primary entity, but the
+	// late deduction is already on A's slip.
+	e.work.placements[shared] = []domain.Placement{{BranchID: storeB, IsPrimary: true, Start: "2026-01-01"}}
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runB+"/calculate", nil, 200)
+	if a, b := lateOf(runA), lateOf(runB); a != "50000.00" || b != "0.00" {
+		t.Fatalf("late A %s B %s", a, b)
+	}
+	// Recalculating A drops its own old details first and A is no longer
+	// primary: the deduction is on neither slip (never twice)...
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runA+"/calculate", nil, 200)
+	if a, b := lateOf(runA), lateOf(runB); a != "0.00" || b != "0.00" {
+		t.Fatalf("after recalc A: late A %s B %s", a, b)
+	}
+	// ...and recalculating the new primary entity picks it up again.
+	e.call(&e.hr, "POST", "/api/hris/payroll/"+runB+"/calculate", nil, 200)
+	if a, b := lateOf(runA), lateOf(runB); a != "0.00" || b != "50000.00" {
+		t.Fatalf("after recalc B: late A %s B %s", a, b)
 	}
 }
 
