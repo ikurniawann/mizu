@@ -2,6 +2,7 @@ package payroll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -30,6 +31,9 @@ func (s *service) listRuns(ctx context.Context, year *int, status *string) ([]*o
 		}
 		row.Set("attendance_period", period.info())
 	}
+	if err := s.attachCompanies(ctx, rows); err != nil {
+		return nil, err
+	}
 	return rows, s.stitch(ctx, s.db, rows, runPeople...)
 }
 
@@ -43,9 +47,14 @@ func (s *service) employeeOf(ctx context.Context, userID string) (*string, error
 	return &id, nil
 }
 
-func (s *service) createRun(ctx context.Context, userID string, month, year int, name *string) (*obj, error) {
-	if runExistsForPeriod(ctx, s.db, month, year) {
-		return nil, httpx.BadRequest("Payroll untuk periode ini sudah ada")
+func (s *service) createRun(ctx context.Context, userID string, month, year int, name, companyID *string) (*obj, error) {
+	id := ""
+	if companyID != nil {
+		id = *companyID
+	}
+	entity, err := s.entityByID(ctx, id)
+	if err != nil {
+		return nil, err
 	}
 	runName := "Payroll " + domain.PeriodLabelID(&month, year)
 	if name != nil && *name != "" {
@@ -55,7 +64,28 @@ func (s *service) createRun(ctx context.Context, userID string, month, year int,
 	if err != nil {
 		return nil, err
 	}
-	row, err := insertRun(ctx, s.db, runName, month, year, processedBy)
+	var row *obj
+	err = database.WithTx(ctx, s.db, func(tx pgx.Tx) error {
+		if err := lockPeriod(ctx, tx, month, year); err != nil {
+			return err
+		}
+		other, legacy, found, err := overlappingRun(ctx, tx, month, year, entity.ID)
+		switch {
+		case err != nil:
+			return err
+		case found && legacy:
+			return httpx.BadRequest("Periode ini masih punya payroll lama tanpa entitas (" + other +
+				") — hapus run itu dulu untuk memproses per entitas")
+		case found:
+			return httpx.BadRequest("Payroll untuk periode ini sudah ada")
+		}
+		row, err = insertRun(ctx, tx, runName, month, year, processedBy, entity.ID)
+		return err
+	})
+	// opaque flattens every error (rowjson.go:376): pass the 400s through.
+	if he := (*httpx.Error)(nil); errors.As(err, &he) {
+		return nil, err
+	}
 	return row, opaque(err)
 }
 
@@ -90,6 +120,9 @@ func (s *service) getRun(ctx context.Context, id string) (*obj, error) {
 		return nil, err
 	}
 	row.Set("attendance_period", period.info())
+	if err := s.attachCompanies(ctx, []*obj{row}); err != nil {
+		return nil, err
+	}
 	return row, nil
 }
 
@@ -339,6 +372,9 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 	}
 	if !domain.CanCalculateRun(run.Status) {
 		return nil, httpx.BadRequest("Hanya payroll draft yang bisa dihitung")
+	}
+	if run.CompanyID == nil {
+		return nil, httpx.BadRequest("Run lama tanpa entitas tidak bisa dihitung ulang — hapus lalu buat payroll per entitas")
 	}
 	settings, tax, err := payrollConfigRows(ctx, s.db, run.PeriodYear)
 	if err != nil {

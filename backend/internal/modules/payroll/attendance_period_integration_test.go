@@ -25,7 +25,7 @@ func TestRunAttendancePeriod(t *testing.T) {
 	worker := e.employee("Budi Periode", "", true)
 	e.exec(`INSERT INTO hris.employee_salary (employee_id, base_salary, ptkp_status, effective_date)
 		VALUES ($1, 5000000, 'TK/0', '2026-01-01')`, worker)
-	run := e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": 6, "period_year": 2099}, 200)["data"].(map[string]any)
+	run := e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": 6, "period_year": 2099, "company_id": e.co}, 200)["data"].(map[string]any)
 	runID := run["id"].(string)
 
 	calc := e.call(&e.hr, "POST", "/api/hris/payroll/"+runID+"/calculate", nil, 200)

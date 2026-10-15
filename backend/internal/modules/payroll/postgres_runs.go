@@ -55,27 +55,43 @@ type runHead struct {
 	Status      string
 	PeriodMonth int
 	PeriodYear  int
+	// CompanyID is the run's entity; nil for a legacy "all entities" run.
+	CompanyID *string
 }
 
 func runHeadByID(ctx context.Context, q database.Querier, id string) *runHead {
 	var h runHead
-	err := q.QueryRow(ctx, `SELECT id::text, status, period_month, period_year FROM hris.payroll_runs WHERE id::text = $1`, id).
-		Scan(&h.ID, &h.Status, &h.PeriodMonth, &h.PeriodYear)
+	err := q.QueryRow(ctx, `SELECT id::text, status, period_month, period_year, company_id::text
+		FROM hris.payroll_runs WHERE id::text = $1`, id).
+		Scan(&h.ID, &h.Status, &h.PeriodMonth, &h.PeriodYear, &h.CompanyID)
 	if err != nil {
 		return nil
 	}
 	return &h
 }
 
-func runExistsForPeriod(ctx context.Context, q database.Querier, month, year int) bool {
-	var id string
-	err := q.QueryRow(ctx, `SELECT id::text FROM hris.payroll_runs WHERE period_month = $1 AND period_year = $2 LIMIT 1`, month, year).Scan(&id)
-	return err == nil
+// overlappingRun is a run of the period a new run of company would clash
+// with: one of the same company, or a legacy run without entity (first).
+// found is false when none.
+func overlappingRun(ctx context.Context, q database.Querier, month, year int, company string) (name string, legacy bool, found bool, err error) {
+	err = q.QueryRow(ctx, `SELECT run_name, company_id IS NULL FROM hris.payroll_runs
+		WHERE period_month = $1 AND period_year = $2 AND (company_id IS NULL OR company_id = $3::uuid)
+		ORDER BY (company_id IS NULL) DESC, created_at LIMIT 1`, month, year, company).Scan(&name, &legacy)
+	if database.IsNoRows(err) {
+		return "", false, false, nil
+	}
+	return name, legacy, err == nil, err
 }
 
-func insertRun(ctx context.Context, q database.Querier, name string, month, year int, processedBy *string) (*obj, error) {
-	return queryObj(ctx, q, `INSERT INTO hris.payroll_runs (run_name, period_month, period_year, status, processed_by)
-		VALUES ($1, $2, $3, 'draft', $4) RETURNING *`, name, month, year, processedBy)
+// lockPeriod serializes run creation for one payroll month (transaction-scoped).
+func lockPeriod(ctx context.Context, q database.Querier, month, year int) error {
+	_, err := q.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('hris.payroll_runs'), $1)`, year*100+month)
+	return err
+}
+
+func insertRun(ctx context.Context, q database.Querier, name string, month, year int, processedBy *string, company string) (*obj, error) {
+	return queryObj(ctx, q, `INSERT INTO hris.payroll_runs (run_name, period_month, period_year, status, processed_by, company_id)
+		VALUES ($1, $2, $3, 'draft', $4, $5::uuid) RETURNING *`, name, month, year, processedBy, company)
 }
 
 // runPatch is the column set of updateRun (only the keys that are set).

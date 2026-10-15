@@ -363,14 +363,14 @@ func TestRunLifecycle(t *testing.T) {
 	}
 	wantErr(t, e.call(&e.hr, "GET", "/api/hris/payroll?year=abc", nil, 400), "Invalid input: expected number, received NaN")
 
-	created := e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": "6", "period_year": 2099}, 200)
+	created := e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": "6", "period_year": 2099, "company_id": e.co}, 200)
 	run := created["data"].(map[string]any)
 	if created["message"] != "Payroll run berhasil dibuat" || run["run_name"] != "Payroll Juni 2099" ||
 		run["status"] != "draft" || run["processed_by"] != hrEmp || run["total_gross"] != "0.00" {
 		t.Fatalf("created %v", created)
 	}
 	runID := run["id"].(string)
-	wantErr(t, e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": 6, "period_year": 2099}, 400),
+	wantErr(t, e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": 6, "period_year": 2099, "company_id": e.co}, 400),
 		"Payroll untuk periode ini sudah ada")
 
 	list := e.call(&e.hr, "GET", "/api/hris/payroll?year=2099&status=draft", nil, 200)

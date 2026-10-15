@@ -37,7 +37,7 @@ func (h *handler) listRuns(w http.ResponseWriter, r *http.Request) error {
 	return writeJSON(w, dataBody{rows})
 }
 
-// POST /api/hris/payroll { period_month, period_year, run_name? }
+// POST /api/hris/payroll { period_month, period_year, company_id, run_name? }
 func (h *handler) createRun(w http.ResponseWriter, r *http.Request) error {
 	u, err := h.auth.RequireMenuPrefix(r, iam.HrisCompensation...)
 	if err != nil {
@@ -51,10 +51,11 @@ func (h *handler) createRun(w http.ResponseWriter, r *http.Request) error {
 	month := coerceInt(f, "period_month", numRule{NumOpts: validate.NumOpts{Min: validate.Bound(1), Max: validate.Bound(12)}})
 	year := coerceInt(f, "period_year", numRule{NumOpts: validate.NumOpts{Min: validate.Bound(2000), Max: validate.Bound(2100)}})
 	name := f.Str("run_name", nullish, validate.StrOpts{})
+	company := f.Str("company_id", nullish, validate.StrOpts{})
 	if err := issuesErr(f, msg); err != nil {
 		return err
 	}
-	row, err := h.svc.createRun(r.Context(), u.ID, *month, *year, name)
+	row, err := h.svc.createRun(r.Context(), u.ID, *month, *year, name, company)
 	if err != nil {
 		return err
 	}

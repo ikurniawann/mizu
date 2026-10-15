@@ -65,7 +65,7 @@ func TestMultiStoreAllocation(t *testing.T) {
 		{Date: "2099-07-07", Status: "late", HasClockOut: true, BranchID: &kopo, WorkHours: hours(8)},
 	}}
 
-	run := e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": 7, "period_year": 2099}, 200)["data"].(map[string]any)
+	run := e.call(&e.hr, "POST", "/api/hris/payroll", map[string]any{"period_month": 7, "period_year": 2099, "company_id": e.co}, 200)["data"].(map[string]any)
 	runID := run["id"].(string)
 	calc := e.call(&e.hr, "POST", "/api/hris/payroll/"+runID+"/calculate", nil, 200)
 	warnings := calc["summary"].(map[string]any)["allocation_warnings"].([]any)
