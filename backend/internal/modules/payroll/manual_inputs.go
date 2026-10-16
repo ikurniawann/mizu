@@ -56,11 +56,17 @@ func (s *service) upsertInput(ctx context.Context, runID, employeeID, code strin
 		RETURNING *`, runID, employeeID, code, numParam(amount), note, nilIfEmpty(userID))
 }
 
-func (s *service) employeeExists(ctx context.Context, id string) (bool, error) {
+// paidByRunEntity reports an active salary of the employee at the run's
+// entity: a component for anyone else would never reach a slip of this run.
+func (s *service) paidByRunEntity(ctx context.Context, runID, employeeID string) (bool, error) {
 	var ok bool
-	err := s.db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM hris.employees WHERE id::text = $1)`, id).Scan(&ok)
+	err := s.db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM hris.employee_salary sal
+		JOIN hris.payroll_runs r ON r.company_id = sal.company_id
+		WHERE r.id = $1 AND sal.employee_id::text = $2 AND sal.is_active)`, runID, employeeID).Scan(&ok)
 	return ok, err
 }
+
+const notPaidByEntity = "Karyawan tidak punya struktur gaji aktif di entitas run ini"
 
 // importResult is the outcome of a CSV import.
 type importResult struct {
@@ -113,6 +119,12 @@ func (s *service) importInputs(ctx context.Context, runID, text, userID string) 
 			out.Errors = append(out.Errors, importIssue{line, fmt.Sprintf("NIP %q tidak ditemukan", nip)})
 			continue
 		}
+		if ok, err := s.paidByRunEntity(ctx, runID, employeeID); err != nil {
+			return nil, err
+		} else if !ok {
+			out.Errors = append(out.Errors, importIssue{line, fmt.Sprintf("NIP %q: %s", nip, strings.ToLower(notPaidByEntity[:1])+notPaidByEntity[1:])})
+			continue
+		}
 		var note *string
 		if len(rec) > 3 && strings.TrimSpace(rec[3]) != "" {
 			n := strings.TrimSpace(rec[3])
@@ -160,10 +172,10 @@ func (h *handler) putInput(w http.ResponseWriter, r *http.Request) error {
 	if err := issuesErr(f, msg); err != nil {
 		return err
 	}
-	if ok, err := h.svc.employeeExists(r.Context(), *employeeID); err != nil {
+	if ok, err := h.svc.paidByRunEntity(r.Context(), runID, *employeeID); err != nil {
 		return err
-	} else if !ok {
-		return httpx.NotFound("Karyawan tidak ditemukan")
+	} else if !ok && *amount > 0 {
+		return httpx.BadRequest(notPaidByEntity)
 	}
 	row, err := h.svc.upsertInput(r.Context(), runID, *employeeID, *code, *amount, note, u.ID)
 	if err != nil {
