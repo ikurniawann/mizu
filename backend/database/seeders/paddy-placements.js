@@ -92,7 +92,8 @@ function wibAt(date, time, plusMinutes = 0) {
 }
 
 async function branchesByCode(c) {
-  const r = await c.query(`SELECT id, code, name FROM configuration.branches WHERE code = ANY($1) AND is_active`,
+  const r = await c.query(`SELECT id, code, name, company_id::text AS company_id FROM configuration.branches
+     WHERE code = ANY($1) AND is_active`,
     [["PD-PVJ", "PD-KOPO", HQ_CODE]]);
   const out = {};
   for (const row of r.rows) out[row.code] = row;
@@ -251,17 +252,19 @@ async function seedAttendance(c, plans, stores, months) {
     `${first}..${last} (${secondStore} di toko kedua)`);
 }
 
-async function seedSalaries(c, plans, periodStart) {
+async function seedSalaries(c, plans, stores, periodStart) {
   let created = 0;
   for (const p of plans) {
     if (SYSTEM_NIPS.has(p.nip) || p.join_date > periodStart) continue;
     const s = SALARY[p.role] || SALARY.office;
+    // Gaji dibayar entitas (perusahaan) toko utama karyawan — payroll dihitung per entitas (EPIC-054).
+    const company = (stores[p.items[0].code] || stores["PD-PVJ"]).company_id;
     const res = await c.query(`
-      INSERT INTO hris.employee_salary (employee_id, base_salary, fixed_allowance, transport_allowance, meal_allowance,
-                                        ptkp_status, tapera_enrolled, effective_date, is_active, notes)
-      SELECT $1, $2, $3, $4, $5, $6, false, $7, true, $8
+      INSERT INTO hris.employee_salary (employee_id, company_id, base_salary, fixed_allowance, transport_allowance,
+                                        meal_allowance, ptkp_status, tapera_enrolled, effective_date, is_active, notes)
+      SELECT $1, $2::uuid, $3, $4, $5, $6, $7, false, $8, true, $9
        WHERE NOT EXISTS (SELECT 1 FROM hris.employee_salary WHERE employee_id = $1)`,
-      [p.id, s.base, s.fixed, s.transport, s.meal, s.ptkp, PLACEMENT_START, `${MARK} gaji demo (${p.role})`]);
+      [p.id, company, s.base, s.fixed, s.transport, s.meal, s.ptkp, PLACEMENT_START, `${MARK} gaji demo (${p.role})`]);
     created += res.rowCount;
   }
   console.log(`struktur gaji     : ${created} karyawan diberi gaji demo (yang sudah punya gaji tidak diubah)`);
@@ -290,18 +293,25 @@ async function login(base) {
   return `nuhabit_session=${token}`;
 }
 
-/** Buat (bila belum ada) lalu hitung run periode m; kembalikan run. Run non-draft tidak disentuh. */
-async function calculateRun(base, cookie, m) {
+/**
+ * Buat (bila belum ada) lalu hitung run periode m untuk satu entitas; kembalikan run. Run non-draft
+ * tidak disentuh. Run lama tanpa entitas pada periode itu membuat API menolak — pesannya diteruskan.
+ */
+async function calculateRun(base, cookie, m, entity) {
   const list = await api(base, cookie, "GET", `/api/hris/payroll?year=${m.year}`);
-  let run = (list.data || []).find((r) => r.period_month === m.month && r.period_year === m.year);
-  if (!run) run = (await api(base, cookie, "POST", "/api/hris/payroll", { period_month: m.month, period_year: m.year })).data;
+  let run = (list.data || []).find((r) => r.period_month === m.month && r.period_year === m.year && r.company_id === entity.id);
+  if (!run) {
+    run = (await api(base, cookie, "POST", "/api/hris/payroll",
+      { period_month: m.month, period_year: m.year, company_id: entity.id })).data;
+  }
+  const label = `payroll ${m.month}/${m.year} ${entity.name}`;
   if (run.status !== "draft") {
-    console.log(`payroll ${m.month}/${m.year}    : run "${run.run_name}" berstatus ${run.status} — tidak dihitung ulang`);
+    console.log(`${label}: run "${run.run_name}" berstatus ${run.status} — tidak dihitung ulang`);
     return run;
   }
   const calc = await api(base, cookie, "POST", `/api/hris/payroll/${run.id}/calculate`, { include_thr: false });
   const warn = calc.summary?.allocation_warnings?.length || 0;
-  console.log(`payroll ${m.month}/${m.year}    : ${calc.message}${warn ? ` — ${warn} karyawan tanpa toko` : ""}`);
+  console.log(`${label}: ${calc.message}${warn ? ` — ${warn} karyawan tanpa toko` : ""}`);
   return { ...run, status: "draft" };
 }
 
@@ -354,24 +364,39 @@ async function seedPayroll(c, args) {
     console.log("                    Jalankan API Go lalu ulangi, atau buat & hitung run dari menu HRIS → Penggajian.");
     return;
   }
-  await calculateRun(base, cookie, monthsBack(1));
+  // Payroll dihitung per entitas (EPIC-054): satu run per perusahaan yang punya gaji aktif.
+  const entities = (await api(base, cookie, "GET", "/api/hris/payroll/entities")).data || [];
+  const paying = new Set((await c.query(`SELECT DISTINCT company_id::text AS id FROM hris.employee_salary
+     WHERE is_active AND company_id IS NOT NULL`)).rows.map((r) => r.id));
+  const targets = entities.filter((e) => paying.has(e.id));
+  const tryRun = async (m, e) => {
+    try {
+      return await calculateRun(base, cookie, m, e);
+    } catch (err) {
+      console.log(`payroll ${m.month}/${m.year} ${e.name}: dilewati — ${err.message}`);
+      return null;
+    }
+  };
+  for (const e of targets) await tryRun(monthsBack(1), e);
   if (!args.includes("--paid-run")) return;
   const earlier = monthsBack(2);
-  const run = await calculateRun(base, cookie, earlier);
-  if (run.status === "paid") return;
-  await ensureFiscalYear(c);
-  // Payroll hanya bisa diproses setelah periode absensinya di-closing.
-  const period = (await api(base, cookie, "GET", `/api/hris/payroll/${run.id}`)).data.attendance_period;
-  if (period?.id && period.status === "open") {
-    await api(base, cookie, "POST", `/api/hris/attendance-periods/${period.id}/close`);
-    console.log(`absensi ${earlier.month}/${earlier.year}    : periode ${period.label} di-closing (syarat proses payroll)`);
+  for (const e of targets) {
+    const run = await tryRun(earlier, e);
+    if (!run || run.status === "paid") continue;
+    await ensureFiscalYear(c);
+    // Payroll hanya bisa diproses setelah periode absensinya di-closing.
+    const period = (await api(base, cookie, "GET", `/api/hris/payroll/${run.id}`)).data.attendance_period;
+    if (period?.id && period.status === "open") {
+      await api(base, cookie, "POST", `/api/hris/attendance-periods/${period.id}/close`);
+      console.log(`absensi ${earlier.month}/${earlier.year}    : periode ${period.label} di-closing (syarat proses payroll)`);
+    }
+    for (const status of ["processing", "completed", "paid"]) {
+      const cur = (await api(base, cookie, "GET", `/api/hris/payroll/${run.id}`)).data.status;
+      if (cur === status || cur === "paid") continue;
+      await api(base, cookie, "PUT", `/api/hris/payroll/${run.id}`, { status });
+    }
+    console.log(`payroll ${earlier.month}/${earlier.year} ${e.name}: diproses → disetujui → dibayar (jurnal per toko lewat outbox)`);
   }
-  for (const status of ["processing", "completed", "paid"]) {
-    const cur = (await api(base, cookie, "GET", `/api/hris/payroll/${run.id}`)).data.status;
-    if (cur === status || cur === "paid") continue;
-    await api(base, cookie, "PUT", `/api/hris/payroll/${run.id}`, { status });
-  }
-  console.log(`payroll ${earlier.month}/${earlier.year}    : diproses → disetujui → dibayar (jurnal per toko lewat outbox)`);
 }
 
 async function main() {
@@ -391,7 +416,7 @@ async function main() {
     const stores = await branchesByCode(c);
     const plans = await seedPlacements(c, stores);
     await seedAttendance(c, plans, stores, months);
-    await seedSalaries(c, plans, monthDays(months[0])[0].date);
+    await seedSalaries(c, plans, stores, monthDays(months[0])[0].date);
     await c.query("COMMIT");
     await seedPayroll(c, args);
     console.log("Selesai. Lihat HRIS → Master Data → Penempatan Karyawan dan HRIS → Penggajian → Biaya Gaji per Toko.");
