@@ -10,6 +10,7 @@ import {
 import {
   allowedModulePaths,
   canAccessPath,
+  fallbackMenuPath,
   isEssPath,
   isPathAllowedByMenus,
   ESS_HOME_PATH,
@@ -62,9 +63,7 @@ export default async function DashboardGroupLayout({
   const loyaltyBlocked = Boolean(pathname) && !isPathEnabled(pathname, await getLoyaltyFeatures());
   if (!allowed || loyaltyBlocked) {
     if (essOnly) redirect(ESS_HOME_PATH);
-    const firstMenu = collectNavHrefs(allNavItems).find(
-      (href) => href.startsWith("/dashboard") && href !== ESS_HOME_PATH
-    );
+    const firstMenu = fallbackMenuPath(collectNavHrefs(allNavItems), pathname);
     redirect(firstMenu ?? allowedModulePaths(user.role)[0] ?? ESS_HOME_PATH);
   }
   // ESS-only: menu Area Karyawan + modul tambahan role. Full-access: buang

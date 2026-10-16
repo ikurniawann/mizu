@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPathAllowedByMenus } from "./access";
+import { fallbackMenuPath, isPathAllowedByMenus } from "./access";
 
 const RM_PR = "/dashboard/raw-material/purchasing/pr";
 const PRODUCT_PR = "/dashboard/product/purchasing/pr";
@@ -53,4 +53,27 @@ it("allows Spa Report entry and legacy URLs only with the matching report menu",
   expect(isPathAllowedByMenus("/dashboard/spa/trend", [trend])).toBe(true);
   expect(isPathAllowedByMenus("/dashboard/spa/rush-hour", [trend])).toBe(false);
   expect(isPathAllowedByMenus("/dashboard/spa/report", [HOME])).toBe(false);
+});
+
+describe("fallbackMenuPath", () => {
+  // Admin HRIS: Beranda (/dashboard) mengalihkan role hrd ke /dashboard/rekrutmen yang tak
+  // di-grant; fallback ke /dashboard lagi membuat redirect loop tanpa akhir.
+  const adminHris = [HOME, "/dashboard/hris/employees", "/dashboard/hris/attendance", "/dashboard/me"];
+
+  it("never falls back to the Beranda root, which redirects onward itself", () => {
+    expect(fallbackMenuPath(adminHris, "/dashboard/rekrutmen")).toBe("/dashboard/hris/employees");
+  });
+
+  it("never falls back to the path being rejected", () => {
+    expect(fallbackMenuPath(adminHris, "/dashboard/hris/employees")).toBe("/dashboard/hris/attendance");
+  });
+
+  it("prefers a module menu over Area Karyawan pages", () => {
+    expect(fallbackMenuPath([HOME, "/dashboard/me/pengumuman", "/dashboard/master/departments"], "/dashboard/rekrutmen"))
+      .toBe("/dashboard/master/departments");
+  });
+
+  it("returns undefined when only Beranda, ESS and non-dashboard hrefs are left", () => {
+    expect(fallbackMenuPath([HOME, "/dashboard/me", "/dashboard/me/cuti", "https://example.com"], "/dashboard/crm")).toBeUndefined();
+  });
 });

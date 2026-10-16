@@ -47,6 +47,22 @@ export const ROLE_MODULE_PATHS: Record<string, readonly string[]> = {
   marketing: ["/dashboard/promo"],
 };
 
+/**
+ * Menu modul tujuan saat layout menolak sebuah path. Root "/dashboard" dilewati karena
+ * halamannya sendiri meneruskan per role (mis. hrd → /dashboard/rekrutmen); kalau
+ * tujuan itu juga ditolak, fallback ke root membuat redirect loop. Path yang sedang
+ * ditolak dan halaman Area Karyawan (ESS) juga dilewati; tanpa menu modul, pemanggil
+ * jatuh ke ESS_HOME_PATH.
+ */
+export function fallbackMenuPath(
+  menuHrefs: readonly string[],
+  rejectedPath: string
+): string | undefined {
+  return menuHrefs.find(
+    (href) => href.startsWith("/dashboard/") && !isEssPath(href) && href !== rejectedPath
+  );
+}
+
 /** Prefix modul tambahan yang boleh diakses sebuah role (di luar ESS). */
 export function allowedModulePaths(
   role: string | null | undefined
