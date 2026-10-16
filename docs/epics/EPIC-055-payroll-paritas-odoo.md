@@ -97,3 +97,15 @@ Semua kolom/setting baru punya **default yang mempertahankan perilaku lama**, se
 - 2026-10-17 — Keputusan teknis: hari tunjangan = hari hadir (sementara, menunggu slip Odoo). Jadwal shift karyawan ikut menentukan hari istirahat, jadi berlaku juga untuk 26 karyawan demo yang punya pola shift. Upah harian tanpa pembagi struktur: aturan per hari tidak berlaku (Odoo base_days 0). Komponen manual hanya untuk karyawan yang digaji entitas run. Tabel alokasi per toko tidak diubah: komponen baru ikut terbagi lewat total bruto/potongan/bersih.
 - 2026-10-17 — T11: `tools/payroll_rules.py` → `payroll_rules.sql`. Isinya: aturan perhitungan per kontrak Odoo untuk 602 struktur gaji import, 194 lembur `rest_day` (holiday_special), 157 cuti → `personal`, dan setting payroll (TER both, telat tier min 15 menit, PIP/PIS on, tarif produksi 18.000). Trigger notifikasi cuti dimatikan sementara saat update cuti.
 - 2026-10-17 — T12: payroll September dihitung di salinan DB dengan API branch, lalu dibandingkan dengan kalkulator referensi independen yang menghitung rule Odoo dari CSV mentah. Hasilnya 261/263 slip identik di semua komponen. Sisa 2 slip = prorata kontrak tengah bulan (lihat "Belum diputuskan"). Temuan yang diperbaiki: potongan Izin Pribadi untuk freelancer upah harian tanpa struktur. Uji UI (Playwright, stack branch di DB salinan): halaman pengaturan, struktur gaji, detail run (komponen manual), slip, dan lembur tampil tanpa error. Kegagalan bawaan yang identik dengan `main` di DB salinan: hris TestAttendancePeriodClosing & TestLeaves, site/storedvalue/auth (403), spa TestTherapistPayrollTwiceAMonth; shop timeout (tidak bergantung pada payroll/hris).
+- 2026-10-17 — Review independen (agent terpisah): 9 temuan terkonfirmasi, semuanya diperbaiki.
+  - Sinkron kontrak mereset aturan perhitungan.
+  - Jadwal sebagai hari istirahat mengubah perilaku default → jadi setting `overtime_rest_from_schedule` (default off; Paddy on lewat `payroll_rules.sql`).
+  - Cuti tanpa upah terpotong ganda pada upah harian/prorata.
+  - LATE_OVERRIDE 0 tidak bisa disimpan.
+  - Nominal desimal ×100.
+  - Basis "employer" memasukkan JHT/JP perusahaan → sekarang standar DJP (JKK, JKM, Kes).
+  - Penghasilan tidak kena pajak tidak masuk total bruto/alokasi → masuk; kolom komponen baru ditambahkan ke `payroll_detail_allocations`.
+  - Keterangan PPh21 Desember.
+  - Minor: UUID, hari istirahat hanya HR.
+  - Kombinasi upah harian + lembur standar dipertahankan demi paritas Odoo (1 struktur), dengan peringatan di form.
+  - Uji ulang di salinan DB baru: migrate -verify bersih; tes payroll/app/accounting lolos; referensi September tetap 261/263; total bruto alokasi = total slip.
