@@ -306,8 +306,14 @@ func TestBuildInputParity(t *testing.T) {
 	if in.PersonalLeaveDays != 2 || in.SickLeaveDays != 3 {
 		t.Fatalf("leave %v %v", in.PersonalLeaveDays, in.SickLeaveDays)
 	}
-	// Tanpa pembagi di struktur gaji: hari kerja hasil hitung.
+	// Upah harian tanpa pembagi struktur (Odoo: struktur kosong, base_days 0):
+	// aturan per hari tidak berlaku, karena hari tidak hadir memang tidak dibayar.
 	sal.WorkingDaysDivisor = nil
+	if in = BuildInput(emp, sal, rec, nil, nil, 9, 2026, false); in.DivisorDays != 0 {
+		t.Fatalf("daily without divisor %v", in.DivisorDays)
+	}
+	// Bulanan tanpa pembagi di struktur gaji: hari kerja hasil hitung.
+	sal.PayBasis = ptr("monthly")
 	if in = BuildInput(emp, sal, rec, nil, nil, 9, 2026, false); in.DivisorDays != in.WorkingDays {
 		t.Fatalf("divisor fallback %v %v", in.DivisorDays, in.WorkingDays)
 	}

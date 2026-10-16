@@ -192,9 +192,15 @@ func BuildInputRange(emp Employee, salary Salary, rec WorkforceRecords, loans []
 			sick += days
 		}
 	}
+	// Pembagi hari struktur; tanpa pembagi: hari kerja hasil hitung, kecuali
+	// upah harian (Odoo: struktur kosong = base_days 0, aturan per hari tidak
+	// berlaku — hari tidak hadir sudah tidak dibayar).
 	divisor := OrZero(salary.WorkingDaysDivisor)
 	if divisor <= 0 {
 		divisor = workingDays
+		if salary.PayBasis != nil && *salary.PayBasis == "daily" {
+			divisor = 0
+		}
 	}
 	minService := 0
 	if salary.HealthMinServiceDays != nil {
