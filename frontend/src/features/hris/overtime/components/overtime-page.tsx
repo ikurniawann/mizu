@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { OvertimeDecisionAction } from "@/lib/hris/overtime-rules";
+import type { OvertimeDayType } from "../types";
 import { countPendingEmployeeRequests, currentMonthValue } from "@/lib/hris/overtime-view";
 import { useDecideOvertime } from "../mutations";
 import { useOvertimeRequests } from "../queries";
@@ -35,14 +36,14 @@ export function OvertimePage() {
   const decide = useDecideOvertime();
   const pendingEmployeeRequests = countPendingEmployeeRequests(rows);
 
-  function handleDecide(id: string, action: OvertimeDecisionAction) {
+  function handleDecide(id: string, action: OvertimeDecisionAction, day_type?: OvertimeDayType) {
     let rejection_reason: string | undefined;
     if (action === "reject") {
       rejection_reason = window.prompt("Alasan penolakan?") ?? undefined;
       if (!rejection_reason?.trim()) return;
     }
     decide.mutate(
-      { overtime_id: id, action, rejection_reason },
+      { overtime_id: id, action, rejection_reason, ...(action === "approve" && day_type ? { day_type } : {}) },
       {
         onSuccess: (res) => toast.success(res.message || "Berhasil diproses"),
         onError: (error) => toast.error(error.message || "Gagal memproses"),

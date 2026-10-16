@@ -36,6 +36,8 @@ export const LAINNYA_FIELDS: FieldDef[] = [
   { key: "overtime_hourly_divisor", label: "Pembagi Upah/Jam Lembur", suffix: "std 173" },
   { key: "payroll_day", label: "Tanggal Gajian", suffix: "tgl" },
   { key: "thr_eligible_months", label: "Min. Bulan Kerja THR", suffix: "bln" },
+  // EPIC-055 — rule Odoo OT_PROD: tarif × (jam biasa + 2 × jam istirahat).
+  { key: "overtime_production_rate", label: "Tarif Lembur Tim Produksi", suffix: "Rp/jam" },
 ];
 
 export const LOAN_FIELDS: FieldDef[] = [
@@ -47,6 +49,62 @@ export const LATE_MODE_OPTIONS = [
   { value: "off", label: "Nonaktif (tanpa potongan)" },
   { value: "per_minute", label: "Per menit keterlambatan" },
   { value: "flat", label: "Flat per kejadian terlambat" },
+  { value: "tier", label: "Bertingkat per jumlah telat/bulan (rule Odoo)" },
+];
+
+/** Tier potongan telat (payroll_settings.late_tier_rules). max kosong = tanpa batas atas. */
+export interface LateTierRule {
+  min: number;
+  max?: number;
+  days: number;
+  basis: "thp" | "base";
+}
+
+export const DEFAULT_LATE_TIERS: LateTierRule[] = [
+  { min: 4, max: 6, days: 1, basis: "thp" },
+  { min: 7, max: 9, days: 2, basis: "base" },
+  { min: 10, days: 3, basis: "base" },
+];
+
+/** Baca late_tier_rules dari form state (JSON); rusak/kosong = default rule Odoo. */
+export function parseLateTiers(value: string | undefined): LateTierRule[] {
+  if (!value) return DEFAULT_LATE_TIERS;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as LateTierRule[]) : DEFAULT_LATE_TIERS;
+  } catch {
+    return DEFAULT_LATE_TIERS;
+  }
+}
+
+export const PPH21_METHOD_OPTIONS = [
+  { value: "annualized", label: "Disetahunkan (progresif Pasal 17 tiap bulan)" },
+  { value: "ter", label: "TER bulanan PP 58/2023 + koreksi Desember" },
+];
+
+export const PPH21_BPJS_BASIS_OPTIONS = [
+  { value: "both", label: "Iuran BPJS perusahaan + karyawan (seperti Odoo)" },
+  { value: "employer", label: "Iuran BPJS perusahaan saja (standar DJP)" },
+  { value: "employee", label: "Iuran BPJS karyawan saja" },
+];
+
+/** Saklar payroll (boolean). */
+export const TOGGLE_FIELDS: { key: string; label: string; help: string }[] = [
+  {
+    key: "overtime_requires_clockout",
+    label: "Lembur wajib ada clock-out",
+    help: "Matikan agar lembur approved tetap dibayar walau absensi hari itu tanpa clock-out.",
+  },
+  {
+    key: "personal_leave_deduction",
+    label: "Potong gaji untuk Izin Pribadi",
+    help: "THP ÷ pembagi hari × hari izin pribadi (rule Odoo PIP).",
+  },
+  {
+    key: "sick_leave_deduction",
+    label: "Potong transport & makan saat Izin Sakit",
+    help: "(Transport + makan) ÷ pembagi hari × hari sakit (rule Odoo PIS).",
+  },
 ];
 
 export const PTKP_FIELDS: FieldDef[] = [
@@ -84,10 +142,19 @@ export const SETTINGS_KEYS = [
   ].map((f) => f.key),
   "late_deduction_mode",
   "late_deduction_amount",
+  "late_min_minutes",
+  "late_tier_rules",
+  "pph21_method",
+  "pph21_bpjs_basis",
+  ...TOGGLE_FIELDS.map((f) => f.key),
 ];
 
 /** Kolom pengaturan bertipe teks — dikirim apa adanya, bukan angka. */
-const STRING_SETTING_KEYS = new Set(["late_deduction_mode"]);
+const STRING_SETTING_KEYS = new Set(["late_deduction_mode", "pph21_method", "pph21_bpjs_basis"]);
+/** Kolom boolean ("true" / "false" di form state). */
+const BOOLEAN_SETTING_KEYS = new Set(TOGGLE_FIELDS.map((f) => f.key));
+/** Kolom JSON (teks JSON di form state). */
+const JSON_SETTING_KEYS = new Set(["late_tier_rules"]);
 
 export const TAX_KEYS = [...PTKP_FIELDS, ...BRACKET_FIELDS].map((f) => f.key);
 
@@ -100,15 +167,30 @@ export function rowToFormState(
   const state: FormState = {};
   for (const key of keys) {
     const value = row?.[key];
-    state[key] = value === null || value === undefined ? "" : String(value);
+    state[key] =
+      value === null || value === undefined
+        ? ""
+        : typeof value === "object"
+          ? JSON.stringify(value)
+          : String(value);
   }
   return state;
 }
 
-export function formStateToPayload(state: FormState): Record<string, number | string> {
-  const payload: Record<string, number | string> = {};
+export function formStateToPayload(
+  state: FormState
+): Record<string, number | string | boolean | LateTierRule[]> {
+  const payload: Record<string, number | string | boolean | LateTierRule[]> = {};
   for (const [key, value] of Object.entries(state)) {
     if (value === "") continue;
+    if (BOOLEAN_SETTING_KEYS.has(key)) {
+      payload[key] = value === "true";
+      continue;
+    }
+    if (JSON_SETTING_KEYS.has(key)) {
+      payload[key] = parseLateTiers(value);
+      continue;
+    }
     if (STRING_SETTING_KEYS.has(key)) {
       payload[key] = value;
       continue;

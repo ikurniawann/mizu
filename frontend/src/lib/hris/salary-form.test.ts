@@ -57,6 +57,8 @@ describe("formToSalaryPayload", () => {
       transport_allowance: 0,
       meal_allowance: 0,
       housing_allowance: 0,
+      position_allowance: 0,
+      health_allowance: 0,
       loan_deduction: 100000,
       other_deduction: 0,
       ptkp_status: "K/1",
@@ -65,6 +67,36 @@ describe("formToSalaryPayload", () => {
       bpjs_kes_enrolled: true,
       tapera_enrolled: false,
       notes: "catatan",
+      pay_basis: "monthly",
+      working_days_divisor: null,
+      transport_mode: "flat",
+      meal_mode: "flat",
+      position_mode: "flat",
+      health_min_service_days: 0,
+      overtime_scheme: "standard",
     });
+  });
+
+  it("round-trips the Odoo calculation rules (EPIC-055)", () => {
+    const form = salaryToForm({
+      base_salary: "100000.00",
+      position_allowance: "500000.00",
+      pay_basis: "daily",
+      working_days_divisor: "26.00",
+      transport_mode: "per_day",
+      meal_mode: "bogus",
+      health_min_service_days: 365,
+      overtime_scheme: "freelance",
+    });
+    expect(form.pay_basis).toBe("daily");
+    expect(form.working_days_divisor).toBe("26");
+    expect(form.meal_mode).toBe("flat");
+    const payload = formToSalaryPayload(form);
+    expect(payload.working_days_divisor).toBe(26);
+    expect(payload.position_allowance).toBe(500000);
+    expect(payload.transport_mode).toBe("per_day");
+    expect(payload.health_min_service_days).toBe(365);
+    expect(payload.overtime_scheme).toBe("freelance");
+    expect(formToSalaryPayload({ ...form, working_days_divisor: "" }).working_days_divisor).toBeNull();
   });
 });

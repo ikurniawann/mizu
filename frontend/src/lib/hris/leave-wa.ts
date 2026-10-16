@@ -23,6 +23,7 @@ export const LEAVE_TYPE_LABELS: Record<string, string> = {
   paternity: "Cuti Ayah",
   unpaid: "Izin Tanpa Gaji",
   emergency: "Izin Darurat",
+  personal: "Izin Pribadi",
   pilgrimage: "Cuti Ibadah",
   menstrual: "Cuti Haid",
   marriage: "Cuti Menikah",

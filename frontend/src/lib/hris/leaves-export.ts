@@ -13,6 +13,7 @@ const LEAVE_TYPE_LABELS: Record<string, string> = {
   paternity: "Cuti Ayah",
   unpaid: "Cuti Tanpa Upah",
   emergency: "Cuti Darurat",
+  personal: "Izin Pribadi",
   pilgrimage: "Cuti Haji/Umrah",
   menstrual: "Cuti Haid",
 };

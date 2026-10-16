@@ -15,6 +15,8 @@ export interface EmployeeSalary {
   transport_allowance: number;
   meal_allowance: number;
   housing_allowance?: number;
+  position_allowance?: number;
+  health_allowance?: number;
   loan_deduction?: number;
   other_deduction?: number;
   ptkp_status: string;
@@ -22,6 +24,13 @@ export interface EmployeeSalary {
   bpjs_tk_enrolled?: boolean;
   bpjs_kes_enrolled?: boolean;
   tapera_enrolled?: boolean;
+  pay_basis?: "monthly" | "monthly_prorated" | "daily";
+  working_days_divisor?: number | string | null;
+  transport_mode?: "flat" | "per_day";
+  meal_mode?: "flat" | "per_day";
+  position_mode?: "flat" | "per_day";
+  health_min_service_days?: number;
+  overtime_scheme?: "standard" | "production" | "freelance" | "daily_worker";
   is_active?: boolean;
   effective_date?: string;
   notes?: string;
@@ -39,6 +48,8 @@ export interface SalaryPayload {
   transport_allowance: number;
   meal_allowance: number;
   housing_allowance: number;
+  position_allowance: number;
+  health_allowance: number;
   loan_deduction: number;
   other_deduction: number;
   ptkp_status: string;
@@ -46,5 +57,12 @@ export interface SalaryPayload {
   bpjs_tk_enrolled: boolean;
   bpjs_kes_enrolled: boolean;
   tapera_enrolled: boolean;
+  pay_basis: "monthly" | "monthly_prorated" | "daily";
+  working_days_divisor: number | null;
+  transport_mode: "flat" | "per_day";
+  meal_mode: "flat" | "per_day";
+  position_mode: "flat" | "per_day";
+  health_min_service_days: number;
+  overtime_scheme: "standard" | "production" | "freelance" | "daily_worker";
   notes?: string;
 }

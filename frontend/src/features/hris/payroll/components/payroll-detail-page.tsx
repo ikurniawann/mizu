@@ -22,6 +22,7 @@ import { usePayrollRun } from "../queries";
 import { useNotifyPayslip } from "../mutations";
 import { AllocationChips } from "./store-breakdown";
 import { CalculationPanel } from "./calculation-panel";
+import { ManualInputsCard } from "./manual-inputs-card";
 import { StoreAllocationCard } from "./store-allocation-card";
 
 interface PayrollPageProps {
@@ -197,7 +198,10 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
 
       {payrollRun.status === "draft" &&
         (payrollRun.company_id ? (
-          <CalculationPanel runId={id} hasDetails={details.length > 0} />
+          <>
+            <ManualInputsCard runId={id} />
+            <CalculationPanel runId={id} hasDetails={details.length > 0} />
+          </>
         ) : (
           <Card variant="soft">
             <CardContent className="py-4 text-sm text-muted-foreground">

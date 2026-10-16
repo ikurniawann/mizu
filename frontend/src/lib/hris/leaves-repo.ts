@@ -20,7 +20,7 @@ const LEAVE_DELETE_ROLES = ["hrd", "super_admin", "admin"] as const;
 
 const LEAVE_TYPES = [
   "annual", "sick", "maternity", "paternity", "unpaid", "emergency",
-  "pilgrimage", "menstrual", "marriage", "bereavement",
+  "pilgrimage", "menstrual", "marriage", "bereavement", "personal",
 ] as const;
 
 export const leaveListQuerySchema = z.object({

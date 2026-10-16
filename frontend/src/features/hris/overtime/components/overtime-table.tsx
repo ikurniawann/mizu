@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import type { OvertimeDecisionAction } from "@/lib/hris/overtime-rules";
 import { hhmm } from "@/lib/hris/shifts-view";
-import type { OvertimeRow } from "../types";
+import { useState } from "react";
+import type { OvertimeDayType, OvertimeRow } from "../types";
 
 const STATUS_BADGES: Record<string, { label: string; className: string }> = {
   pending: { label: "Menunggu", className: "bg-amber-100 text-amber-700" },
@@ -16,7 +17,7 @@ interface OvertimeTableProps {
   rows: OvertimeRow[];
   loading: boolean;
   decidingId: string | null;
-  onDecide: (id: string, action: OvertimeDecisionAction) => void;
+  onDecide: (id: string, action: OvertimeDecisionAction, dayType?: OvertimeDayType) => void;
 }
 
 export function OvertimeTable({ rows, loading, decidingId, onDecide }: OvertimeTableProps) {
@@ -67,16 +68,24 @@ export function OvertimeTable({ rows, loading, decidingId, onDecide }: OvertimeT
 interface OvertimeTableRowProps {
   row: OvertimeRow;
   deciding: boolean;
-  onDecide: (id: string, action: OvertimeDecisionAction) => void;
+  onDecide: (id: string, action: OvertimeDecisionAction, dayType?: OvertimeDayType) => void;
 }
 
 function OvertimeTableRow({ row, deciding, onDecide }: OvertimeTableRowProps) {
   const badge = STATUS_BADGES[row.status] ?? STATUS_BADGES.pending;
   const pending = row.status === "pending";
+  const [dayType, setDayType] = useState<OvertimeDayType>(row.day_type ?? "regular");
   return (
     <tr className="border-b last:border-0 hover:bg-gray-50/60">
       <td className="px-4 py-3 font-medium text-gray-900">{row.employee?.full_name ?? "—"}</td>
-      <td className="px-4 py-3">{formatDate(row.date, "—")}</td>
+      <td className="px-4 py-3">
+        {formatDate(row.date, "—")}
+        {row.day_type === "rest_day" && (
+          <span className="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
+            Hari istirahat
+          </span>
+        )}
+      </td>
       <td className="px-4 py-3">
         {hhmm(row.start_time)}–{hhmm(row.end_time)}
       </td>
@@ -102,7 +111,17 @@ function OvertimeTableRow({ row, deciding, onDecide }: OvertimeTableRowProps) {
       <td className="px-4 py-3 text-right">
         {pending && row.source === "employee" && (
           <div className="flex justify-end gap-2">
-            <Button size="sm" disabled={deciding} onClick={() => onDecide(row.id, "approve")}>
+            <select
+              aria-label="Jenis hari"
+              value={dayType}
+              onChange={(e) => setDayType(e.target.value as OvertimeDayType)}
+              className="rounded-md border border-gray-200 px-2 text-xs"
+              disabled={deciding}
+            >
+              <option value="regular">Hari biasa</option>
+              <option value="rest_day">Hari istirahat</option>
+            </select>
+            <Button size="sm" disabled={deciding} onClick={() => onDecide(row.id, "approve", dayType)}>
               Setujui
             </Button>
             <Button size="sm" variant="outline" disabled={deciding} onClick={() => onDecide(row.id, "reject")}>

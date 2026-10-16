@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { SETTINGS_KEYS, TAX_KEYS, formStateToPayload, rowToFormState } from "./ui-settings-form";
+import {
+  DEFAULT_LATE_TIERS,
+  SETTINGS_KEYS,
+  TAX_KEYS,
+  formStateToPayload,
+  parseLateTiers,
+  rowToFormState,
+} from "./ui-settings-form";
 
 describe("rowToFormState", () => {
   it("stringifies known keys and blanks missing ones", () => {
@@ -35,5 +42,32 @@ describe("key lists", () => {
     expect(SETTINGS_KEYS).toContain("late_deduction_amount");
     expect(TAX_KEYS).toContain("ptkp_k_3");
     expect(TAX_KEYS).toContain("jabatan_expense_max");
+  });
+});
+
+describe("EPIC-055 settings", () => {
+  it("sends toggles as booleans, tiers as JSON and PPh21 options as text", () => {
+    const payload = formStateToPayload({
+      overtime_requires_clockout: "false",
+      personal_leave_deduction: "true",
+      late_tier_rules: JSON.stringify([{ min: 3, max: 5, days: 1, basis: "base" }]),
+      pph21_method: "ter",
+      pph21_bpjs_basis: "employer",
+      late_min_minutes: "15",
+    });
+    expect(payload).toEqual({
+      overtime_requires_clockout: false,
+      personal_leave_deduction: true,
+      late_tier_rules: [{ min: 3, max: 5, days: 1, basis: "base" }],
+      pph21_method: "ter",
+      pph21_bpjs_basis: "employer",
+      late_min_minutes: 15,
+    });
+  });
+
+  it("reads jsonb tiers from the row and falls back to the Odoo tiers", () => {
+    const state = rowToFormState({ late_tier_rules: [{ min: 4, days: 1, basis: "thp" }] }, ["late_tier_rules"]);
+    expect(parseLateTiers(state.late_tier_rules)).toEqual([{ min: 4, days: 1, basis: "thp" }]);
+    expect(parseLateTiers("bukan json")).toEqual(DEFAULT_LATE_TIERS);
   });
 });

@@ -192,7 +192,9 @@ describe("Go route manifest", () => {
       "/api/hris/payroll/{id}/store-costs", "/api/hris/payroll/entities",
       // Closing periode absensi + penyesuaian manual HRD.
       "/api/hris/attendance-periods", "/api/hris/attendance-settings", "/api/hris/attendance-adjustments",
-      "/api/hris/attendance/manual"];
+      "/api/hris/attendance/manual",
+      // Komponen manual slip per run (EPIC-055, rule penggajian Odoo).
+      "/api/hris/payroll/{id}/inputs"];
     const goNative = (p: string) =>
       goNativePrefixes.some((n) => p === n || p.startsWith(`${n}/`));
     const missing = switched

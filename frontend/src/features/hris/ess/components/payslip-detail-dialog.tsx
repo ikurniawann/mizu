@@ -96,12 +96,15 @@ export function PayslipDetailDialog({
                 <AmountRow label="Tunjangan Transport" amount={selected.transport_allowance} />
                 <AmountRow label="Tunjangan Makan" amount={selected.meal_allowance} />
                 <AmountRow label="Tunjangan Perumahan" amount={selected.housing_allowance} />
+                <AmountRow label="Tunjangan Jabatan" amount={Number(selected.position_allowance ?? 0)} />
+                <AmountRow label="Subsidi BPJS Kesehatan" amount={Number(selected.health_allowance ?? 0)} />
                 <AmountRow label="Lembur" amount={selected.overtime_pay} />
                 <AmountRow label="THR" amount={selected.thr} />
                 <AmountRow label="Bonus" amount={selected.bonus} />
                 <div className="border-t pt-1">
                   <AmountRow label="Total Bruto" amount={selected.gross_salary} bold />
                 </div>
+                <AmountRow label="Penghasilan Tidak Kena Pajak" amount={Number(selected.other_earning_nontax ?? 0)} />
               </div>
 
               <div>
@@ -118,6 +121,8 @@ export function PayslipDetailDialog({
                 <AmountRow label="PPh 21" amount={selected.pph21_deduction} share={bagian(selected.pph21_deduction)} negative />
                 <AmountRow label="Cuti Tanpa Bayaran" amount={selected.unpaid_leave_deduction} share={bagian(selected.unpaid_leave_deduction)} negative />
                 <AmountRow label="Potongan Keterlambatan" amount={selected.late_deduction} share={bagian(selected.late_deduction)} negative />
+                <AmountRow label="Potongan Izin Pribadi" amount={Number(selected.personal_leave_deduction ?? 0)} share={bagian(Number(selected.personal_leave_deduction ?? 0))} negative />
+                <AmountRow label="Potongan Izin Sakit" amount={Number(selected.sick_leave_deduction ?? 0)} share={bagian(Number(selected.sick_leave_deduction ?? 0))} negative />
                 {(selected.loan_details?.length ?? 0) > 0 ? (
                   selected.loan_details?.map((loan) => (
                     <AmountRow

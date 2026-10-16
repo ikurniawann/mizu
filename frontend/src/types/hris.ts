@@ -384,7 +384,8 @@ export type LeaveType =
   | 'pilgrimage'
   | 'menstrual'
   | 'marriage'
-  | 'bereavement';
+  | 'bereavement'
+  | 'personal';
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
@@ -548,6 +549,7 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   menstrual: 'Cuti Haid',
   marriage: 'Cuti Pernikahan',
   bereavement: 'Cuti Duka Cita',
+  personal: 'Izin Pribadi',
 };
 
 export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = {

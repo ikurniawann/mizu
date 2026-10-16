@@ -24,6 +24,8 @@ export interface OvertimeAssignForm {
   start_time: string;
   end_time: string;
   reason: string;
+  /** rest_day = hari istirahat mingguan (tarif libur). */
+  day_type?: "regular" | "rest_day";
 }
 
 export const EMPTY_OVERTIME_ASSIGN_FORM: OvertimeAssignForm = {
@@ -32,6 +34,7 @@ export const EMPTY_OVERTIME_ASSIGN_FORM: OvertimeAssignForm = {
   start_time: "",
   end_time: "",
   reason: "",
+  day_type: "regular",
 };
 
 export function validateOvertimeAssignForm(form: OvertimeAssignForm): string | null {

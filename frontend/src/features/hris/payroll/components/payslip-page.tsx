@@ -151,6 +151,12 @@ export function PayslipPage() {
               {detail.housing_allowance > 0 && (
                 <EarningRow label="Tunjangan Rumah" amount={detail.housing_allowance} />
               )}
+              {Number(detail.position_allowance ?? 0) > 0 && (
+                <EarningRow label="Tunjangan Jabatan" amount={Number(detail.position_allowance)} />
+              )}
+              {Number(detail.health_allowance ?? 0) > 0 && (
+                <EarningRow label="Subsidi BPJS Kesehatan" amount={Number(detail.health_allowance)} />
+              )}
               {detail.overtime_pay > 0 && (
                 <EarningRow label="Lembur" amount={detail.overtime_pay} />
               )}
@@ -160,6 +166,9 @@ export function PayslipPage() {
               {detail.bonus > 0 && (
                 <EarningRow label="Bonus" amount={detail.bonus} />
               )}
+              {detail.other_earning > 0 && (
+                <EarningRow label="Penghasilan Lain" amount={detail.other_earning} />
+              )}
               <div className="border-t pt-2 mt-2">
                 <EarningRow 
                   label="Total Penghasilan" 
@@ -167,6 +176,9 @@ export function PayslipPage() {
                   bold 
                 />
               </div>
+              {Number(detail.other_earning_nontax ?? 0) > 0 && (
+                <EarningRow label="Penghasilan Tidak Kena Pajak" amount={Number(detail.other_earning_nontax)} />
+              )}
             </div>
           </div>
 
@@ -179,11 +191,24 @@ export function PayslipPage() {
               <DeductionRow label="BPJS Kesehatan" amount={detail.bpjs_kes_deduction} share={bagian(detail.bpjs_kes_deduction)} />
               <DeductionRow label="Tapera" amount={detail.tapera_deduction} share={bagian(detail.tapera_deduction)} />
               <DeductionRow label="PPh 21" amount={detail.pph21_deduction} share={bagian(detail.pph21_deduction)} />
+              {detail.pph21_method === "ter" && (
+                <p className="-mt-1 text-xs text-gray-500">
+                  {detail.ter_category
+                    ? `TER kategori ${detail.ter_category} ${(Number(detail.ter_rate ?? 0) * 100).toLocaleString("id-ID")}% × DPP ${formatRupiah(Number(detail.pph21_dpp ?? 0))}`
+                    : `Koreksi Desember (Pasal 17 setahun) — DPP bulan ini ${formatRupiah(Number(detail.pph21_dpp ?? 0))}`}
+                </p>
+              )}
               {detail.unpaid_leave_deduction > 0 && (
                 <DeductionRow label="Cuti Tanpa Bayaran" amount={detail.unpaid_leave_deduction} share={bagian(detail.unpaid_leave_deduction)} />
               )}
               {(detail.late_deduction ?? 0) > 0 && (
                 <DeductionRow label="Potongan Keterlambatan" amount={detail.late_deduction ?? 0} share={bagian(detail.late_deduction ?? 0)} />
+              )}
+              {Number(detail.personal_leave_deduction ?? 0) > 0 && (
+                <DeductionRow label="Potongan Izin Pribadi" amount={Number(detail.personal_leave_deduction)} share={bagian(Number(detail.personal_leave_deduction))} />
+              )}
+              {Number(detail.sick_leave_deduction ?? 0) > 0 && (
+                <DeductionRow label="Potongan Izin Sakit" amount={Number(detail.sick_leave_deduction)} share={bagian(Number(detail.sick_leave_deduction))} />
               )}
               {(detail.loan_details?.length ?? 0) > 0
                 ? detail.loan_details?.map((loan) => (

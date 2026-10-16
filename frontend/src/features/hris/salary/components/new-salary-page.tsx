@@ -15,6 +15,7 @@ import { EMPTY_SALARY_FORM, formToSalaryPayload } from "@/lib/hris/salary-form";
 import { useSalaryEmployees } from "../queries";
 import { useCreateSalary } from "../mutations";
 import { SalaryAmountFields } from "./salary-amount-fields";
+import { SalaryRuleFields } from "./salary-rule-fields";
 
 export function NewSalaryPage() {
   const router = useRouter();
@@ -129,6 +130,11 @@ export function NewSalaryPage() {
             values={formData}
             onChange={(field, value) => setFormData((prev) => ({ ...prev, [field]: value }))}
             baseSalaryRequired
+          />
+
+          <SalaryRuleFields
+            values={formData}
+            onChange={(field, value) => setFormData((prev) => ({ ...prev, [field]: value }))}
           />
 
           {/* Tax & Benefits */}

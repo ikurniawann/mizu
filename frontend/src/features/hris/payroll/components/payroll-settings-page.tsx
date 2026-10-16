@@ -21,14 +21,19 @@ import {
   LAINNYA_FIELDS,
   LATE_MODE_OPTIONS,
   LOAN_FIELDS,
+  PPH21_BPJS_BASIS_OPTIONS,
+  PPH21_METHOD_OPTIONS,
   PTKP_FIELDS,
   SETTINGS_KEYS,
   TAPERA_FIELDS,
   TAX_KEYS,
+  TOGGLE_FIELDS,
   formStateToPayload,
+  parseLateTiers,
   rowToFormState,
   type FieldDef,
   type FormState,
+  type LateTierRule,
 } from "@/lib/payroll/ui-settings-form";
 import { AttendancePeriodSettingsCard } from "@/features/hris/attendance";
 import { usePayrollSettings } from "../queries";
@@ -59,6 +64,61 @@ function FieldGrid({ fields, state, onChange }: FieldGridProps) {
           />
         </div>
       ))}
+    </div>
+  );
+}
+
+function LateTierEditor({ value, onChange }: { value: string; onChange: (json: string) => void }) {
+  const tiers = parseLateTiers(value);
+  const update = (index: number, patch: Partial<LateTierRule>) =>
+    onChange(JSON.stringify(tiers.map((t, i) => (i === index ? { ...t, ...patch } : t))));
+  const num = (v: string) => (v === "" ? undefined : Math.max(0, Number(v)));
+  return (
+    <div className="mt-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Tingkat potongan per bulan</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-gray-500">
+              <th className="py-1 pr-2 font-medium">Telat dari (kali)</th>
+              <th className="py-1 pr-2 font-medium">Sampai (kali)</th>
+              <th className="py-1 pr-2 font-medium">Potong (hari)</th>
+              <th className="py-1 font-medium">Dasar per hari</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tiers.map((tier, i) => (
+              <tr key={i}>
+                <td className="py-1 pr-2">
+                  <Input type="number" min={1} value={tier.min} onChange={(e) => update(i, { min: num(e.target.value) ?? 1 })} />
+                </td>
+                <td className="py-1 pr-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder="tanpa batas"
+                    value={tier.max ?? ""}
+                    onChange={(e) => update(i, { max: num(e.target.value) })}
+                  />
+                </td>
+                <td className="py-1 pr-2">
+                  <Input type="number" min={0} step="any" value={tier.days} onChange={(e) => update(i, { days: num(e.target.value) ?? 0 })} />
+                </td>
+                <td className="py-1">
+                  <select
+                    value={tier.basis}
+                    onChange={(e) => update(i, { basis: e.target.value as LateTierRule["basis"] })}
+                    className="w-full rounded-md border border-gray-200 px-2 py-2 text-sm"
+                  >
+                    <option value="thp">Take home pay ÷ pembagi</option>
+                    <option value="base">Gaji pokok ÷ pembagi</option>
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -280,10 +340,101 @@ export function PayrollSettingsPage() {
                   />
                 </div>
               </div>
+              {settingsForm.late_deduction_mode === "tier" && (
+                <>
+                  <div className="mt-3 max-w-xs">
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Telat dihitung bila minimal <span className="text-gray-400">(menit)</span>
+                    </label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={settingsForm.late_min_minutes ?? ""}
+                      placeholder="0"
+                      onChange={(e) => handleSettingsChange("late_min_minutes", e.target.value)}
+                    />
+                  </div>
+                  <LateTierEditor
+                    value={settingsForm.late_tier_rules ?? ""}
+                    onChange={(json) => handleSettingsChange("late_tier_rules", json)}
+                  />
+                </>
+              )}
               <p className="mt-3 text-xs text-gray-500">
                 Menit keterlambatan diambil dari absensi v2 (dihitung terhadap
-                shift saat clock-in). Mode nonaktif = tidak ada potongan.
+                shift saat clock-in). Mode nonaktif = tidak ada potongan. Mode bertingkat
+                menghitung jumlah hari telat sebulan; tarif di atas tidak dipakai. Potongan
+                manual (komponen &quot;Override Potongan Telat&quot; di run) menggantikan hitungan otomatis.
               </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">PPh 21 — Metode</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Metode pemotongan</label>
+                  <select
+                    value={settingsForm.pph21_method || "annualized"}
+                    onChange={(e) => handleSettingsChange("pph21_method", e.target.value)}
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                  >
+                    {PPH21_METHOD_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">BPJS yang ditambahkan ke dasar TER</label>
+                  <select
+                    value={settingsForm.pph21_bpjs_basis || "both"}
+                    onChange={(e) => handleSettingsChange("pph21_bpjs_basis", e.target.value)}
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                    disabled={(settingsForm.pph21_method || "annualized") !== "ter"}
+                  >
+                    {PPH21_BPJS_BASIS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-gray-500">
+                TER: Januari–November PPh 21 = bruto bulan itu × tarif TER (kategori A/B/C dari PTKP). Desember:
+                PPh 21 setahun (Pasal 17) dikurangi yang sudah dipotong Januari–November di entitas yang sama.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Lembur & Potongan Izin</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {TOGGLE_FIELDS.map((t) => {
+                const fallback = t.key === "overtime_requires_clockout" ? "true" : "false";
+                const checked = (settingsForm[t.key] || fallback) === "true";
+                return (
+                  <label key={t.key} className="flex cursor-pointer items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-gray-300"
+                      checked={checked}
+                      onChange={(e) => handleSettingsChange(t.key, e.target.checked ? "true" : "false")}
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-gray-700">{t.label}</span>
+                      <span className="block text-xs text-gray-500">{t.help}</span>
+                    </span>
+                  </label>
+                );
+              })}
             </CardContent>
           </Card>
 

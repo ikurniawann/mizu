@@ -9,7 +9,15 @@ import {
   fetchPayrollSettings,
   fetchStoreCosts,
   fetchPayrollEntities,
+  fetchPayrollInputs,
 } from "./api";
+
+export const usePayrollInputs = (runId: string) =>
+  useQuery({
+    queryKey: payrollQueryKeys.inputs(runId),
+    queryFn: () => fetchPayrollInputs(runId),
+    enabled: !!runId,
+  });
 
 export const usePayrollRuns = () =>
   useQuery({

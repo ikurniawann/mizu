@@ -20,7 +20,7 @@ import type { EssBeranda, EssRecentRequest } from "../types";
 const DAY_LABELS = ["", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 const LEAVE_TYPE_LABELS: Record<string, string> = {
   annual: "Cuti Tahunan", sick: "Sakit", maternity: "Melahirkan",
-  paternity: "Cuti Ayah", unpaid: "Tanpa Gaji", emergency: "Darurat",
+  paternity: "Cuti Ayah", unpaid: "Tanpa Gaji", emergency: "Darurat", personal: "Izin Pribadi",
   pilgrimage: "Ibadah", menstrual: "Haid", marriage: "Menikah", bereavement: "Duka",
 };
 const KIND_META: Record<EssRecentRequest["kind"], { label: string; cls: string }> = {

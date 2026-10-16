@@ -22,6 +22,7 @@ export const LEAVE_TYPE_OPTIONS = [
   { value: "annual", label: "Cuti Tahunan" },
   { value: "sick", label: "Sakit" },
   { value: "emergency", label: "Izin Darurat" },
+  { value: "personal", label: "Izin Pribadi" },
   { value: "unpaid", label: "Izin Tanpa Gaji" },
   { value: "maternity", label: "Cuti Melahirkan" },
   { value: "paternity", label: "Cuti Ayah" },

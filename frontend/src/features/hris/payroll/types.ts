@@ -212,6 +212,38 @@ export interface PayslipAmounts {
   prorate_factor?: number | string;
   /** Snapshot gaji pokok penuh sebelum proraté (null utk baris lama) */
   full_base_salary?: number | string | null;
+  // EPIC-055 (rule Odoo); kosong di slip lama.
+  position_allowance?: number | string;
+  health_allowance?: number | string;
+  other_earning_nontax?: number | string;
+  personal_leave_deduction?: number | string;
+  sick_leave_deduction?: number | string;
+  manual_inputs?: { code: string; amount: number; note?: string }[];
+  attendance_days?: number | string | null;
+  allowance_days?: number | string | null;
+  divisor_days?: number | string | null;
+  pay_basis?: string | null;
+  pph21_method?: string | null;
+  pph21_dpp?: number | string | null;
+  ter_category?: string | null;
+  ter_rate?: number | string | null;
+}
+
+/** Komponen manual slip satu karyawan di satu run (hris.payroll_inputs). */
+export interface PayrollInput {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  code: string;
+  amount: number | string;
+  note: string | null;
+  employee_name: string;
+  employee_nip: string | null;
+}
+
+export interface PayrollInputImportResult {
+  imported: number;
+  errors: { line: number; message: string }[];
 }
 
 /** Slip gaji satu karyawan (halaman admin). */

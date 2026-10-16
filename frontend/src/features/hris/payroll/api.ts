@@ -7,6 +7,8 @@ import type {
   PayslipDetail,
   StoreCostReport,
   PayrollEntity,
+  PayrollInput,
+  PayrollInputImportResult,
 } from "./types";
 
 export const fetchPayrollRuns = () =>
@@ -67,6 +69,20 @@ export interface SavePayrollSettingsPayload {
   settings?: Record<string, unknown>;
   tax_config?: Record<string, unknown> & { tax_year: number };
 }
+
+export const fetchPayrollInputs = (runId: string) =>
+  apiGet<{ data: PayrollInput[] }>(`/api/hris/payroll/${runId}/inputs`).then((res) => res.data || []);
+
+/** Simpan satu komponen manual; amount 0 menghapusnya. */
+export const savePayrollInput = (
+  runId: string,
+  payload: { employee_id: string; code: string; amount: number; note?: string | null }
+) => apiPut<{ data: PayrollInput | null }>(`/api/hris/payroll/${runId}/inputs`, payload);
+
+export const importPayrollInputs = (runId: string, csv: string) =>
+  apiPost<{ data: PayrollInputImportResult }>(`/api/hris/payroll/${runId}/inputs/import`, { csv }).then(
+    (res) => res.data
+  );
 
 export const fetchPayrollSettings = (taxYear?: number) =>
   apiGet<{ data: PayrollSettingsData }>(

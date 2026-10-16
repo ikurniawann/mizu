@@ -2407,6 +2407,21 @@
   {
     "module": "payroll",
     "method": "GET",
+    "path": "/api/hris/payroll/{id}/inputs"
+  },
+  {
+    "module": "payroll",
+    "method": "PUT",
+    "path": "/api/hris/payroll/{id}/inputs"
+  },
+  {
+    "module": "payroll",
+    "method": "POST",
+    "path": "/api/hris/payroll/{id}/inputs/import"
+  },
+  {
+    "module": "payroll",
+    "method": "GET",
     "path": "/api/hris/payroll/{id}/store-costs"
   },
   {

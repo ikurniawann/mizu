@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { formToSalaryPayload, salaryToForm } from "@/lib/hris/salary-form";
 import type { EmployeeSalary } from "../types";
 import { SalaryAmountFields } from "./salary-amount-fields";
+import { SalaryRuleFields } from "./salary-rule-fields";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -138,6 +139,11 @@ function EditSalaryForm({ salary }: { salary: EmployeeSalary }) {
         </CardHeader>
         <CardContent className="space-y-6">
           <SalaryAmountFields
+            values={formData}
+            onChange={(field, value) => setFormData((prev) => ({ ...prev, [field]: value }))}
+          />
+
+          <SalaryRuleFields
             values={formData}
             onChange={(field, value) => setFormData((prev) => ({ ...prev, [field]: value }))}
           />

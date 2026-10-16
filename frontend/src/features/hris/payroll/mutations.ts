@@ -9,8 +9,27 @@ import {
   deletePayrollRun,
   savePayrollSettings,
   notifyPayslip,
+  savePayrollInput,
+  importPayrollInputs,
   type SavePayrollSettingsPayload,
 } from "./api";
+
+export function useSavePayrollInput(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { employee_id: string; code: string; amount: number; note?: string | null }) =>
+      savePayrollInput(runId, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: payrollQueryKeys.inputs(runId) }),
+  });
+}
+
+export function useImportPayrollInputs(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (csv: string) => importPayrollInputs(runId, csv),
+    onSuccess: () => qc.invalidateQueries({ queryKey: payrollQueryKeys.inputs(runId) }),
+  });
+}
 import type { CreatePayrollPayload } from "./types";
 
 export function useCreatePayrollRun() {

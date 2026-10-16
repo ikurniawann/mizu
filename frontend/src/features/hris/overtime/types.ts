@@ -1,5 +1,7 @@
 import type { OvertimeDecisionAction } from "@/lib/hris/overtime-rules";
 
+export type OvertimeDayType = "regular" | "rest_day";
+
 export interface OvertimeRow {
   id: string;
   employee_id: string;
@@ -11,6 +13,8 @@ export interface OvertimeRow {
   status: string;
   reason: string | null;
   rejection_reason: string | null;
+  /** rest_day = hari istirahat mingguan, dibayar tarif libur (EPIC-055). */
+  day_type?: OvertimeDayType;
   employee?: { id: string; full_name: string; nip: string | null } | null;
   requester?: { full_name: string } | null;
   decider?: { full_name: string } | null;
@@ -26,4 +30,5 @@ export interface OvertimeDecision {
   overtime_id: string;
   action: OvertimeDecisionAction;
   rejection_reason?: string;
+  day_type?: OvertimeDayType;
 }

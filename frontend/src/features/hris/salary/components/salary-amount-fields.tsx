@@ -11,6 +11,8 @@ const INCOME_FIELDS: { field: SalaryAmountField; label: string }[] = [
   { field: "transport_allowance", label: "Tunjangan Transport (Rp)" },
   { field: "meal_allowance", label: "Tunjangan Makan (Rp)" },
   { field: "housing_allowance", label: "Tunjangan Rumah (Rp)" },
+  { field: "position_allowance", label: "Tunjangan Jabatan (Rp)" },
+  { field: "health_allowance", label: "Subsidi BPJS Kesehatan (Rp)" },
 ];
 
 const DEDUCTION_FIELDS: { field: SalaryAmountField; label: string }[] = [

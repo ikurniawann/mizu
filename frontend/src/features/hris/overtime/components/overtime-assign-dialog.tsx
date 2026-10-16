@@ -89,6 +89,17 @@ function OvertimeAssignBody({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">Jenis hari</label>
+          <select
+            value={form.day_type ?? "regular"}
+            onChange={(e) => setForm((f) => ({ ...f, day_type: e.target.value as typeof f.day_type }))}
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+          >
+            <option value="regular">Hari kerja biasa</option>
+            <option value="rest_day">Hari istirahat mingguan (tarif libur)</option>
+          </select>
+        </div>
+        <div>
           <label className="mb-1 block text-xs font-medium text-gray-600">
             Pekerjaan yang dilembur (min. 5 karakter)
           </label>
