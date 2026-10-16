@@ -1,6 +1,6 @@
 # EPIC-055: Payroll Paritas Rule Odoo — G1–G9 (`MODULE-PAYROLL`)
 
-status: review
+status: ready-for-qa
 environment: dev
 retries: 0
 
@@ -109,3 +109,12 @@ Semua kolom/setting baru punya **default yang mempertahankan perilaku lama**, se
   - Minor: UUID, hari istirahat hanya HR.
   - Kombinasi upah harian + lembur standar dipertahankan demi paritas Odoo (1 struktur), dengan peringatan di form.
   - Uji ulang di salinan DB baru: migrate -verify bersih; tes payroll/app/accounting lolos; referensi September tetap 261/263; total bruto alokasi = total slip.
+- 2026-10-17 — Deploy ke live (paddydev.reddie.id) atas persetujuan user.
+  - Backup sebelum deploy: `~/Desktop/paddydev-backups/paddydev-db-before-epic055-deploy-20261017-023514.dump`.
+  - `main` di-push (a7ac857), lalu `tools/deploy-paddydev.sh` → image `local-20261017-023533`. 2 migrasi diterapkan, `-verify` 0 berbeda.
+  - `payroll_rules.sql` (paket import) dijalankan: ringkasan sama persis dengan uji di salinan DB.
+  - Perubahan jumlah baris hanya `hris.payroll_inputs` (tabel baru, 0 baris), `hris.payroll_settings` 0→1, dan `schema_migrations` +2.
+  - Tidak ada notifikasi yang terkirim; trigger aktif; struktur gaji non-import tidak berubah.
+  - Uji halaman live sebagai Admin HRIS lolos: pengaturan, struktur gaji, detail run, lembur, Beranda.
+  - Status → ready-for-qa.
+  - Run payroll yang sudah ada belum dihitung ulang (tindakan HR).
