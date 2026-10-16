@@ -42,3 +42,19 @@ export function manualInputKind(code: string): ManualInputKind | undefined {
 
 /** Contoh isi CSV untuk import (header opsional). */
 export const MANUAL_INPUT_CSV_EXAMPLE = "nip,kode,nominal,catatan\n202503182,BONUS,500000,Bonus target\n202503182,PENALTY,25000,Denda seragam";
+
+/**
+ * Nominal rupiah seperti diketik HR: "25.000", "1.500.000,50", "250000.50".
+ * Titik diikuti tepat tiga digit = pemisah ribuan; koma = desimal. null bila tidak valid.
+ */
+export function parseAmountID(raw: string): number | null {
+  let v = raw.replace(/\s/g, "").replace(/^rp/i, "");
+  if (!v) return null;
+  if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, "");
+  if (!/^\d+(\.\d+)?$/.test(v)) return null;
+  return Number(v);
+}
+
+/** Komponen yang boleh bernilai 0 (0 = hapus potongan telat otomatis). */
+export const ZERO_ALLOWED_CODES = new Set(["LATE_OVERRIDE"]);

@@ -39,6 +39,8 @@ var AllocationColumns = []string{
 	"total_deductions", "net_salary",
 	"bpjs_tk_jht_employer", "bpjs_tk_jp_employer", "bpjs_tk_jkk_employer", "bpjs_tk_jkm_employer",
 	"bpjs_kes_employer", "tapera_employer",
+	// EPIC-055
+	"position_allowance", "health_allowance", "other_earning_nontax", "personal_leave_deduction", "sick_leave_deduction",
 }
 
 // EmployerColumns are the employer contributions (beban perusahaan).

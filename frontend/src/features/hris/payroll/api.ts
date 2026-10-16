@@ -79,6 +79,11 @@ export const savePayrollInput = (
   payload: { employee_id: string; code: string; amount: number; note?: string | null }
 ) => apiPut<{ data: PayrollInput | null }>(`/api/hris/payroll/${runId}/inputs`, payload);
 
+export const deletePayrollInput = (runId: string, employeeId: string, code: string) =>
+  apiDelete(
+    `/api/hris/payroll/${runId}/inputs?employee_id=${encodeURIComponent(employeeId)}&code=${encodeURIComponent(code)}`
+  );
+
 export const importPayrollInputs = (runId: string, csv: string) =>
   apiPost<{ data: PayrollInputImportResult }>(`/api/hris/payroll/${runId}/inputs/import`, { csv }).then(
     (res) => res.data

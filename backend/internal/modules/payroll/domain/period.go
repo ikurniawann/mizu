@@ -158,8 +158,17 @@ func SplitOvertimeWith(requests []OvertimeRequest, attendance []AttendanceRow, h
 	for _, a := range attendance {
 		byDate[a.Date] = a
 	}
+	// A rest day is a weekday without a shift in a schedule that is in force
+	// that date; before the schedule starts (or after it ends) nothing is known.
 	restDay := func(date string) bool {
-		if len(schedule) == 0 {
+		inForce := false
+		for _, r := range schedule {
+			if r.EffectiveFrom <= date && (r.EffectiveTo == nil || *r.EffectiveTo >= date) {
+				inForce = true
+				break
+			}
+		}
+		if !inForce {
 			return false
 		}
 		row := ResolveScheduleRow(schedule, date)

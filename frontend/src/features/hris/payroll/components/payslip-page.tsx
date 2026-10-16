@@ -193,7 +193,7 @@ export function PayslipPage() {
               <DeductionRow label="PPh 21" amount={detail.pph21_deduction} share={bagian(detail.pph21_deduction)} />
               {detail.pph21_method === "ter" && (
                 <p className="-mt-1 text-xs text-gray-500">
-                  {detail.ter_category
+                  {detail.ter_rate !== null && detail.ter_rate !== undefined
                     ? `TER kategori ${detail.ter_category} ${(Number(detail.ter_rate ?? 0) * 100).toLocaleString("id-ID")}% × DPP ${formatRupiah(Number(detail.pph21_dpp ?? 0))}`
                     : `Koreksi Desember (Pasal 17 setahun) — DPP bulan ini ${formatRupiah(Number(detail.pph21_dpp ?? 0))}`}
                 </p>

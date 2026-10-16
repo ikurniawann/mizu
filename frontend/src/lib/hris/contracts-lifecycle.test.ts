@@ -106,6 +106,8 @@ describe("syncSalaryFromContract", () => {
     await syncSalaryFromContract({ query } as unknown as Parameters<typeof syncSalaryFromContract>[0], draft);
     const insert = query.mock.calls.find(([sql]) => String(sql).includes("INSERT INTO hris.employee_salary"));
     expect(insert).toBeDefined();
-    expect(insert![1][insert![1].length - 1]).toBe("co-1");
+    // $17 = company_id; $18.. = aturan perhitungan EPIC-055 yang dibawa dari versi aktif.
+    expect(insert![1][16]).toBe("co-1");
+    expect(insert![1].slice(17)).toEqual([null, null, null, null, null, null, null, null, null]);
   });
 });

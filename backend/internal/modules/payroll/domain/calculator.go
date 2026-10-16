@@ -364,7 +364,12 @@ func Calculate(in Input, c Config) Result {
 	thp := gross + nontax
 
 	b := CalculateBPJS(base+fixed, in.BpjsTkEnrolled, in.BpjsKesEnrolled, in.TaperaEnrolled, c)
-	unpaid := UnpaidLeave(base, in.WorkingDays, in.UnpaidLeaveDays)
+	// daily / monthly_prorated pay only the days attended: an unpaid leave day
+	// is already unpaid (Odoo: unpaid leave just lowers the worked days).
+	unpaid := 0.0
+	if in.PayBasis != "daily" && in.PayBasis != "monthly_prorated" {
+		unpaid = UnpaidLeave(base, in.WorkingDays, in.UnpaidLeaveDays)
+	}
 
 	// G3: potongan telat; LATE_OVERRIDE menggantikan hitungan otomatis.
 	late := LateDeduction(in.LateMinutes, in.LateDays, c)
@@ -400,8 +405,8 @@ func Calculate(in Input, c Config) Result {
 		tkEmployer := b.Employer.TkJht + b.Employer.TkJp + b.Employer.TkJkk + b.Employer.TkJkm
 		var bpjs float64
 		switch c.Pph21BpjsBasis {
-		case "employer":
-			bpjs = tkEmployer + b.Employer.Kes
+		case "employer": // DJP: hanya premi JKK, JKM, Kesehatan yang dibayar pemberi kerja
+			bpjs = b.Employer.TkJkk + b.Employer.TkJkm + b.Employer.Kes
 		case "employee":
 			bpjs = tkEmployee + b.Employee.Kes
 		default:
@@ -471,7 +476,7 @@ type RunTotals struct {
 func SumRunTotals(results []Result) RunTotals {
 	var t RunTotals
 	for _, r := range results {
-		t.TotalGross += r.GrossSalary
+		t.TotalGross += r.GrossSalary + r.OtherEarningNontax // all earnings: gross = net + deductions
 		t.TotalDeductions += r.TotalDeductions
 		t.TotalNet += r.NetSalary
 		t.TotalBjtkEmployee += r.BpjsTkJhtDeduction + r.BpjsTkJpDeduction + r.BpjsKesDeduction + r.TaperaDeduction

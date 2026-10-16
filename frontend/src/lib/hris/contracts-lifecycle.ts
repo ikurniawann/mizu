@@ -256,6 +256,16 @@ interface SalaryVersionRow {
   bpjs_kes_enrolled: boolean | null;
   tapera_enrolled: boolean | null;
   company_id: string | null;
+  // EPIC-055 aturan perhitungan (dibawa ke versi baru)
+  pay_basis?: string | null;
+  transport_mode?: string | null;
+  meal_mode?: string | null;
+  position_mode?: string | null;
+  overtime_scheme?: string | null;
+  working_days_divisor?: string | null;
+  position_allowance?: string | null;
+  health_allowance?: string | null;
+  health_min_service_days?: number | null;
 }
 
 /**
@@ -303,7 +313,9 @@ export async function syncSalaryFromContract(client: PoolClient, contract: Contr
         transport_allowance, meal_allowance, housing_allowance,
         loan_deduction, other_deduction, ptkp_status, is_taxable,
         bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled,
-        effective_date, is_active, notes, company_id)
+        effective_date, is_active, notes, company_id,
+        pay_basis, transport_mode, meal_mode, position_mode, overtime_scheme,
+        working_days_divisor, position_allowance, health_allowance, health_min_service_days)
      VALUES ($1, $2,
              COALESCE($3, 0), COALESCE($4, 0), COALESCE($5, 0),
              COALESCE($6, 0), COALESCE($7, 0),
@@ -315,7 +327,10 @@ export async function syncSalaryFromContract(client: PoolClient, contract: Contr
                                     JOIN configuration.branches b ON b.id = p.branch_id
                                    WHERE p.employee_id = $1 AND p.is_primary
                                      AND (p.end_date IS NULL OR p.end_date >= $15::date)
-                                   ORDER BY p.start_date DESC LIMIT 1)))
+                                   ORDER BY p.start_date DESC LIMIT 1)),
+             COALESCE($18, 'monthly'), COALESCE($19, 'flat'), COALESCE($20, 'flat'),
+             COALESCE($21, 'flat'), COALESCE($22, 'standard'), $23::numeric,
+             COALESCE($24::numeric, 0), COALESCE($25::numeric, 0), COALESCE($26::int, 0))
      ON CONFLICT (employee_id, company_id, effective_date) DO UPDATE SET
        base_salary = EXCLUDED.base_salary,
        is_active = true,
@@ -340,6 +355,15 @@ export async function syncSalaryFromContract(client: PoolClient, contract: Contr
       contract.start_date,
       `Sinkron dari kontrak ${contract.contract_number}`,
       current?.company_id ?? null,
+      current?.pay_basis ?? null,
+      current?.transport_mode ?? null,
+      current?.meal_mode ?? null,
+      current?.position_mode ?? null,
+      current?.overtime_scheme ?? null,
+      current?.working_days_divisor ?? null,
+      current?.position_allowance ?? null,
+      current?.health_allowance ?? null,
+      current?.health_min_service_days ?? null,
     ]
   );
 }

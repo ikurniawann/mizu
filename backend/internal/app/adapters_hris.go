@@ -160,6 +160,18 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		WHERE employee_id = $1 AND is_active = true
 		ORDER BY effective_date DESC LIMIT 1`, in.EmployeeID).Scan(&id, &base, &fixed, &variable, &transport, &meal,
 		&housing, &loan, &other, &ptkp, &taxable, &bpjsTK, &bpjsKes, &tapera, &company)
+	// EPIC-055 rule columns are carried to the new version (else a renewal
+	// would reset a daily wage to a monthly salary).
+	var payBasis, transportMode, mealMode, positionMode, scheme, divisor, position, health *string
+	var minService *int
+	if hasRow := err == nil; hasRow {
+		if rerr := q.QueryRow(ctx, `SELECT pay_basis, transport_mode, meal_mode, position_mode, overtime_scheme,
+			working_days_divisor::text, position_allowance::text, health_allowance::text, health_min_service_days
+			FROM hris.employee_salary WHERE id = $1`, id).Scan(&payBasis, &transportMode, &mealMode, &positionMode,
+			&scheme, &divisor, &position, &health, &minService); rerr != nil {
+			return rerr
+		}
+	}
 	hasCurrent := err == nil
 	if err != nil && !database.IsNoRows(err) {
 		return err
@@ -179,7 +191,9 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		 transport_allowance, meal_allowance, housing_allowance,
 		 loan_deduction, other_deduction, ptkp_status, is_taxable,
 		 bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled,
-		 effective_date, is_active, notes, company_id)
+		 effective_date, is_active, notes, company_id,
+		 pay_basis, transport_mode, meal_mode, position_mode, overtime_scheme,
+		 working_days_divisor, position_allowance, health_allowance, health_min_service_days)
 		VALUES ($1, $2,
 		        COALESCE($3::numeric, 0), COALESCE($4::numeric, 0), COALESCE($5::numeric, 0),
 		        COALESCE($6::numeric, 0), COALESCE($7::numeric, 0),
@@ -191,7 +205,10 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		                               JOIN configuration.branches b ON b.id = p.branch_id
 		                              WHERE p.employee_id = $1 AND p.is_primary
 		                                AND (p.end_date IS NULL OR p.end_date >= $15::date)
-		                              ORDER BY p.start_date DESC LIMIT 1)))
+		                              ORDER BY p.start_date DESC LIMIT 1)),
+		        COALESCE($18::text, 'monthly'), COALESCE($19::text, 'flat'), COALESCE($20::text, 'flat'),
+		        COALESCE($21::text, 'flat'), COALESCE($22::text, 'standard'), $23::numeric,
+		        COALESCE($24::numeric, 0), COALESCE($25::numeric, 0), COALESCE($26::int, 0))
 		ON CONFLICT (employee_id, company_id, effective_date) DO UPDATE SET
 		  base_salary = EXCLUDED.base_salary,
 		  is_active = true,
@@ -199,7 +216,8 @@ func (hrisSalarySQL) SyncFromContract(ctx context.Context, q database.Querier, i
 		  notes = EXCLUDED.notes,
 		  updated_at = now()`,
 		in.EmployeeID, in.BaseSalary, fixed, variable, transport, meal, housing, loan, other,
-		ptkp, taxable, bpjsTK, bpjsKes, tapera, in.StartDate, "Sinkron dari kontrak "+in.ContractNumber, company)
+		ptkp, taxable, bpjsTK, bpjsKes, tapera, in.StartDate, "Sinkron dari kontrak "+in.ContractNumber, company,
+		payBasis, transportMode, mealMode, positionMode, scheme, divisor, position, health, minService)
 	return err
 }
 

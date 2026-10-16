@@ -323,3 +323,57 @@ func TestBuildInputParity(t *testing.T) {
 		t.Fatalf("legacy %+v", in)
 	}
 }
+
+// Temuan review EPIC-055.
+func TestReviewFixes(t *testing.T) {
+	c := DefaultConfig()
+	// #3 upah harian/prorata: cuti tanpa upah tidak dipotong lagi.
+	r := Calculate(parityInput(func(in *Input) {
+		in.PayBasis, in.BaseSalary, in.AttendanceDays, in.DivisorDays, in.WorkingDays, in.UnpaidLeaveDays = "daily", 100_000, 18, 20, 20, 2
+	}), c)
+	eq(t, "daily unpaid", r.UnpaidLeaveDeduction, 0)
+	eq(t, "daily base", r.BaseSalary, 1_800_000)
+	eq(t, "monthly unpaid still", Calculate(parityInput(func(in *Input) { in.WorkingDays, in.UnpaidLeaveDays = 20, 2 }), c).UnpaidLeaveDeduction, 300_000)
+
+	// #5 LATE_OVERRIDE 0 menghapus potongan telat otomatis.
+	ct := c
+	ct.LateMode, ct.LateTiers = "tier", DefaultLateTiers()
+	r = Calculate(parityInput(func(in *Input) {
+		in.DivisorDays, in.LateDayMinutes = 26, []float64{30, 30, 30, 30, 30, 30, 30, 30}
+		in.ManualInputs = []ManualInput{{Code: "LATE_OVERRIDE", Amount: 0}}
+	}), ct)
+	eq(t, "late waived", r.LateDeduction, 0)
+
+	// #7 basis employer = standar DJP: JKK + JKM + Kes perusahaan saja.
+	ce := c
+	ce.Pph21Method, ce.Pph21BpjsBasis = "ter", "employer"
+	r = Calculate(parityInput(func(in *Input) { in.BaseSalary = 5_000_000 }), ce)
+	eq(t, "dpp employer", r.Pph21Dpp, 5_000_000+12_000+15_000+200_000)
+
+	// #8 total bruto run memuat penghasilan tidak kena pajak (bruto = bersih + potongan).
+	r = Calculate(parityInput(func(in *Input) { in.ManualInputs = []ManualInput{{Code: "OTHER_EARNING_NONTAX", Amount: 75_000}} }), c)
+	tot := SumRunTotals([]Result{r})
+	eq(t, "run gross", tot.TotalGross, tot.TotalNet+tot.TotalDeductions)
+}
+
+func TestRestDayFromSchedule(t *testing.T) {
+	var schedule []ShiftRow
+	for dow := 1; dow <= 5; dow++ {
+		schedule = append(schedule, ShiftRow{DayOfWeek: dow, ShiftID: ptr("s"), EffectiveFrom: "2026-09-10"})
+	}
+	att := []AttendanceRow{{Date: "2026-09-05", HasClockOut: true}, {Date: "2026-09-12", HasClockOut: true}}
+	reqs := []OvertimeRequest{{Date: "2026-09-05", Hours: 2}, {Date: "2026-09-12", Hours: 3}} // dua-duanya Sabtu
+	// Sabtu sebelum jadwal berlaku (5 Sep) bukan hari istirahat; Sabtu 12 Sep iya.
+	s := SplitOvertimeWith(reqs, att, nil, schedule, true)
+	eq(t, "before schedule regular", s.Regular, 2)
+	eq(t, "rest after schedule", s.Holiday, 3)
+
+	emp := Employee{ID: "e", JoinDate: "2024-01-01", EmploymentStatus: "contract"}
+	rec := WorkforceRecords{Attendance: att, Overtime: reqs, Schedule: schedule}
+	// Default: jadwal tidak menentukan hari istirahat (perilaku lama).
+	in := BuildInput(emp, Salary{BaseSalary: "3460000"}, rec, nil, nil, 9, 2026, false)
+	eq(t, "default regular", in.OvertimeHours, 5)
+	in = BuildInputRange(emp, Salary{BaseSalary: "3460000"}, rec, nil, nil, 9, 2026, "2026-09-01", "2026-09-30", false,
+		BuildOptions{OvertimeRequireClockout: true, OvertimeRestFromSchedule: true})
+	eq(t, "setting on rest", in.OvertimeHolidayHrs, 3)
+}

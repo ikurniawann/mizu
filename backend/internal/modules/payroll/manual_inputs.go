@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"net/http"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -42,12 +43,11 @@ func (s *service) listInputs(ctx context.Context, runID string) ([]*obj, error) 
 		WHERE i.payroll_run_id = $1 ORDER BY e.full_name, i.code`, runID)
 }
 
-// upsertInput writes one component; amount 0 removes it.
+// upsertInput writes one component; amount 0 removes it, except a late
+// override where 0 means "waive the late deduction".
 func (s *service) upsertInput(ctx context.Context, runID, employeeID, code string, amount float64, note *string, userID string) (*obj, error) {
-	if amount == 0 {
-		_, err := s.db.Exec(ctx, `DELETE FROM hris.payroll_inputs WHERE payroll_run_id = $1 AND employee_id = $2 AND code = $3`,
-			runID, employeeID, code)
-		return nil, err
+	if amount == 0 && code != domain.ManualLateOverrideCode {
+		return nil, s.deleteInput(ctx, runID, employeeID, code)
 	}
 	return queryObj(ctx, s.db, `INSERT INTO hris.payroll_inputs (payroll_run_id, employee_id, code, amount, note, created_by)
 		VALUES ($1, $2, $3, $4, $5, $6::uuid)
@@ -55,6 +55,37 @@ func (s *service) upsertInput(ctx context.Context, runID, employeeID, code strin
 		DO UPDATE SET amount = EXCLUDED.amount, note = EXCLUDED.note, updated_at = now()
 		RETURNING *`, runID, employeeID, code, numParam(amount), note, nilIfEmpty(userID))
 }
+
+func (s *service) deleteInput(ctx context.Context, runID, employeeID, code string) error {
+	_, err := s.db.Exec(ctx, `DELETE FROM hris.payroll_inputs WHERE payroll_run_id = $1 AND employee_id::text = $2 AND code = $3`,
+		runID, employeeID, code)
+	return err
+}
+
+// ParseAmountID reads a rupiah amount as HR types it: "25.000", "1.500.000,50",
+// "250000.50" or "250000". A dot followed by exactly three digits groups
+// thousands; a comma is the decimal separator.
+func ParseAmountID(raw string) (float64, bool) {
+	v := strings.ReplaceAll(strings.TrimSpace(raw), " ", "")
+	v = strings.TrimPrefix(strings.TrimPrefix(v, "Rp"), "rp")
+	if v == "" {
+		return 0, false
+	}
+	switch {
+	case strings.Contains(v, ","):
+		v = strings.ReplaceAll(v, ".", "")
+		v = strings.Replace(v, ",", ".", 1)
+	case thousandsDots.MatchString(v):
+		v = strings.ReplaceAll(v, ".", "")
+	}
+	n, err := strconv.ParseFloat(v, 64)
+	if err != nil || n < 0 {
+		return 0, false
+	}
+	return n, true
+}
+
+var thousandsDots = regexp.MustCompile(`^\d{1,3}(\.\d{3})+$`)
 
 // paidByRunEntity reports an active salary of the employee at the run's
 // entity: a component for anyone else would never reach a slip of this run.
@@ -107,10 +138,8 @@ func (s *service) importInputs(ctx context.Context, runID, text, userID string) 
 			out.Errors = append(out.Errors, importIssue{line, fmt.Sprintf("Kode %q tidak dikenal", code)})
 			continue
 		}
-		raw := strings.NewReplacer(".", "", " ", "").Replace(strings.TrimSpace(rec[2]))
-		raw = strings.Replace(raw, ",", ".", 1)
-		amount, err := strconv.ParseFloat(raw, 64)
-		if err != nil || amount < 0 {
+		amount, ok := ParseAmountID(rec[2])
+		if !ok {
 			out.Errors = append(out.Errors, importIssue{line, fmt.Sprintf("Nominal %q tidak valid", rec[2])})
 			continue
 		}
@@ -165,7 +194,7 @@ func (h *handler) putInput(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	employeeID := f.Str("employee_id", validate.Rule{}, validate.StrOpts{Min: 1})
+	employeeID := f.UUID("employee_id", validate.Rule{})
 	code := f.Enum("code", validate.Rule{}, domain.ManualInputCodes())
 	amount := coerceNum(f, "amount", numRule{NumOpts: validate.NumOpts{Min: validate.Bound(0)}})
 	note := f.Str("note", nullish, validate.StrOpts{Max: 500})
@@ -208,4 +237,25 @@ func (h *handler) importInputs(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	return writeJSON(w, dataBody{res})
+}
+
+// DELETE /api/hris/payroll/{id}/inputs?employee_id&code
+func (h *handler) deleteInput(w http.ResponseWriter, r *http.Request) error {
+	if _, err := h.auth.RequireMenuPrefix(r, iam.HrisCompensation...); err != nil {
+		return err
+	}
+	runID := r.PathValue("id")
+	if err := h.svc.draftRun(r.Context(), runID); err != nil {
+		return err
+	}
+	q := queryForm(r)
+	employeeID := q.UUID("employee_id", validate.Rule{})
+	code := q.Enum("code", validate.Rule{}, domain.ManualInputCodes())
+	if err := issuesErr(q, "Data komponen manual tidak valid"); err != nil {
+		return err
+	}
+	if err := h.svc.deleteInput(r.Context(), runID, *employeeID, *code); err != nil {
+		return err
+	}
+	return writeJSON(w, messageBody{"Komponen manual dihapus"})
 }

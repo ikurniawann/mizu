@@ -71,12 +71,13 @@ type Config struct {
 	LoanMaxInstallmentPct  float64
 	LoanMaxActivePerPerson float64
 
-	Pph21Method             string // annualized | ter
-	Pph21BpjsBasis          string // employer | employee | both (BPJS added to the TER DPP)
-	OvertimeProductionRate  float64
-	OvertimeRequireClockout bool
-	PersonalLeaveDeduction  bool // PIP: THP / divisor × personal leave days
-	SickLeaveDeduction      bool // PIS: (transport + meal) / divisor × sick days
+	Pph21Method              string // annualized | ter
+	Pph21BpjsBasis           string // employer | employee | both (BPJS added to the TER DPP)
+	OvertimeProductionRate   float64
+	OvertimeRequireClockout  bool
+	OvertimeRestFromSchedule bool
+	PersonalLeaveDeduction   bool // PIP: THP / divisor × personal leave days
+	SickLeaveDeduction       bool // PIS: (transport + meal) / divisor × sick days
 }
 
 // LateTier is one step of the monthly late-count deduction (Odoo PT/PH/PS):
@@ -260,6 +261,7 @@ func BuildConfig(settings, taxConfig Row) Config {
 	}
 	c.OvertimeProductionRate = settings.num("overtime_production_rate", d.OvertimeProductionRate)
 	c.OvertimeRequireClockout = settings.flag("overtime_requires_clockout", d.OvertimeRequireClockout)
+	c.OvertimeRestFromSchedule = settings.flag("overtime_rest_from_schedule", d.OvertimeRestFromSchedule)
 	c.PersonalLeaveDeduction = settings.flag("personal_leave_deduction", d.PersonalLeaveDeduction)
 	c.SickLeaveDeduction = settings.flag("sick_leave_deduction", d.SickLeaveDeduction)
 	c.LateAmount = settings.num("late_deduction_amount", d.LateAmount)

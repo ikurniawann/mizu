@@ -12,11 +12,13 @@ import {
   MANUAL_INPUT_CODES,
   MANUAL_INPUT_CSV_EXAMPLE,
   MANUAL_INPUT_KIND_LABELS,
+  ZERO_ALLOWED_CODES,
   manualInputKind,
   manualInputLabel,
+  parseAmountID,
 } from "@/lib/payroll/manual-inputs";
 import { usePayrollInputs } from "../queries";
-import { useImportPayrollInputs, useSavePayrollInput } from "../mutations";
+import { useDeletePayrollInput, useImportPayrollInputs, useSavePayrollInput } from "../mutations";
 
 const EMPTY = { employee_id: "", code: "BONUS", amount: "", note: "" };
 
@@ -28,6 +30,7 @@ export function ManualInputsCard({ runId }: { runId: string }) {
   const inputsQuery = usePayrollInputs(runId);
   const employeesQuery = useSalaryEmployees();
   const save = useSavePayrollInput(runId);
+  const remove = useDeletePayrollInput(runId);
   const importCsv = useImportPayrollInputs(runId);
   const [form, setForm] = useState(EMPTY);
   const [csv, setCsv] = useState("");
@@ -41,9 +44,9 @@ export function ManualInputsCard({ runId }: { runId: string }) {
   }));
 
   function handleAdd() {
-    const amount = Number(form.amount.replace(/[^0-9]/g, ""));
-    if (!form.employee_id || !amount) {
-      toast.error("Pilih karyawan dan isi nominal");
+    const amount = parseAmountID(form.amount);
+    if (!form.employee_id || amount === null || (amount === 0 && !ZERO_ALLOWED_CODES.has(form.code))) {
+      toast.error("Pilih karyawan dan isi nominal yang valid");
       return;
     }
     save.mutate(
@@ -59,8 +62,8 @@ export function ManualInputsCard({ runId }: { runId: string }) {
   }
 
   function handleRemove(employeeId: string, code: string) {
-    save.mutate(
-      { employee_id: employeeId, code, amount: 0 },
+    remove.mutate(
+      { employeeId, code },
       {
         onSuccess: () => toast.success("Komponen dihapus — hitung ulang payroll"),
         onError: (error) => toast.error(error.message || "Gagal menghapus"),
@@ -157,11 +160,8 @@ export function ManualInputsCard({ runId }: { runId: string }) {
             <Input
               inputMode="numeric"
               value={form.amount}
-              onChange={(e) => {
-                const n = Number(e.target.value.replace(/[^0-9]/g, ""));
-                setForm((f) => ({ ...f, amount: n ? n.toLocaleString("id-ID") : "" }));
-              }}
-              placeholder="0"
+              onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value.replace(/[^0-9.,]/g, "") }))}
+              placeholder={form.code === "LATE_OVERRIDE" ? "0 = tanpa potongan telat" : "cth. 500.000"}
             />
           </div>
           <div>
@@ -218,7 +218,7 @@ export function ManualInputsCard({ runId }: { runId: string }) {
                         size="sm"
                         variant="ghost"
                         className="text-xs text-red-600"
-                        disabled={save.isPending}
+                        disabled={remove.isPending}
                         onClick={() => handleRemove(row.employee_id, row.code)}
                       >
                         Hapus

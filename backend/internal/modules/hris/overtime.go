@@ -137,7 +137,7 @@ func (s *Service) CreateOvertime(ctx context.Context, a *Actor, in overtimeInput
 	f.add("source", source)
 	f.add("status", "pending")
 	f.add("reason", in.Reason)
-	if in.DayType != nil {
+	if in.DayType != nil && a.IsHR { // rest day = tarif libur: hanya HR yang menetapkan
 		f.add("day_type", *in.DayType)
 	}
 	f.add("requested_by", a.EmployeeID)

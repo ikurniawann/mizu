@@ -38,6 +38,9 @@ func slipAmounts(detail *obj) map[string]float64 {
 	for _, c := range domain.AllocationColumns {
 		out[c] = domain.OrZero(detail.Get(c))
 	}
+	// The store share of all earnings (labour cost): taxable gross plus the
+	// non-taxable earnings, so gross = net + deductions per store too.
+	out["gross_salary"] += out["other_earning_nontax"]
 	return out
 }
 

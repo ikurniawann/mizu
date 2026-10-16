@@ -33,6 +33,9 @@ type BuildOptions struct {
 	// OvertimeRequireClockout pays approved overtime only on a day with a
 	// clock-out (the pre-EPIC-055 behaviour); false pays the requested hours.
 	OvertimeRequireClockout bool
+	// OvertimeRestFromSchedule pays overtime on a day without a shift in the
+	// employee's schedule at the rest-day rate (EPIC-055; off = before).
+	OvertimeRestFromSchedule bool
 }
 
 // DefaultBuildOptions keep the pre-EPIC-055 behaviour.
@@ -174,7 +177,11 @@ func BuildInputRange(emp Employee, salary Salary, rec WorkforceRecords, loans []
 			lateDayMinutes = append(lateDayMinutes, OrZero(a.LateMinutes))
 		}
 	}
-	ot := SplitOvertimeWith(rec.Overtime, rec.Attendance, holidays, schedule, opt.OvertimeRequireClockout)
+	var restSchedule []ShiftRow
+	if opt.OvertimeRestFromSchedule {
+		restSchedule = schedule
+	}
+	ot := SplitOvertimeWith(rec.Overtime, rec.Attendance, holidays, restSchedule, opt.OvertimeRequireClockout)
 
 	unpaid, personal, sick := 0, 0, 0
 	for _, l := range rec.Leaves {

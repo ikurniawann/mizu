@@ -2406,6 +2406,11 @@
   },
   {
     "module": "payroll",
+    "method": "DELETE",
+    "path": "/api/hris/payroll/{id}/inputs"
+  },
+  {
+    "module": "payroll",
     "method": "GET",
     "path": "/api/hris/payroll/{id}/inputs"
   },

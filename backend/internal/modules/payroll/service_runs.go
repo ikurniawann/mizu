@@ -428,7 +428,8 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 	if err != nil {
 		return nil, opaque(err)
 	}
-	opts := domain.BuildOptions{OvertimeRequireClockout: config.OvertimeRequireClockout}
+	opts := domain.BuildOptions{OvertimeRequireClockout: config.OvertimeRequireClockout,
+		OvertimeRestFromSchedule: config.OvertimeRestFromSchedule}
 
 	out := &calcResult{Data: []*obj{}, Summary: calcSummary{EmployeeNames: []string{}, Skipped: []skipped{},
 		AllocationWarnings: []allocationWarning{}}, AttendancePeriod: period.info()}

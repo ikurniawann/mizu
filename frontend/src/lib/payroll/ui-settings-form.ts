@@ -96,6 +96,11 @@ export const TOGGLE_FIELDS: { key: string; label: string; help: string }[] = [
     help: "Matikan agar lembur approved tetap dibayar walau absensi hari itu tanpa clock-out.",
   },
   {
+    key: "overtime_rest_from_schedule",
+    label: "Hari tanpa shift di jadwal = hari istirahat",
+    help: "Lembur pada hari tanpa shift di jadwal karyawan dibayar tarif libur (selain hari yang ditandai hari istirahat).",
+  },
+  {
     key: "personal_leave_deduction",
     label: "Potong gaji untuk Izin Pribadi",
     help: "THP ÷ pembagi hari × hari izin pribadi (rule Odoo PIP).",

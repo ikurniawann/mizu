@@ -50,6 +50,7 @@ ALTER TABLE hris.payroll_settings
   ADD COLUMN IF NOT EXISTS pph21_bpjs_basis text NOT NULL DEFAULT 'both',
   ADD COLUMN IF NOT EXISTS overtime_production_rate numeric(15,2) NOT NULL DEFAULT 18000,
   ADD COLUMN IF NOT EXISTS overtime_requires_clockout boolean NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS overtime_rest_from_schedule boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS personal_leave_deduction boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS sick_leave_deduction boolean NOT NULL DEFAULT false;
 
@@ -107,3 +108,11 @@ ALTER TABLE hris.payroll_details
   ADD COLUMN IF NOT EXISTS pph21_dpp numeric(15,2),
   ADD COLUMN IF NOT EXISTS ter_category text,
   ADD COLUMN IF NOT EXISTS ter_rate numeric(6,4);
+
+-- Alokasi per toko: komponen baru ikut dibagi (laporan biaya & jurnal per toko).
+ALTER TABLE hris.payroll_detail_allocations
+  ADD COLUMN IF NOT EXISTS position_allowance numeric(15,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS health_allowance numeric(15,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS other_earning_nontax numeric(15,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS personal_leave_deduction numeric(15,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS sick_leave_deduction numeric(15,2) NOT NULL DEFAULT 0;

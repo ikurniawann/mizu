@@ -10,6 +10,7 @@ import {
   savePayrollSettings,
   notifyPayslip,
   savePayrollInput,
+  deletePayrollInput,
   importPayrollInputs,
   type SavePayrollSettingsPayload,
 } from "./api";
@@ -19,6 +20,14 @@ export function useSavePayrollInput(runId: string) {
   return useMutation({
     mutationFn: (payload: { employee_id: string; code: string; amount: number; note?: string | null }) =>
       savePayrollInput(runId, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: payrollQueryKeys.inputs(runId) }),
+  });
+}
+
+export function useDeletePayrollInput(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeeId, code }: { employeeId: string; code: string }) => deletePayrollInput(runId, employeeId, code),
     onSuccess: () => qc.invalidateQueries({ queryKey: payrollQueryKeys.inputs(runId) }),
   });
 }

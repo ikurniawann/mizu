@@ -58,6 +58,12 @@ export function SalaryRuleFields({ values, onChange }: SalaryRuleFieldsProps) {
           {values.pay_basis === "daily" && (
             <p className="mt-1 text-xs text-amber-700">Gaji Pokok diisi upah per hari.</p>
           )}
+          {values.pay_basis === "daily" && values.overtime_scheme === "standard" && (
+            <p className="mt-1 text-xs text-red-600">
+              Skema lembur standar memakai gaji pokok ÷ 173 — untuk upah harian hasilnya sangat kecil. Pertimbangkan
+              skema pekerja harian atau freelance.
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="working_days_divisor">Pembagi hari kerja</Label>
