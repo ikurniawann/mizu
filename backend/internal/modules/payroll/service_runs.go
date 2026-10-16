@@ -424,6 +424,11 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 	if err != nil {
 		return nil, opaque(err)
 	}
+	manual, err := runInputs(ctx, s.db, runID)
+	if err != nil {
+		return nil, opaque(err)
+	}
+	opts := domain.BuildOptions{OvertimeRequireClockout: config.OvertimeRequireClockout}
 
 	out := &calcResult{Data: []*obj{}, Summary: calcSummary{EmployeeNames: []string{}, Skipped: []skipped{},
 		AllocationWarnings: []allocationWarning{}}, AttendancePeriod: period.info()}
@@ -455,13 +460,19 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 		if err != nil {
 			return nil, err
 		}
-		in, records, err := s.payrollInput(ctx, e, company, run.PeriodMonth, run.PeriodYear, start, end, includeThr, holidays)
+		in, records, err := s.payrollInput(ctx, e, company, run.PeriodMonth, run.PeriodYear, start, end, includeThr, holidays, opts)
 		if err != nil {
 			return nil, err
 		}
 		if in == nil {
 			skip("Belum ada struktur gaji aktif")
 			continue
+		}
+		in.ManualInputs = manual[e.ID]
+		if config.Pph21Method == "ter" && run.PeriodMonth == 12 {
+			if in.Ytd, err = yearToDate(ctx, s.db, run, e.ID); err != nil {
+				return nil, opaque(err)
+			}
 		}
 		primary := domain.PrimaryEntity(domain.EntityOf(placements, branchCompany, end), salaries)
 		*in = domain.ApplyMultiEntityPolicy(*in, primary == company, multiEntityPolicy)
@@ -471,7 +482,7 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 			in.LoanDeduction, in.LoanBreakdown = 0, nil
 		}
 		if elsewhere[e.ID].Late {
-			in.LateDays, in.LateMinutes = 0, 0
+			in.ClearLate()
 		}
 		result := domain.Calculate(*in, config)
 		var detail *obj
@@ -518,7 +529,7 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 // payrollInput loads one employee's period input and the attendance-side
 // records it was built from; nil without an active salary.
 func (s *service) payrollInput(ctx context.Context, e EmployeeBrief, companyID string, month, year int, start, end string, includeThr bool,
-	holidays map[string]bool) (*domain.Input, domain.WorkforceRecords, error) {
+	holidays map[string]bool, opts domain.BuildOptions) (*domain.Input, domain.WorkforceRecords, error) {
 	var records domain.WorkforceRecords
 	salary, err := activeSalary(ctx, s.db, e.ID, companyID)
 	if err != nil || salary == nil {
@@ -533,6 +544,6 @@ func (s *service) payrollInput(ctx context.Context, e EmployeeBrief, companyID s
 		return nil, records, err
 	}
 	emp := domain.Employee{ID: e.ID, EmploymentStatus: e.EmploymentStatus, JoinDate: e.JoinDate}
-	in := domain.BuildInputRange(emp, *salary, records, loans, holidays, month, year, start, end, includeThr)
+	in := domain.BuildInputRange(emp, *salary, records, loans, holidays, month, year, start, end, includeThr, opts)
 	return &in, records, nil
 }

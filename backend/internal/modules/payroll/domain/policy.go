@@ -30,7 +30,7 @@ func ApplyMultiEntityPolicy(in Input, isPrimary bool, p MultiEntityPolicy) Input
 	case PolicyPrimaryEntity:
 		in.LoanDeduction = 0
 		in.LoanBreakdown = nil
-		in.LateDays, in.LateMinutes = 0, 0
+		in.ClearLate()
 	}
 	return in
 }

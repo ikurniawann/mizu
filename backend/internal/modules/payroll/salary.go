@@ -35,7 +35,19 @@ func (in *salaryInput) get(name string) (any, bool) {
 }
 
 var salaryAmountKeys = []string{"fixed_allowance", "variable_allowance", "transport_allowance", "meal_allowance",
-	"housing_allowance", "loan_deduction", "other_deduction"}
+	"housing_allowance", "loan_deduction", "other_deduction", "position_allowance", "health_allowance"}
+
+// salaryEnums are the EPIC-055 rule columns (hris.employee_salary checks).
+var salaryEnums = []struct {
+	key  string
+	opts []string
+}{
+	{"pay_basis", []string{"monthly", "monthly_prorated", "daily"}},
+	{"transport_mode", []string{"flat", "per_day"}},
+	{"meal_mode", []string{"flat", "per_day"}},
+	{"position_mode", []string{"flat", "per_day"}},
+	{"overtime_scheme", []string{"standard", "production", "freelance", "daily_worker"}},
+}
 
 // parseSalaryFields reads salaryFields in schema order.
 func parseSalaryFields(f *validate.Form, in *salaryInput) {
@@ -44,6 +56,25 @@ func parseSalaryFields(f *validate.Form, in *salaryInput) {
 			if n := coerceNum(f, key, numRule{Rule: optional, NumOpts: validate.NumOpts{Min: validate.Bound(0)}}); n != nil {
 				in.cols = append(in.cols, column{key, numParam(*n)})
 			}
+		}
+	}
+	for _, e := range salaryEnums {
+		if v := f.Enum(e.key, optional, e.opts); v != nil {
+			in.cols = append(in.cols, column{e.key, *v})
+		}
+	}
+	if v, ok := field(f, "working_days_divisor"); ok {
+		if v == nil {
+			in.cols = append(in.cols, column{"working_days_divisor", nil})
+		} else if n := coerceNum(f, "working_days_divisor", numRule{Rule: nullish,
+			NumOpts: validate.NumOpts{Positive: true, Max: validate.Bound(31)}}); n != nil {
+			in.cols = append(in.cols, column{"working_days_divisor", numParam(*n)})
+		}
+	}
+	if _, ok := field(f, "health_min_service_days"); ok {
+		if n := coerceInt(f, "health_min_service_days", numRule{Rule: optional,
+			NumOpts: validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(3650)}}); n != nil {
+			in.cols = append(in.cols, column{"health_min_service_days", *n})
 		}
 	}
 	if s := f.Str("ptkp_status", optional, validate.StrOpts{Max: 10}); s != nil {
@@ -147,14 +178,24 @@ func (s *service) createSalary(ctx context.Context, employeeID, companyID string
 		return true
 	}
 	notes, _ := in.get("notes")
+	divisor, _ := in.get("working_days_divisor")
+	minService, ok := in.get("health_min_service_days")
+	if !ok {
+		minService = 0
+	}
 	return queryObj(ctx, s.db, `INSERT INTO hris.employee_salary (employee_id, base_salary, fixed_allowance,
 		variable_allowance, transport_allowance, meal_allowance, housing_allowance, loan_deduction, other_deduction,
-		ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled, effective_date, notes, company_id)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::uuid) RETURNING *`,
+		ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled, effective_date, notes, company_id,
+		pay_basis, working_days_divisor, transport_mode, meal_mode, position_allowance, position_mode,
+		health_allowance, health_min_service_days, overtime_scheme)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::uuid,$18,$19,$20,$21,$22,$23,$24,$25,$26) RETURNING *`,
 		employeeID, numParam(base), val("fixed_allowance", 0), val("variable_allowance", 0), val("transport_allowance", 0),
 		val("meal_allowance", 0), val("housing_allowance", 0), val("loan_deduction", 0), val("other_deduction", 0),
 		val("ptkp_status", "TK/0"), flag("is_taxable"), flag("bpjs_tk_enrolled"), flag("bpjs_kes_enrolled"),
-		flag("tapera_enrolled"), effectiveDate, notes, entity.ID)
+		flag("tapera_enrolled"), effectiveDate, notes, entity.ID,
+		val("pay_basis", "monthly"), divisor, val("transport_mode", "flat"), val("meal_mode", "flat"),
+		val("position_allowance", 0), val("position_mode", "flat"), val("health_allowance", 0), minService,
+		val("overtime_scheme", "standard"))
 }
 
 func (s *service) getSalary(ctx context.Context, id string) (*obj, error) {

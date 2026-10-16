@@ -82,6 +82,7 @@ var payslipAmountColumns = []string{
 	"bpjs_tk_jht_deduction", "bpjs_tk_jp_deduction", "bpjs_kes_deduction", "tapera_deduction",
 	"pph21_deduction", "unpaid_leave_deduction", "late_deduction", "loan_deduction", "other_deduction",
 	"total_deductions", "net_salary", "working_days", "present_days", "overtime_hours",
+	"position_allowance", "health_allowance", "other_earning_nontax", "personal_leave_deduction", "sick_leave_deduction",
 }
 
 // payslipDoc is PayslipDocumentData.
@@ -300,7 +301,8 @@ func buildPayslipPDF(p *payslipDoc) ([]byte, error) {
 	for _, e := range []struct{ label, key string }{
 		{"Tunjangan Tetap", "fixed_allowance"}, {"Tunjangan Variabel", "variable_allowance"},
 		{"Tunjangan Transport", "transport_allowance"}, {"Tunjangan Makan", "meal_allowance"},
-		{"Tunjangan Perumahan", "housing_allowance"}, {"Lembur", "overtime_pay"}, {"THR", "thr"},
+		{"Tunjangan Perumahan", "housing_allowance"}, {"Tunjangan Jabatan", "position_allowance"},
+		{"Subsidi BPJS Kesehatan", "health_allowance"}, {"Lembur", "overtime_pay"}, {"THR", "thr"},
 		{"Bonus", "bonus"}, {"Penghasilan Lain", "other_earning"},
 	} {
 		if a[e.key] != 0 {
@@ -310,6 +312,9 @@ func buildPayslipPDF(p *payslipDoc) ([]byte, error) {
 	hLine()
 	d.MoveDown(0.25)
 	row("Total Penghasilan Bruto", a["gross_salary"], rowOpts{bold: true})
+	if a["other_earning_nontax"] != 0 {
+		row("Penghasilan Tidak Kena Pajak", a["other_earning_nontax"], rowOpts{})
+	}
 
 	section("Potongan")
 	y := d.Y
@@ -323,6 +328,7 @@ func buildPayslipPDF(p *payslipDoc) ([]byte, error) {
 		{"BPJS TK (JHT)", "bpjs_tk_jht_deduction"}, {"BPJS TK (JP)", "bpjs_tk_jp_deduction"},
 		{"BPJS Kesehatan", "bpjs_kes_deduction"}, {"Tapera", "tapera_deduction"}, {"PPh 21", "pph21_deduction"},
 		{"Cuti Tanpa Bayaran", "unpaid_leave_deduction"}, {"Potongan Keterlambatan", "late_deduction"},
+		{"Potongan Izin Pribadi", "personal_leave_deduction"}, {"Potongan Izin Sakit", "sick_leave_deduction"},
 	} {
 		if a[e.key] != 0 {
 			deduct(e.label, a[e.key])

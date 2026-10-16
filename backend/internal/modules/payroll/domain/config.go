@@ -1,9 +1,47 @@
 package domain
 
 import (
+	"encoding/json"
 	"math"
 	"slices"
 )
+
+// Allowed setting values (validated by the settings API as well).
+var (
+	LateModes      = []string{"off", "per_minute", "flat", "tier"}
+	Pph21Methods   = []string{"annualized", "ter"}
+	Pph21BpjsBases = []string{"employer", "employee", "both"}
+)
+
+// ParseLateTiers reads late_tier_rules (jsonb as decoded JSON, raw bytes or
+// text). A malformed or empty list is rejected so the default tiers stay.
+func ParseLateTiers(v any) ([]LateTier, bool) {
+	var raw []byte
+	switch x := v.(type) {
+	case nil:
+		return nil, false
+	case []byte:
+		raw = x
+	case string:
+		raw = []byte(x)
+	default:
+		b, err := json.Marshal(x)
+		if err != nil {
+			return nil, false
+		}
+		raw = b
+	}
+	var tiers []LateTier
+	if err := json.Unmarshal(raw, &tiers); err != nil || len(tiers) == 0 {
+		return nil, false
+	}
+	for _, t := range tiers {
+		if t.Min < 1 || t.Days < 0 || (t.Max != nil && *t.Max < t.Min) || (t.Basis != "thp" && t.Basis != "base") {
+			return nil, false
+		}
+	}
+	return tiers, true
+}
 
 // Bracket is one PPh 21 layer: Width rupiah (not a cumulative limit) at Rate.
 type Bracket struct {
@@ -26,10 +64,36 @@ type Config struct {
 	OvertimeMultiplier     float64
 	OvertimeHolidayMult    float64
 	OvertimeHourlyDivisor  float64
-	LateMode               string // off | per_minute | flat
+	LateMode               string // off | per_minute | flat | tier
 	LateAmount             float64
+	LateTiers              []LateTier
+	LateMinMinutes         float64 // a late day counts toward the tier at >= this many minutes
 	LoanMaxInstallmentPct  float64
 	LoanMaxActivePerPerson float64
+
+	Pph21Method             string // annualized | ter
+	Pph21BpjsBasis          string // employer | employee | both (BPJS added to the TER DPP)
+	OvertimeProductionRate  float64
+	OvertimeRequireClockout bool
+	PersonalLeaveDeduction  bool // PIP: THP / divisor × personal leave days
+	SickLeaveDeduction      bool // PIS: (transport + meal) / divisor × sick days
+}
+
+// LateTier is one step of the monthly late-count deduction (Odoo PT/PH/PS):
+// Min..Max late days (Max nil = no upper bound) deduct Days daily rates of
+// Basis "thp" (take-home pay) or "base" (base salary).
+type LateTier struct {
+	Min   int     `json:"min"`
+	Max   *int    `json:"max,omitempty"`
+	Days  float64 `json:"days"`
+	Basis string  `json:"basis"`
+}
+
+// DefaultLateTiers is the Odoo rule: 0–3 late days a warning only, 4–6 one
+// day of THP, 7–9 two days of base salary, 10+ three days of base salary.
+func DefaultLateTiers() []LateTier {
+	six, nine := 6, 9
+	return []LateTier{{4, &six, 1, "thp"}, {7, &nine, 2, "base"}, {10, nil, 3, "base"}}
 }
 
 // DefaultConfig is DEFAULT_PAYROLL_CONFIG (2026 rates).
@@ -51,7 +115,10 @@ func DefaultConfig() Config {
 	c.JabatanPercentage, c.JabatanMaxPerYear = 0.05, 6_000_000
 	c.OvertimeMultiplier, c.OvertimeHolidayMult, c.OvertimeHourlyDivisor = 1.5, 2, 173
 	c.LateMode, c.LateAmount = "off", 0
+	c.LateTiers = DefaultLateTiers()
 	c.LoanMaxInstallmentPct, c.LoanMaxActivePerPerson = 30, 1
+	c.Pph21Method, c.Pph21BpjsBasis = "annualized", "both"
+	c.OvertimeProductionRate, c.OvertimeRequireClockout = 18000, true
 	return c
 }
 
@@ -73,6 +140,14 @@ func (r Row) num(key string, fallback float64) float64 {
 		return fallback
 	}
 	return n
+}
+
+// flag is a boolean column: a missing key or a non-boolean value falls back.
+func (r Row) flag(key string, fallback bool) bool {
+	if v, ok := r[key].(bool); ok {
+		return v
+	}
+	return fallback
 }
 
 // fraction is `toFraction(row?.key, fallback)`.
@@ -170,9 +245,23 @@ func BuildConfig(settings, taxConfig Row) Config {
 	c.OvertimeMultiplier = settings.num("overtime_multiplier", d.OvertimeMultiplier)
 	c.OvertimeHolidayMult = settings.num("overtime_multiplier_holiday", d.OvertimeHolidayMult)
 	c.OvertimeHourlyDivisor = settings.num("overtime_hourly_divisor", d.OvertimeHourlyDivisor)
-	if mode, ok := settings["late_deduction_mode"].(string); ok && slices.Contains([]string{"off", "per_minute", "flat"}, mode) {
+	if mode, ok := settings["late_deduction_mode"].(string); ok && slices.Contains(LateModes, mode) {
 		c.LateMode = mode
 	}
+	if tiers, ok := ParseLateTiers(settings["late_tier_rules"]); ok {
+		c.LateTiers = tiers
+	}
+	c.LateMinMinutes = settings.num("late_min_minutes", d.LateMinMinutes)
+	if m, ok := settings["pph21_method"].(string); ok && slices.Contains(Pph21Methods, m) {
+		c.Pph21Method = m
+	}
+	if b, ok := settings["pph21_bpjs_basis"].(string); ok && slices.Contains(Pph21BpjsBases, b) {
+		c.Pph21BpjsBasis = b
+	}
+	c.OvertimeProductionRate = settings.num("overtime_production_rate", d.OvertimeProductionRate)
+	c.OvertimeRequireClockout = settings.flag("overtime_requires_clockout", d.OvertimeRequireClockout)
+	c.PersonalLeaveDeduction = settings.flag("personal_leave_deduction", d.PersonalLeaveDeduction)
+	c.SickLeaveDeduction = settings.flag("sick_leave_deduction", d.SickLeaveDeduction)
 	c.LateAmount = settings.num("late_deduction_amount", d.LateAmount)
 	c.LoanMaxInstallmentPct = settings.num("loan_max_installment_percent", d.LoanMaxInstallmentPct)
 	c.LoanMaxActivePerPerson = settings.num("loan_max_active_per_employee", d.LoanMaxActivePerPerson)

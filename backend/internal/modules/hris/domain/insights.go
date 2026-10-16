@@ -179,6 +179,7 @@ var reportLeaveLabels = map[string]string{
 	"annual": "Tahunan", "sick": "Sakit", "maternity": "Melahirkan", "paternity": "Ayah",
 	"unpaid": "Tidak Dibayar", "emergency": "Darurat", "pilgrimage": "Haji/Umrah",
 	"menstrual": "Haid", "marriage": "Pernikahan", "bereavement": "Duka Cita",
+	"personal": "Izin Pribadi",
 }
 
 type StatusCount struct {

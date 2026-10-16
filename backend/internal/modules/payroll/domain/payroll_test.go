@@ -251,17 +251,17 @@ func TestPeriod(t *testing.T) {
 		return a
 	}
 	none := map[string]bool{}
-	if s := SplitOvertime([]OvertimeRequest{{"2026-06-10", 3}}, []AttendanceRow{att("2026-06-10", func(a *AttendanceRow) { a.OvertimeHours = "1.5" })}, none); s.Total != 1.5 {
+	if s := SplitOvertime([]OvertimeRequest{{Date: "2026-06-10", Hours: 3}}, []AttendanceRow{att("2026-06-10", func(a *AttendanceRow) { a.OvertimeHours = "1.5" })}, none); s.Total != 1.5 {
 		t.Fatal("capped", s)
 	}
-	if s := SplitOvertime([]OvertimeRequest{{"2026-06-10", 2}}, []AttendanceRow{att("2026-06-10", func(a *AttendanceRow) { a.HasClockOut = false })}, none); s.Total != 0 {
+	if s := SplitOvertime([]OvertimeRequest{{Date: "2026-06-10", Hours: 2}}, []AttendanceRow{att("2026-06-10", func(a *AttendanceRow) { a.HasClockOut = false })}, none); s.Total != 0 {
 		t.Fatal("no clock out", s)
 	}
-	s := SplitOvertime([]OvertimeRequest{{"2026-06-10", 2}, {"2026-06-11", 1.5}, {"2026-06-12", 4}}, []AttendanceRow{att("2026-06-10", nil), att("2026-06-11", nil)}, none)
+	s := SplitOvertime([]OvertimeRequest{{Date: "2026-06-10", Hours: 2}, {Date: "2026-06-11", Hours: 1.5}, {Date: "2026-06-12", Hours: 4}}, []AttendanceRow{att("2026-06-10", nil), att("2026-06-11", nil)}, none)
 	if s.Total != 3.5 {
 		t.Fatal("sum", s)
 	}
-	h := SplitOvertime([]OvertimeRequest{{"2026-08-17", 3}, {"2026-08-18", 2}}, []AttendanceRow{att("2026-08-17", nil), att("2026-08-18", nil)}, map[string]bool{"2026-08-17": true})
+	h := SplitOvertime([]OvertimeRequest{{Date: "2026-08-17", Hours: 3}, {Date: "2026-08-18", Hours: 2}}, []AttendanceRow{att("2026-08-17", nil), att("2026-08-18", nil)}, map[string]bool{"2026-08-17": true})
 	if h != (OvertimeSplit{2, 3, 5}) {
 		t.Fatal("holiday split", h)
 	}

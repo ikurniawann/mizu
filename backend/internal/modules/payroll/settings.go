@@ -60,6 +60,12 @@ var settingsFields = concat(
 	nums("num", validate.NumOpts{Positive: true, Max: validate.Bound(1000)}, "overtime_hourly_divisor"),
 	[]settingField{{key: "late_deduction_mode", kind: "enum"}},
 	nums("num", rupiah(), "late_deduction_amount"),
+	[]settingField{{key: "late_tier_rules", kind: "tiers"}},
+	nums("int", validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(600)}, "late_min_minutes"),
+	[]settingField{{key: "pph21_method", kind: "enum"}, {key: "pph21_bpjs_basis", kind: "enum"}},
+	nums("num", rupiah(), "overtime_production_rate"),
+	[]settingField{{key: "overtime_requires_clockout", kind: "bool"}, {key: "personal_leave_deduction", kind: "bool"},
+		{key: "sick_leave_deduction", kind: "bool"}},
 	nums("num", pct(), "loan_max_installment_percent"),
 	nums("int", validate.NumOpts{Min: validate.Bound(1), Max: validate.Bound(10)}, "loan_max_active_per_employee"),
 )
@@ -77,6 +83,13 @@ var taxFields = concat(
 	nums("num", rupiah(), "jabatan_expense_max"),
 	[]settingField{{key: "is_active", kind: "bool"}},
 )
+
+// settingEnums are the accepted values of each enum setting.
+var settingEnums = map[string][]string{
+	"late_deduction_mode": domain.LateModes,
+	"pph21_method":        domain.Pph21Methods,
+	"pph21_bpjs_basis":    domain.Pph21BpjsBases,
+}
 
 // column is one parsed column to write.
 type column struct {
@@ -117,8 +130,15 @@ func parseSettingFields(f *validate.Form, fields []settingField) (cols []column,
 				cols = append(cols, column{sf.key, *b})
 			}
 		case "enum":
-			if s := f.Enum(sf.key, optional, []string{"off", "per_minute", "flat"}); s != nil {
+			if s := f.Enum(sf.key, optional, settingEnums[sf.key]); s != nil {
 				cols = append(cols, column{sf.key, *s})
+			}
+		case "tiers":
+			raw, _ := field(f, sf.key)
+			if tiers, ok := domain.ParseLateTiers(raw); ok {
+				cols = append(cols, column{sf.key, tiers}) // pgx encodes it as JSON
+			} else {
+				f.Fail(sf.key, "custom", "Aturan tier telat tidak valid: tiap tier wajib min ≥ 1, max ≥ min, days ≥ 0, basis thp/base")
 			}
 		}
 	}

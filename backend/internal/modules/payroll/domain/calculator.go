@@ -49,6 +49,76 @@ type Input struct {
 	TaperaEnrolled  bool
 
 	IncludeThr bool
+
+	// EPIC-055 (rule Odoo). Zero values keep the pre-EPIC behaviour.
+	PayBasis          string  // monthly (default) | monthly_prorated | daily
+	DivisorDays       float64 // pembagi hari struktur; 0 disables per-day rules
+	AttendanceDays    float64
+	AllowanceDays     float64
+	TransportPerDay   bool
+	MealPerDay        bool
+	PositionPerDay    bool
+	PositionAllowance float64
+	HealthAllowance   float64
+	HealthEligible    bool
+	OvertimeScheme    string    // standard (default) | production | freelance | daily_worker
+	LateDayMinutes    []float64 // late minutes of each late day (tier mode)
+	PersonalLeaveDays float64
+	SickLeaveDays     float64
+	ManualInputs      []ManualInput
+	Ytd               YearToDate
+}
+
+// ManualInput is one manual slip component (hris.payroll_inputs).
+type ManualInput struct {
+	Code   string  `json:"code"`
+	Amount float64 `json:"amount"`
+	Note   string  `json:"note,omitempty"`
+}
+
+// Manual input codes by effect on the slip.
+var (
+	ManualBonusCodes       = []string{"BONUS"}
+	ManualEarningCodes     = []string{"INCENTIVE", "NATURA", "TRANSPORT_LOCATION", "OTHER_EARNING"}
+	ManualNontaxCodes      = []string{"OTHER_EARNING_NONTAX"}
+	ManualDeductionCodes   = []string{"PENALTY", "ABSENCE", "UNION", "OTHER_DEDUCTION"}
+	ManualLateOverrideCode = "LATE_OVERRIDE"
+)
+
+// ManualInputCodes are every accepted payroll_inputs code.
+func ManualInputCodes() []string {
+	out := append([]string{}, ManualBonusCodes...)
+	out = append(out, ManualEarningCodes...)
+	out = append(out, ManualNontaxCodes...)
+	out = append(out, ManualDeductionCodes...)
+	return append(out, ManualLateOverrideCode)
+}
+
+func manualSum(inputs []ManualInput, codes []string) float64 {
+	total := 0.0
+	for _, m := range inputs {
+		for _, c := range codes {
+			if m.Code == c {
+				total += m.Amount
+			}
+		}
+	}
+	return total
+}
+
+func manualFind(inputs []ManualInput, code string) (float64, bool) {
+	for _, m := range inputs {
+		if m.Code == code {
+			return m.Amount, true
+		}
+	}
+	return 0, false
+}
+
+// ClearLate drops the late deduction inputs (multi-entity policy, a late
+// deduction already on another slip of the period).
+func (in *Input) ClearLate() {
+	in.LateDays, in.LateMinutes, in.LateDayMinutes = 0, 0, nil
 }
 
 // Result is PayrollResult.
@@ -68,6 +138,12 @@ type Result struct {
 	BpjsKesEmployer, TaperaEmployer, TotalEmployerContribution                float64
 
 	TaxableIncome, PTKPAmount, Pph21Annual, Pph21Monthly float64
+
+	// EPIC-055
+	PositionAllowance, HealthAllowance, OtherEarningNontax float64
+	PersonalLeaveDeduction, SickLeaveDeduction             float64
+	Pph21Method, TERCategory                               string
+	Pph21Dpp, TERRate                                      float64
 }
 
 // PTKPAmount is getPTKPAmount: unknown statuses fall back to TK/0.
@@ -162,6 +238,28 @@ func UnpaidLeave(base, workingDays, days float64) float64 {
 	return Round(base / workingDays * days)
 }
 
+// LateTierDays is the tier matching a late-day count: days to deduct and
+// their basis ("thp" | "base"); zero days below the first tier.
+func LateTierDays(count int, tiers []LateTier) (float64, string) {
+	for _, t := range tiers {
+		if count >= t.Min && (t.Max == nil || count <= *t.Max) {
+			return t.Days, t.Basis
+		}
+	}
+	return 0, ""
+}
+
+// countLateDays counts the late days of at least minMinutes minutes.
+func countLateDays(minutes []float64, minMinutes float64) int {
+	n := 0
+	for _, m := range minutes {
+		if m >= minMinutes {
+			n++
+		}
+	}
+	return n
+}
+
 // LateDeduction is calculateLateDeduction.
 func LateDeduction(minutes, days float64, c Config) float64 {
 	switch c.LateMode {
@@ -194,54 +292,153 @@ func Calculate(in Input, c Config) Result {
 	}
 	factor = math.Min(1, math.Max(0, factor))
 	fullBase := in.BaseSalary
-	base := Round(fullBase * factor)
+	div := in.DivisorDays
+	perDay := func(amount, days float64) float64 {
+		if div <= 0 {
+			return 0
+		}
+		return amount / div * days
+	}
 
+	// G1 / G8: basis gaji. daily: base_salary adalah upah per hari.
+	var base, dayWage float64
+	switch in.PayBasis {
+	case "daily":
+		base = Round(fullBase * in.AttendanceDays)
+		dayWage = fullBase
+	case "monthly_prorated":
+		base = Round(perDay(fullBase, in.AttendanceDays))
+		dayWage = perDay(fullBase, 1)
+	default:
+		base = Round(fullBase * factor)
+		dayWage = perDay(fullBase, 1)
+	}
+
+	// G4: lembur per skema. Bucket "holiday" = libur nasional + hari istirahat.
 	hourly := 0.0
 	if c.OvertimeHourlyDivisor > 0 {
 		hourly = fullBase / c.OvertimeHourlyDivisor
 	}
-	overtimePay := Overtime(in.OvertimeHours, hourly, overtimeRate) + Overtime(in.OvertimeHolidayHrs, hourly, holidayRate)
+	var overtimePay float64
+	switch in.OvertimeScheme {
+	case "production":
+		overtimePay = Round(c.OvertimeProductionRate * (in.OvertimeHours + 2*in.OvertimeHolidayHrs))
+	case "freelance":
+		overtimePay = Round(dayWage / 8 * in.OvertimeHolidayHrs)
+	case "daily_worker":
+		overtimePay = Round(dayWage / 5 * (in.OvertimeHours + in.OvertimeHolidayHrs))
+	default:
+		overtimePay = Overtime(in.OvertimeHours, hourly, overtimeRate) + Overtime(in.OvertimeHolidayHrs, hourly, holidayRate)
+	}
 
 	thr := 0.0
 	if in.IncludeThr && (in.ContractType != nil || in.EmploymentStatus == "permanent") {
 		thr = THR(fullBase, in.JoinDate, in.PeriodYear)
 	}
 
+	// G2: tunjangan flat (ikut prorata kontrak) atau per hari tunjangan.
+	allowance := func(amount float64, daily bool) float64 {
+		if daily {
+			return Round(perDay(amount, in.AllowanceDays))
+		}
+		return Round(amount * factor)
+	}
 	fixed := Round(in.FixedAllowance * factor)
 	variable := Round(in.VariableAllowance * factor)
-	transport := Round(in.TransportAllowance * factor)
-	meal := Round(in.MealAllowance * factor)
+	transport := allowance(in.TransportAllowance, in.TransportPerDay)
+	meal := allowance(in.MealAllowance, in.MealPerDay)
 	housing := Round(in.HousingAllowance * factor)
+	position := allowance(in.PositionAllowance, in.PositionPerDay)
+	health := 0.0
+	if in.HealthEligible { // G7
+		health = Round(in.HealthAllowance * factor)
+	}
 
-	gross := base + fixed + variable + transport + meal + housing + overtimePay + thr + in.Bonus
+	// G6: komponen manual.
+	bonus := Round(in.Bonus + manualSum(in.ManualInputs, ManualBonusCodes))
+	otherEarning := Round(manualSum(in.ManualInputs, ManualEarningCodes))
+	nontax := Round(manualSum(in.ManualInputs, ManualNontaxCodes))
+	otherDeduction := Round(manualSum(in.ManualInputs, ManualDeductionCodes))
+
+	gross := base + fixed + variable + transport + meal + housing + position + health + overtimePay + thr + bonus + otherEarning
+	thp := gross + nontax
 
 	b := CalculateBPJS(base+fixed, in.BpjsTkEnrolled, in.BpjsKesEnrolled, in.TaperaEnrolled, c)
 	unpaid := UnpaidLeave(base, in.WorkingDays, in.UnpaidLeaveDays)
-	late := LateDeduction(in.LateMinutes, in.LateDays, c)
 
-	annualGross := gross * 12
-	taxable := math.Max(0, annualGross-b.Employee.Total*12-JabatanExpense(annualGross, c))
-	pphAnnual, pph := 0.0, 0.0
-	if in.IsTaxable {
-		pphAnnual, pph = PPh21(taxable, in.PTKPStatus, c)
+	// G3: potongan telat; LATE_OVERRIDE menggantikan hitungan otomatis.
+	late := LateDeduction(in.LateMinutes, in.LateDays, c)
+	if c.LateMode == "tier" {
+		days, basis := LateTierDays(countLateDays(in.LateDayMinutes, c.LateMinMinutes), c.LateTiers)
+		if basis == "thp" {
+			late = Round(perDay(thp, days))
+		} else {
+			late = Round(dayWage * days)
+		}
+	}
+	if v, ok := manualFind(in.ManualInputs, ManualLateOverrideCode); ok {
+		late = Round(v)
+	}
+
+	// G6: potongan izin pribadi (PIP) dan izin sakit (PIS).
+	personal, sick := 0.0, 0.0
+	if c.PersonalLeaveDeduction && in.PersonalLeaveDays > 0 {
+		personal = Round(perDay(thp, in.PersonalLeaveDays))
+	}
+	if c.SickLeaveDeduction && in.SickLeaveDays > 0 {
+		sick = Round(perDay(in.TransportAllowance+in.MealAllowance, in.SickLeaveDays))
+	}
+
+	method := c.Pph21Method
+	if method == "" {
+		method = "annualized"
+	}
+	var taxable, pphAnnual, pph, dpp, terRate float64
+	var category string
+	if method == "ter" { // G5
+		tkEmployee := b.Employee.TkJht + b.Employee.TkJp
+		tkEmployer := b.Employer.TkJht + b.Employer.TkJp + b.Employer.TkJkk + b.Employer.TkJkm
+		var bpjs float64
+		switch c.Pph21BpjsBasis {
+		case "employer":
+			bpjs = tkEmployer + b.Employer.Kes
+		case "employee":
+			bpjs = tkEmployee + b.Employee.Kes
+		default:
+			bpjs = tkEmployer + b.Employer.Kes + tkEmployee + b.Employee.Kes
+		}
+		dpp = gross + bpjs
+		taxable = dpp
+		category = TERCategory(in.PTKPStatus)
+		if in.IsTaxable {
+			pph, pphAnnual, terRate = pph21TER(in, dpp, tkEmployee, c)
+		} else if in.PeriodMonth != 12 {
+			terRate = TERRate(category, dpp)
+		}
+	} else {
+		annualGross := gross * 12
+		taxable = math.Max(0, annualGross-b.Employee.Total*12-JabatanExpense(annualGross, c))
+		if in.IsTaxable {
+			pphAnnual, pph = PPh21(taxable, in.PTKPStatus, c)
+		}
 	}
 
 	total := b.Employee.TkJht + b.Employee.TkJp + b.Employee.Kes + b.Employee.Tapera +
-		pph + unpaid + late + in.LoanDeduction
-	net := gross - total
+		pph + unpaid + late + in.LoanDeduction + personal + sick + otherDeduction
+	net := gross + nontax - total
 	employer := b.Employer.Total
 
 	return Result{
 		BaseSalary: Round(base), FixedAllowance: fixed, VariableAllowance: variable,
 		TransportAllowance: transport, MealAllowance: meal, HousingAllowance: housing,
-		OvertimePay: Round(overtimePay), Thr: Round(thr), Bonus: Round(in.Bonus),
-		OtherEarning: 0, GrossSalary: Round(gross),
+		OvertimePay: Round(overtimePay), Thr: Round(thr), Bonus: bonus,
+		OtherEarning: otherEarning, GrossSalary: Round(gross),
 
 		BpjsTkJhtDeduction: b.Employee.TkJht, BpjsTkJpDeduction: b.Employee.TkJp,
 		BpjsKesDeduction: b.Employee.Kes, TaperaDeduction: Round(b.Employee.Tapera),
 		Pph21Deduction: Round(pph), UnpaidLeaveDeduction: Round(unpaid),
 		LateDeduction: Round(late), LoanDeduction: Round(in.LoanDeduction),
-		OtherDeduction: 0, TotalDeductions: Round(total),
+		OtherDeduction: otherDeduction, TotalDeductions: Round(total),
 
 		OvertimeHours: in.OvertimeHours,
 		NetSalary:     Round(net),
@@ -253,6 +450,10 @@ func Calculate(in Input, c Config) Result {
 
 		TaxableIncome: Round(taxable), PTKPAmount: PTKPAmount(in.PTKPStatus, c),
 		Pph21Annual: Round(pphAnnual), Pph21Monthly: Round(pph),
+
+		PositionAllowance: position, HealthAllowance: health, OtherEarningNontax: nontax,
+		PersonalLeaveDeduction: personal, SickLeaveDeduction: sick,
+		Pph21Method: method, TERCategory: category, Pph21Dpp: Round(dpp), TERRate: terRate,
 	}
 }
 

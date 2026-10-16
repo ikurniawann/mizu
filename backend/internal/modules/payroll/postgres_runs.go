@@ -261,19 +261,24 @@ func deleteRunDetails(ctx context.Context, q database.Querier, runID string) err
 // nil when none.
 func activeSalary(ctx context.Context, q database.Querier, employeeID, companyID string) (*domain.Salary, error) {
 	var s domain.Salary
-	var base, fixed, variable, transport, meal, housing *string
+	var base, fixed, variable, transport, meal, housing, divisor, position, health *string
 	err := q.QueryRow(ctx, `SELECT base_salary::text, fixed_allowance::text, variable_allowance::text,
 		       transport_allowance::text, meal_allowance::text, housing_allowance::text,
-		       ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled
+		       ptkp_status, is_taxable, bpjs_tk_enrolled, bpjs_kes_enrolled, tapera_enrolled,
+		       pay_basis, working_days_divisor::text, transport_mode, meal_mode, position_allowance::text,
+		       position_mode, health_allowance::text, health_min_service_days, overtime_scheme
 		  FROM hris.employee_salary WHERE employee_id = $1 AND company_id = $2::uuid AND is_active = true
 		 ORDER BY effective_date DESC LIMIT 1`, employeeID, companyID).
 		Scan(&base, &fixed, &variable, &transport, &meal, &housing,
-			&s.PTKPStatus, &s.IsTaxable, &s.BpjsTkEnrolled, &s.BpjsKesEnrolled, &s.TaperaEnrl)
+			&s.PTKPStatus, &s.IsTaxable, &s.BpjsTkEnrolled, &s.BpjsKesEnrolled, &s.TaperaEnrl,
+			&s.PayBasis, &divisor, &s.TransportMode, &s.MealMode, &position,
+			&s.PositionMode, &health, &s.HealthMinServiceDays, &s.OvertimeScheme)
 	if database.IsNoRows(err) {
 		return nil, nil
 	}
 	s.BaseSalary, s.FixedAllowance, s.VariableAllowance = textOrNil(base), textOrNil(fixed), textOrNil(variable)
 	s.TransportAllowance, s.MealAllowance, s.HousingAllowance = textOrNil(transport), textOrNil(meal), textOrNil(housing)
+	s.WorkingDaysDivisor, s.PositionAllowance, s.HealthAllowance = textOrNil(divisor), textOrNil(position), textOrNil(health)
 	return &s, err
 }
 
@@ -330,6 +335,43 @@ func onceItemsElsewhere(ctx context.Context, q database.Querier, run *runHead) (
 	return out, rows.Err()
 }
 
+// runInputs are the manual slip components of a run, per employee.
+func runInputs(ctx context.Context, q database.Querier, runID string) (map[string][]domain.ManualInput, error) {
+	rows, err := q.Query(ctx, `SELECT employee_id::text, code, amount::float8, COALESCE(note, '')
+		FROM hris.payroll_inputs WHERE payroll_run_id = $1 ORDER BY created_at`, runID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string][]domain.ManualInput{}
+	for rows.Next() {
+		var id string
+		var m domain.ManualInput
+		if err := rows.Scan(&id, &m.Code, &m.Amount, &m.Note); err != nil {
+			return nil, err
+		}
+		out[id] = append(out[id], m)
+	}
+	return out, rows.Err()
+}
+
+// yearToDate sums an employee's earlier slips of the tax year at the same
+// entity (months before the run's month) for the December TER
+// reconciliation. Slips from the annualized method have no TER DPP: their
+// gross salary stands in.
+func yearToDate(ctx context.Context, q database.Querier, run *runHead, employeeID string) (domain.YearToDate, error) {
+	var y domain.YearToDate
+	err := q.QueryRow(ctx, `SELECT count(DISTINCT r.period_month)::int,
+			COALESCE(sum(COALESCE(d.pph21_dpp, d.gross_salary)), 0)::float8,
+			COALESCE(sum(d.pph21_deduction), 0)::float8,
+			COALESCE(sum(COALESCE(d.bpjs_tk_jht_deduction, 0) + COALESCE(d.bpjs_tk_jp_deduction, 0)), 0)::float8
+		FROM hris.payroll_details d JOIN hris.payroll_runs r ON r.id = d.payroll_run_id
+		WHERE d.employee_id = $1 AND r.company_id = $2::uuid AND r.period_year = $3 AND r.period_month < $4
+		  AND r.status IN ('processing', 'completed', 'paid')`,
+		employeeID, run.CompanyID, run.PeriodYear, run.PeriodMonth).Scan(&y.Months, &y.Bruto, &y.Pph21, &y.PensionEmployee)
+	return y, err
+}
+
 // insertDetail stores one calculated payslip and returns the stored row.
 func insertDetail(ctx context.Context, q database.Querier, runID, employeeID string, r domain.Result, in domain.Input) (*obj, error) {
 	breakdown := in.LoanBreakdown
@@ -344,6 +386,21 @@ func insertDetail(ctx context.Context, q database.Querier, runID, employeeID str
 	if in.ProrateFactor != nil {
 		factor = *in.ProrateFactor
 	}
+	inputs := in.ManualInputs
+	if inputs == nil {
+		inputs = []domain.ManualInput{}
+	}
+	manual, err := json.Marshal(inputs)
+	if err != nil {
+		return nil, err
+	}
+	var dppParam, terRate any
+	if r.Pph21Method == "ter" {
+		dppParam = numParam(r.Pph21Dpp)
+		if r.TERCategory != "" && in.PeriodMonth != 12 {
+			terRate = numParam(r.TERRate)
+		}
+	}
 	n := numParam
 	return queryObj(ctx, q, `INSERT INTO hris.payroll_details (
 		payroll_run_id, employee_id, base_salary, fixed_allowance, variable_allowance, transport_allowance,
@@ -353,9 +410,13 @@ func insertDetail(ctx context.Context, q database.Querier, runID, employeeID str
 		net_salary, bpjs_tk_jht_employer, bpjs_tk_jp_employer, bpjs_tk_jkk_employer, bpjs_tk_jkm_employer,
 		bpjs_kes_employer, tapera_employer, taxable_income, ptkp_amount, pph21_annual, pph21_monthly,
 		working_days, present_days, late_days, unpaid_leave_days, overtime_hours, prorate_factor,
-		full_base_salary, status)
+		full_base_salary, status,
+		position_allowance, health_allowance, personal_leave_deduction, sick_leave_deduction, other_earning_nontax,
+		manual_inputs, attendance_days, allowance_days, divisor_days, pay_basis, pph21_method, pph21_dpp,
+		ter_category, ter_rate)
 	VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::jsonb,$23,$24,$25,
-	        $26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,'calculated')
+	        $26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,'calculated',
+	        $43,$44,$45,$46,$47,$48::jsonb,$49,$50,$51,$52,$53,$54,$55,$56)
 	RETURNING *`,
 		runID, employeeID, n(r.BaseSalary), n(r.FixedAllowance), n(r.VariableAllowance), n(r.TransportAllowance),
 		n(r.MealAllowance), n(r.HousingAllowance), n(r.OvertimePay), n(r.Thr), n(r.Bonus), n(r.OtherEarning), n(r.GrossSalary),
@@ -364,7 +425,24 @@ func insertDetail(ctx context.Context, q database.Querier, runID, employeeID str
 		n(r.NetSalary), n(r.BpjsTkJhtEmployer), n(r.BpjsTkJpEmployer), n(r.BpjsTkJkkEmployer), n(r.BpjsTkJkmEmployer),
 		n(r.BpjsKesEmployer), n(r.TaperaEmployer), n(r.TaxableIncome), n(r.PTKPAmount), n(r.Pph21Annual), n(r.Pph21Monthly),
 		n(in.WorkingDays), n(in.PresentDays), n(in.LateDays), n(in.UnpaidLeaveDays),
-		n(in.OvertimeHours+in.OvertimeHolidayHrs), n(factor), n(in.BaseSalary))
+		n(in.OvertimeHours+in.OvertimeHolidayHrs), n(factor), n(in.BaseSalary),
+		n(r.PositionAllowance), n(r.HealthAllowance), n(r.PersonalLeaveDeduction), n(r.SickLeaveDeduction),
+		n(r.OtherEarningNontax), string(manual), n(in.AttendanceDays), n(in.AllowanceDays), n(in.DivisorDays),
+		nonEmpty(in.PayBasis, "monthly"), r.Pph21Method, dppParam, nilIfEmpty(r.TERCategory), terRate)
+}
+
+func nonEmpty(v, def string) string {
+	if v == "" {
+		return def
+	}
+	return v
+}
+
+func nilIfEmpty(v string) any {
+	if v == "" {
+		return nil
+	}
+	return v
 }
 
 func updateRunTotals(ctx context.Context, q database.Querier, runID string, count int, t domain.RunTotals, now time.Time) error {

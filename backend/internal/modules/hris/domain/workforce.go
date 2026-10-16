@@ -123,6 +123,7 @@ var leaveTypeLabels = map[string]string{
 	"annual": "Cuti Tahunan", "sick": "Sakit", "maternity": "Cuti Melahirkan", "paternity": "Cuti Ayah",
 	"unpaid": "Izin Tanpa Gaji", "emergency": "Izin Darurat", "pilgrimage": "Cuti Ibadah",
 	"menstrual": "Cuti Haid", "marriage": "Cuti Menikah", "bereavement": "Cuti Duka",
+	"personal": "Izin Pribadi",
 }
 
 // LeaveTypeLabel names a leave type for the WhatsApp message.
@@ -231,6 +232,7 @@ func NormalizeWaPhone(phone *string) string {
 var csvLeaveTypes = map[string]string{
 	"annual": "Cuti Tahunan", "sick": "Cuti Sakit", "maternity": "Cuti Melahirkan", "paternity": "Cuti Ayah",
 	"unpaid": "Cuti Tanpa Upah", "emergency": "Cuti Darurat", "pilgrimage": "Cuti Haji/Umrah", "menstrual": "Cuti Haid",
+	"personal": "Izin Pribadi",
 }
 
 var csvLeaveStatuses = map[string]string{

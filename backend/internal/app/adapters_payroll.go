@@ -270,21 +270,22 @@ func (payrollWorkforceSQL) PeriodRecords(ctx context.Context, q database.Querier
 		return rec, err
 	}
 
-	rows, err = q.Query(ctx, `SELECT date::text, hours::text FROM hris.overtime_requests
+	rows, err = q.Query(ctx, `SELECT date::text, hours::text, day_type FROM hris.overtime_requests
 		WHERE employee_id = $1 AND status = 'approved' AND date >= $2 AND date <= $3`, employeeID, start, end)
 	if err != nil {
 		return rec, err
 	}
 	overtime, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (*domain.OvertimeRequest, error) {
 		var date, hours *string
-		if err := r.Scan(&date, &hours); err != nil {
+		var dayType string
+		if err := r.Scan(&date, &hours, &dayType); err != nil {
 			return nil, err
 		}
 		d := domain.DateText(date)
 		if d == nil {
 			return nil, nil
 		}
-		return &domain.OvertimeRequest{Date: *d, Hours: domain.OrZero(payrollText(hours))}, nil
+		return &domain.OvertimeRequest{Date: *d, Hours: domain.OrZero(payrollText(hours)), DayType: dayType}, nil
 	})
 	if err != nil {
 		return rec, err

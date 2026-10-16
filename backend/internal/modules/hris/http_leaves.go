@@ -11,7 +11,7 @@ import (
 )
 
 var leaveTypes = []string{"annual", "sick", "maternity", "paternity", "unpaid", "emergency",
-	"pilgrimage", "menstrual", "marriage", "bereavement"}
+	"pilgrimage", "menstrual", "marriage", "bereavement", "personal"}
 
 // coerceInt is z.coerce.number().int().min(lo).max(hi).default(def) on a
 // query form (values are strings).

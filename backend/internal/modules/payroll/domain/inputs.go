@@ -18,7 +18,25 @@ type Salary struct {
 	TransportAllowance, MealAllowance, HousingAllowance    any
 	PTKPStatus                                             *string
 	IsTaxable, BpjsTkEnrolled, BpjsKesEnrolled, TaperaEnrl *bool
+
+	// EPIC-055 (Odoo rules); nil = the pre-EPIC behaviour.
+	PayBasis                              *string // monthly | monthly_prorated | daily
+	WorkingDaysDivisor                    any     // numeric text; nil = computed working days
+	TransportMode, MealMode, PositionMode *string // flat | per_day
+	PositionAllowance, HealthAllowance    any
+	HealthMinServiceDays                  *int
+	OvertimeScheme                        *string // standard | production | freelance | daily_worker
 }
+
+// BuildOptions are the config switches the input builder needs.
+type BuildOptions struct {
+	// OvertimeRequireClockout pays approved overtime only on a day with a
+	// clock-out (the pre-EPIC-055 behaviour); false pays the requested hours.
+	OvertimeRequireClockout bool
+}
+
+// DefaultBuildOptions keep the pre-EPIC-055 behaviour.
+func DefaultBuildOptions() BuildOptions { return BuildOptions{OvertimeRequireClockout: true} }
 
 // Contract is an employment contract touching the period (newest first).
 type Contract struct {
@@ -56,7 +74,11 @@ func BuildInput(emp Employee, salary Salary, rec WorkforceRecords, loans []LoanR
 // the payroll month (the cut-off period from the attendance settings; the
 // calendar month by default). Loans stay keyed by month/year.
 func BuildInputRange(emp Employee, salary Salary, rec WorkforceRecords, loans []LoanRow, holidays map[string]bool, month, year int,
-	start, end string, includeThr bool) Input {
+	start, end string, includeThr bool, opts ...BuildOptions) Input {
+	opt := DefaultBuildOptions()
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 
 	var schedule []ShiftRow
 	for _, r := range rec.Schedule {
@@ -146,14 +168,43 @@ func BuildInputRange(emp Employee, salary Salary, rec WorkforceRecords, loans []
 		}
 	}
 	lateDays, lateMinutes := LateStats(rec.Attendance)
-	ot := SplitOvertime(rec.Overtime, rec.Attendance, holidays)
+	var lateDayMinutes []float64
+	for _, a := range rec.Attendance {
+		if ((a.IsLate != nil && *a.IsLate) || a.Status == "late") && (!partial || inCoverage(a.Date)) {
+			lateDayMinutes = append(lateDayMinutes, OrZero(a.LateMinutes))
+		}
+	}
+	ot := SplitOvertimeWith(rec.Overtime, rec.Attendance, holidays, schedule, opt.OvertimeRequireClockout)
 
-	unpaid := 0
+	unpaid, personal, sick := 0, 0, 0
 	for _, l := range rec.Leaves {
 		s, e := DateText(l.StartDate), DateText(l.EndDate)
-		if l.LeaveType == "unpaid" && s != nil && e != nil {
-			unpaid += ClampedLeaveDays(LeaveRange{*s, *e}, start, end)
+		if s == nil || e == nil {
+			continue
 		}
+		days := ClampedLeaveDays(LeaveRange{*s, *e}, start, end)
+		switch l.LeaveType {
+		case "unpaid":
+			unpaid += days
+		case "personal":
+			personal += days
+		case "sick":
+			sick += days
+		}
+	}
+	divisor := OrZero(salary.WorkingDaysDivisor)
+	if divisor <= 0 {
+		divisor = workingDays
+	}
+	minService := 0
+	if salary.HealthMinServiceDays != nil {
+		minService = *salary.HealthMinServiceDays
+	}
+	str := func(v *string, def string) string {
+		if v == nil || *v == "" {
+			return def
+		}
+		return *v
 	}
 
 	var contractType *string
@@ -181,6 +232,20 @@ func BuildInputRange(emp Employee, salary Salary, rec WorkforceRecords, loans []
 		LateDays:           lateDays,
 		LateMinutes:        lateMinutes,
 		UnpaidLeaveDays:    float64(unpaid),
+		PayBasis:           str(salary.PayBasis, "monthly"),
+		DivisorDays:        divisor,
+		AttendanceDays:     float64(attendanceDays),
+		AllowanceDays:      float64(attendanceDays),
+		TransportPerDay:    str(salary.TransportMode, "flat") == "per_day",
+		MealPerDay:         str(salary.MealMode, "flat") == "per_day",
+		PositionPerDay:     str(salary.PositionMode, "flat") == "per_day",
+		PositionAllowance:  OrZero(salary.PositionAllowance),
+		HealthAllowance:    OrZero(salary.HealthAllowance),
+		HealthEligible:     HealthEligible(emp.JoinDate, end, minService),
+		OvertimeScheme:     str(salary.OvertimeScheme, "standard"),
+		LateDayMinutes:     lateDayMinutes,
+		PersonalLeaveDays:  float64(personal),
+		SickLeaveDays:      float64(sick),
 		LoanDeduction:      LoanDeductionForPeriod(loans, month, year),
 		LoanBreakdown:      LoanInstallmentDetails(loans, month, year),
 		JoinDate:           emp.JoinDate,

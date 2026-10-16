@@ -131,8 +131,9 @@ type AttendanceRow struct {
 
 // OvertimeRequest is an approved overtime request.
 type OvertimeRequest struct {
-	Date  string
-	Hours float64
+	Date    string
+	Hours   float64
+	DayType string // regular | rest_day (hari istirahat mingguan)
 }
 
 // OvertimeSplit is splitOvertimeHours' result.
@@ -142,30 +143,61 @@ func round2(v float64) float64 { return Round(v*100) / 100 }
 
 // SplitOvertime is splitOvertimeHours: realized approved hours (a clock_out
 // that day; capped at the system-computed overtime when there is one),
-// bucketed into regular days and public holidays.
+// bucketed into regular days and holidays / rest days.
 func SplitOvertime(requests []OvertimeRequest, attendance []AttendanceRow, holidays map[string]bool) OvertimeSplit {
+	return SplitOvertimeWith(requests, attendance, holidays, nil, true)
+}
+
+// SplitOvertimeWith is SplitOvertime with the EPIC-055 rules. A request falls
+// in the holiday bucket on a public holiday, when marked rest_day, or on a day
+// without a shift in the employee's schedule (when there is one). With
+// requireClockout false the requested hours are paid without an attendance.
+func SplitOvertimeWith(requests []OvertimeRequest, attendance []AttendanceRow, holidays map[string]bool,
+	schedule []ShiftRow, requireClockout bool) OvertimeSplit {
 	byDate := map[string]AttendanceRow{}
 	for _, a := range attendance {
 		byDate[a.Date] = a
 	}
+	restDay := func(date string) bool {
+		if len(schedule) == 0 {
+			return false
+		}
+		row := ResolveScheduleRow(schedule, date)
+		return row == nil || row.ShiftID == nil
+	}
 	var regular, holiday float64
 	for _, req := range requests {
 		att, ok := byDate[req.Date]
-		if !ok || !att.HasClockOut {
+		if requireClockout && (!ok || !att.HasClockOut) {
 			continue
 		}
-		actual := OrZero(att.OvertimeHours)
 		hours := req.Hours
-		if actual > 0 {
-			hours = math.Min(req.Hours, actual)
+		if ok {
+			if actual := OrZero(att.OvertimeHours); actual > 0 {
+				hours = math.Min(req.Hours, actual)
+			}
 		}
-		if holidays[req.Date] {
+		if holidays[req.Date] || req.DayType == "rest_day" || restDay(req.Date) {
 			holiday += hours
 		} else {
 			regular += hours
 		}
 	}
 	return OvertimeSplit{round2(regular), round2(holiday), round2(regular + holiday)}
+}
+
+// HealthEligible is the Odoo INSURANCE condition: service length from the
+// join date to the period end, both days counted, of at least minDays.
+func HealthEligible(joinDate, periodEnd string, minDays int) bool {
+	if minDays <= 0 {
+		return true
+	}
+	join, err1 := time.Parse("2006-01-02", joinDate)
+	end, err2 := time.Parse("2006-01-02", periodEnd)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return int(end.Sub(join).Hours()/24)+1 >= minDays
 }
 
 // LateStats is computeLateStats.

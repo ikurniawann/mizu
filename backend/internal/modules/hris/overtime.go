@@ -82,7 +82,11 @@ func (s *Service) ListOvertime(ctx context.Context, a *Actor, q overtimeQuery) (
 type overtimeInput struct {
 	EmployeeID                       *string
 	Date, StartTime, EndTime, Reason string
+	DayType                          *string // regular | rest_day (EPIC-055); nil = regular
 }
+
+// overtimeDayTypes: rest_day = hari istirahat mingguan, dibayar tarif libur.
+var overtimeDayTypes = []string{"regular", "rest_day"}
 
 // CreateOvertime: a request for oneself ("employee", decided by HR or the
 // manager) or an HR assignment for someone else ("company", confirmed by
@@ -133,6 +137,9 @@ func (s *Service) CreateOvertime(ctx context.Context, a *Actor, in overtimeInput
 	f.add("source", source)
 	f.add("status", "pending")
 	f.add("reason", in.Reason)
+	if in.DayType != nil {
+		f.add("day_type", *in.DayType)
+	}
 	f.add("requested_by", a.EmployeeID)
 	row, err := s.repo.InsertOvertime(ctx, f)
 	if database.IsUniqueViolation(err) { // the active (employee_id, date) index lost a race
@@ -155,7 +162,7 @@ var (
 
 // DecideOvertime approves, rejects or cancels a pending request (rules in
 // domain.CanDecideOvertime); the update is guarded on status = pending.
-func (s *Service) DecideOvertime(ctx context.Context, a *Actor, id, action string, rejection *string) (*Row, error) {
+func (s *Service) DecideOvertime(ctx context.Context, a *Actor, id, action string, rejection *string, dayType ...*string) (*Row, error) {
 	ot, err := s.repo.OvertimeForDecision(ctx, id)
 	if err != nil {
 		return nil, err
@@ -189,6 +196,10 @@ func (s *Service) DecideOvertime(ctx context.Context, a *Actor, id, action strin
 		f.add("rejection_reason", rejection)
 	} else {
 		f.add("rejection_reason", nil)
+	}
+	// HR may set the day type (rest day = tarif libur) while approving.
+	if action == "approve" && a.IsHR && len(dayType) > 0 && dayType[0] != nil {
+		f.add("day_type", *dayType[0])
 	}
 	f.add("updated_at", now)
 	row, err := s.repo.DecideOvertime(ctx, id, f)
