@@ -25,6 +25,20 @@ func TestEmployeeGuards(t *testing.T) {
 	expect(t, h.do(&self, "PUT", "/api/hris/employees/"+own, map[string]any{"full_name": "X"}), 403, "")
 }
 
+// TestLinkedEmployeeEmailNeedsSettingsUsers: HR without Settings → Manajemen User may edit
+// employees, but not the email of one linked to a login account (the login email).
+func TestLinkedEmployeeEmailNeedsSettingsUsers(t *testing.T) {
+	h := newHarness(t)
+	hr, _ := h.staff("hrd", []string{menuKepegawaian}, false)
+	_, linked := h.staff("pos", nil, true)
+	plain := h.employee(emp{})
+
+	expect(t, h.do(&hr, "PUT", "/api/hris/employees/"+linked, map[string]any{"email": "ganti." + linked[:8] + "@hris.test"}),
+		403, "Email karyawan yang punya akun login hanya bisa diubah lewat Settings → Manajemen User")
+	expect(t, h.do(&hr, "PUT", "/api/hris/employees/"+linked, map[string]any{"phone": "081200000002"}), 200, "")
+	expect(t, h.do(&hr, "PUT", "/api/hris/employees/"+plain, map[string]any{"email": "baru." + plain[:8] + "@hris.test"}), 200, "")
+}
+
 func TestEmployeeDirectoryAndCRUD(t *testing.T) {
 	h := newHarness(t)
 	hr, _ := h.staff("hrd", []string{menuKepegawaian}, false)

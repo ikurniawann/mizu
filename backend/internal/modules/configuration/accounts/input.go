@@ -162,6 +162,24 @@ func (b *employeeBody) keys(create bool) []string {
 
 func (b *employeeBody) str(key string) *string { return b.text[key] }
 
+// accountKeys are the body keys that configure the login account.
+var accountKeys = employeeSchemaKeys[len(coreFields):]
+
+// touchesAccount reports whether the body configures a login account.
+// Creating an employee with is_access_app false (and nothing else) does not.
+func (b *employeeBody) touchesAccount(create bool) bool {
+	for _, k := range accountKeys {
+		if !b.has(k) {
+			continue
+		}
+		if create && k == "is_access_app" && b.isAccessApp != nil && !*b.isAccessApp {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 func roleOf(role *string) string {
 	if role == nil {
 		return ""

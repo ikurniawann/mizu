@@ -9,9 +9,11 @@ import { TextField } from "./text-field";
 interface SectionProps {
   form: UserEmployeeFormValues;
   onChange: (patch: Partial<UserEmployeeFormValues>) => void;
+  /** Email terkunci: karyawan punya akun login dan pengguna tidak mengelola akun (Manajemen User). */
+  emailLocked?: boolean;
 }
 
-export function PersonalSection({ form, onChange }: SectionProps) {
+export function PersonalSection({ form, onChange, emailLocked = false }: SectionProps) {
   return (
     <FormSectionCard
       icon={UserCircleIcon}
@@ -33,6 +35,8 @@ export function PersonalSection({ form, onChange }: SectionProps) {
           required
           value={form.email}
           onChange={(email) => onChange({ email })}
+          disabled={emailLocked}
+          hint={emailLocked ? "Email ini dipakai untuk login — ubah lewat Settings → Manajemen User." : undefined}
         />
         <TextField label="Phone" value={form.phone} onChange={(phone) => onChange({ phone })} />
         <TextField label="NIK / KTP" value={form.ktp} onChange={(ktp) => onChange({ ktp })} />

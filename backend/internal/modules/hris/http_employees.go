@@ -153,7 +153,7 @@ func (h handlers) getEmployee(w http.ResponseWriter, r *http.Request) error {
 	return ok(w, dataOf(row))
 }
 
-func (h handlers) updateEmployee(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+func (h handlers) updateEmployee(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	const message = "Data karyawan tidak valid"
 	f, err := readForm(r, message)
 	if err != nil {
@@ -163,7 +163,12 @@ func (h handlers) updateEmployee(w http.ResponseWriter, r *http.Request, _ *auth
 	if err := formErr(f, message); err != nil {
 		return err
 	}
-	row, err := h.svc.UpdateEmployee(r.Context(), r.PathValue("id"), in)
+	granted, err := h.auth.GrantedMenuCodes(r.Context(), u.ID, u.Role)
+	if err != nil {
+		return err
+	}
+	accounts := iam.HasAnyMenuPrefix(granted, iam.SettingsUsers)
+	row, err := h.svc.UpdateEmployee(r.Context(), r.PathValue("id"), in, accounts)
 	if err != nil {
 		return err
 	}

@@ -24,6 +24,7 @@ var (
 	PosSupervisors          = []string{"pos.settings.supervisors"}
 	Hris                    = []string{"hris"}
 	HrisKepegawaian         = []string{"hris.kepegawaian"}
+	HrisKaryawan            = []string{"hris.kepegawaian.users"}
 	HrisWorkforce           = []string{"hris.workforce"}
 	HrisCompensation        = []string{"hris.compensation"}
 	HrisPlacements          = []string{"hris.master.placements"}
@@ -117,6 +118,7 @@ var ByKey = map[string][]string{
 	"posSupervisors":          PosSupervisors,
 	"hris":                    Hris,
 	"hrisKepegawaian":         HrisKepegawaian,
+	"hrisKaryawan":            HrisKaryawan,
 	"hrisWorkforce":           HrisWorkforce,
 	"hrisCompensation":        HrisCompensation,
 	"hrisPlacements":          HrisPlacements,

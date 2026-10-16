@@ -1,11 +1,14 @@
 // Package accounts ports the staff account routes: /api/users (accounts
 // linked to hris employees) and /api/admin/users (accounts on their own).
-// Both sit behind the settings.users menu.
+// Both sit behind the settings.users menu. The HRIS employee directory menu
+// (hris.kepegawaian.users) may also read /api/users and write employee data
+// there — never a login account (account fields, a linked account's email).
 package accounts
 
 import (
 	"crypto/rand"
 	"net/http"
+	"slices"
 
 	"nuhabit/backend/internal/modules/configuration/kit"
 	"nuhabit/backend/internal/platform/database"
@@ -48,10 +51,59 @@ func (h handlers) guard(r *http.Request) (string, error) {
 	return u.ID, nil
 }
 
+// Writers without Manajemen User (the HRIS employee directory) change employee data only.
+var (
+	errAccountNeedsSettings    = httpx.Forbidden("Akun login hanya bisa diatur lewat Settings → Manajemen User")
+	errLoginEmailNeedsSettings = httpx.Forbidden(
+		"Email karyawan yang punya akun login hanya bisa diubah lewat Settings → Manajemen User")
+)
+
+// readPrefixes may read /api/users: Manajemen User, or the HRIS employee
+// directory (HRIS → Kepegawaian → Karyawan), which lists the same rows.
+var readPrefixes = append(append([]string{}, iam.SettingsUsers...), iam.HrisKaryawan...)
+
+func (h handlers) readGuard(r *http.Request) error {
+	_, err := h.d.Auth.RequireMenuPrefix(r, readPrefixes...)
+	return err
+}
+
+// writeGuard is who may write /api/users: Manajemen User writes everything;
+// the HRIS employee directory writes employee data only (accounts false) and
+// only with the action ("create" or "update") granted on that menu.
+func (h handlers) writeGuard(r *http.Request, action string) (actor string, accounts bool, err error) {
+	u, err := h.d.Auth.RequireUser(r)
+	if err != nil {
+		return "", false, err
+	}
+	granted, err := h.d.Auth.GrantedMenuCodes(r.Context(), u.ID, u.Role)
+	if err != nil {
+		return "", false, err
+	}
+	if iam.HasAnyMenuPrefix(granted, iam.SettingsUsers) {
+		return u.ID, true, nil
+	}
+	if iam.HasAnyMenuPrefix(granted, iam.HrisKaryawan) {
+		roleIDs, err := h.d.Auth.ResolveRoleIDs(r.Context(), u.ID, u.Role)
+		if err != nil {
+			return "", false, err
+		}
+		actions, err := h.d.Auth.GrantedMenuActions(r.Context(), roleIDs)
+		if err != nil {
+			return "", false, err
+		}
+		for _, code := range iam.HrisKaryawan {
+			if slices.Contains(actions[code], action) {
+				return u.ID, false, nil
+			}
+		}
+	}
+	return "", false, httpx.Forbidden("Insufficient permissions")
+}
+
 /* ── /api/users ──────────────────────────────────────────────────────── */
 
 func (h handlers) listUsers(w http.ResponseWriter, r *http.Request) error {
-	if _, err := h.guard(r); err != nil {
+	if err := h.readGuard(r); err != nil {
 		return err
 	}
 	q, err := parseListQuery(r.URL.Query())
@@ -66,7 +118,7 @@ func (h handlers) listUsers(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h handlers) createUser(w http.ResponseWriter, r *http.Request) error {
-	actor, err := h.guard(r)
+	actor, accounts, err := h.writeGuard(r, "create")
 	if err != nil {
 		return err
 	}
@@ -75,6 +127,10 @@ func (h handlers) createUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	b := parseEmployeeBody(f, true)
+	// Permission before validation: account fields are refused, not validated.
+	if !accounts && b.touchesAccount(true) {
+		return errAccountNeedsSettings
+	}
 	if err := f.Err("Validation failed"); err != nil {
 		return err
 	}
@@ -86,7 +142,7 @@ func (h handlers) createUser(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h handlers) getUser(w http.ResponseWriter, r *http.Request) error {
-	if _, err := h.guard(r); err != nil {
+	if err := h.readGuard(r); err != nil {
 		return err
 	}
 	data, err := h.svc.getUser(r.Context(), r.PathValue("id"))
@@ -102,7 +158,7 @@ func (h handlers) getUser(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h handlers) updateUser(w http.ResponseWriter, r *http.Request) error {
-	actor, err := h.guard(r)
+	actor, accounts, err := h.writeGuard(r, "update")
 	if err != nil {
 		return err
 	}
@@ -111,10 +167,14 @@ func (h handlers) updateUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	b := parseEmployeeBody(f, false)
+	// Permission before validation: account fields are refused, not validated.
+	if !accounts && b.touchesAccount(false) {
+		return errAccountNeedsSettings
+	}
 	if err := f.Err("Validation failed"); err != nil {
 		return err
 	}
-	data, err := h.svc.updateUser(r.Context(), actor, r.PathValue("id"), b)
+	data, err := h.svc.updateUser(r.Context(), actor, r.PathValue("id"), b, accounts)
 	if err != nil {
 		return rethrowUserServiceError(err)
 	}

@@ -11,7 +11,7 @@ interface RouteParams {
 }
 
 export const GET = apiHandler(async (_request: NextRequest, { params }: RouteParams) => {
-  await requireIamMenuPrefix(IAM.settingsUsers);
+  await requireIamMenuPrefix([...IAM.settingsUsers, ...IAM.hrisKaryawan]);
   const { id } = await params;
   const data = await getUserEmployeeById(id);
   if (!data) throw ApiError.notFound("Employee not found");

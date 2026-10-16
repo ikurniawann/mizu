@@ -8,7 +8,7 @@ import { createUserEmployee, listUserEmployees } from "@/lib/users/user-service"
 import { createUserEmployeeSchema } from "@/lib/users/schemas";
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  await requireIamMenuPrefix(IAM.settingsUsers);
+  await requireIamMenuPrefix([...IAM.settingsUsers, ...IAM.hrisKaryawan]);
   const query = parseUserListQuery(request.nextUrl.searchParams);
   return NextResponse.json(await listUserEmployees(query));
 }, "api/users");

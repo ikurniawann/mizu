@@ -8,9 +8,12 @@ interface TextFieldProps {
   required?: boolean;
   type?: "text" | "email" | "date";
   className?: string;
+  disabled?: boolean;
+  /** Keterangan di bawah field, mis. alasan field dikunci. */
+  hint?: string;
 }
 
-export function TextField({ label, value, onChange, required, type, className }: TextFieldProps) {
+export function TextField({ label, value, onChange, required, type, className, disabled, hint }: TextFieldProps) {
   return (
     <div className={className}>
       <FormFieldLabel required={required}>{label}</FormFieldLabel>
@@ -19,7 +22,9 @@ export function TextField({ label, value, onChange, required, type, className }:
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={formInputClassName}
+        disabled={disabled}
       />
+      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }

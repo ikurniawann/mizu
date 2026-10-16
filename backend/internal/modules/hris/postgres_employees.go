@@ -117,6 +117,19 @@ func (s *store) EmployeeTracked(ctx context.Context, id string) (*domain.Tracked
 	return &t, nil
 }
 
+func (s *store) EmployeeLogin(ctx context.Context, id string) (string, string, error) {
+	var email string
+	var userID *string
+	err := s.db.QueryRow(ctx, `SELECT email, user_id::text FROM hris.employees WHERE id = $1`, id).Scan(&email, &userID)
+	if database.IsNoRows(err) || database.PgCode(err) == "22P02" {
+		return "", "", nil
+	}
+	if err != nil || userID == nil {
+		return email, "", err
+	}
+	return email, *userID, nil
+}
+
 func (s *store) UpdateEmployee(ctx context.Context, id string, f fields) (*Row, error) {
 	return updateOne(ctx, s.db, "hris.employees", f, fields{{"id", id}}, "*")
 }

@@ -23,6 +23,8 @@ type EmployeeRepo interface {
 	EmployeeDetail(ctx context.Context, id string) (*Row, error)
 	EmployeeBrief(ctx context.Context, id string) (*Row, error)
 	EmployeeTracked(ctx context.Context, id string) (*domain.TrackedState, error)
+	// EmployeeLogin is the employee's email and linked login account (user_id), "" when none.
+	EmployeeLogin(ctx context.Context, id string) (email, userID string, err error)
 	UpdateEmployee(ctx context.Context, id string, f fields) (*Row, error)
 	DeactivateEmployee(ctx context.Context, id string, endDate string, at time.Time) (*Row, error)
 	InsertEmploymentHistory(ctx context.Context, f fields) (*Row, error)
@@ -122,13 +124,25 @@ func (s *Service) withManager(ctx context.Context, row *Row) (*Row, error) {
 
 // UpdateEmployee is updateEmployee: allowlisted fields, unique email/NIP,
 // and an employment history row when a tracked field the PUT sent changed.
-func (s *Service) UpdateEmployee(ctx context.Context, id string, in employeeInput) (*Row, error) {
+// UpdateEmployee updates an employee record. accounts false (no Settings →
+// Manajemen User) may not change the email of an employee linked to a login
+// account: that email is the login and syncs to it from Manajemen User.
+func (s *Service) UpdateEmployee(ctx context.Context, id string, in employeeInput, accounts bool) (*Row, error) {
 	current, err := s.repo.EmployeeTracked(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if current == nil {
 		return nil, httpx.NotFound("Karyawan tidak ditemukan")
+	}
+	if e := in.email.Val; !accounts && e != nil {
+		email, userID, err := s.repo.EmployeeLogin(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if userID != "" && *e != email {
+			return nil, httpx.Forbidden("Email karyawan yang punya akun login hanya bisa diubah lewat Settings → Manajemen User")
+		}
 	}
 	if e := in.email.Val; e != nil && *e != "" {
 		if taken, err := s.repo.EmployeeExists(ctx, "email", *e, &id); err != nil || taken {

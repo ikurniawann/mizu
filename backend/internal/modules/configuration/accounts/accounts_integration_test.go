@@ -90,6 +90,85 @@ func TestForbiddenWithoutSettingsUsers(t *testing.T) {
 	}
 }
 
+// TestHrisKaryawanEmployeeDataOnly: the HRIS employee directory (menu hris.kepegawaian.users,
+// without Settings → Manajemen User) reads /api/users and writes employee data, but never a
+// login account: account fields, a linked account's email, password resets and /api/admin/users
+// stay behind settings.users.
+func TestHrisKaryawanEmployeeDataOnly(t *testing.T) {
+	// Read-only on the menu: reads, no writes.
+	ro := setup(t, map[string][]string{"hris.kepegawaian.users": nil})
+	if code, body, _ := ro.do("GET", "/api/users", nil); code != 200 {
+		t.Fatalf("read-only GET /api/users = %d %v", code, body)
+	}
+	code0, body0, _ := ro.do("POST", "/api/users", employeeBody(uniqueEmail()))
+	wantError(t, code0, body0, 403, "Insufficient permissions")
+
+	e := setup(t, map[string][]string{"hris.kepegawaian.users": {"read", "create", "update"}})
+	if code, body, _ := e.do("GET", "/api/users", nil); code != 200 {
+		t.Fatalf("GET /api/users = %d %v", code, body)
+	}
+	if code, body, _ := e.do("GET", "/api/users/"+unknownID, nil); code != 404 {
+		t.Fatalf("GET /api/users/{id} = %d %v, want 404 past the guard", code, body)
+	}
+
+	// Employee data without an account: allowed.
+	plain := employeeBody(uniqueEmail())
+	plain["is_access_app"] = false
+	code, body, raw := e.do("POST", "/api/users", plain)
+	if code != 201 {
+		t.Fatalf("POST employee without account = %d %s", code, raw)
+	}
+	id := body["data"].(map[string]any)["id"].(string)
+	if code, _, raw := e.do("PUT", "/api/users/"+id, map[string]any{"phone": "081299990000"}); code != 200 {
+		t.Fatalf("PUT employee data = %d %s", code, raw)
+	}
+
+	// Any login-account field: refused.
+	const accountMsg = "Akun login hanya bisa diatur lewat Settings → Manajemen User"
+	withAccount := employeeBody(uniqueEmail())
+	withAccount["is_access_app"] = true
+	withAccount["password"] = "rahasia123"
+	withAccount["role"] = "super_admin"
+	code, body, _ = e.do("POST", "/api/users", withAccount)
+	wantError(t, code, body, 403, accountMsg)
+	code, body, _ = e.do("PUT", "/api/users/"+id, map[string]any{"role": "admin", "is_access_app": true, "password": "rahasia123"})
+	wantError(t, code, body, 403, accountMsg)
+
+	// A linked login account's email: refused; other data: allowed.
+	var linked string
+	if err := e.tx.QueryRow(context.Background(), `INSERT INTO hris.employees (full_name, nip, email, phone, join_date, user_id, is_access_app)
+		VALUES ('Punya Akun', $1, $2, '08', '2026-01-01', $3, true) RETURNING id::text`,
+		"ACC-"+uniqueEmail()[:8], uniqueEmail(), e.staff.UserID).Scan(&linked); err != nil {
+		t.Fatal(err)
+	}
+	code, body, _ = e.do("PUT", "/api/users/"+linked, map[string]any{"email": uniqueEmail()})
+	wantError(t, code, body, 403, "Email karyawan yang punya akun login hanya bisa diubah lewat Settings → Manajemen User")
+	var loginEmail, loginName string
+	if err := e.tx.QueryRow(context.Background(), `SELECT email, coalesce(raw_user_meta_data->>'full_name', '') FROM auth.users WHERE id = $1`,
+		e.staff.UserID).Scan(&loginEmail, &loginName); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, raw := e.do("PUT", "/api/users/"+linked, map[string]any{"phone": "081299990001", "full_name": "Nama Baru"}); code != 200 {
+		t.Fatalf("PUT linked employee data = %d %s", code, raw)
+	}
+	var afterEmail, afterName string
+	if err := e.tx.QueryRow(context.Background(), `SELECT email, coalesce(raw_user_meta_data->>'full_name', '') FROM auth.users WHERE id = $1`,
+		e.staff.UserID).Scan(&afterEmail, &afterName); err != nil {
+		t.Fatal(err)
+	}
+	if afterEmail != loginEmail || afterName != loginName {
+		t.Fatalf("login account touched without Manajemen User: %q/%q → %q/%q", loginEmail, loginName, afterEmail, afterName)
+	}
+
+	for _, c := range []struct{ method, path string }{
+		{"POST", "/api/users/" + id + "/reset-password"}, {"GET", "/api/admin/users"}, {"POST", "/api/admin/users"},
+		{"PATCH", "/api/admin/users/" + unknownID}, {"POST", "/api/admin/users/" + unknownID + "/reset-password"},
+	} {
+		code, body, _ := e.do(c.method, c.path, employeeBody(uniqueEmail()))
+		wantError(t, code, body, 403, "Insufficient permissions")
+	}
+}
+
 func TestListUsers(t *testing.T) {
 	e := settingsUsers(t)
 	code, body, _ := e.do("GET", "/api/users?sort_by=password_hash", nil)
@@ -444,4 +523,67 @@ func TestAdminUsers(t *testing.T) {
 		"email": email, "password": "rahasia123", "full_name": "Admin Dua", "role": "admin",
 	})
 	wantError(t, code, body, 400, `duplicate key value violates unique constraint "users_email_key"`)
+}
+
+// TestResendingSameRoleKeepsIamRoles: saving an account from Manajemen User with its current
+// role keeps IAM roles assigned outside the app role (e.g. Admin HRIS on app role hrd); a role
+// change still resets them to the app role.
+func TestResendingSameRoleKeepsIamRoles(t *testing.T) {
+	e := settingsUsers(t)
+	ctx := context.Background()
+	email := uniqueEmail()
+	var holding string
+	if err := e.tx.QueryRow(ctx, `SELECT id::text FROM configuration.holdings ORDER BY created_at LIMIT 1`).Scan(&holding); err != nil {
+		t.Fatal(err)
+	}
+	scoped := func(m map[string]any) map[string]any {
+		m["business_scope"], m["holding_id"] = "holding", holding
+		return m
+	}
+	body := scoped(employeeBody(email))
+	body["is_access_app"] = true
+	body["password"] = "rahasia123"
+	body["role"] = "hrd"
+	code, created, raw := e.do("POST", "/api/users", body)
+	if code != 201 {
+		t.Fatalf("create = %d %s", code, raw)
+	}
+	id := created["data"].(map[string]any)["id"].(string)
+	var userID, customRole string
+	if err := e.tx.QueryRow(ctx, `SELECT user_id::text FROM hris.employees WHERE id = $1`, id).Scan(&userID); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.tx.QueryRow(ctx, `INSERT INTO iam.roles (code, name) VALUES ($1, 'Uji Khusus') RETURNING id::text`,
+		"uji_"+uniqueEmail()[:6]).Scan(&customRole); err != nil {
+		t.Fatal(err)
+	}
+	mustExec := func(sql string, args ...any) {
+		t.Helper()
+		if _, err := e.tx.Exec(ctx, sql, args...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mustExec(`DELETE FROM iam.user_roles WHERE user_id = $1`, userID)
+	mustExec(`INSERT INTO iam.user_roles (user_id, role_id, is_primary) VALUES ($1, $2, true)`, userID, customRole)
+	roles := func() string {
+		var r string
+		if err := e.tx.QueryRow(ctx, `SELECT string_agg(r.code, ',') FROM iam.user_roles ur JOIN iam.roles r ON r.id = ur.role_id
+			WHERE ur.user_id = $1`, userID).Scan(&r); err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	before := roles()
+	if code, _, raw := e.do("PUT", "/api/users/"+id, scoped(map[string]any{"is_access_app": true, "role": "hrd", "phone": "0812"})); code != 200 {
+		t.Fatalf("resave = %d %s", code, raw)
+	}
+	if got := roles(); got != before {
+		t.Fatalf("same-role save replaced IAM roles: %q → %q", before, got)
+	}
+	if code, _, raw := e.do("PUT", "/api/users/"+id, scoped(map[string]any{"is_access_app": true, "role": "finance_staff"})); code != 200 {
+		t.Fatalf("role change = %d %s", code, raw)
+	}
+	if got := roles(); got != "finance_staff" {
+		t.Fatalf("role change IAM roles = %q, want finance_staff", got)
+	}
 }

@@ -61,8 +61,10 @@ function UserEmployeeForm({
 }) {
   const router = useRouter();
   const isEdit = editId !== null;
-  const canResetPassword = useIamAccess().hasPrefix(IAM.settingsUsers);
-  const { data: businessTree = EMPTY_TREE } = useBusinessTree();
+  // Akun login (akses aplikasi, role, scope, password) hanya untuk Manajemen User; tanpa itu
+  // (mis. Admin HRIS lewat HRIS → Karyawan) form hanya mengubah data karyawan.
+  const canManageAccounts = useIamAccess().hasPrefix(IAM.settingsUsers);
+  const { data: businessTree = EMPTY_TREE } = useBusinessTree(canManageAccounts);
   const { data: lookups } = useUserFormLookups();
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
@@ -81,13 +83,16 @@ function UserEmployeeForm({
   }
 
   async function handleSubmit() {
-    const invalid = validateUserForm(form, { isEdit, hasExistingAppAccount });
+    const values = canManageAccounts ? form : { ...form, is_access_app: false };
+    const invalid = validateUserForm(values, { isEdit, hasExistingAppAccount });
     if (invalid) {
       toast.error(invalid);
       return;
     }
 
-    const payload = buildUserPayload(form, isEdit);
+    const payload = buildUserPayload(values, isEdit);
+    // Tanpa Manajemen User: tidak ada field akun sama sekali saat edit (akun yang ada tidak disentuh).
+    if (!canManageAccounts && isEdit) delete payload.is_access_app;
     try {
       if (editId) {
         const res = await updateMutation.mutateAsync({
@@ -130,31 +135,38 @@ function UserEmployeeForm({
       </div>
 
       <FormPageBody>
-        <PersonalSection form={form} onChange={setField} />
+        <PersonalSection form={form} onChange={setField} emailLocked={!canManageAccounts && hasExistingAppAccount} />
         <EmploymentSection form={form} lookups={lookups} onChange={setField} />
         <ContactSections form={form} onChange={setField} />
 
-        <FormSectionCard
-          icon={ShieldCheck}
-          title="App Access"
-          description="Paddy login, role, business scope, and approval permissions."
-          bodyClassName="p-0"
-        >
-          <div className="px-5 py-5">
-            <AppAccessFormSection
-              form={form}
-              businessTree={businessTree}
-              isEdit={isEdit}
-              hasExistingAppAccount={hasExistingAppAccount}
-              onChange={setField}
-              onResetPassword={
-                isEdit && canResetPassword && hasExistingAppAccount
-                  ? () => setResetDialogOpen(true)
-                  : undefined
-              }
-            />
-          </div>
-        </FormSectionCard>
+        {canManageAccounts ? (
+          <FormSectionCard
+            icon={ShieldCheck}
+            title="App Access"
+            description="Paddy login, role, business scope, and approval permissions."
+            bodyClassName="p-0"
+          >
+            <div className="px-5 py-5">
+              <AppAccessFormSection
+                form={form}
+                businessTree={businessTree}
+                isEdit={isEdit}
+                hasExistingAppAccount={hasExistingAppAccount}
+                onChange={setField}
+                onResetPassword={
+                  isEdit && hasExistingAppAccount ? () => setResetDialogOpen(true) : undefined
+                }
+              />
+            </div>
+          </FormSectionCard>
+        ) : (
+          <FormSectionCard icon={ShieldCheck} title="App Access" description="Akun login karyawan.">
+            <p className="text-sm text-muted-foreground">
+              {hasExistingAppAccount ? "Karyawan ini sudah punya akun login. " : ""}
+              Akun login (akses aplikasi, role, password) dikelola admin di Settings → Manajemen User.
+            </p>
+          </FormSectionCard>
+        )}
       </FormPageBody>
 
       <FormPageFooter>
@@ -176,7 +188,7 @@ function UserEmployeeForm({
         </Button>
       </FormPageFooter>
 
-      {editId ? (
+      {editId && canManageAccounts ? (
         <ResetPasswordDialog
           target={{
             id: editId,

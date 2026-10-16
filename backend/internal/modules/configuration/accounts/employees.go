@@ -322,10 +322,16 @@ func (s *service) provision(ctx context.Context, actorID, employeeID string, b *
 
 /* ── update ──────────────────────────────────────────────────────────── */
 
-func (s *service) updateUser(ctx context.Context, actorID, id string, b *employeeBody) (*employeeView, error) {
+// updateUser updates an employee; accounts false (no Manajemen User) may not
+// change the email of an employee linked to a login account, since the email
+// syncs to that account.
+func (s *service) updateUser(ctx context.Context, actorID, id string, b *employeeBody, accounts bool) (*employeeView, error) {
 	existing, err := s.ports.Employees.Access(ctx, s.db, id)
 	if err != nil || existing == nil {
 		return nil, errEmployeeNotFound
+	}
+	if e := b.str("email"); !accounts && existing.UserID != nil && e != nil && *e != existing.Email {
+		return nil, errLoginEmailNeedsSettings
 	}
 	if e := b.str("email"); e != nil && *e != "" && *e != existing.Email {
 		taken, err := s.ports.Employees.EmailTaken(ctx, s.db, *e, id)
@@ -375,7 +381,8 @@ func (s *service) updateUser(ctx context.Context, actorID, id string, b *employe
 			return nil, errAccessNeedsLogin
 		}
 		err = s.provision(ctx, actorID, id, b, email, fullName)
-	case existing.UserID != nil && wantsAccess:
+	case existing.UserID != nil && wantsAccess && accounts:
+		// Without Manajemen User the linked login account is never touched (email, name, role).
 		err = s.syncAccount(ctx, actorID, *existing.UserID, b, email, fullName)
 	case existing.UserID != nil && b.isAccessApp != nil && !*b.isAccessApp:
 		s.revokeAccount(ctx, actorID, id, *existing.UserID)
@@ -388,6 +395,12 @@ func (s *service) updateUser(ctx context.Context, actorID, id string, b *employe
 
 // syncAccount is syncAppAccount; the TS runs it without a transaction.
 func (s *service) syncAccount(ctx context.Context, actorID, userID string, b *employeeBody, email, fullName string) error {
+	// The IAM role set follows the app role only when the role changes: a save that resends the
+	// same role keeps IAM roles assigned outside the app role (e.g. Admin HRIS on app role hrd).
+	prevRole := profileColumn(ctx, s.db, userID, "role")
+	if !b.has("email") {
+		email = "" // the login email changes only when the body sends one
+	}
 	var upd AuthUpdate
 	if email != "" {
 		upd.Email = &email
@@ -492,7 +505,7 @@ func (s *service) syncAccount(ctx context.Context, actorID, userID string, b *em
 			return err
 		}
 	}
-	if b.role != nil {
+	if b.role != nil && (prevRole == nil || *prevRole != *b.role) {
 		if err := syncIamRole(ctx, s.db, userID, *b.role, actorID); err != nil {
 			return err
 		}

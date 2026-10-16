@@ -24,6 +24,8 @@ export const IAM = {
   posSupervisors: ["pos.settings.supervisors"],
   hris: ["hris"],
   hrisKepegawaian: ["hris.kepegawaian"],
+  /** HRIS → Kepegawaian → Karyawan: cukup untuk MEMBACA direktori karyawan (/api/users GET). */
+  hrisKaryawan: ["hris.kepegawaian.users"],
   hrisWorkforce: ["hris.workforce"],
   hrisCompensation: ["hris.compensation"],
   /** HRIS → Master Data → Penempatan Karyawan (karyawan multi-toko, 2026-10-15). */
