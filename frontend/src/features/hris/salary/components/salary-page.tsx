@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,19 +10,16 @@ import { formatDate, formatRupiah } from "@/lib/format";
 import { EntityTabs, useEntityParam } from "@/features/hris/payroll";
 import { useSalaryList } from "../queries";
 
-const UNASSIGNED = "unassigned";
-
 export function SalaryPage() {
   const router = useRouter();
 
   const salaryQuery = useSalaryList();
   const salaries = salaryQuery.data ?? [];
-  // Only an active version without an entity needs HR's attention.
+  // Gaji aktif tanpa entitas tidak milik tab mana pun: tampil sebagai peringatan, bukan tab.
   const unassigned = salaries.filter((s) => s.is_active !== false && !s.company_id);
-  const hasUnassigned = unassigned.length > 0;
-  const extra = hasUnassigned ? [{ value: UNASSIGNED, label: "Belum ada entitas" }] : [];
-  const { entity, setEntity, entities, loading: entitiesLoading } = useEntityParam(extra);
-  const visible = entity === UNASSIGNED ? unassigned : salaries.filter((s) => s.company_id === entity);
+  const { entity, setEntity, entities, loading: entitiesLoading } = useEntityParam();
+  const entityName = entities.find((e) => e.id === entity)?.name ?? "";
+  const visible = salaries.filter((s) => s.company_id === entity);
   const loading = salaryQuery.isLoading || entitiesLoading;
 
   if (loading) {
@@ -40,23 +38,38 @@ export function SalaryPage() {
           <h1 className="text-2xl font-bold text-gray-900">Salary Structure</h1>
           <p className="text-sm text-gray-500">Kelola struktur gaji karyawan</p>
         </div>
-        <Button onClick={() => router.push(`/dashboard/hris/salary/insert${entity && entity !== UNASSIGNED ? `?entity=${entity}` : ""}`)} className="bg-pink-600 hover:bg-pink-700">
+        <Button onClick={() => router.push(`/dashboard/hris/salary/insert${entity ? `?entity=${entity}` : ""}`)} className="bg-pink-600 hover:bg-pink-700">
           <PlusIcon className="w-4 h-4 mr-2" />
           Tambah Salary
         </Button>
       </div>
 
-      <EntityTabs value={entity} entities={entities} extra={extra} onChange={setEntity} />
-      {entity === UNASSIGNED && (
-        <p className="text-sm text-muted-foreground">
-          Struktur gaji tanpa entitas tidak ikut dihitung payroll mana pun. Buat versi baru dengan entitas pembayar.
-        </p>
+      {unassigned.length > 0 && (
+        <div className="rounded-2xl bg-warning-soft p-4 text-sm">
+          <p className="font-semibold">{unassigned.length} struktur gaji aktif belum punya entitas pembayar</p>
+          <p className="mt-0.5 text-muted-foreground">
+            Gaji ini tidak ikut payroll entitas mana pun. Buat versi baru dengan entitas pembayar lewat
+            &quot;Tambah Salary&quot;; versi tanpa entitas otomatis digantikan.
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            {unassigned.map((s) => (
+              <li key={s.id}>
+                <Link href={`/dashboard/hris/salary/${s.id}`} className="font-medium text-forest underline-offset-4 hover:underline">
+                  {s.employee?.full_name}
+                </Link>
+                <span className="text-xs text-muted-foreground"> · {s.employee?.nip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
+
+      <EntityTabs value={entity} entities={entities} onChange={setEntity} />
 
       {/* Salary Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Salary Structure</CardTitle>
+          <CardTitle>Daftar Salary Structure{entityName ? ` — ${entityName}` : ""}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -77,7 +90,7 @@ export function SalaryPage() {
                 {visible.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-gray-500">
-                      Belum ada struktur gaji untuk entitas ini.
+                      {entityName ? `Belum ada struktur gaji untuk ${entityName}.` : "Belum ada entitas aktif."}
                     </td>
                   </tr>
                 ) : (

@@ -100,7 +100,7 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
           description={
             <>
               <Badge variant={payrollRun.company ? "ink" : "muted"} className="mr-2 align-middle">
-                {payrollRun.company?.name ?? "Run lama (tanpa entitas)"}
+                {payrollRun.company?.name ?? "Gabungan · sebelum per entitas"}
               </Badge>
               {monthName(payrollRun.period_month)} {payrollRun.period_year} • {payrollRun.total_employees} karyawan
             </>
@@ -201,7 +201,7 @@ export function PayrollDetailPage({ params }: PayrollPageProps) {
         ) : (
           <Card variant="soft">
             <CardContent className="py-4 text-sm text-muted-foreground">
-              Run lama tanpa entitas tidak bisa dihitung ulang — hapus lalu buat payroll per entitas.
+              Run gabungan (sebelum payroll per entitas) tidak bisa dihitung ulang — hapus lalu buat payroll per entitas.
             </CardContent>
           </Card>
         ))}

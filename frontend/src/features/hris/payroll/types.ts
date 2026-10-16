@@ -26,7 +26,7 @@ export interface PayrollRun {
   approved_at?: string;
   paid_at?: string;
   attendance_period?: PayrollAttendancePeriod;
-  /** Entitas run; null = run lama tanpa entitas. */
+  /** Entitas run; null = run gabungan sebelum payroll per entitas. */
   company_id?: string | null;
   company?: { id: string; name: string } | null;
 }
@@ -171,7 +171,7 @@ export interface StoreCostReport {
     period_month: number;
     period_year: number;
     status: string;
-    /** Entitas pembayar run; null untuk run lama tanpa entitas. */
+    /** Entitas pembayar run; null untuk run gabungan sebelum payroll per entitas. */
     company_name: string | null;
   };
   stores: StoreCostStore[];

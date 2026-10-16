@@ -1,6 +1,7 @@
 package payroll
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -52,9 +53,9 @@ func TestRunPerEntityCreate(t *testing.T) {
 		VALUES ('Payroll Juli 2099', 7, 2099, 'draft') RETURNING id::text`)
 	wantErr(t, e.call(&e.hr, "POST", "/api/hris/payroll",
 		map[string]any{"period_month": 7, "period_year": 2099, "company_id": e.co}, 400),
-		"Periode ini masih punya payroll lama tanpa entitas (Payroll Juli 2099) — hapus run itu dulu untuk memproses per entitas")
+		"Periode ini masih punya run gabungan sebelum payroll per entitas (Payroll Juli 2099) — hapus run itu dulu untuk memproses per entitas")
 	wantErr(t, e.call(&e.hr, "POST", "/api/hris/payroll/"+legacy+"/calculate", nil, 400),
-		"Run lama tanpa entitas tidak bisa dihitung ulang — hapus lalu buat payroll per entitas")
+		"Run gabungan sebelum payroll per entitas tidak bisa dihitung ulang — hapus lalu buat payroll per entitas")
 	if c := e.call(&e.hr, "GET", "/api/hris/payroll/"+legacy, nil, 200)["data"].(map[string]any)["company"]; c != nil {
 		t.Fatalf("legacy company %v", c)
 	}
@@ -335,5 +336,73 @@ func TestMultiEntityPaidAndPayslip(t *testing.T) {
 	slips := e.call(&e.hr, "GET", "/api/hris/payslips?payroll_run_id="+id, nil, 200)["data"].([]any)
 	if run := slips[0].(map[string]any)["payroll_run"].(map[string]any); run["company_name"] != "Entitas Uji" {
 		t.Fatalf("payslip run embed %v", run)
+	}
+}
+
+// TestBackfillCombinedRunEntity runs delta 20261016110000: a run from before payroll per
+// entity gets an entity only when every slip belongs to that one entity and nothing
+// contradicts it; running it again changes nothing.
+func TestBackfillCombinedRunEntity(t *testing.T) {
+	e := setup(t)
+	delta, err := os.ReadFile("../../../database/migrations/deltas/20261016110000_payroll_runs_backfill_entity.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, _ := e.entity("Entitas Lain")
+	solo := e.employee("Satu Entitas", "", true)
+	e.salary(solo, e.co, 1_000_000)
+	both := e.employee("Dua Entitas", "", true)
+	e.salary(both, e.co, 1_000_000)
+	e.salary(both, other, 1_000_000)
+	unknown := e.employee("Tanpa Entitas", "", true) // no salary with an entity, no placement
+
+	combinedRun := func(month int, employees ...string) string {
+		var id string
+		e.scalar(&id, `INSERT INTO hris.payroll_runs (run_name, period_month, period_year, status)
+			VALUES ('Run uji', $1, 2097, 'draft') RETURNING id::text`, month)
+		for _, emp := range employees {
+			e.exec(`INSERT INTO hris.payroll_details (payroll_run_id, employee_id) VALUES ($1, $2)`, id, emp)
+		}
+		return id
+	}
+	oneEntity := combinedRun(1, solo)
+	multiEntity := combinedRun(2, solo, both)
+	journaled := combinedRun(3, solo)
+	taken := combinedRun(4, solo)
+	empty := combinedRun(5)
+	unknownEntity := combinedRun(6, solo, unknown)
+
+	// The entity already has a run in April.
+	e.exec(`INSERT INTO hris.payroll_runs (run_name, period_month, period_year, status, company_id)
+		VALUES ('Run entitas', 4, 2097, 'draft', $1)`, e.co)
+	// A journal of the March run was posted to the other entity.
+	var year, period string
+	e.scalar(&year, `INSERT INTO accounting.fiscal_years (company_id, code, name, start_date, end_date, is_active)
+		VALUES ($1, 'FY-UJI', 'Tahun Uji', '2097-01-01', '2097-12-31', true) RETURNING id::text`, other)
+	e.scalar(&period, `INSERT INTO accounting.fiscal_periods (fiscal_year_id, period_no, name, start_date, end_date, status)
+		VALUES ($1, 3, 'Maret 2097', '2097-03-01', '2097-03-31', 'OPEN') RETURNING id::text`, year)
+	e.exec(`INSERT INTO accounting.journal_entries (company_id, entry_no, entry_date, fiscal_period_id, source_document_id)
+		VALUES ($1, 'JU-UJI-1', '2097-03-31', $2, $3)`, other, period, journaled)
+
+	for i := 0; i < 2; i++ {
+		e.exec(string(delta))
+	}
+
+	companyOf := func(id string) string {
+		var c *string
+		e.scalar(&c, `SELECT company_id::text FROM hris.payroll_runs WHERE id = $1`, id)
+		if c == nil {
+			return ""
+		}
+		return *c
+	}
+	if got := companyOf(oneEntity); got != e.co {
+		t.Fatalf("one-entity run company = %q, want %q", got, e.co)
+	}
+	for name, id := range map[string]string{"multi-entity employee": multiEntity, "journal elsewhere": journaled,
+		"entity run exists": taken, "no slips": empty, "unknown entity": unknownEntity} {
+		if got := companyOf(id); got != "" {
+			t.Fatalf("%s: run company = %q, want combined (NULL)", name, got)
+		}
 	}
 }

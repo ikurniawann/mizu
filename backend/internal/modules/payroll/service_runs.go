@@ -75,7 +75,7 @@ func (s *service) createRun(ctx context.Context, userID string, month, year int,
 		case err != nil:
 			return err
 		case found && legacy:
-			return httpx.BadRequest("Periode ini masih punya payroll lama tanpa entitas (" + other +
+			return httpx.BadRequest("Periode ini masih punya run gabungan sebelum payroll per entitas (" + other +
 				") — hapus run itu dulu untuk memproses per entitas")
 		case found:
 			return httpx.BadRequest("Payroll untuk periode ini sudah ada")
@@ -388,7 +388,7 @@ func (s *service) calculateRun(ctx context.Context, runID string, includeThr boo
 		return nil, httpx.BadRequest("Hanya payroll draft yang bisa dihitung")
 	}
 	if run.CompanyID == nil {
-		return nil, httpx.BadRequest("Run lama tanpa entitas tidak bisa dihitung ulang — hapus lalu buat payroll per entitas")
+		return nil, httpx.BadRequest("Run gabungan sebelum payroll per entitas tidak bisa dihitung ulang — hapus lalu buat payroll per entitas")
 	}
 	settings, tax, err := payrollConfigRows(ctx, s.db, run.PeriodYear)
 	if err != nil {

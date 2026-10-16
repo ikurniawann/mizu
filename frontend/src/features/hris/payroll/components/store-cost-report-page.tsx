@@ -87,7 +87,7 @@ export function StoreCostReportPage() {
             Biaya tenaga kerja per toko dari slip gaji yang dibagi sesuai jam/hari hadir karyawan di tiap toko.
             {data && (
               <span className="mt-1 block font-medium text-foreground">
-                {data.run.company_name ?? "Run lama (tanpa entitas)"} · {monthName(data.run.period_month)}{" "}
+                {data.run.company_name ?? "Gabungan (sebelum per entitas)"} · {monthName(data.run.period_month)}{" "}
                 {data.run.period_year}
               </span>
             )}
@@ -102,7 +102,7 @@ export function StoreCostReportPage() {
               <SelectContent>
                 {runList.map((r) => (
                   <SelectItem key={r.id} value={r.id}>
-                    {monthName(r.period_month)} {r.period_year} · {STATUS_LABEL[r.status] ?? r.status} · {r.company?.name ?? "Run lama"}
+                    {monthName(r.period_month)} {r.period_year} · {STATUS_LABEL[r.status] ?? r.status} · {r.company?.name ?? "Gabungan"}
                   </SelectItem>
                 ))}
               </SelectContent>
