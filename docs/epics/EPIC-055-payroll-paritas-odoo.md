@@ -1,6 +1,6 @@
 # EPIC-055: Payroll Paritas Rule Odoo — G1–G9 (`MODULE-PAYROLL`)
 
-status: coding
+status: review
 environment: dev
 retries: 0
 
@@ -63,18 +63,18 @@ Semua kolom/setting baru punya **default yang mempertahankan perilaku lama**, se
 **Slip (`hris.payroll_details`):** kolom baru untuk tunj. jabatan, tunj. kesehatan, potongan izin pribadi, potongan sakit, hari hadir, hari tunjangan, dan rincian komponen manual (jsonb). Metode PPh21, kategori TER, tarif TER dan DPP disimpan untuk audit.
 
 ## Tasks
-- [ ] T1 Migrasi skema (salary, settings, overtime day_type, leave `personal`, payroll_inputs, payroll_details)
-- [ ] T2 Domain: basis gaji & hari hadir (G1, G8), mode tunjangan (G2), syarat masa kerja (G7)
-- [ ] T3 Domain: skema lembur, hari istirahat, setting clock-out (G4, G9)
-- [ ] T4 Domain: potongan telat bertingkat (G3)
-- [ ] T5 Domain: PIP/PIS & komponen manual (G6)
-- [ ] T6 Domain: PPh21 TER + koreksi Desember (G5)
-- [ ] T7 Wiring: load field baru, input manual, YTD PPh21, simpan detail; validasi setting
-- [ ] T8 API: CRUD + import CSV komponen manual; `day_type` lembur; tipe cuti `personal`; field struktur gaji
-- [ ] T9 Frontend: form struktur gaji, halaman setting, jenis hari lembur, label Izin Pribadi
-- [ ] T10 Frontend: komponen manual di detail run, baris slip & PDF
-- [ ] T11 Skrip data Odoo → field baru (paket, diuji di salinan DB)
-- [ ] T12 Verifikasi: kalkulator referensi rule Odoo vs paddydev di salinan DB (September), review, uji in-app
+- [x] T1 Migrasi skema (salary, settings, overtime day_type, leave `personal`, payroll_inputs, payroll_details)
+- [x] T2 Domain: basis gaji & hari hadir (G1, G8), mode tunjangan (G2), syarat masa kerja (G7)
+- [x] T3 Domain: skema lembur, hari istirahat, setting clock-out (G4, G9)
+- [x] T4 Domain: potongan telat bertingkat (G3)
+- [x] T5 Domain: PIP/PIS & komponen manual (G6)
+- [x] T6 Domain: PPh21 TER + koreksi Desember (G5)
+- [x] T7 Wiring: load field baru, input manual, YTD PPh21, simpan detail; validasi setting
+- [x] T8 API: CRUD + import CSV komponen manual; `day_type` lembur; tipe cuti `personal`; field struktur gaji
+- [x] T9 Frontend: form struktur gaji, halaman setting, jenis hari lembur, label Izin Pribadi
+- [x] T10 Frontend: komponen manual di detail run, baris slip & PDF
+- [x] T11 Skrip data Odoo → field baru (paket, diuji di salinan DB)
+- [x] T12 Verifikasi: kalkulator referensi rule Odoo vs paddydev di salinan DB (September), review, uji in-app
 
 ## Acceptance Criteria
 - Given upah harian Rp100.000 dan 20 hari hadir, Then gaji pokok Rp2.000.000.
@@ -86,9 +86,14 @@ Semua kolom/setting baru punya **default yang mempertahankan perilaku lama**, se
 - Given setting default, Then hasil semua tes payroll lama tidak berubah.
 
 ## Belum diputuskan / perlu slip Odoo
+- Kontrak yang mulai/berakhir di tengah bulan: paddydev memprorata gaji pokok & tunjangan flat sesuai masa kontrak, rule Odoo `standard` membayar penuh (2 slip September). Perlu keputusan HR.
 - Definisi "hari tunjangan" Odoo (`_paddy_get_allowance_days`): sementara = hari hadir. Verifikasi dengan `hr_payslip_worked_days`.
 - POS_FEE di rule NET Odoo ikut mengurangi gaji bersih. Ini tidak diikuti sampai dikonfirmasi lewat slip.
 - Pembulatan TER Odoo: sementara dibulatkan ke rupiah terdekat.
 
 ## Automation Log
 - 2026-10-17 — Epic dibuat dari gap G1–G9 di `docs/qa/payroll-odoo-parity-uji.md`. Keputusan user tercatat di atas. Tabel TER diambil dari PDF resmi PP 58/2023 (BPK): A 44 lapisan, B 40, C 41; dicek ulang dengan gambar halaman lampiran.
+- 2026-10-17 — T1–T10 selesai. Migrasi `20261017090000_leave_type_personal.sql` dan `20261017090100_payroll_odoo_parity.sql` diuji di salinan DB live (`migrate -verify`: 0 objek hilang/berbeda). Semua default mempertahankan perilaku lama; tes referensi lama (net 10.861.155) tidak berubah. Tes baru: `domain/parity_test.go` (16 kasus G1–G9, termasuk jumlah lapisan TER 44/40/41) dan `parity_integration_test.go`.
+- 2026-10-17 — Keputusan teknis: hari tunjangan = hari hadir (sementara, menunggu slip Odoo). Jadwal shift karyawan ikut menentukan hari istirahat, jadi berlaku juga untuk 26 karyawan demo yang punya pola shift. Upah harian tanpa pembagi struktur: aturan per hari tidak berlaku (Odoo base_days 0). Komponen manual hanya untuk karyawan yang digaji entitas run. Tabel alokasi per toko tidak diubah: komponen baru ikut terbagi lewat total bruto/potongan/bersih.
+- 2026-10-17 — T11: `tools/payroll_rules.py` → `payroll_rules.sql`. Isinya: aturan perhitungan per kontrak Odoo untuk 602 struktur gaji import, 194 lembur `rest_day` (holiday_special), 157 cuti → `personal`, dan setting payroll (TER both, telat tier min 15 menit, PIP/PIS on, tarif produksi 18.000). Trigger notifikasi cuti dimatikan sementara saat update cuti.
+- 2026-10-17 — T12: payroll September dihitung di salinan DB dengan API branch, lalu dibandingkan dengan kalkulator referensi independen yang menghitung rule Odoo dari CSV mentah. Hasilnya 261/263 slip identik di semua komponen. Sisa 2 slip = prorata kontrak tengah bulan (lihat "Belum diputuskan"). Temuan yang diperbaiki: potongan Izin Pribadi untuk freelancer upah harian tanpa struktur. Uji UI (Playwright, stack branch di DB salinan): halaman pengaturan, struktur gaji, detail run (komponen manual), slip, dan lembur tampil tanpa error. Kegagalan bawaan yang identik dengan `main` di DB salinan: hris TestAttendancePeriodClosing & TestLeaves, site/storedvalue/auth (403), spa TestTherapistPayrollTwiceAMonth; shop timeout (tidak bergantung pada payroll/hris).

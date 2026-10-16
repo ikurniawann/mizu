@@ -18,6 +18,18 @@ Status per rule:
 - **BEDA**: fitur ada tapi rumusnya lain, jadi selisihnya diperkirakan.
 - **TIDAK ADA**: paddydev belum punya fiturnya.
 
+> **Update 17-10-2026 (EPIC-055):** gap G1–G9 sudah dikembangkan. Rule berikut sekarang **SAMA** setelah
+> `payroll_rules.sql` (paket import) dan setting payroll dijalankan:
+> - GP daily / monthly_prorated (2.2, 2.3);
+> - tunjangan per hari (2.4–2.6), INSURANCE ≥ 365 hari (2.13);
+> - lembur hari istirahat & skema production/freelance/daily worker (2.7–2.12);
+> - potongan telat bertingkat (2.15), PIP/PIS (2.16, 2.17);
+> - komponen manual (2.22), PPh21 TER basis both (2.21).
+>
+> Uji di salinan DB: **261 dari 263 slip September identik** dengan kalkulator referensi rule Odoo. Sisa 2 slip:
+> kontrak mulai tengah bulan (2.1\*). Yang masih perlu slip Odoo: definisi hari tunjangan, POS_FEE di NET,
+> pembulatan TER. Lihat `docs/epics/EPIC-055-payroll-paritas-odoo.md`.
+
 ---
 
 ## Langkah 0 — Prasyarat (wajib sebelum uji angka)
