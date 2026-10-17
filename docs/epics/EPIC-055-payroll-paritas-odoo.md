@@ -118,3 +118,8 @@ Semua kolom/setting baru punya **default yang mempertahankan perilaku lama**, se
   - Uji halaman live sebagai Admin HRIS lolos: pengaturan, struktur gaji, detail run, lembur, Beranda.
   - Status → ready-for-qa.
   - Run payroll yang sudah ada belum dihitung ulang (tindakan HR).
+- 2026-10-17 — Persiapan QA: 311 akun role Karyawan dibuat untuk karyawan aktif hasil import (`pnpm db:seed:paddy-employee-accounts`).
+  - Password acak; kredensial di luar repo. 25 karyawan tanpa email dilewati.
+  - Migrasi `20261017100000_users_role_check_app_roles.sql` memperbaiki constraint yang menolak peran `employee`/`sales`/`marketing`.
+  - Login dan ganti password karyawan diverifikasi.
+  - Backup sebelumnya: `paddydev-db-before-employee-accounts-20261017-093432.dump`.

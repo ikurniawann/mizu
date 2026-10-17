@@ -43,8 +43,12 @@ Status per rule:
      `_paddy_get_lateness_tier_amount`, `_paddy_get_work_month_days` dan `_paddy_get_allowance_days`.
 2. **Backup DB** sebelum menjalankan Hitung/Paid di live, ke `~/Desktop/paddydev-backups/`.
    Lebih aman lagi, uji dulu di salinan DB.
-3. **Jangan Mark Paid run uji.** Paid akan memotong saldo pinjaman sungguhan dan memposting jurnal.
-4. **Run September entitas Paddy sudah ada (draft, data demo 23 karyawan).** Hitung ulang akan ikut memasukkan semua
+3. **Akun karyawan untuk cek slip di ESS** (17-10-2026):
+   - 311 karyawan aktif hasil import sudah punya akun role Karyawan (username = email, password awal acak). Kredensial dipegang HR.
+   - 25 karyawan tanpa email belum punya akun; buat lewat Manajemen User setelah emailnya dilengkapi.
+   - Karyawan bisa mengganti password sendiri lewat menu akun → **Ganti kata sandi** (minimal 8 karakter).
+4. **Jangan Mark Paid run uji.** Paid akan memotong saldo pinjaman sungguhan dan memposting jurnal.
+5. **Run September entitas Paddy sudah ada (draft, data demo 23 karyawan).** Hitung ulang akan ikut memasukkan semua
    karyawan aktif hasil import yang struktur gajinya di entitas Paddy (134 orang). Entitas Paddy Kantor Pusat
    (129 orang) belum punya run September, jadi buat dulu dari HRIS → Payroll → tab entitas.
 
