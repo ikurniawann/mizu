@@ -64,6 +64,7 @@
     "db:seed:paddy-placements": "node seeders/paddy-placements.js",
     "db:seed:payroll-qa": "node seeders/payroll-multi-entity-qa.js",
     "db:seed:paddy-hris-admins": "node seeders/paddy-hris-admins.js",
+    "db:seed:paddy-employee-accounts": "node seeders/paddy-employee-accounts.js",
     "db:seed:paddy-spa-demo": "pnpm run db:seed:paddy-spa && pnpm run db:seed:paddy-spa-transactions",
     "db:seed:paddy-demo": "pnpm run db:seed:paddy-spa && pnpm run db:seed:paddy-products && pnpm run db:seed:paddy-spa-transactions && pnpm run db:seed:paddy-branding",
     "db:seed:paddy-full": "pnpm run db:seed:iam && pnpm run db:seed:paddy-demo && pnpm run db:seed:paddy-parkir && pnpm run db:seed:demo-paddy && pnpm run db:seed:paddy-stall-purchasing && pnpm run db:seed:purchasing-paddy-suppliers && pnpm run db:seed:accounting-paddy-coa && pnpm run db:seed:paddy-materials && pnpm run db:seed:paddy-recruitment && pnpm run db:seed:paddy-placements",
