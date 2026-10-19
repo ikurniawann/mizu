@@ -2,12 +2,17 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronUpDownIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Loader2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContractExpiryBanner } from "@/features/users/components/contract-expiry-banner";
+import { CONTRACT_TABS, type ContractTab } from "@/lib/hris/contract-tabs";
+import { useExpiringContracts } from "@/features/users/queries";
+import { NoContractTable, ProbationTable } from "./contract-reminder-tables";
 import { formatDate, formatNumber } from "@/lib/format";
 import type { ContractListItem, KpiRecommendation } from "../api";
 import { useContractList, useKpiRecommendation } from "../queries";
@@ -119,7 +124,12 @@ function DaysLeftBadge({ item }: { item: ContractListItem }) {
   );
 }
 
-export function ContractsListPage() {
+export function ContractsListPage({ tab = CONTRACT_TABS.expiring }: { tab?: ContractTab }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const reminders = useExpiringContracts(30);
+  const noContractRows = reminders.data?.noContract ?? [];
+  const probationRows = reminders.data?.probations ?? [];
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [daysFilter, setDaysFilter] = useState("30");
@@ -186,12 +196,40 @@ export function ContractsListPage() {
       <div className="border-b border-gray-200/70 pb-4">
         <h1 className="text-2xl font-bold text-gray-900">Kontrak Karyawan</h1>
         <p className="text-sm text-gray-500">
-          Pantau kontrak yang akan segera berakhir — {total} kontrak sesuai filter
+          {tab === CONTRACT_TABS.expiring
+            ? `Pantau kontrak yang akan segera berakhir — ${total} kontrak sesuai filter`
+            : tab === CONTRACT_TABS.noContract
+              ? `Karyawan aktif yang belum punya kontrak aktif — ${noContractRows.length} karyawan`
+              : `Masa percobaan yang segera berakhir — ${probationRows.length} karyawan`}
         </p>
       </div>
 
       <ContractExpiryBanner />
 
+      <Tabs
+        value={tab}
+        onValueChange={(value) => router.replace(`${pathname}?tab=${value}`, { scroll: false })}
+      >
+        <TabsList variant="line">
+          <TabsTrigger value={CONTRACT_TABS.expiring}>Akan berakhir</TabsTrigger>
+          <TabsTrigger value={CONTRACT_TABS.noContract}>
+            Tanpa kontrak aktif{reminders.data ? ` (${noContractRows.length})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value={CONTRACT_TABS.probation}>
+            Masa percobaan{reminders.data ? ` (${probationRows.length})` : ""}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {tab === CONTRACT_TABS.noContract && (
+        <NoContractTable rows={noContractRows} loading={reminders.isLoading} />
+      )}
+      {tab === CONTRACT_TABS.probation && (
+        <ProbationTable rows={probationRows} loading={reminders.isLoading} days={reminders.data?.days ?? 30} />
+      )}
+
+      {tab === CONTRACT_TABS.expiring && (
+      <>
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative w-full sm:w-64">
@@ -356,6 +394,8 @@ export function ContractsListPage() {
             </Button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
