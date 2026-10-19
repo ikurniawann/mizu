@@ -208,7 +208,12 @@ export function ContractsListPage({ tab = CONTRACT_TABS.expiring }: { tab?: Cont
 
       <Tabs
         value={tab}
-        onValueChange={(value) => router.replace(`${pathname}?tab=${value}`, { scroll: false })}
+        onValueChange={(value) => {
+          // Pertahankan query lain (mis. ?from= untuk breadcrumb) saat ganti tab.
+          const params = new URLSearchParams(window.location.search);
+          params.set("tab", value);
+          router.replace(`${pathname}?${params}`, { scroll: false });
+        }}
       >
         <TabsList variant="line">
           <TabsTrigger value={CONTRACT_TABS.expiring}>Akan berakhir</TabsTrigger>

@@ -6,6 +6,19 @@ export const NAV_FROM_APPROVAL_PR = "approval-pr";
 /** Query param: keep Approval PO menu active on PO detail routes. */
 export const NAV_FROM_APPROVAL_PO = "approval-po";
 
+/** Query param: halaman dibuka dari kartu di halaman Karyawan. */
+export const NAV_FROM_EMPLOYEES = "karyawan";
+
+/** Halaman asal per `?from=`: breadcrumb menampilkan jalur halaman asal agar bisa kembali. */
+export const NAV_FROM_ORIGIN_HREFS: Record<string, string> = {
+  [NAV_FROM_EMPLOYEES]: "/dashboard/employees",
+};
+
+/** Halaman tujuan yang boleh memakai asal tersimpan (session) saat navigasi klien. */
+const NAV_FROM_ORIGIN_TARGETS: Record<string, string[]> = {
+  [NAV_FROM_EMPLOYEES]: ["/dashboard/hris/contracts"],
+};
+
 const NAV_FROM_SESSION_KEY = "nav-from";
 
 export function appendNavFrom(href: string, from: string): string {
@@ -153,6 +166,10 @@ export function resolveNavFrom(pathname: string, queryFrom: string | null): stri
   }
 
   if (persisted === NAV_FROM_APPROVAL_PO && isPurchaseOrderDetailPath(pathname)) {
+    return persisted;
+  }
+
+  if (NAV_FROM_ORIGIN_TARGETS[persisted]?.includes(pathname)) {
     return persisted;
   }
 

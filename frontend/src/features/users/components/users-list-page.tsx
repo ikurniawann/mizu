@@ -21,12 +21,14 @@ import { ContractExpiryBanner } from "./contract-expiry-banner";
 import { ResetPasswordDialog, type ResetPasswordTarget } from "./reset-password-dialog";
 import { CreateAccountDialog } from "./create-account-dialog";
 import {
+  DEFAULT_EMPLOYEE_DIRECTORY_FILTERS,
   DEFAULT_USER_LIST_FILTERS,
   UsersListFiltersPanel,
   countActiveFilters,
   type UserListFilters,
 } from "./users-list-filters";
 import { UsersTable } from "./users-table";
+import { NAV_FROM_EMPLOYEES } from "@/lib/iam/nav-context";
 import type { UserEmployeeItem } from "@/lib/users/user-mapper";
 
 interface UsersListPageProps {
@@ -50,7 +52,8 @@ export function UsersListPage({ variant = "directory" }: UsersListPageProps) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<UserListFilters>(DEFAULT_USER_LIST_FILTERS);
+  const defaultFilters = isAccountsView ? DEFAULT_USER_LIST_FILTERS : DEFAULT_EMPLOYEE_DIRECTORY_FILTERS;
+  const [filters, setFilters] = useState<UserListFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null);
@@ -80,7 +83,7 @@ export function UsersListPage({ variant = "directory" }: UsersListPageProps) {
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
-  const activeFilterCount = countActiveFilters(filters);
+  const activeFilterCount = countActiveFilters(filters, defaultFilters);
   const isFilterActive = activeFilterCount > 0;
 
   useEffect(() => {
@@ -99,7 +102,7 @@ export function UsersListPage({ variant = "directory" }: UsersListPageProps) {
   function handleResetFilters() {
     setSearchQuery("");
     setSearch("");
-    setFilters(DEFAULT_USER_LIST_FILTERS);
+    setFilters(defaultFilters);
     setPage(1);
   }
 
@@ -146,7 +149,7 @@ export function UsersListPage({ variant = "directory" }: UsersListPageProps) {
         )}
       </div>
 
-      {!isAccountsView && <ContractExpiryBanner />}
+      {!isAccountsView && <ContractExpiryBanner from={NAV_FROM_EMPLOYEES} />}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

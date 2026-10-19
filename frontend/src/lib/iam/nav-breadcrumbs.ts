@@ -1,4 +1,5 @@
 import { isNavLinkActive } from "@/lib/iam/nav-active";
+import { NAV_FROM_ORIGIN_HREFS } from "@/lib/iam/nav-context";
 import type { NavItem } from "@/lib/iam/types";
 
 export interface NavBreadcrumbItem {
@@ -132,11 +133,31 @@ function finalizeChain(chain: NavBreadcrumbItem[], pathname: string): NavBreadcr
   return result;
 }
 
-/** Build breadcrumb trail from IAM sidebar tree + current pathname. */
+/**
+ * Build breadcrumb trail from IAM sidebar tree + current pathname. With a known
+ * `?from=` origin (NAV_FROM_ORIGIN_HREFS) the trail goes through the origin page
+ * instead, so the user can click back to it (Karyawan › Kontrak).
+ */
 export function buildNavBreadcrumbs(
   navItems: NavItem[],
   pathname: string,
   navFrom?: string | null
+): NavBreadcrumbItem[] {
+  const trail = buildTrail(navItems, pathname, navFrom);
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+  const originHref = navFrom ? NAV_FROM_ORIGIN_HREFS[navFrom] : undefined;
+  if (!originHref || normalizedPath === originHref || normalizedPath.startsWith(`${originHref}/`)) {
+    return trail;
+  }
+  const origin = buildTrail(navItems, originHref, null);
+  const originPage = origin[origin.length - 1];
+  return [...origin.slice(0, -1), { label: originPage.label, href: originHref }, trail[trail.length - 1]];
+}
+
+function buildTrail(
+  navItems: NavItem[],
+  pathname: string,
+  navFrom: string | null | undefined
 ): NavBreadcrumbItem[] {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
 

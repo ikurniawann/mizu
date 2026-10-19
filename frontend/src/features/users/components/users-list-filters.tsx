@@ -22,13 +22,23 @@ export const DEFAULT_USER_LIST_FILTERS: UserListFilters = {
   role: "",
 };
 
-export function countActiveFilters(filters: UserListFilters): number {
+/** Daftar Karyawan dibuka dengan karyawan aktif saja; Manajemen User tetap semua. */
+export const DEFAULT_EMPLOYEE_DIRECTORY_FILTERS: UserListFilters = {
+  ...DEFAULT_USER_LIST_FILTERS,
+  active: "true",
+};
+
+/** Jumlah filter yang berbeda dari bawaan halaman. */
+export function countActiveFilters(
+  filters: UserListFilters,
+  defaults: UserListFilters = DEFAULT_USER_LIST_FILTERS
+): number {
   return [
-    filters.department !== "all",
-    filters.status !== "all",
-    filters.active !== "all",
-    filters.access !== "all",
-    Boolean(filters.role),
+    filters.department !== defaults.department,
+    filters.status !== defaults.status,
+    filters.active !== defaults.active,
+    filters.access !== defaults.access,
+    filters.role !== defaults.role,
   ].filter(Boolean).length;
 }
 

@@ -6,7 +6,10 @@ import { resolveNavFrom } from "./nav-context";
 
 function readNavFrom(pathname: string): string | null {
   if (typeof window === "undefined") return null;
-  const queryFrom = new URLSearchParams(window.location.search).get("from");
+  // Saat navigasi klien, render pertama halaman baru masih melihat URL lama:
+  // abaikan ?from= milik halaman sebelumnya dan pakai asal tersimpan.
+  const urlIsCurrent = window.location.pathname === pathname;
+  const queryFrom = urlIsCurrent ? new URLSearchParams(window.location.search).get("from") : null;
   return resolveNavFrom(pathname, queryFrom);
 }
 

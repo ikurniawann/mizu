@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { ExpiringContractsData } from "../api";
 import { ContractExpiryBanner } from "./contract-expiry-banner";
@@ -33,6 +33,16 @@ it("shows one compact card per reminder that links to its table", () => {
   // Tidak ada daftar nama di kartu.
   expect(screen.queryByText("Tanpa 0")).toBeNull();
   expect(screen.queryByText("Karyawan 1")).toBeNull();
+});
+
+it("carries the origin page for the breadcrumb", () => {
+  data.current = { days: 30, contracts: [contract("1", 5)], probations: [], noContract: [] };
+  render(<ContractExpiryBanner from="karyawan" />);
+  expect(screen.getByRole("link").getAttribute("href")).toBe(
+    "/dashboard/hris/contracts?tab=akan-berakhir&from=karyawan"
+  );
+  fireEvent.click(screen.getByRole("link"));
+  expect(window.sessionStorage.getItem("nav-from")).toBe("karyawan");
 });
 
 it("renders nothing without reminders", () => {

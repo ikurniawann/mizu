@@ -2,7 +2,8 @@
 
 import { ExclamationTriangleIcon, ClockIcon, DocumentMinusIcon } from "@heroicons/react/24/outline";
 import { StatCard } from "@/components/ui/stat-card";
-import { CONTRACT_TABS, contractsTabHref } from "@/lib/hris/contract-tabs";
+import { CONTRACT_TABS, contractsTabHref, type ContractTab } from "@/lib/hris/contract-tabs";
+import { appendNavFrom, persistNavFrom } from "@/lib/iam/nav-context";
 import { useExpiringContracts } from "../queries";
 
 /**
@@ -10,6 +11,7 @@ import { useExpiringContracts } from "../queries";
  * tanpa kontrak aktif — PKWT wajib tertulis sebelum mulai bekerja (PP 35/2021),
  * (2) kontrak aktif yang berakhir ≤30 hari (termasuk yang terlewat), (3) masa
  * percobaan PKWTT yang berakhir. Klik → tabel lengkapnya di HRIS → Kontrak.
+ * `from` (mis. "karyawan") ikut di tautan agar breadcrumb bisa kembali ke asal.
  */
 
 const GRID_COLS: Record<number, string> = {
@@ -18,9 +20,11 @@ const GRID_COLS: Record<number, string> = {
   3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
 };
 
-export function ContractExpiryBanner() {
+export function ContractExpiryBanner({ from }: { from?: string }) {
   const { data } = useExpiringContracts(30);
   if (!data) return null;
+
+  const tabHref = (tab: ContractTab) => (from ? appendNavFrom(contractsTabHref(tab), from) : contractsTabHref(tab));
 
   const noContract = data.noContract ?? [];
   const urgent = data.contracts.filter((c) => c.days_left <= 14).length;
@@ -34,7 +38,7 @@ export function ContractExpiryBanner() {
         value={noContract.length}
         unit="orang"
         hint="PKWT wajib tertulis sebelum mulai bekerja (PP 35/2021) · Lihat daftar →"
-        href={contractsTabHref(CONTRACT_TABS.noContract)}
+        href={tabHref(CONTRACT_TABS.noContract)}
       />
     ),
     data.contracts.length > 0 && (
@@ -46,7 +50,7 @@ export function ContractExpiryBanner() {
         value={data.contracts.length}
         unit="kontrak"
         hint={`${urgent > 0 ? `${urgent} dalam 14 hari atau sudah lewat · ` : ""}Lihat daftar →`}
-        href={contractsTabHref(CONTRACT_TABS.expiring)}
+        href={tabHref(CONTRACT_TABS.expiring)}
       />
     ),
     data.probations.length > 0 && (
@@ -58,11 +62,19 @@ export function ContractExpiryBanner() {
         value={data.probations.length}
         unit="orang"
         hint="Lihat daftar →"
-        href={contractsTabHref(CONTRACT_TABS.probation)}
+        href={tabHref(CONTRACT_TABS.probation)}
       />
     ),
   ].filter(Boolean);
 
   if (cards.length === 0) return null;
-  return <div className={`grid gap-3 ${GRID_COLS[cards.length]}`}>{cards}</div>;
+  return (
+    <div
+      className={`grid gap-3 ${GRID_COLS[cards.length]}`}
+      // URL baru belum terbaca saat render pertama navigasi klien; simpan asal dulu.
+      onClickCapture={from ? () => persistNavFrom(from) : undefined}
+    >
+      {cards}
+    </div>
+  );
 }

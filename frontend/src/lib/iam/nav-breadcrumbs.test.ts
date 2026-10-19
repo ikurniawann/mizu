@@ -74,5 +74,48 @@ describe("buildNavBreadcrumbs", () => {
       "Challenge",
     ]);
   });
-});
 
+  it("goes through the origin page when opened with ?from=karyawan", () => {
+    const hris: NavItem[] = [
+      {
+        href: "#",
+        label: "HRIS",
+        icon: "users",
+        children: [
+          {
+            href: "#",
+            label: "Kepegawaian",
+            icon: "users",
+            children: [
+              { href: "/dashboard/employees", label: "Karyawan", icon: "users" },
+              { href: "/dashboard/hris/contracts", label: "Kontrak", icon: "users" },
+            ],
+          },
+        ],
+      },
+    ];
+    expect(buildNavBreadcrumbs(hris, "/dashboard/hris/contracts", "karyawan")).toEqual([
+      { label: "Beranda", href: "/dashboard" },
+      { label: "HRIS" },
+      { label: "Kepegawaian" },
+      { label: "Karyawan", href: "/dashboard/employees" },
+      { label: "Kontrak" },
+    ]);
+    // Tanpa asal, atau asal tak dikenal: jalur menu biasa.
+    for (const from of [null, "lain"]) {
+      expect(buildNavBreadcrumbs(hris, "/dashboard/hris/contracts", from).map((c) => c.label)).toEqual([
+        "Beranda",
+        "HRIS",
+        "Kepegawaian",
+        "Kontrak",
+      ]);
+    }
+    // Sudah di halaman asal: tidak diulang.
+    expect(buildNavBreadcrumbs(hris, "/dashboard/employees", "karyawan").map((c) => c.label)).toEqual([
+      "Beranda",
+      "HRIS",
+      "Kepegawaian",
+      "Karyawan",
+    ]);
+  });
+});
