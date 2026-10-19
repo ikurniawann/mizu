@@ -90,6 +90,7 @@ Prinsipnya perubahan sekecil mungkin. Kita memakai ulang pola yang sudah ada: im
   - email tidak boleh bentrok dengan karyawan aktif lain. Bila bentrok dengan karyawan resign, muncul **peringatan di preview**. HR memilih "Lepas email dari data lama" per baris atau sekaligus (aturan 1.2), tanpa kolom tambahan di file;
   - Departemen, Jabatan, dan Cabang dicocokkan dengan nama master; nama yang tidak dikenal menjadi error;
   - format kolom & nilai mengikuti **Bagian 3.2**.
+- **Konfirmasi penggantian:** sebelum commit mode Replacement, tampil konfirmasi "N karyawan akan diperbarui" beserta daftar Data · Sebelum → Sesudah. Commit hanya setelah HR menekan "Ya, timpa data".
 - **Replacement:** hanya kolom yang **terisi** di file yang ditimpa. Sel kosong berarti tidak diubah, supaya data tidak terhapus tanpa sengaja.
 - **Cabang Utama:** bila berbeda dari penempatan utama sekarang, penempatan lama ditutup kemarin dan penempatan baru dimulai hari ini (memakai `BulkPlacement`/placements yang sudah ada).
 - **Batasan:** maksimal 1.000 baris per file. Import tidak membuat akun login, karena akun dibuat lewat seeder/Manajemen User.
@@ -171,6 +172,7 @@ Sekarang jadwal hanya berupa pola mingguan. Upload 7–45 hari (rotasi toko) but
      - preview menampilkan ringkasan (sel baru / berubah / sama) dan perbandingan jadwal lama → baru per karyawan, beserta **error** dan **peringatan** (lihat 2.6);
      - commit **mengganti** jadwal per tanggal karyawan-karyawan di file untuk rentang itu, dalam satu transaksi dengan satu `batch_id`, dan mencatat audit `schedule.bulk_upload`;
      - karyawan yang tidak ada di file **tidak diubah**.
+     - bila ada jadwal yang sudah ada akan diganti, tampil konfirmasi "N jadwal yang sudah ada akan diganti" beserta contoh perubahannya sebelum commit.
 - **Isi sel template:**
   - kode shift, misalnya `SPG1`;
   - `L` atau `OFF` = libur;
