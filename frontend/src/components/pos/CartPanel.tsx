@@ -19,6 +19,8 @@ interface CartPanelProps {
   selectedTable: string | null;
   subtotal: number;
   discountAmount: number;
+  prepaidDiscount?: number;
+  prepaidLabel?: string | null;
   selectedCustomer: { discount?: number; name?: string } | null;
   includeTax: boolean;
   includeService?: boolean;
@@ -41,7 +43,7 @@ interface CartPanelProps {
   setIncludeTax: (val: boolean) => void;
   setIncludeService?: (val: boolean) => void;
   setShowPaymentModal: () => void;
-  onOpenBill: () => void;
+  onOpenBill?: () => void;
   isSavingBill: boolean;
   canTransact?: boolean;
   onOpenShift?: () => void;
@@ -93,6 +95,8 @@ export function CartPanel({
   selectedTable,
   subtotal,
   discountAmount,
+  prepaidDiscount = 0,
+  prepaidLabel = null,
   selectedCustomer,
   includeTax,
   includeService = true,
@@ -262,6 +266,9 @@ export function CartPanel({
             amount={membershipAmt}
             formatCurrency={formatCurrency}
           />
+        )}
+        {prepaidDiscount > 0 && (
+          <DiscountRow label={prepaidLabel || "DP online"} amount={prepaidDiscount} formatCurrency={formatCurrency} />
         )}
 
         {promoApplied && promoDiscount > 0 ? (

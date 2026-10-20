@@ -128,7 +128,7 @@ func (h *Handler) patchOrderTx(ctx context.Context, tx pgx.Tx, user *auth.User, 
 	}
 
 	existing, err := jsrow.QueryOne(ctx, tx, `SELECT customer_id, payment_status, payment_method, subtotal, total_amount, order_number, company_id, branch_id, queue_number, status, checkout_id, xendit_qr_id, xendit_external_id
-		FROM pos.pos_orders WHERE id = $1`, orderID)
+		FROM pos.pos_orders WHERE id = $1 FOR UPDATE`, orderID)
 	if err != nil || existing == nil {
 		return nil, fail(404, "Order tidak ditemukan")
 	}

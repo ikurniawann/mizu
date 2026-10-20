@@ -16,6 +16,8 @@ func (h *Handler) Routes() []module.Route {
 		r("POST /api/pos/orders", h.createOrder),
 		r("POST /api/pos/orders/open-bill", h.openBill),
 		r("GET /api/pos/orders/{id}", h.getOrder),
+		r("POST /api/pos/orders/{id}/parking-items", h.addParkingItem),
+		r("DELETE /api/pos/orders/{id}/parking-items/{itemId}", h.removeParkingItem),
 		r("PATCH /api/pos/orders/{id}", h.patchOrder),
 		r("POST /api/pos/orders/{id}/accept", h.acceptOrder),
 		r("POST /api/pos/orders/{id}/merge", h.mergeOrders),

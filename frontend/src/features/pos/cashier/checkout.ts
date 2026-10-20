@@ -241,6 +241,9 @@ export function computeCashierBill(input: {
   includeService: boolean;
   arkBalance: number | null;
   arkToUse: number;
+  /** Nilai order tersimpan, misalnya booking Spa dengan DP. */
+  persistedTotal?: number | null;
+  prepaidDiscount?: number;
 }) {
   const rules = input.offerRules.filter((rule): rule is OfferEvalRule => Boolean(rule));
   const offerEval =
@@ -276,7 +279,9 @@ export function computeCashierBill(input: {
     includeTax: input.includeTax,
     includeService: input.includeService,
   });
-  const maxArkUsable = input.arkBalance == null ? 0 : Math.min(input.arkBalance, summary.total);
+  const prepaidDiscount = Math.max(0, input.prepaidDiscount ?? 0);
+  const total = input.persistedTotal == null ? summary.total : Math.max(0, input.persistedTotal);
+  const maxArkUsable = input.arkBalance == null ? 0 : Math.min(input.arkBalance, total);
   const arkToUseCapped = Math.min(input.arkToUse, maxArkUsable);
   const discount: DiscountContext = {
     stack,
@@ -288,12 +293,14 @@ export function computeCashierBill(input: {
   };
   return {
     ...summary,
+    total,
+    prepaidDiscount,
     stack,
     offerEval,
     discount,
     maxArkUsable,
     arkToUseCapped,
-    totalAfterArk: summary.total - arkToUseCapped,
+    totalAfterArk: total - arkToUseCapped,
   };
 }
 

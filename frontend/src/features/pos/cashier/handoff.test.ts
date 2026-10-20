@@ -21,6 +21,10 @@ const order: CashierOrder = {
   table_id: "t9",
   customer_id: "c1",
   notes: "pedas",
+  subtotal: 185_000,
+  discount_amount: 100_000,
+  total_amount: 85_000,
+  charges_breakdown: [{ type: "deposit", label: "DP booking MZ-261019-3QEL", amount: 100_000 }],
   items: [
     {
       id: "i1",
@@ -69,6 +73,26 @@ describe("billLine", () => {
 });
 
 describe("planHandoff", () => {
+  it("keeps an online booking deposit in the amount due", () => {
+    const [step] = planHandoff({
+      hydrated: true,
+      params: params({ orderId: "o1" }),
+      order,
+      checkout: undefined,
+      session,
+    });
+    expect(step).toMatchObject({
+      type: "loadBill",
+      bill: {
+        subtotal: 185_000,
+        prepaidDiscount: 100_000,
+        prepaidLabel: "DP booking MZ-261019-3QEL",
+        total: 85_000,
+        persistedItemIds: ["i1"],
+      },
+    });
+  });
+
   it("does nothing before the cart is hydrated, except auto pay", () => {
     const steps = planHandoff({
       hydrated: false,
@@ -99,7 +123,7 @@ describe("planHandoff", () => {
         notes: "pedas",
       },
     });
-    expect(step.type === "loadBill" && step.bill.persistedItemIds).toBeUndefined();
+    expect(step.type === "loadBill" && step.bill.persistedItemIds).toEqual(["i1"]);
 
     const again = planHandoff({
       hydrated: true,
@@ -109,6 +133,16 @@ describe("planHandoff", () => {
       session: { ...session, bill: { ...session.bill, key: "order:o1" } },
     });
     expect(again).toEqual([]);
+  });
+
+  it("reloads a Spa bill after a parking item changes its server revision", () => {
+    const changed = { ...order, updated_at: "2026-10-20T10:00:01Z", subtotal: 195_000, total_amount: 95_000,
+      items: [...order.items!, { id: "parking-1", product_id: "parkir", product_name: "Parkir Mobil", quantity: 1, total_amount: 10_000 }] };
+    const [step] = planHandoff({
+      hydrated: true, params: params({ orderId: "o1" }), order: changed,
+      checkout: undefined, session: { ...session, bill: { ...session.bill, key: "order:o1" } },
+    });
+    expect(step).toMatchObject({ type: "loadBill", bill: { total: 95_000, persistedItemIds: ["i1", "parking-1"] } });
   });
 
   it("checkout wins over order and marks its lines as persisted", () => {

@@ -52,7 +52,7 @@ describe("cashierSessionReducer: payment lifecycle", () => {
     const kept = reduce(loaded, { type: "paymentSucceeded", clearBill: false, returnToRestaurant: false });
     expect(kept.bill.key).toBe("checkout:c1");
     const cleared = reduce(loaded, { type: "paymentSucceeded", clearBill: true, returnToRestaurant: false });
-    expect(cleared.bill).toEqual({ key: null, number: "CO-1", persistedItemIds: ["a", "b"] });
+    expect(cleared.bill).toMatchObject({ key: null, number: "CO-1", persistedItemIds: ["a", "b"] });
   });
 
   it("reveals the receipt later and returns to the restaurant only after it closes", () => {
@@ -74,7 +74,7 @@ describe("cashierSessionReducer: open bill and handoff", () => {
       { type: "tenderChosen", method: "qris", arkToUse: 3 },
       { type: "billLoaded", key: "order:o1", number: "ORD-1" },
     ]);
-    expect(state.bill).toEqual({ key: "order:o1", number: "ORD-1", persistedItemIds: [] });
+    expect(state.bill).toMatchObject({ key: "order:o1", number: "ORD-1", persistedItemIds: [] });
     expect(state.tender).toEqual({ method: "cash", arkToUse: 3 });
   });
 
@@ -92,7 +92,7 @@ describe("cashierSessionReducer: open bill and handoff", () => {
       { type: "billLoaded", key: "checkout:c1", number: "CO-1", persistedItemIds: ["a"] },
       { type: "freshReset" },
     ]);
-    expect(state.bill).toEqual({ key: null, number: null, persistedItemIds: [] });
+    expect(state.bill).toMatchObject({ key: null, number: null, persistedItemIds: [] });
     expect(state.handoff.freshResetDone).toBe(true);
   });
 

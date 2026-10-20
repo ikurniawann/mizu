@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Seeder produk PARKIR Mizu (revisi R7, 13 Okt 2026) — parkir dibayar lewat POS
- * sebagai transaksi terpisah (bukan di bill treatment).
+ * sebagai transaksi terpisah atau item tambahan di bill treatment Spa.
  *
  * Mengisi (idempoten, satu transaksi):
  *   - pos.pos_categories "Parkir"

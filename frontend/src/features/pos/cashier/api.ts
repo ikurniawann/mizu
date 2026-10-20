@@ -34,10 +34,15 @@ export interface CashierOrderItem {
   modifiers?: Array<{ name?: string }>;
   station?: string;
   warehouse_id?: string | null;
+	// Backend marks parking lines added to an existing Spa bill.
+	kitchen_notes?: string | null;
 }
 
 export interface CashierOrder {
   id: string;
+	updated_at?: string;
+	warehouse_id?: string | null;
+	payment_status?: string;
   /** Kontak pemesan self-order (tamu) — nama utk struk bila bukan member. */
   contact_name?: string | null;
   contact_phone?: string | null;
@@ -46,7 +51,10 @@ export interface CashierOrder {
   table_id?: string | null;
   customer_id?: string | null;
   notes?: string | null;
-  total_amount?: number;
+  subtotal?: number | string;
+  discount_amount?: number | string;
+  total_amount?: number | string;
+  charges_breakdown?: Array<{ type?: string; label?: string; amount?: number | string }>;
   items?: CashierOrderItem[];
 }
 
@@ -121,6 +129,21 @@ export async function getCashierOrder(orderId: string): Promise<CashierOrder> {
   }
   return json.data as CashierOrder;
 }
+
+async function parkingRequest(url: string, method: "POST" | "DELETE", body?: object): Promise<void> {
+  const response = await fetch(url, {
+    method,
+    ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
+  });
+  const json = await response.json();
+  if (!response.ok || !json.success) throw new Error(json.error || "Gagal mengubah parkir pada tagihan");
+}
+
+export const addSpaParkingItem = (orderId: string, productId: string) =>
+  parkingRequest(`/api/pos/orders/${encodeURIComponent(orderId)}/parking-items`, "POST", { product_id: productId });
+
+export const removeSpaParkingItem = (orderId: string, itemId: string) =>
+  parkingRequest(`/api/pos/orders/${encodeURIComponent(orderId)}/parking-items/${encodeURIComponent(itemId)}`, "DELETE");
 
 export async function payOpenOrder(orderId: string, payload: PayOpenOrderPayload) {
   return updateOrderStatus(orderId, payload.status, {

@@ -32,6 +32,10 @@ export interface LoadedBill {
   customerId: string | null;
   notes: string;
   lines: PosCartItem[];
+  subtotal: number;
+  prepaidDiscount: number;
+  prepaidLabel: string | null;
+  total: number | null;
   /** Hanya checkout kasir-pusat: baris yang sudah tersimpan di server. */
   persistedItemIds?: string[];
 }
@@ -78,6 +82,8 @@ function toLoadedBill(
   isCheckout: boolean
 ): LoadedBill {
   const lines = (bill.items || []).map((item, index) => billLine(item, index, isCheckout));
+  const deposit = (bill.charges_breakdown || []).find((line) => line?.type === "deposit");
+  const prepaidDiscount = Math.max(0, Number(deposit?.amount ?? 0));
   return {
     key,
     number,
@@ -86,7 +92,11 @@ function toLoadedBill(
     customerId: bill.customer_id || null,
     notes: bill.notes || "",
     lines,
-    ...(isCheckout ? { persistedItemIds: lines.map((line) => line.id) } : {}),
+    subtotal: Number(bill.subtotal ?? 0),
+    prepaidDiscount,
+    prepaidLabel: prepaidDiscount > 0 ? deposit?.label || "DP online" : null,
+    total: Number.isFinite(Number(bill.total_amount)) ? Number(bill.total_amount) : null,
+    persistedItemIds: lines.map((line) => line.id),
   };
 }
 
@@ -112,7 +122,7 @@ export function planHandoff(input: {
         steps.push({ type: "loadBill", bill: toLoadedBill(key, checkout, number, true) });
       }
     } else if (params.orderId) {
-      const key = `order:${params.orderId}`;
+      const key = `order:${params.orderId}${order?.updated_at ? `:${order.updated_at}` : ""}`;
       if (order && session.bill.key !== key) {
         steps.push({
           type: "loadBill",
@@ -171,6 +181,10 @@ export function applyHandoff(
         key: bill.key,
         number: bill.number,
         persistedItemIds: bill.persistedItemIds,
+        subtotal: bill.subtotal,
+        prepaidDiscount: bill.prepaidDiscount,
+        prepaidLabel: bill.prepaidLabel,
+        total: bill.total,
       });
     } else if (step.type === "freshReset") {
       cart.clearCart();

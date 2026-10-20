@@ -93,6 +93,16 @@ describe("computeCashierBill", () => {
     expect(computeCashierBill(billInput({ arkBalance: null, arkToUse: 10_000 })).arkToUseCapped).toBe(0);
   });
 
+  it("uses the stored balance of a booking that already paid a DP", () => {
+    const bill = computeCashierBill(
+      billInput({ persistedTotal: 85_000, prepaidDiscount: 100_000, arkBalance: 200_000, arkToUse: 200_000 })
+    );
+    expect(bill.total).toBe(85_000);
+    expect(bill.prepaidDiscount).toBe(100_000);
+    expect(bill.maxArkUsable).toBe(85_000);
+    expect(bill.totalAfterArk).toBe(0);
+  });
+
   it("skips offer evaluation for an empty cart or no rules", () => {
     expect(computeCashierBill(billInput({ items: [] })).offerEval).toEqual({ offer_discount: 0, applied: [] });
     expect(computeCashierBill(billInput({ offerRules: [null, undefined] })).offerEval.offer_discount).toBe(0);

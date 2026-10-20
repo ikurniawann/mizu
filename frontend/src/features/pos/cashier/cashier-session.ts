@@ -29,7 +29,7 @@ export interface CashierSessionState {
   /** Tender terakhir yang dikonfirmasi; dipakai pratinjau ARK di keranjang. */
   tender: { method: string; arkToUse: number };
   /** Open bill (order/checkout) yang dimuat dari URL. */
-  bill: { key: string | null; number: string | null; persistedItemIds: string[] };
+  bill: { key: string | null; number: string | null; persistedItemIds: string[]; subtotal: number; prepaidDiscount: number; prepaidLabel: string | null; total: number | null };
   handoff: { freshResetDone: boolean; autoPayDone: boolean; restaurantKey: string | null };
   /** `basis` = subtotal item + customer saat promo terakhir valid. */
   promo: {
@@ -54,7 +54,7 @@ export type CashierSessionAction =
   | { type: "paymentSucceeded"; clearBill: boolean; returnToRestaurant: boolean }
   | { type: "resultRevealed"; payload: ReceiptPayload; kind: ResultKind; waPhone: string }
   | { type: "resultClosed" }
-  | { type: "billLoaded"; key: string; number: string | null; persistedItemIds?: string[] }
+  | { type: "billLoaded"; key: string; number: string | null; persistedItemIds?: string[]; subtotal?: number; prepaidDiscount?: number; prepaidLabel?: string | null; total?: number | null }
   | { type: "freshReset" }
   | { type: "autoPayApplied" }
   | { type: "restaurantHandoffApplied"; key: string }
@@ -79,7 +79,7 @@ export function initialCashierSession(): CashierSessionState {
     processing: false,
     savingBill: false,
     tender: CASH_TENDER,
-    bill: { key: null, number: null, persistedItemIds: [] },
+    bill: { key: null, number: null, persistedItemIds: [], subtotal: 0, prepaidDiscount: 0, prepaidLabel: null, total: null },
     handoff: { freshResetDone: false, autoPayDone: false, restaurantKey: null },
     promo: { applied: null, input: "", busy: false, error: null, basis: null },
     giftCardBuyer: null,
@@ -130,12 +130,16 @@ export function cashierSessionReducer(
           key: action.key,
           number: action.number,
           persistedItemIds: action.persistedItemIds ?? state.bill.persistedItemIds,
+          subtotal: action.subtotal ?? 0,
+          prepaidDiscount: action.prepaidDiscount ?? 0,
+          prepaidLabel: action.prepaidLabel ?? null,
+          total: action.total ?? null,
         },
       };
     case "freshReset":
       return {
         ...state,
-        bill: { key: null, number: null, persistedItemIds: [] },
+        bill: { key: null, number: null, persistedItemIds: [], subtotal: 0, prepaidDiscount: 0, prepaidLabel: null, total: null },
         handoff: { ...state.handoff, freshResetDone: true },
       };
     case "autoPayApplied":

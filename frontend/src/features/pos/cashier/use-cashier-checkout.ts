@@ -92,7 +92,10 @@ export function useCheckoutActions(deps: CashierCheckoutDeps) {
   const promo = session.promo.applied;
   const receiptExtras = {
     subtotal: stack.gross_subtotal,
-    discountLines: receiptDiscountLines(bill.discount),
+    discountLines: [
+      ...receiptDiscountLines(bill.discount),
+      ...(bill.prepaidDiscount > 0 ? [{ label: session.bill.prepaidLabel || "DP online", amount: bill.prepaidDiscount }] : []),
+    ],
     stallName: deps.stallName,
   };
 
@@ -103,7 +106,7 @@ export function useCheckoutActions(deps: CashierCheckoutDeps) {
     notes: cart.notes,
     paymentMethod,
     customerName: customer?.name ?? deps.contactName,
-    discountAmount: stack.discount_amount,
+    discountAmount: stack.discount_amount + bill.prepaidDiscount,
     taxAmount: billCharges.tax_amount,
   });
 

@@ -93,7 +93,7 @@ export function CartActions({
   isSavingBill: boolean;
   orderLabel: string;
   payLabel: string;
-  onOpenBill: () => void;
+  onOpenBill?: () => void;
   onPay: () => void;
 }) {
   return (
@@ -113,26 +113,28 @@ export function CartActions({
         </div>
       )}
       <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onOpenBill}
-          disabled={empty || isSavingBill || !canTransact}
-          className="h-11 w-[38%] shrink-0 border-amber-200/80 font-semibold text-amber-700 hover:bg-amber-50/80"
-        >
-          {isSavingBill ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            orderLabel
-          )}
-        </Button>
+        {onOpenBill && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onOpenBill}
+            disabled={empty || isSavingBill || !canTransact}
+            className="h-11 w-[38%] shrink-0 border-amber-200/80 font-semibold text-amber-700 hover:bg-amber-50/80"
+          >
+            {isSavingBill ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              orderLabel
+            )}
+          </Button>
+        )}
         <Button
           type="button"
           onClick={onPay}
-          disabled={empty || !canTransact}
+          disabled={empty || isSavingBill || !canTransact}
           className="h-11 min-w-0 flex-1 bg-primary text-base font-semibold hover:bg-primary/90"
         >
           {payLabel}

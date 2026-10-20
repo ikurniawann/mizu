@@ -43,8 +43,8 @@ import { formatArkAmount } from '@/lib/pos/loyalty-settings';
 import { firstNameOnly, publishCfdState } from '@/lib/pos/cfd';
 import { newCartItemsForOpenBillAppend } from '@/lib/pos/table-sale-target';
 import { formatRupiah as formatCurrency } from '@/lib/format';
-import { checkGiftCard, checkNfcTab, saveCustomer, withCustomerDiscount } from '../api';
-import { cashierCartPanelClass, cashierSplitRowClass } from '../cashier-workspace-layout';
+import { addSpaParkingItem, checkGiftCard, checkNfcTab, removeSpaParkingItem, saveCustomer, withCustomerDiscount } from '../api';
+import { cashierCartPanelClass, cashierLeftPanelClass, cashierSplitRowClass } from '../cashier-workspace-layout';
 import { cashierSessionReducer, initialCashierSession, promoBasis } from '../cashier-session';
 import { stallBlockedReason } from '../catalog';
 import { cfdCartState, computeCashierBill } from '../checkout';
@@ -74,6 +74,7 @@ import { useCashierNfc } from '../use-cashier-nfc';
 import { CardPrompts } from './card-prompts';
 import { CashierHeader } from './cashier-header';
 import { CashierCatalogPanel } from './cashier-catalog-panel';
+import { SpaParkingEditor } from './spa-parking-editor';
 import { GuestCountDialog } from './guest-count-dialog';
 import { ReceiptResultDialog } from './receipt-result-dialog';
 import { PosOfflineRegistrar } from './pos-offline-registrar';
@@ -87,6 +88,7 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
   const paymentOrderId = searchParams.get('orderId');
   const paymentCheckoutId = searchParams.get('checkoutId');
   const autoPay = searchParams.get('pay') === '1';
+  const spaBill = Boolean(paymentOrderId && !paymentCheckoutId && searchParams.get('spa') === '1');
   const fromRestaurant = searchParams.get('from') === RESTAURANT_FROM;
   const handoffTableId = searchParams.get('tableId');
   const returnToRestaurantPath = restaurantPath({ immersive: isRestaurantImmersive(searchParams) });
@@ -115,7 +117,9 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
   const [session, dispatch] = useReducer(cashierSessionReducer, undefined, initialCashierSession);
   // Tabel hanya utk nomor meja open bill dari Restaurant (kasir tidak memilih meja).
   const { data: tables = [] } = useCashierTables();
-  const { data: paymentOrder } = useCashierOrder(paymentCheckoutId ? null : paymentOrderId);
+  const paymentOrderQuery = useCashierOrder(paymentCheckoutId ? null : paymentOrderId);
+  const paymentOrder = paymentOrderQuery.data;
+  const [parkingBusy, setParkingBusy] = useState(false);
   const { data: paymentCheckout } = useCashierCheckout(paymentCheckoutId);
   const { data: stallName = null } = useActiveStallName();
 
@@ -188,6 +192,8 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
     includeService: cart.includeService,
     arkBalance: customer ? customer.ark_coin_balance : null,
     arkToUse: session.tender.arkToUse,
+    persistedTotal: session.bill.total,
+    prepaidDiscount: session.bill.prepaidDiscount,
   });
   const cartStallIds = uniqueStallIds(cart.items.map((row) => row.warehouse_id));
   const mixedCart = shouldCreateCheckout(cartStallIds);
@@ -253,14 +259,14 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
     products,
     canSellMixed,
     centralAllMode,
-    payingExistingCheckout: Boolean(paymentCheckoutId && autoPay),
+    payingExistingCheckout: spaBill || Boolean((paymentCheckoutId || paymentOrderId) && autoPay),
     requireActiveShift,
     formatCurrency,
     onGiftCardBuyer: (buyer) => dispatch({ type: 'giftCardBuyerSet', buyer }),
   });
 
   /* EPIC-024: pancarkan keranjang/pembayaran ke layar customer (BroadcastChannel, satu arah). */
-  const cfdDiscount = bill.stack.discount_amount;
+  const cfdDiscount = bill.stack.discount_amount + bill.prepaidDiscount;
   const cfdTax = bill.billCharges.tax_amount;
   const memberName = firstNameOnly(customer?.name);
   useEffect(() => {
@@ -280,6 +286,10 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
 
   const openPayment = () => {
     if (cart.items.length === 0) return;
+    if (spaBill && (parkingBusy || paymentOrderQuery.isFetching || paymentOrder?.payment_status !== 'unpaid')) {
+      toast.error('Tunggu tagihan Spa siap sebelum pembayaran.');
+      return;
+    }
     if (!requireActiveShift()) return;
     const unsaved = newCartItemsForOpenBillAppend({
       items: cart.items,
@@ -307,6 +317,19 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
 
   const shellHeight = isTabletMode ? 'h-[calc(100dvh-7rem)] min-h-[520px]' : 'h-[calc(100dvh-14rem)] min-h-[480px]';
   const dialog = catalog.dialog;
+  const changeParking = async (action: () => Promise<void>) => {
+    if (!paymentOrderId || parkingBusy) return;
+    setParkingBusy(true);
+    try {
+      await action();
+      await paymentOrderQuery.refetch();
+      toast.success('Parkir pada tagihan Spa diperbarui.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal mengubah parkir pada tagihan.');
+    } finally {
+      setParkingBusy(false);
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -339,7 +362,26 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
           />
 
           <div className={cashierSplitRowClass({ isTabletMode, shellHeight })}>
-            <CashierCatalogPanel
+            {spaBill ? (
+              <div className={cashierLeftPanelClass(isTabletMode)}>
+                {paymentOrderQuery.isPending ? (
+                  <p className="rounded-xl border border-border bg-card p-4 text-sm">Memuat tagihan Spa…</p>
+                ) : paymentOrderQuery.error ? (
+                  <p className="rounded-xl border border-danger/30 bg-card p-4 text-sm text-danger">{paymentOrderQuery.error.message}</p>
+                ) : paymentOrder?.payment_status !== 'unpaid' ? (
+                  <p className="rounded-xl border border-border bg-card p-4 text-sm">Tagihan Spa ini tidak lagi terbuka untuk penambahan parkir.</p>
+                ) : paymentOrder.warehouse_id ? (
+                  <SpaParkingEditor
+                    warehouseId={paymentOrder.warehouse_id}
+                    products={products}
+                    items={paymentOrder.items ?? []}
+                    busy={parkingBusy || paymentOrderQuery.isFetching}
+                    onAdd={(productId) => void changeParking(() => addSpaParkingItem(paymentOrderId!, productId))}
+                    onRemove={(itemId) => void changeParking(() => removeSpaParkingItem(paymentOrderId!, itemId))}
+                  />
+                ) : null}
+              </div>
+            ) : <CashierCatalogPanel
               isTabletMode={isTabletMode}
               products={products}
               loading={catalogQuery.isPending}
@@ -369,7 +411,7 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
                 onOpenShift: () => setShowShiftModal(true),
               }}
               actions={catalog}
-            />
+            />}
 
             <CartPanel
               showArk={arkEnabled}
@@ -379,6 +421,8 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
               selectedTable={tableLabel}
               subtotal={cart.subtotal}
               discountAmount={bill.stack.discount_amount}
+              prepaidDiscount={bill.prepaidDiscount}
+              prepaidLabel={session.bill.prepaidLabel}
               membershipDiscountAmount={bill.stack.membership_amount}
               membershipDiscountPct={membershipPct}
               promoApplied={session.promo.applied}
@@ -388,7 +432,7 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
               promoError={session.promo.error}
               promoDisabled={!isOnline || shouldDisableMixedPromo(cartStallIds)}
               onPromoInputChange={(value) => dispatch({ type: 'promoInputChanged', value })}
-              onApplyPromo={openBillActions.applyPromo}
+              onApplyPromo={spaBill ? undefined : openBillActions.applyPromo}
               onClearPromo={() => dispatch({ type: 'promoCleared' })}
               orderNotes={cart.notes}
               onOrderNotesChange={cart.setNotes}
@@ -400,8 +444,8 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
               manualDiscountType={cart.manual_discount_type}
               manualDiscountValue={cart.manual_discount_value}
               manualDiscountBasis={bill.manualDiscountBasis}
-              onSetItemDiscount={cart.setItemDiscount}
-              onSetManualDiscount={cart.setManualDiscount}
+              onSetItemDiscount={spaBill ? undefined : cart.setItemDiscount}
+              onSetManualDiscount={spaBill ? undefined : cart.setManualDiscount}
               selectedCustomer={customer}
               includeTax={cart.includeTax}
               includeService={cart.includeService}
@@ -419,15 +463,15 @@ function CashierPageContent({ variant }: { variant: CashierPageVariant }) {
               setIncludeTax={cart.setIncludeTax}
               setIncludeService={cart.setIncludeService}
               setShowPaymentModal={openPayment}
-              onOpenBill={openBillActions.saveOpenBill}
+              onOpenBill={spaBill ? undefined : openBillActions.saveOpenBill}
               continuingCheckoutNumber={paymentCheckoutId ? session.bill.number : null}
               lockedItemIds={session.bill.persistedItemIds}
-              isSavingBill={session.savingBill}
+              isSavingBill={session.savingBill || (spaBill && (parkingBusy || paymentOrderQuery.isFetching || !paymentOrder || paymentOrder.payment_status !== 'unpaid'))}
               canTransact={hasShift && !loadingShift}
               onOpenShift={POS_SHIFT_MANAGEMENT_ENABLED ? () => setShowShiftModal(true) : undefined}
               updateQuantity={cart.updateQty}
               removeFromCart={cart.removeItem}
-              onClearCart={() => {
+              onClearCart={spaBill ? undefined : () => {
                 if (cart.items.length === 0) return;
                 cart.clearItems();
                 dispatch({ type: 'cartCleared' });
