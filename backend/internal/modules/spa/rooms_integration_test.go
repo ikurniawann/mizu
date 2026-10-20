@@ -9,6 +9,30 @@ import (
 	"nuhabit/backend/internal/platform/testutil"
 )
 
+func TestDeleteRoomRejectsBookingHistory(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	e := setup(t)
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID).Scan(&warehouse); err != nil {
+		t.Fatal(err)
+	}
+	branch := e.org.BranchID
+	e.data(&e.admin, "PUT", "/api/spa/outlets/"+branch, map[string]any{"warehouse_id": warehouse, "open_time": "09:00", "close_time": "22:00", "slot_minutes": 30, "is_active": true}, http.StatusOK)
+	unused := e.data(&e.admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "Unused"}, http.StatusCreated)
+	e.call(&e.admin, "DELETE", "/api/spa/rooms/"+unused["id"].(string), nil, http.StatusOK)
+	if got := e.list(&e.admin, "/api/spa/rooms?branch_id="+branch); len(got) != 0 {
+		t.Fatalf("rooms after delete = %v", got)
+	}
+
+	used := e.data(&e.admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "Used"}, http.StatusCreated)
+	tr := e.data(&e.admin, "POST", "/api/spa/treatments", map[string]any{"code": "DEL" + testutil.RandomHex(3), "name": "Massage", "variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
+	variant := tr["variants"].([]any)[0].(map[string]any)["id"]
+	e.data(&e.admin, "POST", "/api/spa/bookings", map[string]any{"branch_id": branch, "booking_type": "walk_in", "customer_name": "Tamu", "room_id": used["id"], "scheduled_at": "2026-10-08T03:00:00Z", "items": []any{map[string]any{"variant_id": variant}}}, http.StatusCreated)
+	e.call(&e.admin, "DELETE", "/api/spa/rooms/"+used["id"].(string), nil, http.StatusConflict)
+}
+
 // Revisi R6/R9: rooms with a price per outlet; a booking holds one room for
 // its window, the price is billed at checkout, and the room board reports
 // each room's state with the running treatment.

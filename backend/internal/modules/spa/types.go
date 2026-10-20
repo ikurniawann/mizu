@@ -37,15 +37,22 @@ type OutletPrice struct {
 	PriceIDR float64 `json:"price_idr"`
 }
 
+type OutletCommission struct {
+	BranchID string  `json:"branch_id"`
+	Type     string  `json:"commission_type"`
+	Value    float64 `json:"commission_value"`
+}
+
 // Variant is a duration option of a treatment.
 type Variant struct {
-	ID           string        `json:"id"`
-	Name         string        `json:"name"`
-	DurationMin  int           `json:"duration_min"`
-	PriceIDR     float64       `json:"price_idr"`
-	IsActive     bool          `json:"is_active"`
-	SortOrder    int           `json:"sort_order"`
-	OutletPrices []OutletPrice `json:"outlet_prices"`
+	ID                string             `json:"id"`
+	Name              string             `json:"name"`
+	DurationMin       int                `json:"duration_min"`
+	PriceIDR          float64            `json:"price_idr"`
+	IsActive          bool               `json:"is_active"`
+	SortOrder         int                `json:"sort_order"`
+	OutletPrices      []OutletPrice      `json:"outlet_prices"`
+	OutletCommissions []OutletCommission `json:"outlet_commissions"`
 }
 
 // Treatment is a catalog entry with its variants.
@@ -80,6 +87,7 @@ type EmployeeCandidate struct {
 	FullName      string  `json:"full_name"`
 	NIP           *string `json:"nip"`
 	PositionTitle *string `json:"position_title"`
+	Gender        *string `json:"gender"`
 	IsTherapist   bool    `json:"is_therapist"`
 }
 
@@ -138,6 +146,7 @@ type CustomerTreatment struct {
 
 // BookingSummary is one row of the booking list.
 type BookingSummary struct {
+	GroupID        *string      `json:"group_id"`
 	TherapistID    *string      `json:"therapist_id"`
 	TherapistName  *string      `json:"therapist_name"`
 	ID             string       `json:"id"`
@@ -156,11 +165,11 @@ type BookingSummary struct {
 	TotalIDR       float64      `json:"total_idr"` // treatments + room
 	TherapistNames []string     `json:"therapist_names"`
 	// Room (revisi R6): the room held for the booking's window, price snapshotted.
-	RoomID       *string `json:"room_id"`
-	RoomName     *string `json:"room_name"`
-	RoomPriceIDR float64 `json:"room_price_idr"`
-	PosOrderID     *string      `json:"pos_order_id"`
-	CreatedAt      httpx.JSTime `json:"created_at"`
+	RoomID       *string      `json:"room_id"`
+	RoomName     *string      `json:"room_name"`
+	RoomPriceIDR float64      `json:"room_price_idr"`
+	PosOrderID   *string      `json:"pos_order_id"`
+	CreatedAt    httpx.JSTime `json:"created_at"`
 }
 
 // Item is one treatment of a booking.
@@ -210,10 +219,26 @@ type Booking struct {
 	Events              []Event       `json:"events"`
 }
 
+type BookingGroup struct {
+	ID              string     `json:"id"`
+	BranchID        string     `json:"branch_id"`
+	PayerCustomerID *string    `json:"payer_customer_id"`
+	PayerName       string     `json:"payer_name"`
+	PayerPhone      string     `json:"payer_phone"`
+	Bookings        []*Booking `json:"bookings"`
+}
+
+type GroupCheckoutResult struct {
+	Group       *BookingGroup `json:"group"`
+	OrderID     string        `json:"order_id"`
+	OrderNumber string        `json:"order_number"`
+}
+
 // BoardItem is an item with its booking context, for the board and the
 // therapist's own list.
 type BoardItem struct {
 	Item
+	GroupID          *string      `json:"group_id"`
 	StartsAt         httpx.JSTime `json:"starts_at"`
 	EndsAt           httpx.JSTime `json:"ends_at"`
 	TreatmentCount   int          `json:"treatment_count,omitempty"`

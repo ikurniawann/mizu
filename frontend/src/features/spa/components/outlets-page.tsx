@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DoorOpen, RefreshCw, Settings2 } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,36 +21,26 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useSaveDepositSettings, useSaveOutlet, useSyncPos } from "../mutations";
+import { useSaveDepositSettings, useSaveOutlet } from "../mutations";
 import { useDepositSettings, useSpaOutlets } from "../queries";
 import { parseClock, shortClock } from "../time";
 import type { Outlet } from "../types";
-import { RoomsDialog } from "./rooms-dialog";
 import { Field, FormError, SELECT, SPA_KICKER, TableNote } from "./shared";
 
 /** Spa → Outlet Spa: jadikan cabang outlet spa, atur stall POS, jam buka, slot, dan booking publik. */
 export function SpaOutletsPage() {
   const outlets = useSpaOutlets();
-  const sync = useSyncPos();
   const [editing, setEditing] = useState<Outlet | null>(null);
-  const [rooms, setRooms] = useState<Outlet | null>(null);
   const rows = [...(outlets.data ?? [])].sort(
     (a, b) => Number(b.configured) - Number(a.configured) || a.branch_name.localeCompare(b.branch_name)
   );
-
-  const runSync = (o: Outlet) =>
-    sync.mutate(o.branch_id, {
-      onSuccess: (res) =>
-        toast.success("Produk POS disinkronkan", { description: `${o.branch_name}: ${res.synced} produk dibuat/diperbarui.` }),
-      onError: (err) => toast.error("Sinkron produk POS gagal", { description: err.message }),
-    });
 
   return (
     <div className="space-y-4">
       <PageHeader
         kicker={SPA_KICKER}
         title="Outlet Spa"
-        description="Setiap cabang aktif dapat dijadikan outlet spa. Outlet POS menentukan gudang/kasir tempat produk treatment dijual; Sinkron produk POS membuat atau memperbarui produk untuk semua varian aktif."
+        description="Setiap cabang aktif dapat dijadikan outlet spa. Outlet POS menentukan gudang/kasir tempat produk treatment dijual. Produk POS diperbarui otomatis saat outlet, treatment, atau harga disimpan."
       />
       <DepositSettingsCard />
       <Card className="py-0">
@@ -108,23 +98,6 @@ export function SpaOutletsPage() {
                       <Button size="sm" variant={o.configured ? "ghost" : "outline"} onClick={() => setEditing(o)}>
                         <Settings2 /> {o.configured ? "Atur" : "Jadikan outlet spa"}
                       </Button>
-                      {o.configured && (
-                        <Button size="sm" variant="ghost" onClick={() => setRooms(o)}>
-                          <DoorOpen /> Room
-                        </Button>
-                      )}
-                      {o.configured && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={sync.isPending || !o.warehouse_id}
-                          title={o.warehouse_id ? undefined : "Pilih outlet POS dulu"}
-                          onClick={() => runSync(o)}
-                        >
-                          <RefreshCw className={sync.isPending && sync.variables === o.branch_id ? "animate-spin" : undefined} /> Sinkron
-                          produk POS
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -134,7 +107,6 @@ export function SpaOutletsPage() {
         )}
       </Card>
       {editing && <OutletDialog outlet={editing} onClose={() => setEditing(null)} />}
-      {rooms && <RoomsDialog branchId={rooms.branch_id} branchName={rooms.branch_name} onClose={() => setRooms(null)} />}
     </div>
   );
 }

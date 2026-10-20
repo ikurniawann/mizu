@@ -194,7 +194,7 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
     setSlotIso(null);
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!outlet || picked.length === 0) return;
     if (!slotIso || !slotValid) {
       setFormError("Jam yang dipilih sudah lewat. Silakan pilih jam lain.");
@@ -212,6 +212,24 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
     }
     setFieldError(null);
     setFormError(null);
+    // Refresh the guest's optional picks immediately before creating the
+    // booking; the server repeats this check inside its transaction.
+    const [therapistResult, roomResult] = await Promise.all([
+      therapistId ? freeTherapists.refetch() : Promise.resolve(null),
+      roomId ? freeRooms.refetch() : Promise.resolve(null),
+    ]);
+    if (therapistId && !(therapistResult?.data ?? []).some((row) => row.id === therapistId)) {
+      setTherapistId(null);
+      go("waktu");
+      setFormError("Terapis pilihan baru saja terisi. Pilih terapis lain atau biarkan Mizu memilihkan.");
+      return;
+    }
+    if (roomId && !(roomResult?.data ?? []).some((row) => row.id === roomId)) {
+      setRoomId(null);
+      go("waktu");
+      setFormError("Room pilihan baru saja terisi. Pilih room atau jadwal lain.");
+      return;
+    }
     trackBookingStep("submit", outlet.branch_id);
     create.mutate(
       {
@@ -222,8 +240,8 @@ export function PublicSpaBookingWizard({ prefill = NO_PREFILL }: { prefill?: Boo
         therapist_gender_pref: pref,
         notes: notes.trim(),
         variant_ids: picked.map((p) => p.variant.id),
-        ...(therapist ? { therapist_id: therapist.id } : {}),
-        ...(room ? { room_id: room.id } : {}),
+        ...(therapistId ? { therapist_id: therapistId } : {}),
+        ...(roomId ? { room_id: roomId } : {}),
         payment_method: payOnline ? "online" : "outlet",
       },
       {

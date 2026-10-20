@@ -100,9 +100,9 @@ func (spaPOS) EnsureTreatmentProduct(ctx context.Context, q database.Querier, p 
 		return "", err
 	}
 	if id != "" {
-		_, err := q.Exec(ctx, `UPDATE pos.pos_products SET name = $2, category_id = $3::uuid, base_price = $4, is_active = $5,
-		    station = 'spa', source_product_id = $6::uuid, updated_at = now() WHERE id = $1`,
-			id, p.Name, categoryID, p.Price, p.Active, *masterID)
+		_, err := q.Exec(ctx, `UPDATE pos.pos_products SET sku = $2, name = $3, category_id = $4::uuid, base_price = $5, is_active = $6,
+		    station = 'spa', source_product_id = $7::uuid, updated_at = now() WHERE id = $1`,
+			id, p.SKU, p.Name, categoryID, p.Price, p.Active, *masterID)
 		return id, err
 	}
 	err := q.QueryRow(ctx, `INSERT INTO pos.pos_products (sku, name, description, category_id, base_price, cost_price,
@@ -217,9 +217,14 @@ func (spaCustomers) Search(ctx context.Context, q database.Querier, term string,
 	return out, rows.Err()
 }
 
-func (spaCustomers) Page(ctx context.Context, q database.Querier, term string, page, limit int) ([]spa.CustomerRef, int, error) {
+func (spaCustomers) Page(ctx context.Context, q database.Querier, term, status string, page, limit int) ([]spa.CustomerRef, int, error) {
 	like := "%" + strings.ReplaceAll(strings.ReplaceAll(term, "%", ""), "_", "") + "%"
 	where := `COALESCE(is_active, true) AND (name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1)`
+	if status == "blocked" {
+		where += ` AND banned_at IS NOT NULL`
+	} else if status == "unblocked" {
+		where += ` AND banned_at IS NULL`
+	}
 	var total int
 	if err := q.QueryRow(ctx, `SELECT count(*) FROM pos.pos_customers WHERE `+where, like).Scan(&total); err != nil {
 		return nil, 0, err
@@ -325,7 +330,7 @@ var _ spa.People = spaPeople{}
 
 func (spaPeople) SearchEmployees(ctx context.Context, q database.Querier, term string, limit int) ([]spa.EmployeeCandidate, error) {
 	like := "%" + term + "%"
-	rows, err := q.Query(ctx, `SELECT e.id::text, e.full_name, e.nip, p.title
+	rows, err := q.Query(ctx, `SELECT e.id::text, e.full_name, e.nip, p.title, e.gender::text
 	   FROM hris.employees e LEFT JOIN hris.positions p ON p.id = e.job_title_id
 	  WHERE COALESCE(e.is_active, true) AND ($1 = '%%' OR e.full_name ILIKE $1 OR e.nip ILIKE $1)
 	  ORDER BY e.full_name LIMIT $2`, like, limit)
@@ -336,7 +341,7 @@ func (spaPeople) SearchEmployees(ctx context.Context, q database.Querier, term s
 	out := []spa.EmployeeCandidate{}
 	for rows.Next() {
 		var c spa.EmployeeCandidate
-		if err := rows.Scan(&c.ID, &c.FullName, &c.NIP, &c.PositionTitle); err != nil {
+		if err := rows.Scan(&c.ID, &c.FullName, &c.NIP, &c.PositionTitle, &c.Gender); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

@@ -1,68 +1,41 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Download, Pencil, Plus, Receipt, Trash2, Users, Wallet } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { Fragment, useState } from "react";
+import { ChevronDown, ChevronRight, Download, Receipt, Users, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  Dialog,
-  DialogFooter,
-  DialogPanel,
-  DialogPanelBody,
-  DialogPanelDescription,
-  DialogPanelForm,
-  DialogPanelHeader,
-  DialogPanelTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
 import { StatCard } from "@/components/ui/stat-card";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatDateTime, formatNumber, formatRupiah } from "@/lib/format";
 import { commissionReportCsv, downloadCsv } from "../csv";
-import { useDeleteCommissionRule, useSaveCommissionRule } from "../mutations";
-import { useCommissionReport, useCommissionRules, useSpaOutlets, useSpaTreatments } from "../queries";
-import {
-  COMMISSION_RESOLUTION_TEXT,
-  commissionValueLabel,
-  computeCommission,
-  RULE_SCOPE_LABEL,
-  ruleScope,
-  ruleSpecificity,
-  type RuleScope,
-} from "../rules";
+import { useCommissionReport, useSpaOutlets } from "../queries";
+import { commissionValueLabel } from "../rules";
 import { currentMonthWib, monthRange } from "../time";
-import type { CommissionRule, CommissionType, Outlet, Treatment } from "../types";
+import type { Outlet } from "../types";
 import { PayrollTab } from "./payroll-tab";
-import { Field, FormError, OutletSelect, SELECT, SPA_KICKER, SpaHint, TableNote } from "./shared";
+import { OutletSelect, SELECT, SPA_KICKER, TableNote } from "./shared";
 
-/** Spa → Komisi Terapis: laporan komisi (hanya booking lunas) dan aturan komisi. */
+/** Laporan komisi dan payroll terapis. */
 export function SpaCommissionsPage() {
   const outlets = useSpaOutlets();
   return (
     <div className="space-y-4">
       <PageHeader
         kicker={SPA_KICKER}
-        title="Komisi Terapis"
+        title="Laporan Komisi"
         description="Komisi dibekukan saat item treatment selesai, dan baru diakui di laporan bila booking-nya sudah lunas."
       />
       <Tabs defaultValue="report" className="w-full flex-col">
         <TabsList>
           <TabsTrigger value="report">Laporan</TabsTrigger>
-          <TabsTrigger value="rules">Aturan Komisi</TabsTrigger>
           <TabsTrigger value="payroll">Payroll Terapis</TabsTrigger>
         </TabsList>
         <TabsContent value="report" className="mt-4">
           <ReportTab outlets={outlets.data ?? []} />
-        </TabsContent>
-        <TabsContent value="rules" className="mt-4">
-          <RulesTab outlets={outlets.data ?? []} />
         </TabsContent>
         <TabsContent value="payroll" className="mt-4">
           <PayrollTab />
@@ -203,297 +176,5 @@ function ReportTab({ outlets }: { outlets: Outlet[] }) {
         )}
       </Card>
     </div>
-  );
-}
-
-// ── Aturan ───────────────────────────────────────────────────────────────────
-
-function RulesTab({ outlets }: { outlets: Outlet[] }) {
-  const rules = useCommissionRules();
-  const treatments = useSpaTreatments();
-  const remove = useDeleteCommissionRule();
-  const [editing, setEditing] = useState<CommissionRule | "new" | null>(null);
-  const [deleting, setDeleting] = useState<CommissionRule | null>(null);
-  const rows = useMemo(
-    () =>
-      [...(rules.data ?? [])].sort(
-        (a, b) =>
-          ruleSpecificity(a) - ruleSpecificity(b) ||
-          (a.treatment_name ?? "").localeCompare(b.treatment_name ?? "") ||
-          (a.variant_name ?? "").localeCompare(b.variant_name ?? "") ||
-          (a.branch_name ?? "").localeCompare(b.branch_name ?? "")
-      ),
-    [rules.data]
-  );
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          Urutan resolusi: paling spesifik menang
-          <SpaHint text={COMMISSION_RESOLUTION_TEXT} />
-        </p>
-        <Button className="ml-auto" onClick={() => setEditing("new")}>
-          <Plus /> Aturan baru
-        </Button>
-      </div>
-      <Card className="py-0">
-        {rules.isLoading ? (
-          <div className="p-4">
-            <SkeletonTable columns={5} rows={4} />
-          </div>
-        ) : rules.error ? (
-          <TableNote tone="danger">{rules.error.message}</TableNote>
-        ) : rows.length === 0 ? (
-          <TableNote>Belum ada aturan komisi. Tanpa aturan, komisi item = Rp 0.</TableNote>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cakupan</TableHead>
-                <TableHead>Outlet</TableHead>
-                <TableHead className="text-right">Komisi</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => {
-                const scope = ruleScope(r);
-                return (
-                  <TableRow key={r.id} className={r.is_active ? undefined : "opacity-60"}>
-                    <TableCell className="whitespace-normal">
-                      <Badge variant={scope === "variant" ? "accent" : scope === "treatment" ? "info" : "secondary"}>
-                        {RULE_SCOPE_LABEL[scope]}
-                      </Badge>
-                      {scope !== "default" && (
-                        <p className="mt-1 text-sm font-medium">
-                          {r.treatment_name}
-                          {scope === "variant" ? ` — ${r.variant_name}` : ""}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell>{r.branch_name ?? <span className="text-muted-foreground">Semua outlet</span>}</TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">
-                      {commissionValueLabel(r.commission_type, r.value)}
-                      <span className="block text-xs font-normal text-muted-foreground">
-                        {r.commission_type === "percent" ? "persentase" : "nominal tetap"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={r.is_active ? "success" : "muted"}>{r.is_active ? "Aktif" : "Nonaktif"}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(r)}>
-                          <Pencil /> Ubah
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleting(r)}>
-                          <Trash2 /> Hapus
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
-      {editing && (
-        <RuleDialog
-          rule={editing === "new" ? null : editing}
-          treatments={treatments.data ?? []}
-          outlets={outlets}
-          onClose={() => setEditing(null)}
-        />
-      )}
-      <ConfirmDialog
-        open={!!deleting}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title="Hapus aturan komisi?"
-        description="Komisi item yang sudah selesai tidak berubah; item berikutnya memakai aturan lain yang berlaku."
-        confirmLabel="Hapus"
-        loading={remove.isPending}
-        onConfirm={() =>
-          deleting &&
-          remove.mutate(deleting.id, {
-            onSuccess: () => {
-              toast.success("Aturan komisi dihapus");
-              setDeleting(null);
-            },
-            onError: (err) => toast.error("Aturan gagal dihapus", { description: err.message }),
-          })
-        }
-      />
-    </div>
-  );
-}
-
-function RuleDialog({
-  rule,
-  treatments,
-  outlets,
-  onClose,
-}: {
-  rule: CommissionRule | null;
-  treatments: Treatment[];
-  outlets: Outlet[];
-  onClose: () => void;
-}) {
-  const [scope, setScope] = useState<RuleScope>(rule ? ruleScope(rule) : "default");
-  const [treatmentId, setTreatmentId] = useState(rule?.treatment_id ?? "");
-  const [variantId, setVariantId] = useState(rule?.variant_id ?? "");
-  const [branchId, setBranchId] = useState(rule?.branch_id ?? "");
-  const [type, setType] = useState<CommissionType>(rule?.commission_type ?? "percent");
-  const [value, setValue] = useState(rule ? String(rule.value) : "");
-  const [active, setActive] = useState(rule?.is_active ?? true);
-  const [error, setError] = useState<string | null>(null);
-  const save = useSaveCommissionRule();
-
-  const treatment = treatments.find((t) => t.id === treatmentId);
-  const variant = treatment?.variants.find((v) => v.id === variantId);
-  const numeric = Number(value);
-  const examplePrice = variant?.price_idr ?? treatment?.variants[0]?.price_idr ?? 200000;
-
-  const submit = () => {
-    if (scope !== "default" && !treatmentId) return setError("Pilih treatment.");
-    if (scope === "variant" && !variantId) return setError("Pilih varian.");
-    if (value.trim() === "" || !Number.isFinite(numeric) || numeric < 0) return setError("Nilai komisi harus angka ≥ 0.");
-    if (type === "percent" && numeric > 100) return setError("Persentase maksimal 100.");
-    setError(null);
-    save.mutate(
-      {
-        id: rule?.id,
-        input: {
-          treatment_id: scope === "default" ? null : treatmentId,
-          variant_id: scope === "variant" ? variantId : null,
-          branch_id: branchId || null,
-          commission_type: type,
-          value: numeric,
-          is_active: active,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success(rule ? "Aturan komisi diperbarui" : "Aturan komisi dibuat");
-          onClose();
-        },
-        onError: (err) => {
-          setError(err.message);
-          toast.error("Aturan gagal disimpan", { description: err.message });
-        },
-      }
-    );
-  };
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogPanel size="sm">
-        <DialogPanelForm
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit();
-          }}
-        >
-          <DialogPanelHeader>
-            <DialogPanelTitle>{rule ? "Ubah aturan komisi" : "Aturan komisi baru"}</DialogPanelTitle>
-            <DialogPanelDescription>{COMMISSION_RESOLUTION_TEXT}</DialogPanelDescription>
-          </DialogPanelHeader>
-          <DialogPanelBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Cakupan">
-              <select
-                className={SELECT}
-                value={scope}
-                onChange={(e) => {
-                  setScope(e.target.value as RuleScope);
-                  if (e.target.value !== "variant") setVariantId("");
-                }}
-              >
-                {(Object.keys(RULE_SCOPE_LABEL) as RuleScope[]).map((s) => (
-                  <option key={s} value={s}>
-                    {RULE_SCOPE_LABEL[s]}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Outlet">
-              <OutletSelect outlets={outlets} value={branchId} onChange={setBranchId} className={SELECT} allLabel="Semua outlet" />
-            </Field>
-            {scope !== "default" && (
-              <Field label="Treatment" className={scope === "treatment" ? "sm:col-span-2" : undefined}>
-                <select
-                  className={SELECT}
-                  value={treatmentId}
-                  onChange={(e) => {
-                    setTreatmentId(e.target.value);
-                    setVariantId("");
-                  }}
-                  required
-                >
-                  <option value="">Pilih treatment…</option>
-                  {treatments.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                      {t.is_active ? "" : " (nonaktif)"}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            )}
-            {scope === "variant" && (
-              <Field label="Varian">
-                <select className={SELECT} value={variantId} onChange={(e) => setVariantId(e.target.value)} disabled={!treatment} required>
-                  <option value="">Pilih varian…</option>
-                  {(treatment?.variants ?? []).map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name} · {formatRupiah(v.price_idr)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            )}
-            <Field label="Tipe">
-              <select className={SELECT} value={type} onChange={(e) => setType(e.target.value as CommissionType)}>
-                <option value="percent">Persentase (%)</option>
-                <option value="fixed">Nominal tetap (Rp)</option>
-              </select>
-            </Field>
-            <Field label={type === "percent" ? "Nilai (%)" : "Nilai (Rp)"}>
-              <Input
-                type="number"
-                min={0}
-                max={type === "percent" ? 100 : undefined}
-                step={type === "percent" ? "0.01" : "1"}
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                required
-              />
-            </Field>
-            <label className="flex items-center gap-3 text-sm sm:col-span-2">
-              <Switch checked={active} onCheckedChange={setActive} aria-label="Aturan aktif" />
-              Aktif
-            </label>
-            {value.trim() !== "" && Number.isFinite(numeric) && numeric >= 0 && (
-              <p className="rounded-2xl bg-surface-2 px-4 py-3 text-xs text-muted-foreground sm:col-span-2">
-                Contoh: harga {formatRupiah(examplePrice)} → komisi{" "}
-                <span className="font-semibold text-foreground">{formatRupiah(computeCommission(type, numeric, examplePrice))}</span>
-              </p>
-            )}
-            <div className="sm:col-span-2">
-              <FormError>{error}</FormError>
-            </div>
-          </DialogPanelBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={save.isPending}>
-              Batal
-            </Button>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? "Menyimpan…" : "Simpan"}
-            </Button>
-          </DialogFooter>
-        </DialogPanelForm>
-      </DialogPanel>
-    </Dialog>
   );
 }

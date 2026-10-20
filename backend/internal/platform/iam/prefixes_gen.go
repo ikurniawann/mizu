@@ -88,9 +88,11 @@ var (
 	SpaTherapists           = []string{"spa.therapists"}
 	SpaCommissions          = []string{"spa.commissions"}
 	SpaOutlets              = []string{"spa.outlets"}
+	SpaRooms                = []string{"spa.rooms"}
 	SpaRushHour             = []string{"spa.rush-hour"}
 	SpaTrend                = []string{"spa.trend"}
 	SpaRating               = []string{"spa.rating"}
+	SpaCustomerReport       = []string{"spa.customer-report"}
 	ItemsPrApproval         = []string{"items.general.purchasing.approval-pr", "items.product.approval.pr", "items.raw-material.approval.pr"}
 )
 
@@ -179,8 +181,10 @@ var ByKey = map[string][]string{
 	"spaTherapists":           SpaTherapists,
 	"spaCommissions":          SpaCommissions,
 	"spaOutlets":              SpaOutlets,
+	"spaRooms":                SpaRooms,
 	"spaRushHour":             SpaRushHour,
 	"spaTrend":                SpaTrend,
 	"spaRating":               SpaRating,
+	"spaCustomerReport":       SpaCustomerReport,
 	"itemsPrApproval":         ItemsPrApproval,
 }

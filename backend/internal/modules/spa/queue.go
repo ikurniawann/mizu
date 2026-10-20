@@ -189,6 +189,80 @@ func (s *Service) AutoAssign(ctx context.Context, userID, branchID, date string)
 	return s.autoAssign(ctx, userID, branchID, date, nil)
 }
 
+// AutoAssignBooking assigns only the requested booking if the drop target is
+// the first eligible therapist in the latest server-side arrival queue.
+func (s *Service) AutoAssignBooking(ctx context.Context, userID, bookingID, targetTherapistID string) (*AutoAssigned, error) {
+	sc, err := s.scope(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	var assigned *AutoAssigned
+	err = s.tx(ctx, func(q Q) error {
+		b, err := s.lockBooking(ctx, q, sc, bookingID)
+		if err != nil {
+			return err
+		}
+		picked, reason, err := s.autoAssignBookingIn(ctx, q, userID, b, targetTherapistID)
+		if err != nil {
+			return err
+		}
+		if picked == nil {
+			return httpx.Conflict(reason)
+		}
+		assigned = &AutoAssigned{BookingID: b.ID, BookingCode: b.Code, TherapistID: picked.ID, TherapistName: picked.FullName}
+		return nil
+	})
+	return assigned, err
+}
+
+// autoAssignBookingIn runs under a booking lock, shared by manual single-card
+// assignment and the background/batch pass.
+func (s *Service) autoAssignBookingIn(ctx context.Context, q Q, actor string, b *bookingRow, targetTherapistID string) (*ArrivalEntry, string, error) {
+	if b.Status != domain.BookingUnassigned {
+		return nil, "Booking sudah ditugaskan", nil
+	}
+	date := domain.WIBDate(b.ScheduledAt)
+	aq, err := s.arrivalQueueIn(ctx, q, b.BranchID, date)
+	if err != nil {
+		return nil, "", err
+	}
+	if len(aq.Queue) == 0 {
+		return nil, "Belum ada terapis yang absen masuk", nil
+	}
+	items, err := s.st.itemRows(ctx, q, b.ID, true)
+	if err != nil {
+		return nil, "", err
+	}
+	employees := make([]string, len(aq.Queue))
+	for i, therapist := range aq.Queue {
+		employees[i] = therapist.EmployeeID
+	}
+	rosters, err := s.ports.People.Rosters(ctx, q, employees, date)
+	if err != nil {
+		return nil, "", err
+	}
+	reason := "Tidak ada terapis yang tersedia"
+	for i := range aq.Queue {
+		t := &aq.Queue[i]
+		if roster := rosters[t.EmployeeID]; roster.OnLeave || roster.DayOff {
+			continue
+		}
+		if _, err := s.checkBookingTherapist(ctx, q, b, items, t.ID); err != nil {
+			reason = err.Error()
+			continue
+		}
+		if targetTherapistID != "" && t.ID != targetTherapistID {
+			return nil, "Booking harus ditugaskan ke " + t.FullName + " sesuai prioritas antrian", nil
+		}
+		if err := s.assignBooking(ctx, q, actor, b, t.ID); err != nil {
+			reason = err.Error()
+			continue
+		}
+		return t, "", nil
+	}
+	return nil, reason, nil
+}
+
 // autoAssign is the shared pass; until limits it to bookings starting
 // before that time (the background loop's horizon).
 func (s *Service) autoAssign(ctx context.Context, actor, branchID, date string, until *time.Time) (*AutoAssignResult, error) {
@@ -204,39 +278,15 @@ func (s *Service) autoAssign(ctx context.Context, actor, branchID, date string, 
 	for _, id := range ids {
 		var picked *ArrivalEntry
 		var code string
-		reason := "Belum ada terapis yang absen masuk"
+		var reason string
 		err := s.tx(ctx, func(q Q) error {
 			b, err := s.lockBooking(ctx, q, nil, id)
 			if err != nil {
 				return err
 			}
 			code = b.Code
-			if b.Status != domain.BookingUnassigned {
-				reason = "Sudah ditugaskan"
-				return nil
-			}
-			aq, err := s.arrivalQueueIn(ctx, q, branchID, date)
-			if err != nil {
-				return err
-			}
-			items, err := s.st.itemRows(ctx, q, id, true)
-			if err != nil {
-				return err
-			}
-			for i := range aq.Queue {
-				t := aq.Queue[i]
-				if _, err := s.checkBookingTherapist(ctx, q, b, items, t.ID); err != nil {
-					reason = err.Error()
-					continue
-				}
-				if err := s.assignBooking(ctx, q, actor, b, t.ID); err != nil {
-					reason = err.Error()
-					continue
-				}
-				picked = &t
-				return nil
-			}
-			return nil
+			picked, reason, err = s.autoAssignBookingIn(ctx, q, actor, b, "")
+			return err
 		})
 		if err != nil {
 			return nil, err

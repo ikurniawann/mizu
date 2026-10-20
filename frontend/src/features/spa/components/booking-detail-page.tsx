@@ -25,24 +25,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate, formatDateTime, formatRupiah, formatTime } from "@/lib/format";
 import { useAssignBooking, useBookingAction, useCancelBooking, useCheckoutBooking, useItemAction, useUpdateBooking, useBookingDeposit } from "../mutations";
 import { useSpaBooking } from "../queries";
-import {
-  anyStatusLabel,
-  BOOKING_TYPE_LABEL,
-  bookingTotal,
-  canAddItem,
-  canCancelBooking,
-  canRescheduleBooking,
-  checkoutState,
-  eventLabel,
-  GENDER_PREF_LABEL,
-  isBookingClosed,
-  isValidPhone,
-  sourceLabel,
-} from "../rules";
+import { anyStatusLabel, BOOKING_TYPE_LABEL, bookingTotal, canAddItem, canCancelBooking, canRescheduleBooking, checkoutState, eventLabel, GENDER_PREF_LABEL, isBookingClosed, isValidPhone, sourceLabel } from "../rules";
 import type { Booking, BookingItem, GenderPref } from "../types";
 import { isoToWibLocalInput, wibLocalInputToIso } from "../time";
 import { AddItemDialog, AssignTherapistDialog } from "./item-dialogs";
 import { RoomSelectDialog } from "./room-select-dialog";
+import { BookingGroupDialog } from "./booking-group-dialog";
 import {
   BookingStatusBadge,
   Field,
@@ -60,7 +48,7 @@ import {
 const REMOVE_DESCRIPTION = "Treatment ini tidak lagi dihitung dalam total, durasi, dan jadwal booking.";
 
 /** Shared booking detail: Book Order is operational; Booking History is read-only. */
-export function SpaBookingDetailPage({ id, readOnly = false, embedded = false }: { id: string; readOnly?: boolean; embedded?: boolean }) {
+export function SpaBookingDetailPage({ id, readOnly = false, embedded = false, onOpenBooking }: { id: string; readOnly?: boolean; embedded?: boolean; onOpenBooking?: (id: string) => void }) {
   const booking = useSpaBooking(id);
   const kicker = readOnly ? "Laporan · Booking History" : `${SPA_KICKER} · Booking`;
 
@@ -84,10 +72,10 @@ export function SpaBookingDetailPage({ id, readOnly = false, embedded = false }:
       </div>
     );
   }
-  return <BookingDetail booking={booking.data} readOnly={readOnly} embedded={embedded} />;
+  return <BookingDetail booking={booking.data} readOnly={readOnly} embedded={embedded} onOpenBooking={onOpenBooking} />;
 }
 
-export function BookingDetailDialog({ id, readOnly = false, onClose }: { id: string; readOnly?: boolean; onClose: () => void }) {
+export function BookingDetailDialog({ id, readOnly = false, onClose, onOpenBooking }: { id: string; readOnly?: boolean; onClose: () => void; onOpenBooking?: (id: string) => void }) {
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogPanel size="2xl">
@@ -96,7 +84,7 @@ export function BookingDetailDialog({ id, readOnly = false, onClose }: { id: str
           <DialogPanelDescription>Informasi pelanggan, treatment, pembayaran, dan riwayat booking.</DialogPanelDescription>
         </DialogPanelHeader>
         <DialogPanelBody>
-          <SpaBookingDetailPage id={id} readOnly={readOnly} embedded />
+          <SpaBookingDetailPage id={id} readOnly={readOnly} embedded onOpenBooking={onOpenBooking} />
         </DialogPanelBody>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Tutup</Button>
@@ -126,9 +114,10 @@ type Dialogs =
   | { kind: "cancel" }
   | null;
 
-function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; readOnly: boolean; embedded: boolean }) {
+function BookingDetail({ booking, readOnly, embedded, onOpenBooking }: { booking: Booking; readOnly: boolean; embedded: boolean; onOpenBooking?: (id: string) => void }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<Dialogs>(null);
+  const [groupOpen, setGroupOpen] = useState(false);
   const itemAction = useItemAction();
   const bookingAction = useBookingAction(booking.id);
   const assignment = useAssignBooking();
@@ -142,6 +131,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
   const co = checkoutState(booking);
   const closed = isBookingClosed(booking);
   const activeItems = items.filter((i) => i.status !== "cancelled");
+  const depositPending = booking.deposit?.deposit_status === "pending";
   const canAssign = !closed && activeItems.length > 0 && activeItems.every((i) => i.status === "assigned" || i.status === "unassigned");
   const canRemoveItems = !readOnly && canAddItem(booking) && activeItems.length > 1;
   const assignmentWindow = activeItems[0] && {
@@ -172,7 +162,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
       onSuccess: (result) => {
         toast.success("Tagihan POS siap", { description: `Order ${result.order_number} — lanjutkan pembayaran di kasir.` });
         close();
-        router.push(`/dashboard/pos/cashier-new?orderId=${encodeURIComponent(result.order_id)}&pay=1`);
+        router.push(`/dashboard/pos/cashier-new?orderId=${encodeURIComponent(result.order_id)}&spa=1`);
       },
       onError: (err) => toast.error("Checkout gagal", { description: err.message }),
     });
@@ -188,6 +178,9 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
         actions={
           <>
             {!embedded && <BackLink readOnly={readOnly} />}
+            {booking.group_id && <Button variant={booking.status === "completed" && booking.payment_status === "unpaid" && !readOnly ? "default" : "outline"} onClick={() => setGroupOpen(true)}>
+              {booking.status === "completed" && booking.payment_status === "unpaid" && !readOnly ? <><Receipt /> Checkout grup ke POS</> : "Lihat booking bersama"}
+            </Button>}
             {!readOnly && canRescheduleBooking(booking) && (
               <Button variant="outline" onClick={() => setDialog({ kind: "schedule" })}>Ubah jadwal</Button>
             )}
@@ -197,7 +190,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
               </Button>
             )}
             {!readOnly && booking.status === "assigned" && activeItems.some((item) => item.status === "assigned") && (
-              <Button disabled={bookingAction.isPending} onClick={() => runBookingAction("start")}>
+              <Button disabled={bookingAction.isPending || depositPending} title={depositPending ? "Mulai treatment setelah DP diterima atau dibebaskan." : undefined} onClick={() => runBookingAction("start")}>
                 <PlayCircle /> Mulai
               </Button>
             )}
@@ -206,7 +199,7 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
                 <CheckCircle2 /> Selesai
               </Button>
             )}
-            {!readOnly && booking.payment_status !== "paid" && (
+            {!readOnly && !booking.group_id && booking.payment_status !== "paid" && (
               <Button
                 onClick={() => booking.therapist_rating == null ? setDialog({ kind: "survey" }) : doCheckout()}
                 disabled={!co.allowed || checkout.isPending}
@@ -232,10 +225,11 @@ function BookingDetail({ booking, readOnly, embedded }: { booking: Booking; read
           <span className="text-muted-foreground">Pembayaran</span>
           <PaymentStatusBadge status={booking.payment_status} />
         </span>
-        {!readOnly && !co.allowed && co.reason && !closed && booking.payment_status === "unpaid" && (
+        {!readOnly && !booking.group_id && !co.allowed && co.reason && !closed && booking.payment_status === "unpaid" && (
           <span className="text-xs text-warning">Checkout belum bisa: {co.reason}</span>
         )}
       </div>
+      {groupOpen && booking.group_id && <BookingGroupDialog id={booking.group_id} onClose={() => setGroupOpen(false)} readOnly={readOnly} onOpenBooking={onOpenBooking ? (id) => { setGroupOpen(false); onOpenBooking(id); } : undefined} />}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>

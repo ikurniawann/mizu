@@ -74,6 +74,17 @@ func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request, u *auth.Use
 	return ok(w, room)
 }
 
+func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	if err := h.svc.DeleteRoom(r.Context(), u.ID, id); err != nil {
+		return err
+	}
+	return ok(w, map[string]string{"id": id})
+}
+
 // setBookingRoom: {"room_id": "<uuid>"} puts the booking in a room, null releases it.
 func (h *Handler) setBookingRoom(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	id, err := pathUUID(r, "id")

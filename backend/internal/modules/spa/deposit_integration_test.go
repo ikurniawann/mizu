@@ -34,7 +34,7 @@ func TestDepositHoldsAndSettlesOnlineBookings(t *testing.T) {
 	}, http.StatusCreated)
 	v45 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	emp := e.employee("Terapis DP", nil)
-	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
+	therapist := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 
 	// Policy is readable and editable by staff with the outlets menu.
 	cfg := e.data(admin, "GET", "/api/spa/settings/deposit", nil, http.StatusOK)
@@ -55,6 +55,14 @@ func TestDepositHoldsAndSettlesOnlineBookings(t *testing.T) {
 		t.Fatalf("new online booking deposit = %v", dep)
 	}
 	token := res["access_token"].(string)
+	var pendingID string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM spa.bookings WHERE public_token = $1::uuid`, token).Scan(&pendingID); err != nil {
+		t.Fatal(err)
+	}
+	pending := e.data(admin, "GET", "/api/spa/bookings/"+pendingID, nil, http.StatusOK)
+	e.data(admin, "PATCH", "/api/spa/bookings/"+pendingID+"/items/"+items(pending)[0]["id"].(string), map[string]any{"action": "assign", "therapist_id": therapist["id"]}, http.StatusOK)
+	// A DP-pending online booking cannot be started, even via the staff API.
+	e.call(admin, "POST", "/api/spa/bookings/"+pendingID+"/status", map[string]any{"action": "start"}, http.StatusConflict)
 	// The slot is held while the DP is pending: a second guest cannot take it.
 	e.call(nil, "POST", "/api/public/spa/bookings", map[string]any{"branch_id": branch, "scheduled_at": "2026-10-09T05:00:00.000Z", "customer_name": "Lain",
 		"customer_phone": "0813 3333 4444", "variant_ids": []any{v45}}, http.StatusConflict)

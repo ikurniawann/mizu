@@ -26,7 +26,7 @@ export function RoomBoard({ branchId, onOpenBooking }: { branchId: string; onOpe
   if (rooms.length === 0) {
     return (
       <Card className="py-0 shadow-none!">
-        <TableNote>Belum ada room di outlet ini. Tambahkan di Spa → Outlet → Room.</TableNote>
+        <TableNote>Belum ada room di outlet ini. Tambahkan di menu Room Spa.</TableNote>
       </Card>
     );
   }

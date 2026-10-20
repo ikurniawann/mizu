@@ -6131,6 +6131,21 @@
   },
   {
     "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/booking-groups"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/booking-groups/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/booking-groups/{id}/checkout"
+  },
+  {
+    "module": "spa",
     "method": "GET",
     "path": "/api/spa/bookings"
   },
@@ -6148,6 +6163,11 @@
     "module": "spa",
     "method": "PATCH",
     "path": "/api/spa/bookings/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/bookings/{id}/auto-assign"
   },
   {
     "module": "spa",
@@ -6392,6 +6412,11 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/spa/reports/customer"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/spa/reports/rating"
   },
   {
@@ -6418,6 +6443,11 @@
     "module": "spa",
     "method": "POST",
     "path": "/api/spa/rooms"
+  },
+  {
+    "module": "spa",
+    "method": "DELETE",
+    "path": "/api/spa/rooms/{id}"
   },
   {
     "module": "spa",

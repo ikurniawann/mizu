@@ -71,11 +71,21 @@ func (h *Handler) Routes() []module.Route {
 			return fn(w, r, user)
 		})}
 	}
+	roomAction := func(pattern, action string, fn staffFunc) module.Route {
+		return module.Route{Pattern: pattern, Handler: httpx.Handle(func(w http.ResponseWriter, r *http.Request) error {
+			user, err := h.auth.RequireMenuAction(r, action, iam.SpaRooms...)
+			if err != nil {
+				return err
+			}
+			return fn(w, r, user)
+		})}
+	}
 	p := staffPrefix
 	return []module.Route{
 		report("GET "+p+"/reports/rush-hour", iam.SpaRushHour, h.rushHourReport),
 		report("GET "+p+"/reports/trend", iam.SpaTrend, h.trendReport),
 		report("GET "+p+"/reports/rating", iam.SpaRating, h.ratingReport),
+		report("GET "+p+"/reports/customer", iam.SpaCustomerReport, h.customerReport),
 		staff("GET "+p+"/outlets", iam.Spa, h.listOutlets),
 		staff("PUT "+p+"/outlets/{branchId}", iam.SpaOutlets, h.putOutlet),
 		staff("POST "+p+"/outlets/{branchId}/sync-pos", iam.SpaOutlets, h.syncPOS),
@@ -106,9 +116,13 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/customer-directory/{id}/ban", iam.SpaCustomer, h.setCustomerBan),
 		staff("GET "+p+"/bookings", iam.SpaBookings, h.listBookings),
 		staff("POST "+p+"/bookings", iam.SpaBookings, h.createBooking),
+		staff("POST "+p+"/booking-groups", iam.SpaBookings, h.createBookingGroup),
+		staff("GET "+p+"/booking-groups/{id}", iam.SpaBookings, h.getBookingGroup),
+		staff("POST "+p+"/booking-groups/{id}/checkout", iam.SpaBookings, h.checkoutBookingGroup),
 		staff("GET "+p+"/bookings/{id}", iam.SpaBookings, h.getBooking),
 		staff("PATCH "+p+"/bookings/{id}", iam.SpaBookings, h.patchBooking),
 		staff("PUT "+p+"/bookings/{id}/therapist", iam.SpaBookings, h.assignBooking),
+		staff("POST "+p+"/bookings/{id}/auto-assign", iam.SpaBookings, h.autoAssignBooking),
 		staff("POST "+p+"/bookings/{id}/status", iam.SpaBookings, h.bookingStatus),
 		staff("POST "+p+"/bookings/{id}/items", iam.SpaBookings, h.addItem),
 		staff("PATCH "+p+"/bookings/{id}/items/{itemId}", iam.SpaBookings, h.itemAction),
@@ -122,8 +136,9 @@ func (h *Handler) Routes() []module.Route {
 		staff("PUT "+p+"/day-off-quotas/{branchId}", iam.SpaTherapists, h.saveDayOffQuota),
 		staff("POST "+p+"/day-offs/{id}/cancel", iam.SpaTherapists, h.cancelDayOff),
 		staff("GET "+p+"/rooms", iam.Spa, h.listRooms),
-		staff("POST "+p+"/rooms", iam.SpaOutlets, h.createRoom),
-		staff("PUT "+p+"/rooms/{id}", iam.SpaOutlets, h.updateRoom),
+		roomAction("POST "+p+"/rooms", "create", h.createRoom),
+		roomAction("PUT "+p+"/rooms/{id}", "update", h.updateRoom),
+		roomAction("DELETE "+p+"/rooms/{id}", "delete", h.deleteRoom),
 		staff("GET "+p+"/settings/deposit", iam.SpaOutlets, h.getDepositSettings),
 		staff("PUT "+p+"/settings/deposit", iam.SpaOutlets, h.putDepositSettings),
 		staff("POST "+p+"/bookings/{id}/checkout", iam.SpaBookings, h.checkout),
@@ -480,9 +495,10 @@ func (h *Handler) setPrices(w http.ResponseWriter, r *http.Request, u *auth.User
 	f.List("prices", req, 500, func(items *validate.Form, i int, v any) {
 		item := items.Item(i, v)
 		prices = append(prices, priceInput{
-			VariantID: str(item.Str("variant_id", req, uuidOpts)),
-			BranchID:  str(item.Str("branch_id", req, uuidOpts)),
-			Price:     item.Num("price_idr", validate.Rule{Nullable: true, Optional: true}, treatmentMoneyOpts),
+			VariantID:       str(item.Str("variant_id", req, uuidOpts)),
+			BranchID:        str(item.Str("branch_id", req, uuidOpts)),
+			Price:           item.Num("price_idr", validate.Rule{Nullable: true, Optional: true}, treatmentMoneyOpts),
+			CommissionValue: item.Num("commission_value", req, treatmentMoneyOpts),
 		})
 	})
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
@@ -523,12 +539,11 @@ func (h *Handler) createTherapist(w http.ResponseWriter, r *http.Request, _ *aut
 	f := body(r)
 	employeeID := str(f.Str("employee_id", req, uuidOpts))
 	branchID := str(f.Str("home_branch_id", req, uuidOpts))
-	gender := f.Enum("gender", optNull, genders)
 	active := f.BoolDefault("is_active", true)
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
 	}
-	t, err := h.svc.CreateTherapist(r.Context(), employeeID, branchID, gender, active)
+	t, err := h.svc.CreateTherapist(r.Context(), employeeID, branchID, active)
 	if err != nil {
 		return err
 	}
@@ -542,13 +557,11 @@ func (h *Handler) updateTherapist(w http.ResponseWriter, r *http.Request, _ *aut
 	}
 	f := body(r)
 	branchID := f.Str("home_branch_id", opt, uuidOpts)
-	_, genderSent := f.Fields()["gender"]
-	gender := f.Enum("gender", optNull, genders)
 	active := f.Bool("is_active", opt)
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
 	}
-	t, err := h.svc.UpdateTherapist(r.Context(), id, branchID, gender, genderSent, active)
+	t, err := h.svc.UpdateTherapist(r.Context(), id, branchID, active)
 	if err != nil {
 		return err
 	}
@@ -690,7 +703,11 @@ func (h *Handler) listCustomers(w http.ResponseWriter, r *http.Request, _ *auth.
 
 func (h *Handler) customerDirectory(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
 	page, limit := readPage(r)
-	rows, total, err := h.svc.CustomerDirectory(r.Context(), strings.TrimSpace(r.URL.Query().Get("q")), page, limit)
+	status, err := oneOf(r, "status", []string{"blocked", "unblocked"})
+	if err != nil {
+		return err
+	}
+	rows, total, err := h.svc.CustomerDirectory(r.Context(), strings.TrimSpace(r.URL.Query().Get("q")), status, page, limit)
 	if err != nil {
 		return err
 	}
@@ -809,6 +826,18 @@ func itemFields(f *validate.Form) []itemRequest {
 
 func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	f := body(r)
+	in := bookingInputFields(f)
+	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+		return err
+	}
+	b, err := h.svc.CreateBooking(r.Context(), u.ID, in)
+	if err != nil {
+		return err
+	}
+	return created(w, b)
+}
+
+func bookingInputFields(f *validate.Form) createBookingInput {
 	in := createBookingInput{
 		TherapistID:         str(f.Str("therapist_id", optNull, uuidOpts)),
 		BranchID:            str(f.Str("branch_id", req, uuidOpts)),
@@ -825,14 +854,68 @@ func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request, u *auth.
 		in.ScheduledAt = *at
 	}
 	in.Items = itemFields(f)
-	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+	return in
+}
+
+func (h *Handler) createBookingGroup(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	f := body(r)
+	in := createGroupInput{
+		BranchID:        str(f.Str("branch_id", req, uuidOpts)),
+		PayerCustomerID: str(f.Str("payer_customer_id", optNull, uuidOpts)),
+		PayerName:       str(f.Str("payer_name", req, validate.StrOpts{Trim: true, Min: 1, Max: 120})),
+		PayerPhone:      f.StrDefault("payer_phone", "", validate.StrOpts{Trim: true, Max: 30}),
+	}
+	f.List("bookings", req, 10, func(list *validate.Form, i int, v any) {
+		in.Bookings = append(in.Bookings, bookingInputFields(list.Item(i, v)))
+	})
+	if len(in.Bookings) < 2 {
+		f.Fail("bookings", "too_small", "Tambahkan minimal dua orang")
+	}
+	if err := f.ErrAtPath("Data booking bersama tidak valid"); err != nil {
 		return err
 	}
-	b, err := h.svc.CreateBooking(r.Context(), u.ID, in)
+	g, err := h.svc.CreateBookingGroup(r.Context(), u.ID, in)
 	if err != nil {
 		return err
 	}
-	return created(w, b)
+	return created(w, g)
+}
+
+func (h *Handler) getBookingGroup(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	g, err := h.svc.BookingGroup(r.Context(), u.ID, id)
+	if err != nil {
+		return err
+	}
+	return ok(w, g)
+}
+
+func (h *Handler) checkoutBookingGroup(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	f := body(r)
+	ratings := map[string]int{}
+	f.List("ratings", opt, 10, func(list *validate.Form, i int, v any) {
+		row := list.Item(i, v)
+		bookingID := str(row.Str("booking_id", req, uuidOpts))
+		rating := row.Int("therapist_rating", req, validate.NumOpts{Min: validate.Bound(1), Max: validate.Bound(5)})
+		if rating != nil {
+			ratings[bookingID] = *rating
+		}
+	})
+	if err := f.ErrAtPath("Rating terapis tidak valid"); err != nil {
+		return err
+	}
+	result, err := h.svc.CheckoutBookingGroup(r.Context(), u.ID, id, ratings)
+	if err != nil {
+		return err
+	}
+	return ok(w, result)
 }
 
 func (h *Handler) assignBooking(w http.ResponseWriter, r *http.Request, u *auth.User) error {

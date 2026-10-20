@@ -19,7 +19,6 @@ import { currentMonthWib, wibDateOf } from "../time";
 import type { MyScheduleItem } from "../types";
 import { Countdown } from "./countdown";
 import { MyAddTreatmentDialog } from "./my-add-treatment-dialog";
-import { MyDayOffCard } from "./my-day-off-card";
 import { MyPayCard } from "./my-pay-card";
 import { ItemStatusBadge, SPA_KICKER, TimeRange } from "./shared";
 
@@ -251,7 +250,6 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
 
       <MyPayCard />
 
-      <MyDayOffCard />
     </div>
   );
 }

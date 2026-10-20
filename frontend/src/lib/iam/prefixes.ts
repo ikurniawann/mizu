@@ -129,9 +129,11 @@ export const IAM = {
   spaTherapists: ["spa.therapists"],
   spaCommissions: ["spa.commissions"],
   spaOutlets: ["spa.outlets"],
+  spaRooms: ["spa.rooms"],
   spaRushHour: ["spa.rush-hour"],
   spaTrend: ["spa.trend"],
   spaRating: ["spa.rating"],
+  spaCustomerReport: ["spa.customer-report"],
   /** Items → approval PR per modul. */
   itemsPrApproval: [
     "items.general.purchasing.approval-pr",

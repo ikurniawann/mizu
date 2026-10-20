@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatNumber } from "@/lib/format";
 import { useSaveTreatmentPrices } from "../mutations";
 import { spaKeys } from "../query-keys";
-import { buildPriceBatches, parseOutletPrice, type PriceGrid } from "../treatment-form";
+import { buildPriceBatches, parseOutletPrice, type CommissionGrid, type PriceGrid } from "../treatment-form";
 import type { Outlet, Treatment, Variant } from "../types";
 import { Field, FormError, OutletSelect, SELECT, TableNote } from "./shared";
 
@@ -43,6 +43,7 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
 }) {
   const [branchId, setBranchId] = useState("");
   const [drafts, setDrafts] = useState<PriceGrid>({});
+  const [commissionDrafts, setCommissionDrafts] = useState<CommissionGrid>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const savingRef = useRef(false);
@@ -52,11 +53,15 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
   const selected = configured.find((o) => o.branch_id === branchId) ?? configured[0];
   const selectedId = selected?.branch_id ?? "";
   const allVariants = treatments.flatMap((t) => t.variants);
-  const variantsById = new Map(allVariants.map((v) => [v.id, v]));
-  const changed = Object.entries(drafts).flatMap(([variantId, branches]) =>
-    Object.entries(branches).filter(([id, raw]) => priceState(variantsById.get(variantId), id, raw).changed)
-      .map(([id]) => id)
-  );
+  const changed = allVariants.flatMap((variant) => {
+    const branches = new Set([...Object.keys(drafts[variant.id] ?? {}), ...Object.keys(commissionDrafts[variant.id] ?? {})]);
+    return [...branches].filter((id) => {
+      const commission = commissionDrafts[variant.id]?.[id];
+      const stored = variant.outlet_commissions?.find((c) => c.branch_id === id);
+      return (drafts[variant.id]?.[id] !== undefined && priceState(variant, id, drafts[variant.id][id]).changed)
+        || (commission !== undefined && (commission !== String(stored?.commission_value ?? "") || stored?.commission_type !== "fixed"));
+    });
+  });
   const changedOutlets = new Set(changed).size;
   let custom = 0;
   let invalid = 0;
@@ -87,7 +92,7 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
     let batches;
     try {
       // Menyusun semua batch juga memvalidasi draft di outlet/filter lain.
-      batches = buildPriceBatches(treatments, drafts);
+      batches = buildPriceBatches(treatments, drafts, commissionDrafts);
     } catch (err) {
       setError((err as Error).message);
       return;
@@ -111,8 +116,18 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
           }
           return next;
         });
+        setCommissionDrafts((current) => {
+          const next = { ...current };
+          for (const price of batch.prices) {
+            const branches = { ...next[price.variant_id] };
+            delete branches[price.branch_id];
+            if (Object.keys(branches).length) next[price.variant_id] = branches;
+            else delete next[price.variant_id];
+          }
+          return next;
+        });
       }
-      toast.success("Harga outlet disimpan", { description: `${savedCount} perubahan tersimpan. Sinkronkan produk POS dari Outlet Spa.` });
+      toast.success("Harga dan komisi outlet disimpan", { description: `${savedCount} perubahan tersimpan. Produk POS diperbarui otomatis.` });
     } catch (err) {
       const message = `${savedCount} perubahan sudah tersimpan. Perubahan lainnya belum tersimpan: ${(err as Error).message}`;
       setError(message);
@@ -127,7 +142,7 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Harga berlaku untuk pemilihan treatment pada booking berikutnya. Produk kasir diperbarui melalui <strong>Sinkron produk POS</strong> di Outlet Spa (memerlukan akses Outlet Spa). {outletLink}
+        Harga dan komisi ditetapkan untuk setiap varian treatment di masing-masing outlet. Komisi wajib diisi saat menyimpan perubahan. Produk kasir diperbarui otomatis saat perubahan disimpan. {outletLink}
       </p>
       <FormError>{outletError}</FormError>
       {loading ? <Card className="p-4"><SkeletonTable columns={4} rows={5} /></Card>
@@ -156,7 +171,7 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
               <Badge variant="muted">{allVariants.length - custom - invalid} mengikuti harga dasar</Badge>
               {invalid > 0 && <Badge variant="destructive">{invalid} harga tidak valid</Badge>}
             </div>
-            <p className="text-xs text-muted-foreground">Kosongkan input untuk kembali mengikuti harga dasar. Semua perubahan disimpan sekaligus, termasuk dari outlet lain.</p>
+            <p className="text-xs text-muted-foreground">Kosongkan harga untuk mengikuti harga dasar. Isi nominal komisi dalam rupiah di setiap outlet; nilai 0 diperbolehkan. Semua perubahan disimpan sekaligus, termasuk dari outlet lain.</p>
           </Card>
           <Card className="py-0">
             {groups.length === 0 ? <TableNote>Tidak ada treatment yang cocok dengan pencarian atau kategori.</TableNote> :
@@ -165,11 +180,12 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
                   <TableHead>Varian</TableHead>
                   <TableHead className="hidden md:table-cell">Harga dasar</TableHead>
                   <TableHead>Harga berlaku (Rp)</TableHead>
+                  <TableHead>Komisi terapis (Rp)</TableHead>
                 </TableRow></TableHeader>
                 {groups.map(({ treatment, variants }) => (
                   <TableBody key={treatment.id}>
                     <TableRow className="bg-surface-2">
-                      <TableHead colSpan={2} scope="rowgroup" className="py-3 break-words whitespace-normal normal-case">
+                      <TableHead colSpan={3} scope="rowgroup" className="py-3 break-words whitespace-normal normal-case">
                         <span className="text-sm font-semibold text-foreground">{treatment.name}</span>
                         {!treatment.is_active && <Badge variant="muted" className="ml-2">Nonaktif</Badge>}
                         <span className="mt-1 block text-xs font-normal">{treatment.code}{treatment.category ? ` · ${treatment.category}` : ""} · {variants.length} varian</span>
@@ -178,6 +194,8 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
                     </TableRow>
                     {variants.map((variant) => <PriceRow key={variant.id} treatment={treatment} variant={variant} outlet={selected}
                       draft={drafts[variant.id]?.[selectedId]} saving={saving}
+                      commissionDraft={commissionDrafts[variant.id]?.[selectedId]}
+                      onCommissionChange={(raw) => setCommissionDrafts((current) => ({ ...current, [variant.id]: { ...current[variant.id], [selectedId]: raw } }))}
                       onChange={(raw) => setDrafts((current) => ({ ...current, [variant.id]: { ...current[variant.id], [selectedId]: raw } }))} />)}
                   </TableBody>
                 ))}
@@ -196,13 +214,19 @@ export function OutletPricesEditor({ treatments, outlets, loading, ready, outlet
   );
 }
 
-function PriceRow({ treatment, variant, outlet, draft, saving, onChange }: {
-  treatment: Treatment; variant: Variant; outlet: Outlet; draft?: string; saving: boolean; onChange: (value: string) => void;
+function PriceRow({ treatment, variant, outlet, draft, commissionDraft, saving, onChange, onCommissionChange }: {
+  treatment: Treatment; variant: Variant; outlet: Outlet; draft?: string;
+  commissionDraft?: string;
+  saving: boolean; onChange: (value: string) => void;
+  onCommissionChange: (value: string) => void;
 }) {
   const state = priceState(variant, outlet.branch_id, draft);
   const rawDisplay = state.raw || String(variant.price_idr);
   const displayedPrice = /^\d+$/.test(rawDisplay) ? formatNumber(rawDisplay) : rawDisplay;
   const errorId = `price-error-${variant.id}-${outlet.branch_id}`;
+  const storedCommission = variant.outlet_commissions?.find((c) => c.branch_id === outlet.branch_id);
+  const commissionValue = commissionDraft ?? (storedCommission ? String(storedCommission.commission_value) : "");
+  const label = `${treatment.name}, ${variant.name}, ${outlet.branch_name}`;
   return (
     <TableRow>
       <TableCell className="align-top break-words whitespace-normal">
@@ -218,6 +242,12 @@ function PriceRow({ treatment, variant, outlet, draft, saving, onChange }: {
           aria-describedby={state.error ? errorId : undefined} onChange={(e) => onChange(e.target.value.replaceAll(".", ""))} />
         {state.changed && <Badge variant="warning">Diubah</Badge>}
         {state.error && <p id={errorId} className="text-xs text-danger">{state.error}</p>}
+      </TableCell>
+      <TableCell className="align-top whitespace-normal">
+        <Input type="number" min={0} max={999999999999} step={1}
+          value={commissionValue} disabled={saving} required aria-label={`Komisi nominal ${label}`}
+          onChange={(e) => onCommissionChange(e.target.value)} className="tabular-nums" />
+        {commissionValue === "" ? <p className="mt-1 text-xs text-danger">Wajib diisi</p> : null}
       </TableCell>
     </TableRow>
   );

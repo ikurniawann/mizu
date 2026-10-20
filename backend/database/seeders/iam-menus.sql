@@ -12,16 +12,19 @@ INSERT INTO iam.menus (code, menu_name, route_path, icon, menu_type, order_numbe
   ('spa.rush-hour', 'Rush Hour', '/dashboard/spa/report/rush-hour', 'clock', 'sidebar', 70, '{"actions":["read"]}'::jsonb),
   ('spa.trend', 'Trend', '/dashboard/spa/report/trend', 'chart', 'sidebar', 20, '{"actions":["read"]}'::jsonb),
   ('spa.rating', 'Rating', '/dashboard/spa/report/rating', 'star', 'sidebar', 40, '{"actions":["read"]}'::jsonb),
-  ('dashboard', 'Beranda', '/dashboard', 'home', 'sidebar', 0, '{"actions":["read"]}'::jsonb),
-  ('ess', 'Area Karyawan', NULL, 'calendar', 'group', 5, '{"actions":["read"]}'::jsonb),
+  ('spa.customer-report', 'Customer', '/dashboard/spa/report/customer', 'users', 'sidebar', 50, '{"actions":["read"]}'::jsonb),
+  ('spa.rooms', 'Room Spa', '/dashboard/spa/rooms', 'building', 'sidebar', 65, '{"actions":["read","create","update","delete"]}'::jsonb),
+  ('dashboard', 'Dashboard', '/dashboard', 'home', 'sidebar', 0, '{"actions":["read"]}'::jsonb),
+  ('ess', 'Area Karyawan', NULL, 'calendar', 'group', 10, '{"actions":["read"]}'::jsonb),
+  ('ess.day-offs', 'Jadwal Libur', '/dashboard/me/jadwal-libur', 'calendar', 'sidebar', 6, '{"actions":["read","update"]}'::jsonb),
   ('ess.attendance', 'Absensi', '/dashboard/me/absensi', 'calendar', 'sidebar', 10, '{"actions":["read"]}'::jsonb),
   ('ess.leave', 'Izin & Cuti', '/dashboard/me/cuti', 'paper-airplane', 'sidebar', 20, '{"actions":["read"]}'::jsonb),
   ('ess.team-shifts', 'Shift Tim', '/dashboard/me/shift-tim', 'calendar', 'sidebar', 45, '{"actions":["read","update"]}'::jsonb),
-  ('hris', 'HRIS', '/dashboard/hris', 'users', 'group', 10, '{"actions":["read"]}'::jsonb),
-  ('items', 'Items', '/dashboard/items', 'cube', 'group', 35, '{"actions":["read"]}'::jsonb),
-  ('pos', 'Point of Sales', '/dashboard/pos', 'shopping', 'group', 70, '{"actions":["read"]}'::jsonb),
-  ('crm', 'CRM', '/dashboard/crm', 'star', 'group', 80, '{"actions":["read"]}'::jsonb),
-  ('settings', 'Settings', NULL, 'settings', 'group', 90, '{"actions":["read"]}'::jsonb),
+  ('hris', 'HRIS', '/dashboard/hris', 'users', 'group', 20, '{"actions":["read"]}'::jsonb),
+  ('items', 'Items', '/dashboard/items', 'cube', 'group', 40, '{"actions":["read"]}'::jsonb),
+  ('pos', 'Point of Sales', '/dashboard/pos', 'shopping', 'group', 60, '{"actions":["read"]}'::jsonb),
+  ('crm', 'CRM', '/dashboard/crm', 'star', 'group', 50, '{"actions":["read"]}'::jsonb),
+  ('settings', 'Settings', NULL, 'settings', 'group', 100, '{"actions":["read"]}'::jsonb),
   ('settings.business', 'Business', '/dashboard/settings/business', 'building', 'sidebar', 10, '{"actions":["read"]}'::jsonb),
   ('settings.integrations', 'Integrasi', '/dashboard/settings/integrations', 'plug', 'sidebar', 11, '{"actions":["read"]}'::jsonb),
   ('settings.appearance', 'Appearance', '/dashboard/settings/appearance', 'palette', 'sidebar', 20, '{"actions":["read"]}'::jsonb),
@@ -154,7 +157,7 @@ INSERT INTO iam.menus (code, menu_name, route_path, icon, menu_type, order_numbe
   ('items.product.purchasing.returns', 'Retur', '/dashboard/product/purchasing/returns', 'truck', 'sidebar', 70, '{"actions":["read","create","update"]}'::jsonb),
   ('items.raw-material.purchasing.returns', 'Retur', '/dashboard/raw-material/purchasing/returns', 'truck', 'sidebar', 70, '{"actions":["read","create","update"]}'::jsonb),
   ('items.product.purchasing.invoice', 'Invoice', '/dashboard/product/purchasing/invoice', 'money', 'sidebar', 80, '{"actions":["read","create","update"]}'::jsonb),
-  ('accounting', 'Accounting', NULL, 'dollar-sign', 'group', 55, '{"actions":["read"]}'::jsonb),
+  ('accounting', 'Accounting', NULL, 'dollar-sign', 'group', 90, '{"actions":["read"]}'::jsonb),
   ('accounting.dashboard', 'Dashboard', NULL, 'home', 'group', 10, '{"actions":["read"]}'::jsonb),
   ('accounting.dashboard.overview', 'Overview', '/dashboard/accounting/reports', 'home', 'sidebar', 10, '{"actions":["read","export"]}'::jsonb),
   ('accounting.master', 'Master Data', NULL, 'database', 'group', 20, '{"actions":["read"]}'::jsonb),
@@ -225,12 +228,20 @@ WHERE child.code LIKE '%.%'
 
 UPDATE iam.menus SET parent_id = NULL WHERE code NOT LIKE '%.%' AND deleted_at IS NULL;
 
+-- Sales Funneling tetap memakai kode/rute lama, tetapi tampil sebagai Leads di root.
+UPDATE iam.menus SET menu_name = 'Leads', order_number = 30, updated_at = now()
+WHERE code = 'sales-funnel' AND deleted_at IS NULL;
+UPDATE iam.menus SET order_number = 70, updated_at = now()
+WHERE code = 'ticketing' AND deleted_at IS NULL;
+UPDATE iam.menus SET order_number = 80, updated_at = now()
+WHERE code = 'dataroom' AND deleted_at IS NULL;
+
 -- Keep report permission codes while nesting their sidebar group under Spa.
 UPDATE iam.menus child SET parent_id = parent.id, module = 'spa', level = 2
 FROM iam.menus parent WHERE child.code = 'report' AND parent.code = 'spa';
 UPDATE iam.menus child SET parent_id = parent.id, module = 'spa', level = 3
 FROM iam.menus parent
-WHERE child.code IN ('report.sales-vs-target', 'spa.trend', 'spa.bookings', 'spa.rating') AND parent.code = 'report';
+WHERE child.code IN ('report.sales-vs-target', 'spa.trend', 'spa.bookings', 'spa.rating', 'spa.customer-report') AND parent.code = 'report';
 
 
 -- Soft-delete menus yang tidak ada di canonical tree
@@ -243,9 +254,9 @@ WHERE deleted_at IS NULL
     'ess.home', 'ess.overtime', 'ess.loans', 'ess.payroll', 'ess.kpi',
     'ess.announcements', 'ess.team-shifts',
     -- Spa Mizu (EPIC-052, 8 Okt 2026)
-    'ess.spa', 'spa', 'spa.bookings', 'spa.book-order', 'spa.customer', 'spa.treatments', 'spa.categories', 'spa.therapists',
+    'ess.spa', 'ess.day-offs', 'spa', 'spa.bookings', 'spa.book-order', 'spa.customer', 'spa.treatments', 'spa.categories', 'spa.therapists',
     'report', 'report.sales-vs-target',
-    'spa.commissions', 'spa.outlets', 'spa.rush-hour', 'spa.trend', 'spa.rating',
+    'spa.commissions', 'spa.outlets', 'spa.rooms', 'spa.rush-hour', 'spa.trend', 'spa.rating', 'spa.customer-report',
     'hris.kepegawaian.overtime', 'hris.kepegawaian.loans',
     'hris.kepegawaian.announcements',
     'hris.performance.kpi-scorecard', 'hris.performance.dept-tasks', 'hris.performance.kpi-config',

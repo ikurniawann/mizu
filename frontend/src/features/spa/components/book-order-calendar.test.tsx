@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { BoardItem, BoardTherapist } from "../types";
+import type { ArrivalQueue, BoardItem, BoardTherapist } from "../types";
 import { BookOrderCalendar } from "./book-order-calendar";
 import { PX_PER_MIN } from "../calendar";
 
 const item: BoardItem = {
+  group_id: null,
   id: "item-1", booking_id: "booking-1", booking_code: "SPA-001", customer_name: "Ayu",
   booking_status: "unassigned", therapist_gender_pref: "any", variant_id: "variant-1", treatment_name: "Massage", variant_name: "60 menit",
   duration_min: 60, price_idr: 200000, therapist_id: null, therapist_name: null,
@@ -25,15 +26,15 @@ beforeEach(() => {
   writes = [];
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     writes.push({ url, method: init?.method, input: JSON.parse(String(init?.body)) });
-    return new Response(JSON.stringify({ success: true, data: null }));
+    return new Response(JSON.stringify({ success: true, data: { booking_id: "booking-1", booking_code: "SPA-001", therapist_id: "therapist-1", therapist_name: "Sari" } }));
   });
 });
 afterEach(() => { cleanup(); client.clear(); vi.unstubAllGlobals(); });
 
-function openCalendar(rows = [therapist], unassigned = [item]) {
+function openCalendar(rows = [therapist], unassigned = [item], arrivalQueue?: ArrivalQueue) {
   const onOpenItem = vi.fn();
   render(<QueryClientProvider client={client}>
-    <BookOrderCalendar date="2026-10-09" therapists={rows} unassigned={unassigned}
+    <BookOrderCalendar date="2026-10-09" therapists={rows} unassigned={unassigned} arrivalQueue={arrivalQueue}
       onOpenItem={onOpenItem} onSlot={() => {}} />
   </QueryClientProvider>);
   return onOpenItem;
@@ -52,7 +53,7 @@ function dragToTherapist(button: HTMLElement, target?: HTMLElement) {
   fireEvent.drop(column, { dataTransfer });
 }
 
-it("menugaskan treatment dari card terpisah ke kalender tanpa mengubah jadwal", async () => {
+it("drop dari Belum ditugaskan mengirim kolom tujuan untuk divalidasi antrian", async () => {
   const onOpenItem = openCalendar();
   const sidebar = screen.getByRole("complementary", { name: "Belum ditugaskan" });
   const schedule = screen.getByRole("region", { name: "Jadwal terapis" });
@@ -63,32 +64,80 @@ it("menugaskan treatment dari card terpisah ke kalender tanpa mengubah jadwal", 
   expect(onOpenItem).toHaveBeenCalledWith(item);
   dragToTherapist(button);
   await waitFor(() => expect(writes).toEqual([{
-    url: "/api/spa/bookings/booking-1/therapist", method: "PUT",
+    url: "/api/spa/bookings/booking-1/auto-assign", method: "POST",
     input: { therapist_id: "therapist-1" },
   }]));
 });
 
-it("tetap meminta konfirmasi sebelum drop ke terapis yang cuti", async () => {
+it("target kolom cuti tetap dikirim untuk divalidasi server", async () => {
   openCalendar([{ ...therapist, on_leave: true }]);
   dragToTherapist(within(screen.getByRole("complementary", { name: "Belum ditugaskan" })).getByRole("button", { name: /Ayu/ }));
-  expect(writes).toEqual([]);
-  expect(await screen.findByRole("dialog")).toHaveTextContent("Terapis sedang cuti");
-  fireEvent.click(screen.getByRole("button", { name: "Tetap tugaskan" }));
-  await waitFor(() => expect(writes).toHaveLength(1));
+  await waitFor(() => expect(writes[0]?.input).toEqual({ therapist_id: "therapist-1" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-it("menolak drop booking yang berada di luar shift terapis", () => {
+it("target kolom di luar shift dikirim untuk divalidasi server", async () => {
   openCalendar([{ ...therapist, shift: { name: "Siang", start_time: "13:00", end_time: "17:00" } }]);
   dragToTherapist(within(screen.getByRole("complementary", { name: "Belum ditugaskan" })).getByRole("button", { name: /Ayu/ }));
-  expect(writes).toEqual([]);
+  await waitFor(() => expect(writes[0]?.input).toEqual({ therapist_id: "therapist-1" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-it("menolak drop bila gender terapis tidak sesuai preferensi booking", () => {
+it("target kolom beda gender dikirim untuk divalidasi server", async () => {
   openCalendar([therapist], [{ ...item, therapist_gender_pref: "male" }]);
   dragToTherapist(within(screen.getByRole("complementary", { name: "Belum ditugaskan" })).getByRole("button", { name: /Ayu/ }));
-  expect(writes).toEqual([]);
+  await waitFor(() => expect(writes[0]?.input).toEqual({ therapist_id: "therapist-1" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+it("kolom mengikuti posisi prioritas dan ikut berpindah saat antrian berotasi", () => {
+  const dewi = { ...therapist, therapist: { ...therapist.therapist, id: "therapist-2", full_name: "Dewi" } };
+  const absent = { ...therapist, therapist: { ...therapist.therapist, id: "therapist-3", full_name: "Ani" } };
+  const assigned = { ...therapist, items: [{ ...item, status: "assigned" as const, therapist_id: therapist.therapist.id }] };
+  const rows = [absent, assigned, dewi];
+  const queue: ArrivalQueue = {
+    branch_id: "branch-1", date: "2026-10-09",
+    queue: [
+      { ...therapist.therapist, present: true, clock_in: "2026-10-09T01:30:00Z", last_assigned_at: "2026-10-09T03:00:00Z", assigned_today: 1, position: 2 },
+      { ...dewi.therapist, present: true, clock_in: "2026-10-09T01:45:00Z", last_assigned_at: null, assigned_today: 0, position: 1 },
+    ],
+    absent: [{ ...absent.therapist, present: false, clock_in: null, last_assigned_at: null, assigned_today: 0, position: 0 }],
+  };
+  const calendar = (arrivalQueue: ArrivalQueue) => <QueryClientProvider client={client}>
+    <BookOrderCalendar date="2026-10-09" therapists={rows} unassigned={[]} arrivalQueue={arrivalQueue}
+      onOpenItem={() => {}} onSlot={() => {}} />
+  </QueryClientProvider>;
+  const { rerender } = render(calendar(queue));
+  const schedule = screen.getByRole("region", { name: "Jadwal terapis" });
+  let columns = Array.from(schedule.querySelectorAll("[data-therapist-id]"));
+  expect(columns.map((node) => node.getAttribute("data-therapist-id"))).toEqual(["therapist-2", "therapist-1", "therapist-3"]);
+  expect(columns[0]).toHaveTextContent("Prioritas 1");
+  expect(columns[1]).toHaveTextContent("Prioritas 2");
+  expect(columns[1]).toHaveTextContent("Ayu");
+  expect(columns[2]).toHaveTextContent("Belum absen");
+
+  rerender(calendar({ ...queue, queue: [
+    { ...queue.queue[0], position: 1 },
+    { ...queue.queue[1], position: 2, assigned_today: 1, last_assigned_at: "2026-10-09T04:00:00Z" },
+  ] }));
+  columns = Array.from(schedule.querySelectorAll("[data-therapist-id]"));
+  expect(columns.map((node) => node.getAttribute("data-therapist-id"))).toEqual(["therapist-1", "therapist-2", "therapist-3"]);
+  expect(columns[0]).toHaveTextContent("Prioritas 1");
+  expect(columns[0]).toHaveTextContent("Ayu");
+  expect(columns[1]).toHaveTextContent("Prioritas 2");
+  expect(rows.map((row) => row.therapist.id)).toEqual(["therapist-3", "therapist-1", "therapist-2"]);
+});
+
+it.each([false, true])("urutan tanpa antrian tersedia tetap deterministik (data tersedia: %s)", (hasQueue) => {
+  const dewi = { ...therapist, therapist: { ...therapist.therapist, id: "therapist-2", full_name: "Dewi" } };
+  const otherDewi = { ...dewi, therapist: { ...dewi.therapist, id: "therapist-3" } };
+  openCalendar([therapist, otherDewi, dewi], [], hasQueue
+    ? { branch_id: "branch-1", date: "2026-10-09", queue: [], absent: [] }
+    : undefined);
+  const columns = screen.getByRole("region", { name: "Jadwal terapis" }).querySelectorAll("[data-therapist-id]");
+  expect(Array.from(columns, (node) => node.getAttribute("data-therapist-id"))).toEqual(
+    hasQueue ? ["therapist-2", "therapist-3", "therapist-1"] : ["therapist-1", "therapist-3", "therapist-2"],
+  );
 });
 
 it("tetap dapat memindahkan treatment dari kolom terapis lain", async () => {

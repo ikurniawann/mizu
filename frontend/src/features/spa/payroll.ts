@@ -2,8 +2,8 @@ import type { PayRun } from "./types";
 
 /** Label jenis & status payroll terapis (revisi R1). */
 export const PAY_KIND_LABEL: Record<PayRun["kind"], string> = {
-  commission: "Tengah bulan",
-  regular: "Akhir bulan",
+  commission: "Tengah Bulan (tanggal 1 - 15)",
+  regular: "Akhir Bulan (tanggal 15 - akhir bulan)",
 };
 
 export const PAY_STATUS_LABEL: Record<PayRun["status"], string> = {

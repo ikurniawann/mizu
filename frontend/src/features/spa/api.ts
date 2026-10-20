@@ -10,6 +10,8 @@ import type {
   Board,
   BoardItem,
   Booking,
+  BookingGroup,
+  BookingGroupCreateInput,
   BookingCreateInput,
   BookingItemInput,
   BookingListParams,
@@ -20,6 +22,7 @@ import type {
   BookingSummary,
   BookingUpdateInput,
   CheckoutResult,
+  GroupCheckoutResult,
   CommissionReport,
   CommissionReportParams,
   CommissionRule,
@@ -30,7 +33,7 @@ import type {
   Outlet,
   OutletInput,
   ArrivalQueue,
-  AutoAssignResult,
+  AutoAssigned,
   DayOffMonth,
   DayOffQuota,
   DayOffRequest,
@@ -142,7 +145,7 @@ export const spaApi = {
       withQuery(`${BASE}/therapists`, { branch_id: params.branch_id, active: params.active ? "true" : undefined })
     ),
   customers: (q: string) => call<SpaCustomer[]>(withQuery(`${BASE}/customers`, { q })),
-  customerDirectory: (params: { q?: string; page?: number; limit?: number }) =>
+  customerDirectory: (params: { q?: string; status?: "blocked" | "unblocked"; page?: number; limit?: number }) =>
     callPage<SpaCustomer>(withQuery(`${BASE}/customer-directory`, params)),
   customerDetail: (id: string, page = 1) =>
     call<SpaCustomerDetail>(withQuery(`${BASE}/customer-directory/${enc(id)}`, { page })),
@@ -155,13 +158,13 @@ export const spaApi = {
   rooms: (branchId: string, activeOnly = false) => call<Room[]>(withQuery(`${BASE}/rooms`, { branch_id: branchId, active: activeOnly ? "true" : undefined })),
   createRoom: (input: RoomInput) => send<Room>(`${BASE}/rooms`, input),
   updateRoom: (id: string, input: RoomInput) => send<Room>(`${BASE}/rooms/${enc(id)}`, input, "PUT"),
+  deleteRoom: (id: string) => remove<{ id: string }>(`${BASE}/rooms/${enc(id)}`),
   setBookingRoom: (bookingId: string, roomId: string | null) => send<Booking>(`${BASE}/bookings/${enc(bookingId)}/room`, { room_id: roomId }, "PUT"),
   roomBoard: (branchId: string) => call<RoomBoard>(withQuery(`${BASE}/room-board`, { branch_id: branchId })),
   // Antrian terapis (revisi R3)
   arrivalQueue: (branchId: string, date: string) => call<ArrivalQueue>(withQuery(`${BASE}/arrival-queue`, { branch_id: branchId, date })),
-  autoAssign: (branchId: string, date: string) => send<AutoAssignResult>(`${BASE}/auto-assign`, { branch_id: branchId, date }),
-  syncPos: (branchId: string) => send<{ synced: number }>(`${BASE}/outlets/${enc(branchId)}/sync-pos`, {}),
-
+  autoAssignBooking: (bookingId: string, therapistId: string) =>
+    send<AutoAssigned>(`${BASE}/bookings/${enc(bookingId)}/auto-assign`, { therapist_id: therapistId }),
   // Treatment
   createTreatment: (input: TreatmentInput) => send<Treatment>(`${BASE}/treatments`, input),
   updateTreatment: (id: string, input: Partial<TreatmentInput>) =>
@@ -209,6 +212,10 @@ export const spaApi = {
   bookingAction: (id: string, action: "start" | "complete") =>
     send<Booking>(`${BASE}/bookings/${enc(id)}/status`, { action }),
   createBooking: (input: BookingCreateInput) => send<Booking>(`${BASE}/bookings`, input),
+  createBookingGroup: (input: BookingGroupCreateInput) => send<BookingGroup>(`${BASE}/booking-groups`, input),
+  bookingGroup: (id: string) => call<BookingGroup>(`${BASE}/booking-groups/${enc(id)}`),
+  checkoutBookingGroup: (id: string, ratings: { booking_id: string; therapist_rating: number }[]) =>
+    send<GroupCheckoutResult>(`${BASE}/booking-groups/${enc(id)}/checkout`, { ratings }),
   updateBooking: (id: string, input: BookingUpdateInput) =>
     send<Booking>(`${BASE}/bookings/${enc(id)}`, input, "PATCH"),
   addItem: (id: string, input: BookingItemInput) => send<Booking>(`${BASE}/bookings/${enc(id)}/items`, input),

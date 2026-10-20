@@ -95,7 +95,7 @@ async function load(c) {
   const products = new Map(productRows.rows.map((r) => [`${r.variant_id}|${r.branch_id}`, { id: r.id, sku: r.sku }]));
 
   const staffRows = await c.query(
-    `SELECT e.id AS employee_id, e.nip, e.full_name, t.id AS therapist_id, t.gender, t.home_branch_id
+    `SELECT e.id AS employee_id, e.nip, e.full_name, t.id AS therapist_id, e.gender::text AS gender, t.home_branch_id
        FROM hris.employees e LEFT JOIN spa.therapists t ON t.employee_id = e.id
       WHERE e.nip = ANY($1)`, [D.STAFF.map((s) => `MZ-${s[0]}`)]);
   const staffByNip = new Map(staffRows.rows.map((r) => [r.nip.slice(3), r]));

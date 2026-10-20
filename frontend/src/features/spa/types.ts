@@ -53,6 +53,12 @@ export interface OutletPrice {
   price_idr: number;
 }
 
+export interface OutletCommission {
+  branch_id: string;
+  commission_type: "percent" | "fixed";
+  commission_value: number;
+}
+
 export interface Variant {
   id: string;
   name: string;
@@ -61,6 +67,7 @@ export interface Variant {
   is_active: boolean;
   sort_order: number;
   outlet_prices: OutletPrice[];
+  outlet_commissions?: OutletCommission[];
 }
 
 export interface Treatment {
@@ -162,6 +169,7 @@ export interface PriceInput {
   variant_id: string;
   branch_id: string;
   price_idr: number | null;
+  commission_value?: number;
 }
 
 // ── Terapis ──────────────────────────────────────────────────────────────────
@@ -171,19 +179,18 @@ export interface EmployeeCandidate {
   full_name: string;
   nip: string | null;
   position_title: string | null;
+  gender: TherapistGender | null;
   is_therapist: boolean;
 }
 
 export interface TherapistCreateInput {
   employee_id: string;
   home_branch_id: string;
-  gender: TherapistGender | null;
   is_active: boolean;
 }
 
 export interface TherapistUpdateInput {
   home_branch_id?: string;
-  gender?: TherapistGender | null;
   is_active?: boolean;
 }
 
@@ -216,6 +223,7 @@ export interface OutletPic {
 // ── Booking ──────────────────────────────────────────────────────────────────
 
 export interface BookingSummary {
+	group_id: string | null;
   therapist_id: string | null;
   therapist_name: string | null;
   id: string;
@@ -316,6 +324,29 @@ export interface BookingCreateInput {
   room_id?: string;
 }
 
+export interface BookingGroup {
+  id: string;
+  branch_id: string;
+  payer_customer_id: string | null;
+  payer_name: string;
+  payer_phone: string;
+  bookings: Booking[];
+}
+
+export interface BookingGroupCreateInput {
+  branch_id: string;
+  payer_customer_id?: string;
+  payer_name: string;
+  payer_phone: string;
+  bookings: BookingCreateInput[];
+}
+
+export interface GroupCheckoutResult {
+  group: BookingGroup;
+  order_id: string;
+  order_number: string;
+}
+
 export interface BookingUpdateInput {
   scheduled_at?: string;
   customer_name?: string;
@@ -366,6 +397,7 @@ export interface AvailabilityParams {
 }
 
 export interface BoardItem extends BookingItem {
+	group_id: string | null;
   starts_at: string;
   ends_at: string;
   treatment_count?: number;
@@ -717,9 +749,11 @@ export interface ArrivalQueue {
   absent: ArrivalEntry[];
 }
 
-export interface AutoAssignResult {
-  assigned: { booking_id: string; booking_code: string; therapist_id: string; therapist_name: string }[];
-  skipped: { booking_id: string; booking_code: string; reason: string }[];
+export interface AutoAssigned {
+  booking_id: string;
+  booking_code: string;
+  therapist_id: string;
+  therapist_name: string;
 }
 
 // ── Jadwal libur terapis (revisi R5) ─────────────────────────────────────────

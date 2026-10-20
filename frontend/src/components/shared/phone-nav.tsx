@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ChevronDown, Home, LayoutGrid, Search } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { CountBadge } from "@/components/ui/count-badge";
+import { useSpaUnassignedCount } from "@/features/spa/queries";
 import { isNavLinkActive } from "@/lib/iam/nav-active";
 import { matchesNavQuery, type NavLeaf } from "@/lib/iam/nav-leaves";
 import { cn } from "@/lib/utils";
@@ -12,6 +14,7 @@ import { AppSidebarNavIcon } from "./app-sidebar-nav-icons";
 import { NavLink } from "./nav-link";
 
 const HOME_HREF = "/dashboard";
+const BOOK_ORDER_HREF = "/dashboard/spa/book-order";
 const RECENT_KEY = "bcd.admin.recent-nav";
 const RECENT_LIMIT = 4;
 
@@ -52,6 +55,9 @@ export function PhoneNav({
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const allHrefs = useMemo(() => leaves.map((leaf) => leaf.href), [leaves]);
+  const bookOrder = leaves.find((leaf) => leaf.href === BOOK_ORDER_HREF);
+  const { data: unassignedCount = 0 } = useSpaUnassignedCount(Boolean(bookOrder));
+  const bookingCount = bookOrder ? unassignedCount : 0;
 
   // One shortcut per section: the IAM menu already follows the user's role.
   const shortcuts = useMemo(() => {
@@ -73,7 +79,7 @@ export function PhoneNav({
     "group flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold focus-visible:outline-none";
   const tile = (active: boolean) =>
     cn(
-      "flex h-9 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-white/60 [&_svg]:size-5",
+      "relative flex h-9 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-white/60 [&_svg]:size-5",
       active ? "bg-accent text-accent-foreground shadow-glow" : "text-on-ink-muted group-hover:text-white"
     );
 
@@ -104,6 +110,9 @@ export function PhoneNav({
             >
               <span className={tile(active)}>
                 <AppSidebarNavIcon name={leaf.icon} isActive={active} className="size-5" />
+                {leaf.section === bookOrder?.section && (
+                  <CountBadge count={bookingCount} tone="white" className="absolute -top-1 -right-1" />
+                )}
               </span>
               <span className={cn("max-w-full truncate px-1", active ? "text-white" : "text-on-ink-muted")}>
                 {leaf.section}
@@ -119,6 +128,7 @@ export function PhoneNav({
         >
           <span className={tile(moreOpen)}>
             <LayoutGrid />
+            <CountBadge count={bookingCount} tone="white" className="absolute -top-1 -right-1" />
           </span>
           <span className={moreOpen ? "text-white" : "text-on-ink-muted"}>Lainnya</span>
         </button>
@@ -135,6 +145,7 @@ export function PhoneNav({
               leaves={leaves}
               pathname={pathname}
               allHrefs={allHrefs}
+              bookingCount={bookingCount}
               userName={userName}
               userRole={userRole}
               onNavigate={(href) => {
@@ -157,6 +168,7 @@ function MoreSheetBody({
   leaves,
   pathname,
   allHrefs,
+  bookingCount,
   userName,
   userRole,
   onNavigate,
@@ -165,6 +177,7 @@ function MoreSheetBody({
   leaves: NavLeaf[];
   pathname: string;
   allHrefs: string[];
+  bookingCount: number;
   userName: string;
   userRole: string;
   onNavigate: (href: string) => void;
@@ -248,7 +261,12 @@ function MoreSheetBody({
               className="flex w-full items-center justify-between px-5 py-3 text-left text-[11px] font-semibold tracking-wider text-on-ink-muted uppercase hover:text-white"
             >
               {section}
-              <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
+              <span className="flex items-center gap-2">
+                {!open && items.some((leaf) => leaf.href === BOOK_ORDER_HREF) && (
+                  <CountBadge count={bookingCount} tone="white" />
+                )}
+                <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
+              </span>
             </button>
             {open && (
               <div className="grid grid-cols-3 gap-2 px-3 pb-2">
@@ -269,6 +287,9 @@ function MoreSheetBody({
                         )}
                       >
                         <AppSidebarNavIcon name={leaf.icon} isActive={active} className="size-5" />
+                        {leaf.href === BOOK_ORDER_HREF && (
+                          <CountBadge count={bookingCount} tone="white" className="absolute -top-1 -right-1" />
+                        )}
                       </span>
                       <span className="line-clamp-2 text-xs leading-tight font-medium">
                         {leaf.label}

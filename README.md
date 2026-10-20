@@ -19,7 +19,7 @@ pembelian, akuntansi, CRM, dan website publik dengan booking online.
 | Treatment | Master treatment dan varian durasi, jeda persiapan antar-tamu, harga per outlet. |
 | Terapis | Data terapis, perbantuan antar-outlet, dan PIC outlet. |
 | Komisi Terapis | Aturan komisi (persen atau nominal per treatment/varian/outlet) dan laporan komisi dengan ekspor CSV. |
-| Outlet Spa | Stall POS, jam buka, booking online, dan sinkron produk POS. |
+| Outlet Spa | Stall POS, jam buka, booking online, dan sinkron otomatis produk POS. |
 
 **Aturan inti:**
 - **Jadwal terapis tidak boleh bentrok.** Durasi treatment ditambah jeda dicek di dalam transaksi.

@@ -120,7 +120,7 @@ type POS interface {
 // Customers is the POS customer directory.
 type Customers interface {
 	Search(ctx context.Context, q database.Querier, term string, limit int) ([]CustomerRef, error)
-	Page(ctx context.Context, q database.Querier, term string, page, limit int) ([]CustomerRef, int, error)
+	Page(ctx context.Context, q database.Querier, term, status string, page, limit int) ([]CustomerRef, int, error)
 	Detail(ctx context.Context, q database.Querier, id string) (*CustomerProfile, error)
 	Treatments(ctx context.Context, q database.Querier, id string, page, limit int) ([]CustomerTreatment, int, error)
 	SetGender(ctx context.Context, q database.Querier, id, gender string) error

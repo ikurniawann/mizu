@@ -35,9 +35,10 @@ import {
   useUpdateTherapist,
 } from "../mutations";
 import { useSpaAssists, useSpaEmployees, useSpaOutletPics, useSpaOutlets, useSpaTherapists } from "../queries";
-import { GENDER_LABEL, genderLabel } from "../rules";
-import type { Assist, EmployeeCandidate, Outlet, OutletPic, Therapist, TherapistGender } from "../types";
+import { genderLabel } from "../rules";
+import type { Assist, EmployeeCandidate, Outlet, OutletPic, Therapist } from "../types";
 import { DayOffAdminTab } from "./day-off-admin-tab";
+import { TherapistSchedulePage } from "./therapist-schedule-page";
 import { Field, FormError, OutletSelect, SELECT, SPA_KICKER, TableNote, TEXTAREA } from "./shared";
 
 /** Spa → Terapis: daftar terapis, perbantuan antar-outlet, dan PIC outlet. */
@@ -55,6 +56,7 @@ export function SpaTherapistsPage() {
           <TabsTrigger value="therapists">Terapis</TabsTrigger>
           <TabsTrigger value="assists">Perbantuan</TabsTrigger>
           <TabsTrigger value="pics">PIC Outlet</TabsTrigger>
+          <TabsTrigger value="schedule">Jadwal Shift</TabsTrigger>
           <TabsTrigger value="day-offs">Jadwal Libur</TabsTrigger>
         </TabsList>
         <TabsContent value="therapists" className="mt-4">
@@ -65,6 +67,9 @@ export function SpaTherapistsPage() {
         </TabsContent>
         <TabsContent value="pics" className="mt-4">
           <PicsTab outlets={outlets.data ?? []} />
+        </TabsContent>
+        <TabsContent value="schedule" className="mt-4">
+          <TherapistSchedulePage embedded />
         </TabsContent>
         <TabsContent value="day-offs" className="mt-4">
           <DayOffAdminTab outlets={outlets.data ?? []} />
@@ -225,12 +230,12 @@ function TherapistsTab({ outlets }: { outlets: Outlet[] }) {
 function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist | null; outlets: Outlet[]; onClose: () => void }) {
   const [employee, setEmployee] = useState<EmployeeCandidate | null>(null);
   const [homeBranch, setHomeBranch] = useState(therapist?.home_branch_id ?? outlets.find((o) => o.configured)?.branch_id ?? "");
-  const [gender, setGender] = useState<TherapistGender | "">(therapist?.gender ?? "");
   const [active, setActive] = useState(therapist?.is_active ?? true);
   const [error, setError] = useState<string | null>(null);
   const create = useCreateTherapist();
   const update = useUpdateTherapist();
   const pending = create.isPending || update.isPending;
+  const employeeGender = therapist?.gender ?? employee?.gender;
 
   const submit = () => {
     if (!therapist && !employee) return setError("Pilih karyawan.");
@@ -246,12 +251,12 @@ function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist
     };
     if (therapist) {
       update.mutate(
-        { id: therapist.id, input: { home_branch_id: homeBranch, gender: gender || null, is_active: active } },
+        { id: therapist.id, input: { home_branch_id: homeBranch, is_active: active } },
         { onSuccess: (t) => done(t.full_name), onError: fail }
       );
     } else if (employee) {
       create.mutate(
-        { employee_id: employee.id, home_branch_id: homeBranch, gender: gender || null, is_active: active },
+        { employee_id: employee.id, home_branch_id: homeBranch, is_active: active },
         { onSuccess: (t) => done(t.full_name), onError: fail }
       );
     }
@@ -268,7 +273,7 @@ function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist
         >
           <DialogPanelHeader>
             <DialogPanelTitle>{therapist ? `Ubah ${therapist.full_name}` : "Tambah terapis"}</DialogPanelTitle>
-            <DialogPanelDescription>Gender dipakai untuk mencocokkan preferensi terapis pelanggan.</DialogPanelDescription>
+            <DialogPanelDescription>Gender mengikuti data karyawan untuk mencocokkan preferensi pelanggan.</DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="space-y-4">
             {!therapist && (
@@ -280,15 +285,10 @@ function TherapistDialog({ therapist, outlets, onClose }: { therapist: Therapist
             <Field label="Outlet asal">
               <OutletSelect outlets={outlets} value={homeBranch} onChange={setHomeBranch} className={SELECT} onlyConfigured={false} required />
             </Field>
-            <Field label="Gender">
-              <select className={SELECT} value={gender} onChange={(e) => setGender(e.target.value as TherapistGender | "")}>
-                <option value="">Tidak diisi</option>
-                {(Object.keys(GENDER_LABEL) as TherapistGender[]).map((g) => (
-                  <option key={g} value={g}>
-                    {GENDER_LABEL[g]}
-                  </option>
-                ))}
-              </select>
+            <Field label="Gender karyawan">
+              <p className="rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm">
+                {employeeGender ? genderLabel(employeeGender) : "Belum diisi di data karyawan"}
+              </p>
             </Field>
             <label className="flex items-center gap-3 text-sm">
               <Switch checked={active} onCheckedChange={setActive} aria-label="Terapis aktif" />

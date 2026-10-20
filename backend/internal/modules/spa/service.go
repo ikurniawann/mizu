@@ -202,7 +202,15 @@ func (s *Service) PutOutlet(ctx context.Context, userID, branchID string, in out
 		if !ok {
 			return httpx.BadRequest("Stall tidak berada di outlet ini")
 		}
-		return s.st.upsertOutlet(ctx, q, branchID, in)
+		if err := s.st.upsertOutlet(ctx, q, branchID, in); err != nil {
+			return err
+		}
+		o, err := s.outletIn(ctx, q, sc, branchID)
+		if err != nil {
+			return err
+		}
+		_, err = s.syncProducts(ctx, q, o, "")
+		return err
 	})
 	if err != nil {
 		return nil, err
@@ -222,8 +230,8 @@ func (s *Service) PutOutlet(ctx context.Context, userID, branchID string, in out
 	return nil, httpx.NotFound("Outlet tidak ditemukan")
 }
 
-// SyncPOS creates or refreshes the POS product of every active variant at
-// an outlet, so treatments also show in the POS catalog.
+// SyncPOS refreshes active variants and previously synced inactive variants
+// at an outlet. Kept as an API repair operation; saves sync automatically.
 func (s *Service) SyncPOS(ctx context.Context, userID, branchID string) (int, error) {
 	sc, err := s.scope(ctx, userID)
 	if err != nil {
@@ -235,23 +243,47 @@ func (s *Service) SyncPOS(ctx context.Context, userID, branchID string) (int, er
 		if err != nil {
 			return err
 		}
-		ids, err := s.st.activeVariantIDs(ctx, q)
-		if err != nil {
-			return err
-		}
-		variants, err := s.st.variants(ctx, q, ids, branchID)
-		if err != nil {
-			return err
-		}
-		for _, id := range ids {
-			if _, err := s.ensureProduct(ctx, q, o, variants[id]); err != nil {
-				return err
-			}
-			n++
-		}
-		return nil
+		n, err = s.syncProducts(ctx, q, o, "")
+		return err
 	})
 	return n, err
+}
+
+func (s *Service) syncProducts(ctx context.Context, q Q, o *outletRow, treatmentID string) (int, error) {
+	ids, err := s.st.variantIDsForSync(ctx, q, o.BranchID, treatmentID)
+	if err != nil {
+		return 0, err
+	}
+	variants, err := s.st.variants(ctx, q, ids, o.BranchID)
+	if err != nil {
+		return 0, err
+	}
+	for _, id := range ids {
+		if _, err := s.ensureProduct(ctx, q, o, variants[id]); err != nil {
+			return 0, err
+		}
+	}
+	return len(ids), nil
+}
+
+func (s *Service) syncTreatmentProducts(ctx context.Context, q Q, treatmentID string) error {
+	outlets, err := s.st.outlets(ctx, q)
+	if err != nil {
+		return err
+	}
+	for _, outlet := range outlets {
+		if !outlet.Configured {
+			continue
+		}
+		o, err := s.st.outlet(ctx, q, outlet.BranchID)
+		if err != nil {
+			return err
+		}
+		if _, err := s.syncProducts(ctx, q, o, treatmentID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func productName(v variantRow) string { return v.TreatmentName + " (" + v.Name + ")" }
@@ -304,7 +336,10 @@ func (s *Service) CreateTreatment(ctx context.Context, in treatmentInput) (*Trea
 		if id, err = s.st.insertTreatment(ctx, q, in); err != nil {
 			return codeTaken(err)
 		}
-		return s.st.replaceVariants(ctx, q, id, in.Variants)
+		if err := s.st.replaceVariants(ctx, q, id, in.Variants); err != nil {
+			return err
+		}
+		return s.syncTreatmentProducts(ctx, q, id)
 	})
 	if err != nil {
 		return nil, err
@@ -328,9 +363,11 @@ func (s *Service) UpdateTreatment(ctx context.Context, id string, in treatmentIn
 			return httpx.NotFound("Treatment tidak ditemukan")
 		}
 		if in.Variants != nil {
-			return s.st.replaceVariants(ctx, q, id, in.Variants)
+			if err := s.st.replaceVariants(ctx, q, id, in.Variants); err != nil {
+				return err
+			}
 		}
-		return nil
+		return s.syncTreatmentProducts(ctx, q, id)
 	})
 	if err != nil {
 		return nil, err
@@ -341,6 +378,7 @@ func (s *Service) UpdateTreatment(ctx context.Context, id string, in treatmentIn
 type priceInput struct {
 	VariantID, BranchID string
 	Price               *float64
+	CommissionValue     *float64
 }
 
 // SetPrices sets or clears per-outlet prices of a treatment's variants.
@@ -368,6 +406,25 @@ func (s *Service) SetPrices(ctx context.Context, userID, id string, prices []pri
 		}
 		for _, p := range prices {
 			if err := s.st.setPrice(ctx, q, id, p.VariantID, p.BranchID, p.Price); err != nil {
+				return err
+			}
+			if p.CommissionValue != nil {
+				if err := s.st.setOutletCommission(ctx, q, p.VariantID, p.BranchID, *p.CommissionValue); err != nil {
+					return err
+				}
+			}
+		}
+		seen := map[string]bool{}
+		for _, p := range prices {
+			if seen[p.BranchID] {
+				continue
+			}
+			seen[p.BranchID] = true
+			o, err := s.outletIn(ctx, q, nil, p.BranchID)
+			if err != nil {
+				return err
+			}
+			if _, err := s.syncProducts(ctx, q, o, id); err != nil {
 				return err
 			}
 		}
@@ -403,7 +460,7 @@ func (s *Service) Employees(ctx context.Context, term string) ([]EmployeeCandida
 }
 
 // CreateTherapist registers an employee as therapist.
-func (s *Service) CreateTherapist(ctx context.Context, employeeID, branchID string, gender *string, active bool) (*Therapist, error) {
+func (s *Service) CreateTherapist(ctx context.Context, employeeID, branchID string, active bool) (*Therapist, error) {
 	var id string
 	err := s.tx(ctx, func(q Q) error {
 		ok, err := s.ports.People.EmployeeExists(ctx, q, employeeID)
@@ -419,7 +476,7 @@ func (s *Service) CreateTherapist(ctx context.Context, employeeID, branchID stri
 			}
 			return err
 		}
-		id, err = s.st.insertTherapist(ctx, q, employeeID, branchID, gender, active)
+		id, err = s.st.insertTherapist(ctx, q, employeeID, branchID, active)
 		return err
 	})
 	if err != nil {
@@ -428,8 +485,8 @@ func (s *Service) CreateTherapist(ctx context.Context, employeeID, branchID stri
 	return s.st.therapist(ctx, s.db, id)
 }
 
-// UpdateTherapist changes a therapist's outlet, gender or status.
-func (s *Service) UpdateTherapist(ctx context.Context, id string, branchID, gender *string, genderSent bool, active *bool) (*Therapist, error) {
+// UpdateTherapist changes a therapist's outlet or status.
+func (s *Service) UpdateTherapist(ctx context.Context, id string, branchID *string, active *bool) (*Therapist, error) {
 	if branchID != nil {
 		ok, err := s.st.branchExists(ctx, s.db, *branchID)
 		if err != nil {
@@ -440,7 +497,7 @@ func (s *Service) UpdateTherapist(ctx context.Context, id string, branchID, gend
 		}
 	}
 	err := s.tx(ctx, func(q Q) error {
-		found, err := s.st.updateTherapist(ctx, q, id, branchID, gender, genderSent, active)
+		found, err := s.st.updateTherapist(ctx, q, id, branchID, active)
 		if err == nil && !found {
 			err = httpx.NotFound("Terapis tidak ditemukan")
 		}
@@ -552,8 +609,8 @@ func (s *Service) Customers(ctx context.Context, term string) ([]CustomerRef, er
 }
 
 // CustomerDirectory lists the same active POS customers used by booking search.
-func (s *Service) CustomerDirectory(ctx context.Context, term string, page, limit int) ([]CustomerRef, int, error) {
-	return s.ports.Customers.Page(ctx, s.db, term, page, limit)
+func (s *Service) CustomerDirectory(ctx context.Context, term, status string, page, limit int) ([]CustomerRef, int, error) {
+	return s.ports.Customers.Page(ctx, s.db, term, status, page, limit)
 }
 
 // slotFullMessage is also what a banned member sees (revisi R8).
@@ -720,6 +777,19 @@ func (s *Service) CreateBooking(ctx context.Context, userID string, in createBoo
 	}
 	var id string
 	err = s.tx(ctx, func(q Q) error {
+		var err error
+		id, err = s.createBookingIn(ctx, q, sc, userID, in, nil, 0)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.visibleBooking(ctx, nil, id)
+}
+
+func (s *Service) createBookingIn(ctx context.Context, q Q, sc *scope.Scope, userID string, in createBookingInput, groupID *string, groupPosition int) (string, error) {
+	var id string
+	err := func() error {
 		o, err := s.outletIn(ctx, q, sc, in.BranchID)
 		if err != nil {
 			return err
@@ -741,7 +811,9 @@ func (s *Service) CreateBooking(ctx context.Context, userID string, in createBoo
 			}
 		}
 		id, err = s.st.insertBooking(ctx, q, newBooking{
-			Code: domain.BookingCode(s.clock()), CompanyID: o.CompanyID, BranchID: o.BranchID, WarehouseID: o.WarehouseID,
+			GroupID:       groupID,
+			GroupPosition: groupPosition,
+			Code:          domain.BookingCode(s.clock()), CompanyID: o.CompanyID, BranchID: o.BranchID, WarehouseID: o.WarehouseID,
 			BookingType: in.BookingType, Source: "front_office", CustomerID: customerID, CustomerName: in.CustomerName,
 			CustomerPhone: phone, TherapistGenderPref: in.TherapistGenderPref, Notes: in.Notes,
 			ScheduledAt: in.ScheduledAt, EndsAt: items[len(items)-1].StartsAt.Add(time.Duration(items[len(items)-1].Variant.DurationMin) * time.Minute), CreatedBy: userID,
@@ -783,11 +855,11 @@ func (s *Service) CreateBooking(ctx context.Context, userID string, in createBoo
 			return s.assignBooking(ctx, q, userID, b, in.TherapistID)
 		}
 		return s.syncStatus(ctx, q, id, userID)
-	})
+	}()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return s.visibleBooking(ctx, nil, id)
+	return id, nil
 }
 
 // customer resolves the POS customer: the chosen one, else find-or-create
@@ -1071,6 +1143,15 @@ func (s *Service) BookingAction(ctx context.Context, userID, id, action string) 
 			action == domain.ActionComplete && b.Status != domain.BookingInTreatment {
 			return httpx.Conflict("Status booking tidak sesuai untuk aksi ini")
 		}
+		if action == domain.ActionStart {
+			var depositStatus string
+			if err := q.QueryRow(ctx, `SELECT deposit_status FROM spa.bookings WHERE id = $1`, id).Scan(&depositStatus); err != nil {
+				return err
+			}
+			if depositStatus == DepositPending {
+				return httpx.Conflict("Mulai treatment setelah DP diterima atau dibebaskan")
+			}
+		}
 		items, err := s.st.itemRows(ctx, q, id, true)
 		if err != nil {
 			return err
@@ -1276,6 +1357,9 @@ func (s *Service) Checkout(ctx context.Context, userID, id string, rating *int) 
 		b, err := s.lockBooking(ctx, q, sc, id)
 		if err != nil {
 			return err
+		}
+		if b.GroupID != nil {
+			return httpx.Conflict("Checkout booking bersama dilakukan dari grup")
 		}
 		items, err := s.st.itemRows(ctx, q, id, true)
 		if err != nil {

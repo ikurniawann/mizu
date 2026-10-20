@@ -129,6 +129,12 @@ func (store) updateRoom(ctx context.Context, q Q, id string, in roomInput) error
 	return err
 }
 
+func (store) deleteRoom(ctx context.Context, q Q, id string) (bool, error) {
+	tag, err := q.Exec(ctx, `DELETE FROM spa.rooms WHERE id = $1
+	  AND NOT EXISTS (SELECT 1 FROM spa.bookings WHERE room_id = $1)`, id)
+	return tag.RowsAffected() > 0, err
+}
+
 // roomUse counts the other open bookings holding the room within
 // [start, end) and names the first of them. A room holds as many bookings at
 // once as its capacity (a couple room takes two guests).
@@ -262,6 +268,35 @@ func (s *Service) SaveRoom(ctx context.Context, userID, id string, in roomInput)
 		return nil, err
 	}
 	return s.st.room(ctx, s.db, id)
+}
+
+// DeleteRoom removes a room only when no booking has ever used it.
+func (s *Service) DeleteRoom(ctx context.Context, userID, id string) error {
+	sc, err := s.scope(ctx, userID)
+	if err != nil {
+		return err
+	}
+	room, err := s.st.room(ctx, s.db, id)
+	if err != nil {
+		return err
+	}
+	if room == nil {
+		return httpx.NotFound("Room tidak ditemukan")
+	}
+	if _, err := s.outletIn(ctx, s.db, sc, room.BranchID); err != nil {
+		return err
+	}
+	deleted, err := s.st.deleteRoom(ctx, s.db, id)
+	if database.PgCode(err) == "23503" {
+		return httpx.Conflict("Room sudah dipakai booking; nonaktifkan room jika tidak digunakan lagi")
+	}
+	if err != nil {
+		return err
+	}
+	if !deleted {
+		return httpx.Conflict("Room sudah dipakai booking; nonaktifkan room jika tidak digunakan lagi")
+	}
+	return nil
 }
 
 // SetBookingRoom puts a booking in a room (roomID "" releases it). The room

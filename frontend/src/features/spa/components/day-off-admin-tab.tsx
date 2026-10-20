@@ -25,21 +25,21 @@ const WEEKDAY = ["", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
  * libur yang diajukan terapis (bisa dibatalkan bila mendesak).
  */
 export function DayOffAdminTab({ outlets }: { outlets: Outlet[] }) {
-  const configured = outlets.filter((o) => o.configured);
-  const [branchId, setBranchId] = useState("");
+  const configured = outlets.filter((outlet) => outlet.configured && outlet.is_active);
+  const [selectedBranchId, setBranchId] = useState("");
   const [month, setMonth] = useState(() => currentMonthWib());
-  const branch = branchId || configured[0]?.branch_id || "";
-  const data = useOutletDayOffs(branch, month);
+  const branchId = selectedBranchId || configured[0]?.branch_id || "";
+  const data = useOutletDayOffs(branchId, month);
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-full sm:w-64">
-          <OutletSelect outlets={outlets} value={branch} onChange={setBranchId} className={SELECT} />
+          <OutletSelect outlets={configured} value={branchId} onChange={setBranchId} className={SELECT} />
         </div>
         <Input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="w-44" aria-label="Bulan" />
       </div>
-      {!branch ? (
+      {!branchId ? (
         <Card className="py-0">
           <TableNote>Belum ada outlet spa.</TableNote>
         </Card>
@@ -51,7 +51,7 @@ export function DayOffAdminTab({ outlets }: { outlets: Outlet[] }) {
         </Card>
       ) : data.data ? (
         <>
-          <QuotaForm key={`${branch}-${data.data.quota.min_female}-${data.data.quota.min_male}-${data.data.quota.max_per_week}`} data={data.data} />
+          <QuotaForm key={`${branchId}-${data.data.quota.min_female}-${data.data.quota.min_male}-${data.data.quota.max_per_week}`} data={data.data} />
           <MonthTable data={data.data} />
         </>
       ) : null}

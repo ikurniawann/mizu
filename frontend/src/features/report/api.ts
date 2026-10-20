@@ -31,3 +31,20 @@ export interface RatingReport {
 export function getRatingReport(params: { from: string; to: string; branch_id?: string }, signal?: AbortSignal) {
   return call<RatingReport>(withQuery("/api/spa/reports/rating", params), { signal });
 }
+
+export interface CustomerReport {
+  from: string;
+  to: string;
+  interval: ReportInterval;
+  total_customers: number;
+  total_transactions: number;
+  total_sales: number;
+  top_treatments: { treatment_id: string; treatment_name: string; quantity: number }[];
+  top_customers: { customer_id: string; customer_name: string; transactions: number; sales: number }[];
+  top_sales_customers: { customer_id: string; customer_name: string; transactions: number; sales: number }[];
+  periods: { period: string; customers: number }[];
+}
+
+export function getCustomerReport(params: TrendReportParams, signal?: AbortSignal) {
+  return call<CustomerReport>(withQuery("/api/spa/reports/customer", { ...params }), { signal });
+}

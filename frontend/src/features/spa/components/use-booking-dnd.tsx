@@ -4,7 +4,7 @@ import { useMemo, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { availabilityWarning, clockOf, isDraggable, minuteOfDay, PX_PER_MIN, shiftMismatch, snapStartMinute, type DayRange } from "../calendar";
-import { useAssignBooking, useRescheduleBooking } from "../mutations";
+import { useAssignBooking, useAutoAssignBooking, useRescheduleBooking } from "../mutations";
 import { wibClockOf, wibToIso } from "../time";
 import type { BoardItem, BoardTherapist } from "../types";
 
@@ -20,6 +20,7 @@ export interface DropTimeline {
 
 export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapist[]) {
   const action = useAssignBooking();
+  const autoAssign = useAutoAssignBooking();
   const reschedule = useRescheduleBooking();
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [pending, setPending] = useState<{ item: BoardItem; row: BoardTherapist; warning: string } | null>(null);
@@ -81,6 +82,15 @@ export function useBookingDnd(unassigned: BoardItem[], therapists: BoardTherapis
           onError: (err) => toast.error("Gagal melepas terapis", { description: err.message }),
         }
       );
+      return;
+    }
+    if (!item.therapist_id) {
+      autoAssign.mutate({ bookingId: item.booking_id, therapistId: row.therapist.id }, {
+        onSuccess: (assigned) => toast.success("Terapis ditugaskan dari antrian", {
+          description: `${item.customer_name} · ${wibClockOf(item.starts_at)} → ${assigned.therapist_name}`,
+        }),
+        onError: (err) => toast.error("Penugasan otomatis gagal", { description: err.message }),
+      });
       return;
     }
     const mismatch = shiftMismatch(item, row.shift);

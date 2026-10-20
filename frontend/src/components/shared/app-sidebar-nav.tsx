@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import { CountBadge } from "@/components/ui/count-badge";
+import { useSpaUnassignedCount } from "@/features/spa/queries";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,12 +141,18 @@ export default function AppSidebarNav({
    */
   const queryClient = useQueryClient();
   // Dimuat ulang tiap pindah halaman agar angkanya menyusul aksi pengguna.
-  const { data: badges = NO_BADGES } = useQuery({
+  const { data: hrisBadges = NO_BADGES } = useQuery({
     queryKey: [...NAV_BADGES_KEY, pathname],
     queryFn: fetchNavBadges,
     placeholderData: keepPreviousData,
     retry: false,
   });
+  const canReadBookOrder = allLeafHrefs.includes("/dashboard/spa/book-order");
+  const { data: unassignedCount = 0 } = useSpaUnassignedCount(canReadBookOrder);
+  const badges: Record<string, number> = {
+    ...hrisBadges,
+    "/dashboard/spa/book-order": canReadBookOrder ? unassignedCount : 0,
+  };
 
   // Membuka halaman ESS berarti karyawan sudah melihat pembaruannya.
   useEffect(() => {

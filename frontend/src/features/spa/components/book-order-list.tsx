@@ -38,7 +38,7 @@ export function BookOrderList({ items, onOpenItem }: { items: BoardItem[]; onOpe
                 <TableCell>
                   <TimeRange start={item.starts_at} end={item.ends_at} className="font-medium" />
                 </TableCell>
-                <TableCell className="font-medium">{item.customer_name}</TableCell>
+                <TableCell className="font-medium">{item.customer_name}{item.group_id && <span className="ml-2 text-xs text-brand-text">Grup</span>}</TableCell>
                 <TableCell className="whitespace-normal">
                   <p>{item.treatment_name}</p>
                   <p className="text-xs text-muted-foreground">{item.variant_name}</p>

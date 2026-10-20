@@ -129,7 +129,7 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
 ### Outlet (`spa.outlets`)
 
 - `PUT /api/spa/outlets/{branchId}` body `{warehouse_id, open_time, close_time, slot_minutes, public_booking, is_active}` → `Outlet`
-- `POST /api/spa/outlets/{branchId}/sync-pos` → `{synced: n}` — buat/perbarui produk POS semua varian aktif.
+- `POST /api/spa/outlets/{branchId}/sync-pos` → `{synced: n}` — operasi perbaikan API; produk POS tersinkron otomatis saat outlet, treatment, atau harga disimpan.
 
 ### Treatment (`spa.treatments`)
 
@@ -206,7 +206,7 @@ berhalaman menambah `"pagination":{"page","limit","total","totalPages"}`. Waktu 
 | `/dashboard/spa/treatments` | Master treatment + varian + harga per outlet |
 | `/dashboard/spa/therapists` | Terapis, perbantuan, PIC outlet |
 | `/dashboard/spa/commissions` | Aturan komisi + laporan komisi (ekspor CSV) |
-| `/dashboard/spa/outlets` | Konfigurasi outlet spa + sinkron produk POS |
+| `/dashboard/spa/outlets` | Konfigurasi outlet spa; produk POS tersinkron otomatis saat disimpan |
 | `/dashboard/me/spa` | Tugas terapis hari ini (mulai/selesai) + komisi bulan ini |
 | `/booking/spa` | Booking publik: outlet → treatment → waktu → kontak |
 

@@ -1,16 +1,21 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import AppSidebarNav from "@/components/shared/app-sidebar-nav";
 import type { Board, BoardItem, BoardTherapist, Booking, Outlet } from "../types";
 import { SpaBookOrderPage } from "./book-order-page";
 import { SpaBookingDetailPage } from "./booking-detail-page";
 import { SpaBookingsPage } from "./bookings-page";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+  usePathname: () => "/dashboard/spa/book-order",
+}));
 
 const item: BoardItem = {
+  group_id: null,
   id: "item-1", booking_id: "booking-1", booking_code: "SPA-001", customer_name: "Ayu", booking_status: "unassigned", therapist_gender_pref: "any",
   variant_id: "variant-1", treatment_name: "Massage", variant_name: "60 menit", duration_min: 60,
   price_idr: 200000, therapist_id: null, therapist_name: null, starts_at: "2026-10-10T03:00:00Z",
@@ -22,6 +27,7 @@ const outlet: Outlet = {
   is_active: true, warehouses: [],
 };
 const booking: Booking = {
+  group_id: null,
   therapist_id: null, therapist_name: null,
   id: "booking-1", booking_code: "SPA-001", branch_id: "branch-1", branch_name: "Mizu", booking_type: "reservation",
   source: "staff", customer_name: "Ayu", customer_phone: "081234567890", scheduled_at: item.starts_at, ends_at: item.ends_at,
@@ -38,6 +44,7 @@ let detail: Booking;
 let requested: string[];
 let writes: { url: string; method: string | undefined; input: unknown }[];
 let board: Board;
+let unassignedCount: number;
 
 beforeEach(() => {
   push.mockClear();
@@ -46,6 +53,7 @@ beforeEach(() => {
   detail = structuredClone(booking);
   requested = [];
   writes = [];
+  unassignedCount = 1;
   board = { date: "2026-10-10", branch_id: "branch-1", therapists: [], unassigned: [item] };
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     requested.push(url);
@@ -56,7 +64,11 @@ beforeEach(() => {
       detail = { ...detail, status: action === "start" ? "in_treatment" : "completed",
         items: detail.items.map((entry) => ({ ...entry, status: action === "start" ? "in_treatment" : "completed" })) };
     }
-    const data = path === "/api/spa/bookings/booking-1/checkout" ? { booking: { ...detail, therapist_rating: 4 }, order_id: "order-1", order_number: "POS-001" }
+    const group = { id: "group-1", payer_name: "Ayu", payer_phone: "081234567890",
+      bookings: [detail, { ...detail, id: "booking-2", booking_code: "SPA-002", customer_name: "Budi", therapist_id: "therapist-2", therapist_name: "Dewi" }] };
+    const data = path === "/api/spa/booking-groups/group-1/checkout" ? { group, order_id: "order-1", order_number: "POS-001" }
+      : path === "/api/spa/booking-groups/group-1" ? group
+      : path === "/api/spa/bookings/booking-1/checkout" ? { booking: { ...detail, therapist_rating: 4 }, order_id: "order-1", order_number: "POS-001" }
       : path === "/api/spa/outlets" ? [outlet]
       : path === "/api/spa/board" ? board
       : path === "/api/spa/bookings" ? [booking]
@@ -64,10 +76,10 @@ beforeEach(() => {
       : path === "/api/spa/bookings/booking-1/status" ? detail
       : path === "/api/spa/customers" ? [{ id: "customer-1", name: "Ayu", phone: "081234567890" }]
       : [];
-    return new Response(JSON.stringify({ success: true, data, pagination: { page: 1, limit: 20, total: 1, totalPages: 1 } }));
+    return new Response(JSON.stringify({ success: true, data, pagination: { page: 1, limit: 20, total: unassignedCount, totalPages: 1 } }));
   });
 });
-afterEach(() => { cleanup(); client.clear(); vi.unstubAllGlobals(); localStorage.removeItem(STORAGE_KEYS.spaBookOrderView.key); });
+afterEach(() => { cleanup(); client.clear(); focusManager.setFocused(undefined); vi.useRealTimers(); vi.unstubAllGlobals(); localStorage.removeItem(STORAGE_KEYS.spaBookOrderView.key); });
 
 function openPage(page: React.ReactNode) {
   render(<QueryClientProvider client={client}>{page}</QueryClientProvider>);
@@ -81,87 +93,59 @@ function therapist(name: string, id: string, items: BoardItem[] = []): BoardTher
   };
 }
 
-function dragCard(source: HTMLElement, target: HTMLElement) {
-  const values = new Map<string, string>();
-  const dataTransfer = {
-    types: ["application/x-mizu-item"], effectAllowed: "", dropEffect: "",
-    setData: (type: string, value: string) => values.set(type, value),
-    getData: (type: string) => values.get(type) ?? "",
-  };
-  fireEvent.dragStart(source, { dataTransfer });
-  fireEvent.dragOver(target, { dataTransfer });
-  fireEvent.drop(target, { dataTransfer });
-}
-
-it("kartu booking dapat ditugaskan, dipindah antar terapis, dan dikembalikan ke belum ditugaskan", async () => {
-  localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, "cards");
-  const assigned = { ...item, status: "assigned" as const, booking_status: "assigned" as const,
-    therapist_id: "therapist-sari", therapist_name: "Sari" };
-  board.therapists = [therapist("Sari", "therapist-sari"), therapist("Dewi", "therapist-dewi")];
-  openPage(<SpaBookOrderPage />);
-  const sidebar = await screen.findByRole("complementary", { name: "Belum ditugaskan" });
-  const sari = screen.getByRole("region", { name: "Terapis Sari" });
-  const dewi = screen.getByRole("region", { name: "Terapis Dewi" });
-  const unassignedCard = within(sidebar).getByText("Ayu").closest("li")!;
-  expect(unassignedCard).toHaveAttribute("draggable", "true");
-  dragCard(unassignedCard, sari);
-  await waitFor(() => expect(writes.at(-1)?.input).toEqual({ therapist_id: "therapist-sari" }));
-
+it("kartu booking online muncul saat badge berubah meskipun jadwal polling halaman berbeda", async () => {
+  vi.useFakeTimers();
   board.unassigned = [];
-  board.therapists[0].items = [assigned];
-  await client.invalidateQueries({ queryKey: ["spa", "board"] });
-  const assignedCard = (await within(sari).findByText("Ayu")).closest("li")!;
-  dragCard(assignedCard, dewi);
-  await waitFor(() => expect(writes.at(-1)?.input).toEqual({ therapist_id: "therapist-dewi" }));
-  dragCard(assignedCard, sidebar);
-  await waitFor(() => expect(writes.at(-1)?.input).toEqual({ therapist_id: null }));
-  expect(writes.map((write) => write.url)).toEqual(Array(3).fill("/api/spa/bookings/booking-1/therapist"));
+  unassignedCount = 0;
+  const view = (showPage: boolean) => (
+    <QueryClientProvider client={client}>
+      <AppSidebarNav navItems={[{ href: "/dashboard/spa/book-order", label: "Book Order", icon: "calendar" }]} />
+      {showPage && <SpaBookOrderPage />}
+    </QueryClientProvider>
+  );
+  const { rerender } = render(view(false));
+  await act(async () => { await vi.advanceTimersByTimeAsync(4_100); });
+  rerender(view(true));
+  await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+  expect(screen.queryByRole("button", { name: /Ayu/ })).not.toBeInTheDocument();
+
+  board = { ...board, unassigned: [item] };
+  unassignedCount = 1;
+  await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
+  expect(within(screen.getByRole("link", { name: /Book Order/ })).getByText("1")).toBeInTheDocument();
+  expect(within(screen.getByRole("complementary", { name: "Belum ditugaskan" })).getByRole("button", { name: /Ayu/ })).toBeInTheDocument();
 });
 
-it("kartu meminta konfirmasi untuk terapis cuti dan menolak booking yang terkunci", async () => {
-  localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, "cards");
-  board.therapists = [{ ...therapist("Sari", "therapist-sari"), on_leave: true }];
+it("kartu diperbarui tiap 10 detik dan saat kembali ke tab meskipun jumlah booking tetap", async () => {
+  vi.useFakeTimers();
+  client.setDefaultOptions({ queries: { retry: false, staleTime: 120_000, refetchOnWindowFocus: false } });
   openPage(<SpaBookOrderPage />);
-  const sidebar = await screen.findByRole("complementary", { name: "Belum ditugaskan" });
-  const sari = screen.getByRole("region", { name: "Terapis Sari" });
-  dragCard(within(sidebar).getByText("Ayu").closest("li")!, sari);
-  expect(writes).toEqual([]);
-  expect(await screen.findByRole("dialog")).toHaveTextContent("Terapis sedang cuti");
-  fireEvent.click(screen.getByRole("button", { name: "Tetap tugaskan" }));
-  await waitFor(() => expect(writes).toHaveLength(1));
+  await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+  expect(screen.getByRole("button", { name: /Ayu/ })).toBeInTheDocument();
 
-  board.unassigned = [];
-  board.therapists[0].items = [{ ...item, status: "assigned", booking_status: "assigned",
-    therapist_id: "therapist-sari", assignment_locked: true }];
-  await client.invalidateQueries({ queryKey: ["spa", "board"] });
-  const locked = (await within(sari).findByText("Ayu")).closest("li")!;
-  expect(locked).toHaveAttribute("draggable", "false");
-  dragCard(locked, sidebar);
-  expect(writes).toHaveLength(1);
+  board = { ...board, unassigned: [{ ...item, id: "item-2", booking_id: "booking-2", customer_name: "Budi Online" }] };
+  await act(async () => { await vi.advanceTimersByTimeAsync(10_100); });
+  expect(screen.getByRole("button", { name: /Budi Online/ })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Ayu/ })).not.toBeInTheDocument();
+
+  focusManager.setFocused(false);
+  board = { ...board, unassigned: [{ ...item, id: "item-3", booking_id: "booking-3", customer_name: "Citra Online" }] };
+  await act(async () => {
+    focusManager.setFocused(true);
+    await vi.advanceTimersByTimeAsync(100);
+  });
+  expect(screen.getByRole("button", { name: /Citra Online/ })).toBeInTheDocument();
 });
 
-it("tampilan kartu menolak penugasan ke terapis di luar shift", async () => {
+it("pilihan Kartu yang tersimpan membuka Sheet tanpa menampilkan toggle Kartu", async () => {
   localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, "cards");
-  board.therapists = [{ ...therapist("Sari", "therapist-sari"), shift: { name: "Siang", start_time: "13:00", end_time: "17:00" } }];
   openPage(<SpaBookOrderPage />);
-  const sidebar = await screen.findByRole("complementary", { name: "Belum ditugaskan" });
-  dragCard(within(sidebar).getByText("Ayu").closest("li")!, screen.getByRole("region", { name: "Terapis Sari" }));
-  expect(writes).toEqual([]);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Sheet" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.queryByRole("tab", { name: "Kartu" })).not.toBeInTheDocument();
+  expect(await screen.findByRole("region", { name: "Jadwal terapis" })).toBeInTheDocument();
 });
 
-it("tampilan kartu menolak penugasan bila gender terapis berbeda dari preferensi", async () => {
-  localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, "cards");
-  board.unassigned = [{ ...item, therapist_gender_pref: "male" }];
-  board.therapists = [therapist("Sari", "therapist-sari")];
-  openPage(<SpaBookOrderPage />);
-  const sidebar = await screen.findByRole("complementary", { name: "Belum ditugaskan" });
-  dragCard(within(sidebar).getByText("Ayu").closest("li")!, screen.getByRole("region", { name: "Terapis Sari" }));
-  expect(writes).toEqual([]);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-});
-
-it.each(["calendar", "cards", "list"])("pencarian terapis dan pelanggan bekerja bersama di %s dan dapat direset", async (view) => {
+it.each(["calendar", "list"])("pencarian terapis dan pelanggan bekerja bersama di %s dan dapat direset", async (view) => {
   localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, view);
   board.therapists = ["Sari", "Dewi"].map((name, index) => ({
     therapist: { id: `therapist-${index}`, employee_id: `employee-${index}`, full_name: name, nip: null, phone: null, photo_url: null,
@@ -187,7 +171,7 @@ it.each(["calendar", "cards", "list"])("pencarian terapis dan pelanggan bekerja 
   expect(screen.getByText("Ayu")).toBeInTheDocument();
 });
 
-it("pemilihan pelanggan terpisah dari form nama dan HP serta mengisi keduanya", async () => {
+it("pencarian pelanggan langsung di form tetap mengizinkan input pelanggan baru", async () => {
   openPage(<SpaBookOrderPage />);
   await screen.findByRole("button", { name: /Ayu.*Massage/ });
   fireEvent.click(screen.getByRole("button", { name: "Booking baru" }));
@@ -197,17 +181,13 @@ it("pemilihan pelanggan terpisah dari form nama dan HP serta mengisi keduanya", 
   expect(within(bookingDialog).getAllByRole("combobox", { name: "Treatment" })).toHaveLength(2);
   expect(within(bookingDialog).getAllByRole("combobox", { name: "Terapis booking" })).toHaveLength(1);
   expect(within(bookingDialog).queryByRole("combobox", { name: "Terapis" })).not.toBeInTheDocument();
-  expect(within(bookingDialog).queryByRole("textbox", { name: "Cari pelanggan" })).not.toBeInTheDocument();
-  fireEvent.click(within(bookingDialog).getByRole("button", { name: "Pilih pelanggan tersimpan" }));
-  const picker = await screen.findByRole("dialog", { name: "Pilih pelanggan" });
-  fireEvent.change(within(picker).getByRole("textbox", { name: "Cari pelanggan" }), { target: { value: "Ayu" } });
-  fireEvent.click(await within(picker).findByRole("button", { name: /Ayu.*081234567890/ }));
-  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Pilih pelanggan" })).not.toBeInTheDocument());
+  fireEvent.change(within(bookingDialog).getByRole("textbox", { name: "Cari pelanggan" }), { target: { value: "Ayu" } });
+  fireEvent.click(await within(bookingDialog).findByRole("button", { name: /Ayu.*081234567890/ }));
   expect(within(bookingDialog).getByDisplayValue("Ayu")).toBeInTheDocument();
   expect(within(bookingDialog).getByDisplayValue("081234567890")).toBeInTheDocument();
-  fireEvent.click(within(bookingDialog).getByRole("button", { name: "Ganti pelanggan" }));
-  fireEvent.click(within(await screen.findByRole("dialog", { name: "Pilih pelanggan" })).getByRole("button", { name: "Kembali ke booking" }));
-  expect(within(bookingDialog).getByDisplayValue("Ayu")).toBeInTheDocument();
+  fireEvent.change(within(bookingDialog).getByRole("textbox", { name: "Nama pelanggan" }), { target: { value: "Pelanggan Baru" } });
+  expect(within(bookingDialog).getByDisplayValue("Pelanggan Baru")).toBeInTheDocument();
+  expect(within(bookingDialog).getByDisplayValue("081234567890")).toBeInTheDocument();
   expect(push).not.toHaveBeenCalled();
 });
 
@@ -225,6 +205,29 @@ it("klik treatment di kalender membuka modal lengkap dan mempertahankan tanggal 
   expect(screen.getByLabelText("Tanggal")).toHaveValue("2026-10-10");
 });
 
+it("card grup selesai menampilkan aksi checkout POS dan rating semua terapis", async () => {
+  detail = { ...detail, group_id: "group-1", status: "completed", therapist_id: "therapist-1", therapist_name: "Sari",
+    items: detail.items.map((entry) => ({ ...entry, status: "completed", therapist_id: "therapist-1", therapist_name: "Sari" })) };
+  const groupItem = { ...item, group_id: "group-1", status: "completed" as const, booking_status: "completed" as const,
+    therapist_id: "therapist-1", therapist_name: "Sari" };
+  board.unassigned = [];
+  board.therapists = [therapist("Sari", "therapist-1", [groupItem])];
+  openPage(<SpaBookOrderPage />);
+  fireEvent.click(await screen.findByRole("button", { name: /Ayu.*Massage/ }));
+  const detailDialog = await screen.findByRole("dialog", { name: "Detail booking" });
+  fireEvent.click(await within(detailDialog).findByRole("button", { name: "Checkout grup ke POS" }));
+  const groupDialog = await screen.findByRole("dialog", { name: "Booking bersama" });
+  const pay = await within(groupDialog).findByRole("button", { name: "Checkout bersama ke POS" });
+  expect(pay).toBeDisabled();
+  const stars = within(groupDialog).getAllByRole("button", { name: "5 bintang" });
+  fireEvent.click(stars[0]);
+  fireEvent.click(stars[1]);
+  expect(pay).toBeEnabled();
+  fireEvent.click(pay);
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/dashboard/pos/cashier-new?orderId=order-1&spa=1"));
+  expect(writes.at(-1)?.url).toBe("/api/spa/booking-groups/group-1/checkout");
+});
+
 it("klik baris treatment di tampilan daftar membuka detail booking lengkap", async () => {
   localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, "list");
   openPage(<SpaBookOrderPage />);
@@ -233,7 +236,7 @@ it("klik baris treatment di tampilan daftar membuka detail booking lengkap", asy
   expect(push).not.toHaveBeenCalled();
 });
 
-it.each(["cards", "list", "history"])("kode booking di %s membuka modal yang sama", async (view) => {
+it.each(["list", "history"])("kode booking di %s membuka modal yang sama", async (view) => {
   localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, view === "history" ? "calendar" : view);
   openPage(view === "history" ? <SpaBookingsPage /> : <SpaBookOrderPage />);
   fireEvent.click(await screen.findByRole("button", { name: "SPA-001" }));
@@ -283,8 +286,8 @@ it("detail Book Order menampilkan booking dan hanya kembali ke Book Order", asyn
   expect(screen.getByRole("link", { name: "Book Order" })).toHaveAttribute("href", "/dashboard/spa/book-order");
 });
 
-it("modal card terapis memulai dan menyelesaikan seluruh booking dari tombol di header", async () => {
-  localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, "cards");
+it("modal booking dari daftar memulai dan menyelesaikan seluruh booking dari tombol di header", async () => {
+  localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, "list");
   detail.therapist_id = "therapist-sari";
   detail.therapist_name = "Sari";
   detail.status = "assigned";
@@ -338,7 +341,7 @@ it("checkout menunggu booking selesai dan rating terapis sebelum membuka POS", a
   await waitFor(() => expect(writes.at(-1)).toEqual({
     url: "/api/spa/bookings/booking-1/checkout", method: "POST", input: { therapist_rating: 4 },
   }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith("/dashboard/pos/cashier-new?orderId=order-1&pay=1"));
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/dashboard/pos/cashier-new?orderId=order-1&spa=1"));
 });
 
 it("tagihan POS yang sudah dibuat memakai rating tersimpan tanpa survei ulang", async () => {

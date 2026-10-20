@@ -2,6 +2,7 @@ package spa_test
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -95,5 +96,84 @@ func TestArrivalQueueAssignsInClockInOrderWithRotation(t *testing.T) {
 	}
 	if sk, _ := res["skipped"].([]any); len(sk) != 1 {
 		t.Fatalf("skipped = %v", sk)
+	}
+}
+
+func TestAutoAssignSingleBooking(t *testing.T) {
+	e := setup(t)
+	admin := &e.admin
+	branch := e.org.BranchID
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, branch).Scan(&warehouse); err != nil {
+		t.Fatal(err)
+	}
+	e.data(admin, "PUT", "/api/spa/outlets/"+branch, map[string]any{"warehouse_id": warehouse, "open_time": "09:00", "close_time": "22:00", "slot_minutes": 30, "is_active": true}, http.StatusOK)
+	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "SNG" + testutil.RandomHex(3), "name": "Massage",
+		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
+	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	mk := func(name, gender string, at *time.Time) string {
+		emp := e.employee(name, nil)
+		th := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": branch, "gender": gender}, http.StatusCreated)
+		if at != nil {
+			if _, err := e.tx.Exec(e.ctx, `INSERT INTO hris.attendance (employee_id, date, clock_in, status) VALUES ($1, '2026-10-08', $2, 'present')`, emp, *at); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return th["id"].(string)
+	}
+	early := time.Date(2026, 10, 8, 1, 30, 0, 0, time.UTC)
+	late := early.Add(15 * time.Minute)
+	first := mk("A First", "male", &early)
+	second := mk("B Second", "female", &late)
+	_ = mk("C Absent", "female", nil)
+	book := func(name, pref, at string) string {
+		b := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
+			"branch_id": branch, "booking_type": "reservation", "customer_name": name, "therapist_gender_pref": pref,
+			"scheduled_at": at, "items": []any{map[string]any{"variant_id": variant}},
+		}, http.StatusCreated)
+		return b["id"].(string)
+	}
+	b1 := book("Tamu 1", "any", "2026-10-08T03:00:00Z")
+	b2 := book("Tamu 2", "any", "2026-10-08T05:00:00Z")
+	wrong := e.call(admin, "POST", "/api/spa/bookings/"+b1+"/auto-assign", map[string]any{"therapist_id": second}, http.StatusConflict)
+	if msg, _ := wrong["error"].(string); !strings.Contains(msg, "A First") {
+		t.Fatalf("wrong-target rejection must name priority therapist: %v", wrong)
+	}
+	still := e.data(admin, "GET", "/api/spa/bookings/"+b1, nil, http.StatusOK)
+	if still["therapist_id"] != nil {
+		t.Fatalf("wrong-target drop changed booking: %v", still["therapist_id"])
+	}
+	e.call(admin, "POST", "/api/spa/bookings/"+b1+"/auto-assign", nil, http.StatusBadRequest)
+	assigned := e.data(admin, "POST", "/api/spa/bookings/"+b1+"/auto-assign", map[string]any{"therapist_id": first}, http.StatusOK)
+	if assigned["therapist_id"] != first {
+		t.Fatalf("first single assignment = %v, want %s", assigned, first)
+	}
+	other := e.data(admin, "GET", "/api/spa/bookings/"+b2, nil, http.StatusOK)
+	if other["therapist_id"] != nil {
+		t.Fatalf("single assignment changed other booking: %v", other["therapist_id"])
+	}
+	e.call(admin, "POST", "/api/spa/bookings/"+b1+"/auto-assign", map[string]any{"therapist_id": first}, http.StatusConflict)
+	busyFirst := book("Tamu Prioritas Berikutnya", "any", "2026-10-08T03:00:00Z")
+	assigned = e.data(admin, "POST", "/api/spa/bookings/"+busyFirst+"/auto-assign", map[string]any{"therapist_id": second}, http.StatusOK)
+	if assigned["therapist_id"] != second {
+		t.Fatalf("busy first therapist should allow next eligible therapist: %v", assigned)
+	}
+	b3 := book("Tamu Manual", "any", "2026-10-08T07:00:00Z")
+	e.data(admin, "PUT", "/api/spa/bookings/"+b3+"/therapist", map[string]any{"therapist_id": second}, http.StatusOK)
+	assigned = e.data(admin, "POST", "/api/spa/bookings/"+b2+"/auto-assign", map[string]any{"therapist_id": first}, http.StatusOK)
+	if assigned["therapist_id"] != first {
+		t.Fatalf("after manual assignment, picked %v, want %s", assigned["therapist_id"], first)
+	}
+	noMatch := book("Tamu Tanpa Kandidat", "female", "2026-10-08T07:00:00Z")
+	e.call(admin, "POST", "/api/spa/bookings/"+noMatch+"/auto-assign", map[string]any{"therapist_id": second}, http.StatusConflict)
+	still = e.data(admin, "GET", "/api/spa/bookings/"+noMatch, nil, http.StatusOK)
+	if still["therapist_id"] != nil {
+		t.Fatalf("booking without free candidate was assigned: %v", still["therapist_id"])
+	}
+	noCheckIn := book("Tamu Besok", "any", "2026-10-09T03:00:00Z")
+	e.call(admin, "POST", "/api/spa/bookings/"+noCheckIn+"/auto-assign", map[string]any{"therapist_id": first}, http.StatusConflict)
+	still = e.data(admin, "GET", "/api/spa/bookings/"+noCheckIn, nil, http.StatusOK)
+	if still["therapist_id"] != nil {
+		t.Fatalf("booking without checked-in therapist was assigned: %v", still["therapist_id"])
 	}
 }

@@ -49,6 +49,15 @@ describe("fetch wrapper", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/spa/customer-directory?q=Ayu&page=2");
   });
 
+  it("mengirim filter status customer sebelum paginasi", async () => {
+    const fetchMock = vi.fn(async (..._args: unknown[]) =>
+      new Response(JSON.stringify({ success: true, data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await spaApi.customerDirectory({ status: "blocked", page: 1, limit: 20 });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/spa/customer-directory?status=blocked&page=1&limit=20");
+  });
+
   it("mengambil profil dan riwayat treatment customer pada halaman yang dipilih", async () => {
     const payload = { customer: { id: "c1", name: "Ayu", phone: "08123", gender: "female" }, history: [], pagination: { page: 2, limit: 20, total: 21, totalPages: 2 } };
     const fetchMock = vi.fn(async (..._args: unknown[]) => new Response(JSON.stringify({ success: true, data: payload })));

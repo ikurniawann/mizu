@@ -52,7 +52,7 @@ func (store) myItems(ctx context.Context, q Q, therapistID string, start, end ti
 		var starts, ends time.Time
 		var assigned *time.Time
 		item, err := scanItem(r, &starts, &ends, &row.item.BookingID, &row.item.BookingCode, &row.item.BranchID, &row.item.BranchName,
-			&row.item.CustomerName, &row.item.GenderPref, &row.item.BookingStatus, &row.item.PaymentStatus,
+			&row.item.CustomerName, &row.item.GenderPref, &row.item.BookingStatus, &row.item.PaymentStatus, &row.item.GroupID,
 			&row.treatmentID, &row.item.Notes, &assigned)
 		row.item.Item = item
 		row.item.StartsAt, row.item.EndsAt = jsTime(starts), jsTime(ends)

@@ -1,43 +1,21 @@
 "use client";
 
-import { ListOrdered, Wand2 } from "lucide-react";
-import { toast } from "sonner";
+import { ListOrdered } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatTime } from "@/lib/format";
-import { useAutoAssign } from "../mutations";
 import { useArrivalQueue } from "../queries";
-import { genderLabel } from "../rules";
 import { TableNote } from "./shared";
 
 /**
- * Spa → Book Order → tab Antrian (revisi R3): urutan terapis menurut jam absen
- * masuk hari ini. Booking tanpa pilihan terapis diberikan ke terapis teratas
- * yang kosong & cocok, lalu terapis itu pindah ke belakang (rotasi adil).
- * Otomatis berjalan di hari H tiap 5 menit untuk booking ≤ 3 jam ke depan;
- * tombol di sini memproses seluruh hari sekarang juga.
+ * Ringkasan antrian di atas Sheet: kolom Sheet mengikuti urutan prioritas
+ * penugasan otomatis yang berotasi setelah terapis mendapat booking.
+ * Otomatis berjalan di hari H tiap 5 menit untuk booking ≤ 3 jam ke depan.
  */
 export function ArrivalQueuePanel({ branchId, date }: { branchId: string; date: string }) {
   const queue = useArrivalQueue(branchId, date);
-  const auto = useAutoAssign();
-  const run = () =>
-    auto.mutate(
-      { branchId, date },
-      {
-        onSuccess: (res) => {
-          const n = res.assigned.length;
-          toast.success(n ? `${n} booking ditugaskan dari antrian` : "Tidak ada booking yang bisa ditugaskan", {
-            description: res.skipped.length ? `${res.skipped.length} booking dilewati: ${res.skipped[0].reason}` : undefined,
-          });
-        },
-        onError: (err) => toast.error("Penugasan otomatis gagal", { description: err.message }),
-      },
-    );
-
-  if (queue.isLoading) return <Skeleton className="h-64 w-full rounded-card" />;
+  if (queue.isLoading) return <Skeleton className="h-20 w-full rounded-card" />;
   if (queue.error) {
     return (
       <Card className="py-0 shadow-none!">
@@ -49,45 +27,21 @@ export function ArrivalQueuePanel({ branchId, date }: { branchId: string; date: 
   const absent = queue.data?.absent ?? [];
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          <ListOrdered className="mr-1 inline size-4" />
-          Urutan dari jam absen masuk; yang baru dapat booking pindah ke belakang. Berjalan otomatis di hari H untuk booking ≤ 3 jam ke depan.
-        </p>
-        <Button onClick={run} disabled={auto.isPending || present.length === 0} title={present.length ? undefined : "Belum ada terapis yang absen masuk"}>
-          <Wand2 /> {auto.isPending ? "Memproses…" : "Tugaskan otomatis sekarang"}
-        </Button>
-      </div>
-      <Card className="py-0">
+      <p className="text-sm text-muted-foreground">
+        <ListOrdered className="mr-1 inline size-4" />
+        Urutan dari jam absen masuk; yang baru dapat booking pindah ke belakang. Berjalan otomatis di hari H untuk booking ≤ 3 jam ke depan.
+      </p>
+      <Card className="gap-2 p-3 shadow-none!">
         {present.length === 0 ? (
           <TableNote>Belum ada terapis yang absen masuk pada tanggal ini. Antrian terbentuk begitu terapis absen di HRIS.</TableNote>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Terapis</TableHead>
-                <TableHead>Absen masuk</TableHead>
-                <TableHead>Booking hari ini</TableHead>
-                <TableHead>Terakhir ditugaskan</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {present.map((t) => (
-                <TableRow key={t.id} data-testid={`queue-${t.id}`}>
-                  <TableCell className="font-semibold tabular-nums">{t.position}</TableCell>
-                  <TableCell>
-                    <span className="font-medium">{t.full_name}</span>
-                    {t.gender ? <span className="ml-2 text-xs text-muted-foreground">{genderLabel(t.gender)}</span> : null}
-                    {t.position === 1 ? <Badge variant="accent" className="ml-2">Berikutnya</Badge> : null}
-                  </TableCell>
-                  <TableCell className="tabular-nums">{t.clock_in ? formatTime(t.clock_in) : "-"}</TableCell>
-                  <TableCell className="tabular-nums">{t.assigned_today}</TableCell>
-                  <TableCell className="tabular-nums">{t.last_assigned_at ? formatTime(t.last_assigned_at) : <span className="text-muted-foreground">belum</span>}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="flex flex-wrap gap-2" aria-label="Prioritas penugasan otomatis">
+            {present.map((t) => (
+              <Badge key={t.id} variant={t.position === 1 ? "accent" : "muted"} data-testid={`queue-${t.id}`}>
+                {t.position}. {t.full_name} · absen {t.clock_in ? formatTime(t.clock_in) : "-"}
+              </Badge>
+            ))}
+          </div>
         )}
       </Card>
       {absent.length > 0 && (

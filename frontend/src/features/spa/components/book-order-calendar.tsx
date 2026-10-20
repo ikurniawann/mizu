@@ -22,10 +22,10 @@ import {
 } from "../calendar";
 import { genderLabel, sortByStart } from "../rules";
 import { shortClock, wibClockOf } from "../time";
-import type { BoardItem, BoardTherapist } from "../types";
+import type { ArrivalQueue, BoardItem, BoardTherapist } from "../types";
 import { BOOKING_DRAG_TYPE, BOOKING_GRAB_TYPE, useBookingDnd } from "./use-booking-dnd";
 
-const HEADER_H = 64;
+const HEADER_H = 80;
 const COL_W = 176;
 const AXIS_W = 56;
 
@@ -46,6 +46,7 @@ export function BookOrderCalendar({
   openTime,
   closeTime,
   therapists,
+  arrivalQueue,
   unassigned,
   onOpenItem,
   onSlot,
@@ -55,6 +56,7 @@ export function BookOrderCalendar({
   openTime?: string;
   closeTime?: string;
   therapists: BoardTherapist[];
+  arrivalQueue?: ArrivalQueue;
   unassigned: BoardItem[];
   onOpenItem: (item: BoardItem) => void;
   onSlot: (slot: CalendarSlot) => void;
@@ -87,6 +89,14 @@ export function BookOrderCalendar({
 
   const hours = hourMarks(range);
   const unassignedItems = sortByStart(unassigned.filter((i) => i.status !== "cancelled"));
+  const arrivals = new Map(arrivalQueue?.queue.map((entry) => [entry.id, entry]) ?? []);
+  const orderedTherapists = arrivalQueue ? [...therapists].sort((a, b) => {
+    const aPosition = arrivals.get(a.therapist.id)?.position ?? Infinity;
+    const bPosition = arrivals.get(b.therapist.id)?.position ?? Infinity;
+    return aPosition - bPosition
+      || a.therapist.full_name.localeCompare(b.therapist.full_name)
+      || a.therapist.id.localeCompare(b.therapist.id);
+  }) : therapists;
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
@@ -103,7 +113,7 @@ export function BookOrderCalendar({
             <h2 className="text-base font-semibold">Belum ditugaskan</h2>
             <Badge variant={unassignedItems.length ? "warning" : "muted"}>{unassignedItems.length}</Badge>
           </div>
-          <p className="text-xs text-muted-foreground">Seret booking ke kolom terapis untuk menugaskan seluruh treatment. Seret kembali ke sini untuk melepas terapis.</p>
+          <p className="text-xs text-muted-foreground">Seret ke kolom terapis prioritas yang tersedia untuk booking ini. Kolom lain akan ditolak. Seret kembali ke sini untuk melepas terapis.</p>
         </div>
         <div className="max-h-[calc(100dvh-20rem)] overflow-y-auto p-4">
           {unassignedItems.length === 0 ? (
@@ -142,14 +152,16 @@ export function BookOrderCalendar({
               </div>
             </div>
 
-            {therapists.map((row) => {
+            {orderedTherapists.map((row) => {
               const t = row.therapist;
+              const arrival = arrivals.get(t.id);
               const unavailable = Boolean(row.on_leave || row.day_off);
               const placed = layoutColumn(row.items.filter((i) => i.status !== "cancelled"), range);
               const bands = offShiftBands(row.shift, unavailable, range);
               return (
                 <Column
                   key={t.id}
+                  therapistId={t.id}
                   header={
                     <div className="flex min-w-0 w-full items-center gap-2">
                       <TherapistAvatar therapist={t} />
@@ -171,6 +183,9 @@ export function BookOrderCalendar({
                           {genderLabel(t.gender)}
                           {row.assisting ? " · Perbantuan" : ""}
                         </p>
+                        {arrivalQueue && <p className="truncate text-[11px] text-muted-foreground">
+                          {arrival ? `Absen ${arrival.clock_in ? wibClockOf(arrival.clock_in) : "-"} · Prioritas ${arrival.position}` : "Belum absen · Tanpa prioritas"}
+                        </p>}
                       </div>
                     </div>
                   }
@@ -204,7 +219,12 @@ function TherapistAvatar({ therapist }: { therapist: BoardTherapist["therapist"]
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const photoUrl = therapist.photo_url?.trim();
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-soft text-xs font-semibold text-brand-text">
+    <span className={cn(
+      "flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-xs font-semibold",
+      therapist.gender === "male" ? "border-blue-400 bg-blue-100 text-blue-700"
+        : therapist.gender === "female" ? "border-pink-400 bg-pink-100 text-pink-700"
+          : "border-border bg-accent-soft text-brand-text"
+    )}>
       {photoUrl && photoUrl !== failedPhoto ? (
         <Image
           src={photoUrl}
@@ -224,6 +244,7 @@ function TherapistAvatar({ therapist }: { therapist: BoardTherapist["therapist"]
 }
 
 function Column({
+  therapistId,
   header,
   width,
   range,
@@ -238,6 +259,7 @@ function Column({
   onDrop,
   onEmptyClick,
 }: {
+  therapistId?: string;
   header: React.ReactNode;
   width: number;
   range: DayRange;
@@ -255,7 +277,7 @@ function Column({
   const height = (range.end - range.start) * PX_PER_MIN;
   const [hoverMinute, setHoverMinute] = useState<number | null>(null);
   return (
-    <div className={cn("relative shrink-0 border-r border-border", className)} style={{ width }}>
+    <div data-therapist-id={therapistId} className={cn("relative shrink-0 border-r border-border", className)} style={{ width }}>
       <div
         className="sticky top-0 z-20 flex items-center border-b border-border bg-card/95 px-3 backdrop-blur"
         style={{ height: HEADER_H }}
@@ -357,7 +379,7 @@ function ItemButton({ item, height, onOpen }: { item: BoardItem; height?: number
         e.dataTransfer.effectAllowed = "move";
       }}
       onClick={() => onOpen(item)}
-      title={`${wibClockOf(item.starts_at)}–${wibClockOf(item.ends_at)} · ${item.customer_name} · ${item.treatment_name} (${item.variant_name})`}
+      title={`${wibClockOf(item.starts_at)}–${wibClockOf(item.ends_at)} · ${item.customer_name}${item.group_id ? " · Booking bersama" : ""} · ${item.treatment_name} (${item.variant_name})`}
       className={cn(
         "flex w-full flex-col overflow-hidden rounded-lg border px-2 py-1 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         height === undefined && "gap-1 px-3 py-3",
@@ -369,9 +391,9 @@ function ItemButton({ item, height, onOpen }: { item: BoardItem; height?: number
     >
       <span className="font-semibold tabular-nums">
         {wibClockOf(item.starts_at)}–{wibClockOf(item.ends_at)}
-        {compact ? ` · ${item.customer_name}` : ""}
+        {compact ? ` · ${item.customer_name}${item.group_id ? " · Grup" : ""}` : ""}
       </span>
-      {!compact && <span className="truncate font-medium">{item.customer_name}</span>}
+      {!compact && <span className="truncate font-medium">{item.customer_name}{item.group_id ? " · Grup" : ""}</span>}
       {!compact && (height === undefined || height >= 62) && (
         <span className="truncate opacity-80">
           {item.treatment_name} · {item.variant_name}

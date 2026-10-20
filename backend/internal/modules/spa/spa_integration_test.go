@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func setup(t *testing.T) *env {
 	admin := testutil.CreateStaff(t, testutil.StaffOptions{Menus: map[string][]string{
 		"spa.bookings": nil, "spa.book-order": nil, "spa.treatments": nil,
 		"spa.categories": {"read", "create", "update", "delete"}, "spa.therapists": nil,
-		"spa.commissions": nil, "spa.outlets": nil, "spa.rush-hour": nil, "spa.trend": nil, "spa.rating": nil, "spa.customer": nil,
+		"spa.commissions": nil, "spa.outlets": nil, "spa.rooms": {"read", "create", "update", "delete"}, "spa.rush-hour": nil, "spa.trend": nil, "spa.rating": nil, "spa.customer": nil, "spa.customer-report": nil,
 	}})
 	// Created before the transaction: cleanups run in reverse, so the
 	// rollback releases rows that reference these users first.
@@ -54,6 +55,17 @@ func setup(t *testing.T) *env {
 
 func (e *env) call(as *testutil.Staff, method, path string, body any, status int) map[string]any {
 	e.t.Helper()
+	// Legacy therapist fixtures specify gender in the request. Set it on HRIS,
+	// where the API now reads it, without overriding an explicitly set gender.
+	if method == "POST" && path == "/api/spa/therapists" {
+		if input, ok := body.(map[string]any); ok {
+			if gender, ok := input["gender"].(string); ok {
+				if _, err := e.tx.Exec(e.ctx, `UPDATE hris.employees SET gender = $1::gender_type WHERE id = $2 AND gender IS NULL`, gender, input["employee_id"]); err != nil {
+					e.t.Fatal(err)
+				}
+			}
+		}
+	}
 	r := testutil.Request(method, path, body)
 	if as != nil {
 		r = testutil.AsStaff(r, *as)
@@ -89,6 +101,131 @@ func (e *env) employee(name string, userID *string) string {
 	return id
 }
 
+func TestTreatmentProductsFollowSpaChanges(t *testing.T) {
+	e := setup(t)
+	code := "AUTO" + testutil.RandomHex(3)
+	create := func(name string, price int) (string, string) {
+		tr := e.data(&e.admin, "POST", "/api/spa/treatments", map[string]any{
+			"code": code + name[:1], "name": name,
+			"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": price}},
+		}, http.StatusCreated)
+		return tr["id"].(string), tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	}
+	_, oldVariant := create("Before Outlet", 100000)
+	var warehouse string
+	if err := e.tx.QueryRow(e.ctx, `SELECT id::text FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID).Scan(&warehouse); err != nil {
+		t.Fatal(err)
+	}
+	e.data(&e.admin, "PUT", "/api/spa/outlets/"+e.org.BranchID, map[string]any{
+		"warehouse_id": warehouse, "open_time": "09:00", "close_time": "21:00", "slot_minutes": 30,
+	}, http.StatusOK)
+	check := func(variant, wantName string, wantPrice float64, wantActive bool) {
+		t.Helper()
+		var name string
+		var price float64
+		var active bool
+		err := e.tx.QueryRow(e.ctx, `SELECT p.name, p.base_price::float8, p.is_active
+		  FROM spa.variant_pos_products m JOIN pos.pos_products p ON p.id = m.pos_product_id
+		  WHERE m.variant_id = $1 AND m.branch_id = $2`, variant, e.org.BranchID).Scan(&name, &price, &active)
+		if err != nil || name != wantName || price != wantPrice || active != wantActive {
+			t.Fatalf("POS product %s = (%q, %v, %v), err=%v; want (%q, %v, %v)", variant, name, price, active, err, wantName, wantPrice, wantActive)
+		}
+	}
+	check(oldVariant, "Before Outlet (60 menit)", 100000, true)
+
+	id, variant := create("After Outlet", 200000)
+	check(variant, "After Outlet (60 menit)", 200000, true)
+	e.data(&e.admin, "PATCH", "/api/spa/treatments/"+id, map[string]any{
+		"code": code + "X", "name": "Updated Treatment", "variants": []any{map[string]any{
+			"id": variant, "name": "90 menit", "duration_min": 90, "price_idr": 250000,
+		}},
+	}, http.StatusOK)
+	check(variant, "Updated Treatment (90 menit)", 250000, true)
+	var sku string
+	if err := e.tx.QueryRow(e.ctx, `SELECT p.sku FROM spa.variant_pos_products m
+	  JOIN pos.pos_products p ON p.id = m.pos_product_id
+	  WHERE m.variant_id = $1 AND m.branch_id = $2`, variant, e.org.BranchID).Scan(&sku); err != nil {
+		t.Fatal(err)
+	}
+	if want := strings.ToUpper("SPA-" + code + "X-"); !strings.HasPrefix(sku, want) {
+		t.Fatalf("POS SKU after treatment code change = %q, want prefix %q", sku, want)
+	}
+	e.data(&e.admin, "PUT", "/api/spa/treatments/"+id+"/prices", map[string]any{
+		"prices": []any{map[string]any{
+			"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 275000, "commission_value": 0,
+		}},
+	}, http.StatusOK)
+	check(variant, "Updated Treatment (90 menit)", 275000, true)
+	e.data(&e.admin, "PUT", "/api/spa/treatments/"+id+"/prices", map[string]any{
+		"prices": []any{map[string]any{
+			"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil, "commission_value": 0,
+		}},
+	}, http.StatusOK)
+	check(variant, "Updated Treatment (90 menit)", 250000, true)
+	e.data(&e.admin, "PATCH", "/api/spa/treatments/"+id, map[string]any{"is_active": false}, http.StatusOK)
+	check(variant, "Updated Treatment (90 menit)", 250000, false)
+}
+
+func TestOutletPriceAndCommissionSavedTogether(t *testing.T) {
+	e := setup(t)
+	if _, err := e.tx.Exec(e.ctx, `INSERT INTO spa.outlets (branch_id, warehouse_id)
+	  SELECT $1, id FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID); err != nil {
+		t.Fatal(err)
+	}
+	tr := e.data(&e.admin, "POST", "/api/spa/treatments", map[string]any{
+		"code": "COM" + testutil.RandomHex(3), "name": "Komisi Outlet",
+		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}},
+	}, http.StatusCreated)
+	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
+	path := "/api/spa/treatments/" + tr["id"].(string) + "/prices"
+	e.call(&e.admin, "PUT", path, map[string]any{"prices": []any{map[string]any{
+		"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 220000,
+	}}}, http.StatusBadRequest)
+	input := map[string]any{"variant_id": variant, "branch_id": e.org.BranchID,
+		"price_idr": 220000, "commission_value": 12000}
+	tr = e.data(&e.admin, "PUT", path, map[string]any{"prices": []any{input}}, http.StatusOK)
+	commissions := tr["variants"].([]any)[0].(map[string]any)["outlet_commissions"].([]any)
+	if len(commissions) != 1 || commissions[0].(map[string]any)["commission_value"] != float64(12000) || commissions[0].(map[string]any)["commission_type"] != "fixed" {
+		t.Fatalf("outlet commissions = %v", commissions)
+	}
+	input["price_idr"] = 250000
+	input["commission_value"] = -1
+	e.call(&e.admin, "PUT", path, map[string]any{"prices": []any{input}}, http.StatusBadRequest)
+	var price float64
+	if err := e.tx.QueryRow(e.ctx, `SELECT price_idr::float8 FROM spa.variant_outlet_prices WHERE variant_id = $1 AND branch_id = $2`, variant, e.org.BranchID).Scan(&price); err != nil {
+		t.Fatal(err)
+	}
+	if price != 220000 {
+		t.Fatalf("price changed after invalid commission: %v", price)
+	}
+}
+
+func TestTherapistGenderFollowsEmployee(t *testing.T) {
+	e := setup(t)
+	employeeID := e.employee("Sari Terapis", nil)
+	if _, err := e.tx.Exec(e.ctx, `UPDATE hris.employees SET gender = 'female' WHERE id = $1`, employeeID); err != nil {
+		t.Fatal(err)
+	}
+	candidates := e.list(&e.admin, "/api/spa/employees?q=Sari%20Terapis")
+	if len(candidates) != 1 || candidates[0].(map[string]any)["gender"] != "female" {
+		t.Fatalf("employee candidates = %v, want female gender", candidates)
+	}
+	therapist := e.data(&e.admin, "POST", "/api/spa/therapists", map[string]any{
+		"employee_id": employeeID, "home_branch_id": e.org.BranchID, "gender": "male",
+	}, http.StatusCreated)
+	if therapist["gender"] != "female" {
+		t.Fatalf("created therapist gender = %v, want female", therapist["gender"])
+	}
+	id := therapist["id"].(string)
+	if _, err := e.tx.Exec(e.ctx, `UPDATE hris.employees SET gender = 'male' WHERE id = $1`, employeeID); err != nil {
+		t.Fatal(err)
+	}
+	therapist = e.data(&e.admin, "PATCH", "/api/spa/therapists/"+id, map[string]any{"gender": "female"}, http.StatusOK)
+	if therapist["gender"] != "male" {
+		t.Fatalf("updated therapist gender = %v, want male from HRIS", therapist["gender"])
+	}
+}
+
 func items(b map[string]any) []map[string]any {
 	raw, _ := b["items"].([]any)
 	out := make([]map[string]any, len(raw))
@@ -102,7 +239,8 @@ func TestCustomerDirectoryUsesBookingCustomerRecords(t *testing.T) {
 	e := setup(t)
 	e.call(&e.therapist, "GET", "/api/spa/customer-directory", nil, http.StatusForbidden)
 	phone := "628" + testutil.RandomHex(8)
-	name := "Spa Customer " + testutil.RandomHex(6)
+	suffix := testutil.RandomHex(6)
+	name := "Spa Customer " + suffix
 	var id string
 	if err := e.tx.QueryRow(e.ctx, `INSERT INTO pos.pos_customers (name, phone) VALUES ($1, $2) RETURNING id::text`, name, phone).Scan(&id); err != nil {
 		t.Fatal(err)
@@ -117,6 +255,25 @@ func TestCustomerDirectoryUsesBookingCustomerRecords(t *testing.T) {
 	if len(rows) != 1 || rows[0].(map[string]any)["id"] != id || meta["total"] != float64(1) {
 		t.Fatalf("directory should return booking customer: %v", page)
 	}
+	var blockedID string
+	if err := e.tx.QueryRow(e.ctx, `INSERT INTO pos.pos_customers (name, phone, banned_at) VALUES ($1, $2, now()) RETURNING id::text`,
+		name+" Blocked", "628"+testutil.RandomHex(8)).Scan(&blockedID); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		status, wantID string
+	}{
+		{"blocked", blockedID},
+		{"unblocked", id},
+	} {
+		filtered := e.call(&e.admin, "GET", "/api/spa/customer-directory?q="+suffix+"&status="+tc.status+"&page=1&limit=1", nil, http.StatusOK)
+		found, _ := filtered["data"].([]any)
+		pagination, _ := filtered["pagination"].(map[string]any)
+		if len(found) != 1 || found[0].(map[string]any)["id"] != tc.wantID || pagination["total"] != float64(1) {
+			t.Fatalf("%s directory filter should return one matching customer: %v", tc.status, filtered)
+		}
+	}
+	e.call(&e.admin, "GET", "/api/spa/customer-directory?status=invalid", nil, http.StatusBadRequest)
 }
 
 func TestTreatmentOutletPriceScope(t *testing.T) {
@@ -135,8 +292,8 @@ func TestTreatmentOutletPriceScope(t *testing.T) {
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	path := "/api/spa/treatments/" + tr["id"].(string) + "/prices"
 	prices := []any{
-		map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 220000},
-		map[string]any{"variant_id": variant, "branch_id": other.BranchID, "price_idr": 230000},
+		map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 220000, "commission_value": 10000},
+		map[string]any{"variant_id": variant, "branch_id": other.BranchID, "price_idr": 230000, "commission_value": 10000},
 	}
 	var count int
 	for _, level := range []string{"branch", "company", "holding"} {
@@ -153,7 +310,7 @@ func TestTreatmentOutletPriceScope(t *testing.T) {
 		}
 	}
 	e.call(&e.admin, "PUT", path, map[string]any{"prices": prices[:1]}, http.StatusOK)
-	prices[0] = map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil}
+	prices[0] = map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil, "commission_value": 10000}
 	e.call(&e.admin, "PUT", path, map[string]any{"prices": prices[:1]}, http.StatusOK)
 	if err := e.tx.QueryRow(e.ctx, `SELECT count(*) FROM spa.variant_outlet_prices WHERE variant_id = $1`, variant).Scan(&count); err != nil || count != 0 {
 		t.Fatalf("clearing price: count=%d err=%v", count, err)
@@ -203,7 +360,7 @@ func TestSpaBookingFlow(t *testing.T) {
 
 	// Outlet price for the 60-minute variant.
 	tr = e.data(admin, "PUT", "/api/spa/treatments/"+tr["id"].(string)+"/prices", map[string]any{
-		"prices": []any{map[string]any{"variant_id": v60, "branch_id": branch, "price_idr": 220000}},
+		"prices": []any{map[string]any{"variant_id": v60, "branch_id": branch, "price_idr": 220000, "commission_value": 22000}},
 	}, http.StatusOK)
 
 	// Therapists.

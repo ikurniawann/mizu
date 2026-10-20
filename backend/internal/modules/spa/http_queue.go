@@ -37,3 +37,20 @@ func (h *Handler) autoAssign(w http.ResponseWriter, r *http.Request, u *auth.Use
 	}
 	return ok(w, res)
 }
+
+func (h *Handler) autoAssignBooking(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathUUID(r, "id")
+	if err != nil {
+		return err
+	}
+	f := body(r)
+	therapistID := str(f.Str("therapist_id", req, uuidOpts))
+	if err := f.ErrAtPath("Data tidak valid"); err != nil {
+		return err
+	}
+	assigned, err := h.svc.AutoAssignBooking(r.Context(), u.ID, id, therapistID)
+	if err != nil {
+		return err
+	}
+	return ok(w, assigned)
+}

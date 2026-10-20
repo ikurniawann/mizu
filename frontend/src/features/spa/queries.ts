@@ -1,9 +1,9 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { publicSpaApi, spaApi } from "./api";
 import { spaKeys } from "./query-keys";
-import type { AvailabilityParams, BookingListParams, CommissionReportParams, WaitlistListParams } from "./types";
+import type { AvailabilityParams, BookingListParams, BookingSummary, CommissionReportParams, Paginated, WaitlistListParams } from "./types";
 
 export const useSpaOutlets = () =>
   useQuery({ queryKey: spaKeys.outlets(), queryFn: spaApi.outlets, staleTime: 60_000 });
@@ -51,8 +51,36 @@ export const useSpaBookings = (params: BookingListParams) =>
     placeholderData: keepPreviousData,
   });
 
+/** Total booking (bukan treatment) dalam cakupan akses pengguna, termasuk booking online. */
+export const useSpaUnassignedCount = (enabled = true) => {
+  const queryClient = useQueryClient();
+  const params = { status: "unassigned", page: 1, limit: 1 } as const;
+  const queryKey = spaKeys.bookings(params);
+  return useQuery({
+    queryKey,
+    queryFn: async () => {
+      const result = await spaApi.bookings(params);
+      const previous = queryClient.getQueryData<Paginated<BookingSummary>>(queryKey);
+      // Badge berubah → segarkan kartu tanpa menunggu interval polling papan.
+      if (previous?.pagination.total !== result.pagination.total) {
+        void queryClient.invalidateQueries({ queryKey: spaKeys.boardAll() });
+      }
+      return result;
+    },
+    select: (result) => result.pagination.total,
+    enabled,
+    staleTime: 10_000,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: "always",
+    retry: false,
+  });
+};
+
 export const useSpaBooking = (id: string) =>
   useQuery({ queryKey: spaKeys.booking(id), queryFn: () => spaApi.booking(id), enabled: !!id });
+
+export const useSpaBookingGroup = (id: string) =>
+  useQuery({ queryKey: spaKeys.bookingGroup(id), queryFn: () => spaApi.bookingGroup(id), enabled: !!id });
 
 export const useSpaAvailability = (params: AvailabilityParams | null) =>
   useQuery({
@@ -65,7 +93,7 @@ export const useSpaRooms = (branchId: string, activeOnly = false) =>
   useQuery({ queryKey: spaKeys.rooms(branchId, activeOnly), queryFn: () => spaApi.rooms(branchId, activeOnly), enabled: !!branchId, staleTime: 60_000 });
 
 export const useArrivalQueue = (branchId: string, date: string) =>
-  useQuery({ queryKey: spaKeys.arrivalQueue(branchId, date), queryFn: () => spaApi.arrivalQueue(branchId, date), enabled: !!branchId && !!date, refetchInterval: 60_000 });
+  useQuery({ queryKey: spaKeys.arrivalQueue(branchId, date), queryFn: () => spaApi.arrivalQueue(branchId, date), enabled: !!branchId && !!date, refetchInterval: 30_000 });
 
 export const useRoomBoard = (branchId: string) =>
   useQuery({ queryKey: spaKeys.roomBoard(branchId), queryFn: () => spaApi.roomBoard(branchId), enabled: !!branchId, refetchInterval: 15_000 });
@@ -75,7 +103,9 @@ export const useSpaBoard = (branchId: string, date: string) =>
     queryKey: spaKeys.board(branchId, date),
     queryFn: () => spaApi.board(branchId, date),
     enabled: !!branchId && !!date,
-    refetchInterval: 30_000,
+    staleTime: 10_000,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: "always",
     placeholderData: keepPreviousData,
   });
 

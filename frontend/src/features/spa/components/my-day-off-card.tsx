@@ -27,7 +27,7 @@ function monthLabel(month: string): string {
 }
 
 /**
- * Aplikasi terapis → Jadwal libur (revisi R5): pilih hari libur bulan ini /
+ * Area Karyawan → Jadwal Libur (revisi R5): pilih hari libur bulan ini /
  * bulan depan. Disetujui langsung bila kuota terapis wanita/pria yang masuk
  * di outlet tetap terpenuhi dan libur minggu itu belum penuh; siapa cepat dia dapat.
  */

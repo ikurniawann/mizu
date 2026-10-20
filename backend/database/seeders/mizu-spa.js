@@ -9,7 +9,7 @@
  *   - spa.treatments + treatment_variants       : 12 treatment, varian durasi & harga
  *   - spa.variant_outlet_prices                 : harga premium Setiabudi
  *   - spa.commission_rules                      : default 10%, refleksi 12%, signature nominal, dll
- *   - hris.departments/positions/shifts         : Spa Operations, Terapis, Shift Pagi/Siang
+ *   - hris.departments/positions/shifts         : Spa Operations, Terapis, Shift Siang/Malam
  *   - hris.employees + employee_shifts          : 17 terapis, 3 resepsionis, 3 manajer (pola libur mingguan)
  *   - login demo: fo.westhoff@ / fo.signature@ (Resepsionis Spa), ayu@ / euis@ / wulan@ (Terapis Spa);
  *     login demo lama fo.dago@ / fo.riau@ / fo.setiabudi@ dinonaktifkan
@@ -137,19 +137,26 @@ async function seedPrices(c, outlets, variants) {
   }
 }
 
-async function seedRules(c, outlets, treatments, variants) {
-  for (const r of D.COMMISSION_RULES) {
-    const variantId = r.variant ? variants[`${r.treatment}|${r.variant}`].id : null;
-    const treatmentId = !r.variant && r.treatment ? treatments[r.treatment] : null;
-    const branchId = r.outlet ? outlets[r.outlet].branchId : null;
-    await c.query(
-      `INSERT INTO spa.commission_rules (treatment_id, variant_id, branch_id, commission_type, value, is_active)
-       VALUES ($1, $2, $3, $4, $5, true)
+async function seedRules(c, outlets, variants) {
+  for (const [outletCode, outlet] of Object.entries(outlets)) {
+    for (const [key, variant] of Object.entries(variants)) {
+      const [treatmentCode, variantName] = key.split("|");
+      const rule = D.COMMISSION_RULES
+        .filter((r) => (!r.outlet || r.outlet === outletCode) && (!r.treatment || r.treatment === treatmentCode) && (!r.variant || r.variant === variantName))
+        .sort((a, b) => (Number(!!a.variant) * 2 + Number(!!a.treatment) + Number(!!a.outlet) / 10)
+          - (Number(!!b.variant) * 2 + Number(!!b.treatment) + Number(!!b.outlet) / 10)).at(-1);
+      if (!rule) continue;
+      const outletPrice = D.OUTLET_PRICES.find(([code, treatment, name]) => code === outletCode && treatment === treatmentCode && name === variantName)?.[3] ?? variant.price;
+      const commission = rule.type === "percent" ? Math.round(outletPrice * rule.value / 100) : rule.value;
+      await c.query(
+      `INSERT INTO spa.commission_rules (variant_id, branch_id, commission_type, value, is_active)
+       VALUES ($1, $2, $3, $4, true)
        ON CONFLICT (COALESCE(treatment_id, '00000000-0000-0000-0000-000000000000'::uuid),
                     COALESCE(variant_id, '00000000-0000-0000-0000-000000000000'::uuid),
                     COALESCE(branch_id, '00000000-0000-0000-0000-000000000000'::uuid))
        DO UPDATE SET commission_type = EXCLUDED.commission_type, value = EXCLUDED.value, is_active = true, updated_at = NOW()`,
-      [treatmentId, variantId, branchId, r.type, r.value]);
+      [variant.id, outlet.branchId, "fixed", commission]);
+    }
   }
 }
 
@@ -176,7 +183,7 @@ async function seedHr(c) {
     // juga nama lama "Spa …" agar seeder ulang tidak membuat shift kembar.
     let r = await c.query(
       `SELECT id FROM hris.shifts WHERE name = ANY($1::text[]) AND start_time = $2::time AND end_time = $3::time
-       ORDER BY (name = $4) DESC LIMIT 1`, [[s.name, s.legacy].filter(Boolean), s.start, s.end, s.name]);
+       ORDER BY (name = $4) DESC LIMIT 1`, [[s.name, ...s.legacy], s.start, s.end, s.name]);
     if (r.rowCount) await c.query(`UPDATE hris.shifts SET name = $2 WHERE id = $1 AND name <> $2`, [r.rows[0].id, s.name]);
     if (!r.rowCount) {
       r = await c.query(
@@ -229,14 +236,14 @@ async function seedStaff(c, outlets, hr, passwordHash) {
     const fullNip = `MZ-${nip}`;
     const emp = await c.query(
       `INSERT INTO hris.employees (full_name, nip, email, phone, join_date, employment_status, is_active, is_access_app,
-         user_id, department_id, job_title_id)
-       VALUES ($1, $2, $3, $4, '2026-07-01', 'permanent', true, $5, $6, $7, $8)
+         user_id, department_id, job_title_id, gender)
+       VALUES ($1, $2, $3, $4, '2026-07-01', 'permanent', true, $5, $6, $7, $8, $9::gender_type)
        ON CONFLICT (nip) DO UPDATE SET full_name = EXCLUDED.full_name, email = EXCLUDED.email, is_active = true,
          is_access_app = EXCLUDED.is_access_app, user_id = COALESCE(EXCLUDED.user_id, hris.employees.user_id),
-         department_id = EXCLUDED.department_id, job_title_id = EXCLUDED.job_title_id, updated_at = NOW()
+         department_id = EXCLUDED.department_id, job_title_id = EXCLUDED.job_title_id, gender = EXCLUDED.gender, updated_at = NOW()
        RETURNING id`,
       [name, fullNip, email || `${slug}@staff.mizu.id`, `0813${String(20000000 + Number(nip) * 7919).slice(0, 8)}`,
-        userId !== null, userId, hr.departmentId, hr.positions[kind]]);
+        userId !== null, userId, hr.departmentId, hr.positions[kind], gender]);
     const employeeId = emp.rows[0].id;
     // Pola shift mingguan: satu hari libur, sisanya shift tetap.
     await c.query(`DELETE FROM hris.employee_shifts WHERE employee_id = $1 AND effective_from = $2::date`, [employeeId, EFFECTIVE_FROM]);
@@ -364,7 +371,7 @@ async function main() {
     const { treatments, variants } = await seedTreatments(c);
     console.log("treatment/varian  :", Object.keys(treatments).length, "/", Object.keys(variants).length);
     await seedPrices(c, outlets, variants);
-    await seedRules(c, outlets, treatments, variants);
+    await seedRules(c, outlets, variants);
     console.log("aturan komisi     :", D.COMMISSION_RULES.length);
     const hr = await seedHr(c);
     const { staff, logins } = await seedStaff(c, outlets, hr, passwordHash);

@@ -91,7 +91,7 @@ func (store) saveDayOffQuota(ctx context.Context, q Q, in DayOffQuota, userID st
 	return err
 }
 
-const dayOffColumns = `d.id::text, d.therapist_id::text, e.full_name, t.gender, d.branch_id::text, d.off_date::text, d.status,
+const dayOffColumns = `d.id::text, d.therapist_id::text, e.full_name, e.gender::text, d.branch_id::text, d.off_date::text, d.status,
 	d.created_at, d.cancelled_at, d.cancel_reason`
 
 func scanDayOff(r pgx.Row) (DayOffRequest, error) {

@@ -7,6 +7,7 @@ import type {
   AssistInput,
   Booking,
   BookingCreateInput,
+  BookingGroupCreateInput,
   BookingItemInput,
   BookingUpdateInput,
   CommissionRuleInput,
@@ -32,6 +33,7 @@ function bookingChanged(qc: QueryClient, booking?: Booking) {
   void qc.invalidateQueries({ queryKey: spaKeys.bookingsAll() });
   void qc.invalidateQueries({ queryKey: ["spa", "reports"] });
   void qc.invalidateQueries({ queryKey: spaKeys.boardAll() });
+  void qc.invalidateQueries({ queryKey: ["spa", "arrival-queue"] });
   void qc.invalidateQueries({ queryKey: ["spa", "availability"] });
   void qc.invalidateQueries({ queryKey: spaKeys.myAssignmentsAll() });
 }
@@ -69,6 +71,28 @@ export const useCreateBooking = () => {
   return useMutation({
     mutationFn: (input: BookingCreateInput) => spaApi.createBooking(input),
     onSuccess: (booking) => bookingChanged(qc, booking),
+  });
+};
+
+export const useCreateBookingGroup = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: BookingGroupCreateInput) => spaApi.createBookingGroup(input),
+    onSuccess: (group) => {
+      group.bookings.forEach((booking) => bookingChanged(qc, booking));
+      qc.setQueryData(spaKeys.bookingGroup(group.id), group);
+    },
+  });
+};
+
+export const useCheckoutBookingGroup = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ratings: { booking_id: string; therapist_rating: number }[]) => spaApi.checkoutBookingGroup(id, ratings),
+    onSuccess: (result) => {
+      result.group.bookings.forEach((booking) => bookingChanged(qc, booking));
+      qc.setQueryData(spaKeys.bookingGroup(id), result.group);
+    },
   });
 };
 
@@ -127,6 +151,17 @@ export const useSaveRoom = () => {
   });
 };
 
+export const useDeleteRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => spaApi.deleteRoom(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["spa", "rooms"] });
+      void qc.invalidateQueries({ queryKey: ["spa", "room-board"] });
+    },
+  });
+};
+
 export const useSetBookingRoom = (bookingId: string) => {
   const qc = useQueryClient();
   return useMutation({
@@ -138,14 +173,15 @@ export const useSetBookingRoom = (bookingId: string) => {
   });
 };
 
-export const useAutoAssign = () => {
+export const useAutoAssignBooking = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ branchId, date }: { branchId: string; date: string }) => spaApi.autoAssign(branchId, date),
+    mutationFn: ({ bookingId, therapistId }: { bookingId: string; therapistId: string }) =>
+      spaApi.autoAssignBooking(bookingId, therapistId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["spa", "arrival-queue"] });
-      void qc.invalidateQueries({ queryKey: ["spa", "board"] });
-      void qc.invalidateQueries({ queryKey: ["spa", "bookings"] });
+      void qc.invalidateQueries({ queryKey: spaKeys.boardAll() });
+      void qc.invalidateQueries({ queryKey: spaKeys.bookingsAll() });
     },
   });
 };
@@ -157,9 +193,6 @@ export const useSaveOutlet = () => {
     onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.outlets() }),
   });
 };
-
-export const useSyncPos = () =>
-  useMutation({ mutationFn: (branchId: string) => spaApi.syncPos(branchId) });
 
 // ── Treatment ────────────────────────────────────────────────────────────────
 
@@ -363,7 +396,10 @@ export const useBookMyDayOff = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (date: string) => spaApi.bookMyDayOff(date),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa", "me"] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["spa", "me"] });
+      void qc.invalidateQueries({ queryKey: ["spa", "day-offs"] });
+    },
   });
 };
 
@@ -371,7 +407,10 @@ export const useCancelMyDayOff = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => spaApi.cancelMyDayOff(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa", "me"] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["spa", "me"] });
+      void qc.invalidateQueries({ queryKey: ["spa", "day-offs"] });
+    },
   });
 };
 

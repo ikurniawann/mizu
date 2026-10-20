@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -53,20 +54,24 @@ export function CustomerSearch({ onPick }: { onPick: (customer: SpaCustomer) => 
           ) : customers.error ? (
             <p className="px-3 py-2 text-xs text-danger">{customers.error.message}</p>
           ) : rows.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">Pelanggan tidak ditemukan. Kembali ke form booking untuk mengisi nama dan HP pelanggan baru.</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">Pelanggan tidak ditemukan. Isi nama dan HP untuk pelanggan baru.</p>
           ) : (
             rows.map((c) => (
               <button
                 key={c.id}
                 type="button"
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-surface"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={c.banned}
                 onClick={() => {
                   onPick(c);
                   setQ("");
                 }}
               >
                 <span className="font-medium">{c.name}</span>
-                <span className="font-mono text-xs text-muted-foreground">{c.phone}</span>
+                <span className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-muted-foreground">{c.phone}</span>
+                  <Badge variant={c.banned ? "destructive" : "success"}>{c.banned ? "Diblokir" : "Aktif"}</Badge>
+                </span>
               </button>
             ))
           )}
@@ -102,7 +107,6 @@ export function BookingCreateDialog({
   const [bookingType, setBookingType] = useState<BookingType>(defaultScheduled ? "reservation" : "walk_in");
   const [scheduled, setScheduled] = useState(() => defaultScheduled || defaultStart());
   const [customerId, setCustomerId] = useState<string | null>(null);
-  const [choosingCustomer, setChoosingCustomer] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [customerGender, setCustomerGender] = useState<"" | "male" | "female">("");
@@ -137,6 +141,7 @@ export function BookingCreateDialog({
     if (!isValidPhone(phone)) return setError("Nomor HP tidak valid (8–15 digit).");
     if (!customerGender) return setError("Pilih gender pelanggan.");
     if (chosen.length === 0) return setError("Pilih minimal satu treatment.");
+    if (!roomId) return setError("Pilih room.");
     create.mutate(
       {
         branch_id: branchId,
@@ -149,7 +154,7 @@ export function BookingCreateDialog({
         notes: notes.trim() || undefined,
         scheduled_at: scheduledIso,
         therapist_id: therapistId || undefined,
-        room_id: roomId || undefined,
+        room_id: roomId,
         items: chosen.map((r) => ({ variant_id: r.variant_id })),
       },
       {
@@ -190,6 +195,7 @@ export function BookingCreateDialog({
                 onChange={(v) => {
                   setBranchId(v);
                   setTherapistId("");
+                  setRoomId("");
                 }}
                 className={SELECT}
                 required
@@ -214,36 +220,15 @@ export function BookingCreateDialog({
               </select>
             </Field>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2">
-              <div>
-                <p className="text-sm font-medium">Pelanggan</p>
-                <p className="text-xs text-muted-foreground">Isi nama dan HP, atau pilih pelanggan yang sudah tersimpan.</p>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setChoosingCustomer(true)}>
-                <Search /> {customerId ? "Ganti pelanggan" : "Pilih pelanggan tersimpan"}
-              </Button>
-              {choosingCustomer && (
-                <Dialog open onOpenChange={(open) => !open && setChoosingCustomer(false)}>
-                  <DialogPanel size="sm">
-                    <DialogPanelHeader>
-                      <DialogPanelTitle>Pilih pelanggan</DialogPanelTitle>
-                      <DialogPanelDescription>Cari berdasarkan nama atau nomor HP. Data pelanggan akan mengisi form booking.</DialogPanelDescription>
-                    </DialogPanelHeader>
-                    <DialogPanelBody>
-                      <CustomerSearch onPick={(c) => {
-                        setCustomerId(c.id);
-                        setName(c.name);
-                        setPhone(c.phone ?? "");
-                        setCustomerGender(c.gender ?? "");
-                        setChoosingCustomer(false);
-                      }} />
-                    </DialogPanelBody>
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setChoosingCustomer(false)}>Kembali ke booking</Button>
-                    </DialogFooter>
-                  </DialogPanel>
-                </Dialog>
-              )}
+            <div className="space-y-2 sm:col-span-2">
+              <p className="text-sm font-medium">Pelanggan</p>
+              <p className="text-xs text-muted-foreground">Cari pelanggan tersimpan, atau isi nama dan HP pelanggan baru di bawah.</p>
+              <CustomerSearch onPick={(c) => {
+                setCustomerId(c.id);
+                setName(c.name);
+                setPhone(c.phone ?? "");
+                setCustomerGender(c.gender ?? "");
+              }} />
             </div>
             <Field label="Nama pelanggan">
               <Input
@@ -333,14 +318,15 @@ export function BookingCreateDialog({
             </div>
 
             <Field label="Room" className="sm:col-span-2" hint="Room ditahan selama jadwal booking; harganya masuk ke tagihan kasir.">
-              <select className={SELECT} aria-label="Room" value={roomId} onChange={(e) => setRoomId(e.target.value)}>
-                <option value="">{!branchId ? "Pilih outlet dulu" : rooms.isLoading ? "Memuat…" : (rooms.data ?? []).length ? "Tanpa room" : "Outlet ini belum punya room"}</option>
+              <select className={SELECT} aria-label="Room" value={roomId} onChange={(e) => setRoomId(e.target.value)} required>
+                <option value="" disabled>{!branchId ? "Pilih outlet dulu" : rooms.isLoading ? "Memuat room…" : (rooms.data ?? []).length ? "Pilih room…" : "Outlet ini belum punya room"}</option>
                 {(rooms.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} · {r.capacity} orang{r.price_idr > 0 ? ` · ${formatRupiah(r.price_idr)}` : ""}
                   </option>
                 ))}
               </select>
+              {rooms.error && <p className="text-xs text-danger">{rooms.error.message}</p>}
             </Field>
             <Field label="Catatan" className="sm:col-span-2">
               <textarea className={TEXTAREA} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Keluhan, area fokus, alergi…" />

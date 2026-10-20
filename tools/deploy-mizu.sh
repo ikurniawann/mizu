@@ -38,7 +38,7 @@ fi
 
 start_api() {
   docker run -d --name mizu-api --restart unless-stopped --stop-timeout 30 \
-    --network mizu-net --env-file "$ENV_DIR/api.env" -v mizu-storage:/app/storage \
+    --network mizu-net --user 1001:1001 --env-file "$ENV_DIR/api.env" -v mizu-storage:/app/storage \
     --log-opt max-size=50m --log-opt max-file=5 "$1"
 }
 start_web() {
