@@ -46,6 +46,11 @@ type Spa interface {
 	Rooms(ctx context.Context, branchID string, start, end time.Time, people int) ([]spa.PublicRoom, error)
 	// PendingDeposits lists unpaid-DP bookings whose hold ends within [from, to).
 	PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error)
+	// Gift vouchers bought in the chat: the nominals offered, the purchase
+	// with its payment link, and its status (paid → code).
+	GiftOptions(ctx context.Context) (*spa.GiftOptions, error)
+	GiftOrder(ctx context.Context, in spa.GiftOrderInput) (*spa.GiftOrder, error)
+	GiftOrderStatus(ctx context.Context, token string) (*spa.GiftOrder, error)
 }
 
 // Sender delivers one bot reply to the customer and logs it on the
@@ -111,6 +116,8 @@ type Extraction struct {
 	Name       string   `json:"name"`
 	WantAdmin  bool     `json:"want_admin"`
 	OffTopic   bool     `json:"off_topic"`
+	// AllGuests: the treatment named is for every guest ("semua", "both").
+	AllGuests bool `json:"all_guests"`
 }
 
 // ExtractContext is what the model is told about the conversation.
@@ -168,6 +175,8 @@ type Settings struct {
 	// NotifyCustomer sends payment confirmations and visit reminders by
 	// WhatsApp to guests who booked online or by chat (default on).
 	NotifyCustomer bool
+	// AdminHours are the live-admin hours (cs_business_hours_start/end).
+	AdminHours domain.AdminHours
 }
 
 // Conversation is the inbox row the bot reads.

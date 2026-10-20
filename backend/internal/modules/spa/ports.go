@@ -15,6 +15,8 @@ type Ports struct {
 	People    People
 	// Payments is optional: nil (or unconfigured) hides online payment.
 	Payments Payments
+	// GiftCards is optional: nil hides gift vouchers bought online.
+	GiftCards GiftCards
 }
 
 // InvoiceRequest is one Xendit invoice for a booking.

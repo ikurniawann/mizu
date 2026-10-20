@@ -80,6 +80,7 @@ type outletRow struct {
 	SlotMinutes   int
 	PublicBooking bool
 	IsActive      bool
+	LastOrder     *string
 }
 
 func (store) outlets(ctx context.Context, q Q) ([]Outlet, error) {
@@ -90,8 +91,12 @@ func (store) outlets(ctx context.Context, q Q) ([]Outlet, error) {
 		var slot *int
 		var public, active *bool
 		var whIDs, whNames, whCodes []string
+		var description *string
 		err := r.Scan(&o.BranchID, &o.BranchName, &o.CompanyID, &configured, &o.WarehouseID, &o.WarehouseName,
-			&open, &closeAt, &slot, &public, &active, &whIDs, &whNames, &whCodes)
+			&open, &closeAt, &slot, &public, &active, &whIDs, &whNames, &whCodes, &o.LastOrderTime, &description)
+		if description != nil {
+			o.Description = *description
+		}
 		o.Configured = configured != nil
 		o.OpenTime, o.CloseTime, o.SlotMinutes, o.PublicBooking, o.IsActive = "10:00", "22:00", 30, true, false
 		if o.Configured {
@@ -109,7 +114,8 @@ func (store) outlets(ctx context.Context, q Q) ([]Outlet, error) {
 	        COALESCE((SELECT array_agg(x.name ORDER BY x.is_default DESC, x.name) FROM configuration.warehouses x
 	                   WHERE x.branch_id = b.id AND x.is_active), '{}'),
 	        COALESCE((SELECT array_agg(COALESCE(x.code, '') ORDER BY x.is_default DESC, x.name) FROM configuration.warehouses x
-	                   WHERE x.branch_id = b.id AND x.is_active), '{}')
+	                   WHERE x.branch_id = b.id AND x.is_active), '{}'),
+	        to_char(so.last_order_time, 'HH24:MI'), so.description
 	   FROM configuration.branches b
 	   LEFT JOIN spa.outlets so ON so.branch_id = b.id
 	   LEFT JOIN configuration.warehouses w ON w.id = so.warehouse_id
@@ -121,10 +127,10 @@ func (store) outlet(ctx context.Context, q Q, branchID string) (*outletRow, erro
 	var o outletRow
 	err := q.QueryRow(ctx, `SELECT b.id::text, b.name, COALESCE(b.code, ''), b.company_id::text, so.warehouse_id::text,
 	        to_char(so.open_time, 'HH24:MI'), to_char(so.close_time, 'HH24:MI'), so.slot_minutes, so.public_booking,
-	        so.is_active AND b.is_active
+	        so.is_active AND b.is_active, to_char(so.last_order_time, 'HH24:MI')
 	   FROM spa.outlets so JOIN configuration.branches b ON b.id = so.branch_id
 	  WHERE so.branch_id = $1`, branchID).Scan(&o.BranchID, &o.BranchName, &o.BranchCode, &o.CompanyID, &o.WarehouseID,
-		&o.OpenTime, &o.CloseTime, &o.SlotMinutes, &o.PublicBooking, &o.IsActive)
+		&o.OpenTime, &o.CloseTime, &o.SlotMinutes, &o.PublicBooking, &o.IsActive, &o.LastOrder)
 	return one(&o, err)
 }
 
@@ -148,25 +154,38 @@ type outletInput struct {
 	SlotMinutes   int
 	PublicBooking bool
 	IsActive      bool
+	// LastOrder "" = until close (kept as stored unless LastOrderSent);
+	// Description nil keeps the stored text.
+	LastOrder     string
+	LastOrderSent bool
+	Description   *string
 }
 
 func (store) upsertOutlet(ctx context.Context, q Q, branchID string, in outletInput) error {
-	_, err := q.Exec(ctx, `INSERT INTO spa.outlets (branch_id, warehouse_id, open_time, close_time, slot_minutes, public_booking, is_active)
-	  VALUES ($1, $2, $3::time, $4::time, $5, $6, $7)
+	_, err := q.Exec(ctx, `INSERT INTO spa.outlets (branch_id, warehouse_id, open_time, close_time, slot_minutes, public_booking, is_active,
+	    last_order_time, description)
+	  VALUES ($1, $2, $3::time, $4::time, $5, $6, $7, NULLIF($8, '')::time, COALESCE($9, ''))
 	  ON CONFLICT (branch_id) DO UPDATE SET warehouse_id = EXCLUDED.warehouse_id, open_time = EXCLUDED.open_time,
 	    close_time = EXCLUDED.close_time, slot_minutes = EXCLUDED.slot_minutes, public_booking = EXCLUDED.public_booking,
-	    is_active = EXCLUDED.is_active, updated_at = now()`,
-		branchID, in.WarehouseID, in.OpenTime, in.CloseTime, in.SlotMinutes, in.PublicBooking, in.IsActive)
+	    is_active = EXCLUDED.is_active,
+	    last_order_time = CASE WHEN $10 THEN EXCLUDED.last_order_time
+	      WHEN spa.outlets.last_order_time >= EXCLUDED.open_time AND spa.outlets.last_order_time < EXCLUDED.close_time
+	        THEN spa.outlets.last_order_time END,
+	    description = COALESCE($9, spa.outlets.description), updated_at = now()`,
+		branchID, in.WarehouseID, in.OpenTime, in.CloseTime, in.SlotMinutes, in.PublicBooking, in.IsActive, in.LastOrder, in.Description,
+		in.LastOrderSent)
 	return err
 }
 
 func (store) publicOutlets(ctx context.Context, q Q) ([]PublicOutlet, error) {
 	return many(ctx, q, func(r pgx.Row) (PublicOutlet, error) {
 		var o PublicOutlet
-		err := r.Scan(&o.BranchID, &o.Slug, &o.Name, &o.Address, &o.City, &o.Phone, &o.OpenTime, &o.CloseTime, &o.SlotMinutes)
+		err := r.Scan(&o.BranchID, &o.Slug, &o.Name, &o.Address, &o.City, &o.Phone, &o.OpenTime, &o.CloseTime, &o.SlotMinutes,
+			&o.LastOrderTime, &o.Description)
 		return o, err
 	}, `SELECT b.id::text, b.slug, b.name, b.address, b.city, b.phone,
-	        to_char(so.open_time, 'HH24:MI'), to_char(so.close_time, 'HH24:MI'), so.slot_minutes
+	        to_char(so.open_time, 'HH24:MI'), to_char(so.close_time, 'HH24:MI'), so.slot_minutes,
+	        to_char(so.last_order_time, 'HH24:MI'), so.description
 	   FROM spa.outlets so JOIN configuration.branches b ON b.id = so.branch_id
 	  WHERE so.is_active AND so.public_booking AND b.is_active
 	  ORDER BY b.name`)

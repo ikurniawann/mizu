@@ -459,3 +459,64 @@ func updateCard(ctx context.Context, q database.Querier, id string, balance floa
 		id, balance, status)
 	return err
 }
+
+/* ── online sale: one card per paid invoice ──────────────────────────── */
+
+// InvoiceIssueInput is a gift card bought online (spa gift voucher by
+// WhatsApp): SourceID is the purchase id, unique per card.
+type InvoiceIssueInput struct {
+	Scope      Scope
+	SourceID   string
+	Nominal    float64
+	BuyerName  *string
+	BuyerPhone *string
+	Note       string
+}
+
+// IssueForInvoice issues the card of a paid online purchase in q (the
+// settling transaction). Idempotent per SourceID: a card already issued for
+// it comes back unchanged.
+func (s *Service) IssueForInvoice(ctx context.Context, q database.Querier, in InvoiceIssueInput) (IssuedGiftCard, error) {
+	cfg, err := s.LoadConfig(ctx, q)
+	if err != nil {
+		return IssuedGiftCard{}, err
+	}
+	expiresAt := domain.ResolveExpiry(cfg.ExpiryMonths, s.now().Truncate(time.Millisecond))
+	var card IssuedGiftCard
+	err = atomic(ctx, q, func(tx database.Querier) error {
+		existing, err := scanIssued(tx.Query(ctx, `SELECT id, code, initial_value::float8, expires_at
+			FROM giftcard.gift_cards WHERE source_type = 'xendit_invoice' AND source_id = $1`, in.SourceID))
+		if err != nil {
+			return err
+		}
+		if len(existing) > 0 {
+			card = existing[0]
+			return nil
+		}
+		for range maxCodeRounds {
+			rows, err := scanIssued(tx.Query(ctx, `INSERT INTO giftcard.gift_cards
+				  (company_id, branch_id, code, initial_value, balance, status,
+				   expires_at, source_type, source_id, buyer_name, buyer_phone, note, created_at)
+				VALUES ($1, $2, $3, $4, $4, 'active', $5, 'xendit_invoice', $6, $7, $8, $9, clock_timestamp())
+				ON CONFLICT (branch_id, code) DO NOTHING
+				RETURNING id, code, initial_value::float8, expires_at`,
+				in.Scope.CompanyID, in.Scope.BranchID, domain.GenerateCode(), in.Nominal, expiresAt,
+				in.SourceID, in.BuyerName, in.BuyerPhone, in.Note))
+			if err != nil {
+				return err
+			}
+			if len(rows) == 0 {
+				continue // code collision: try a fresh code
+			}
+			card = rows[0]
+			_, err = tx.Exec(ctx, `INSERT INTO giftcard.gift_card_ledger
+				  (company_id, branch_id, card_id, direction, amount, balance_after,
+				   context_type, context_id, note)
+				VALUES ($1, $2, $3, 'isi', $4, $4, 'xendit_invoice', $5, $6)`,
+				in.Scope.CompanyID, in.Scope.BranchID, card.ID, in.Nominal, in.SourceID, in.Note)
+			return err
+		}
+		return errors.New("Gagal menerbitkan kode gift card unik — coba lagi")
+	})
+	return card, err
+}

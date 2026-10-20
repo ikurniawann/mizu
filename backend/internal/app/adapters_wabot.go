@@ -78,6 +78,15 @@ func (a waBotSpa) Pay(ctx context.Context, token string) (*spa.PublicPayment, er
 func (a waBotSpa) Booking(ctx context.Context, token string) (*spa.PublicBookingResult, error) {
 	return a.svc.PublicBooking(ctx, token)
 }
+func (a waBotSpa) GiftOptions(ctx context.Context) (*spa.GiftOptions, error) {
+	return a.svc.PublicGiftOptions(ctx)
+}
+func (a waBotSpa) GiftOrder(ctx context.Context, in spa.GiftOrderInput) (*spa.GiftOrder, error) {
+	return a.svc.PublicGiftOrder(ctx, in)
+}
+func (a waBotSpa) GiftOrderStatus(ctx context.Context, token string) (*spa.GiftOrder, error) {
+	return a.svc.PublicGiftOrderStatus(ctx, token)
+}
 func (a waBotSpa) OnlinePayment() bool { return a.svc.OnlinePaymentReady() }
 func (a waBotSpa) BookGroup(ctx context.Context, in spa.PublicGroupInput) ([]*spa.PublicBookingResult, error) {
 	return a.svc.PublicBookGroup(ctx, in)
@@ -147,7 +156,10 @@ func (s waBotSender) Send(ctx context.Context, db database.DB, phone, conversati
 func (s waBotSender) SendMenu(ctx context.Context, db database.DB, phone, conversationID, text string, options []domain.MenuOption) error {
 	opts := make([]whatsapp.Option, len(options))
 	for i, o := range options {
-		opts[i] = whatsapp.Option{ID: "k:" + o.Key, Title: o.Label, Description: o.Label}
+		// "10.00 (pagi) — terapis kosong: 2 wanita": the row title keeps the
+		// part before the dash (Meta cuts titles at 24), the description all.
+		title, _, _ := strings.Cut(o.Label, " — ")
+		opts[i] = whatsapp.Option{ID: "k:" + o.Key, Title: title, Description: o.Label}
 	}
 	res := s.gw.SendMenu(ctx, db, phone, text, opts, "bot", conversationID)
 	if !res.Success {

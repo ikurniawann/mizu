@@ -87,6 +87,15 @@ func (a txSpa) Rooms(ctx context.Context, branchID string, start, end time.Time,
 func (a txSpa) PendingDeposits(ctx context.Context, from, to time.Time) ([]spa.BookingNotice, error) {
 	return a.svc.PendingDeposits(ctx, from, to)
 }
+func (a txSpa) GiftOptions(ctx context.Context) (*spa.GiftOptions, error) {
+	return a.svc.PublicGiftOptions(ctx)
+}
+func (a txSpa) GiftOrder(ctx context.Context, in spa.GiftOrderInput) (*spa.GiftOrder, error) {
+	return a.svc.PublicGiftOrder(ctx, in)
+}
+func (a txSpa) GiftOrderStatus(ctx context.Context, token string) (*spa.GiftOrder, error) {
+	return a.svc.PublicGiftOrderStatus(ctx, token)
+}
 
 type memSender struct {
 	sent   []string
@@ -166,8 +175,9 @@ func setupBot(t *testing.T) *botEnv {
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	for _, name := range []string{"Terapis Bot Satu", "Terapis Bot Dua"} {
 		var emp string
-		if err := tx.QueryRow(ctx, `INSERT INTO hris.employees (full_name, nip, email, phone, join_date)
-		  VALUES ($1, 'BOT-'||$2, 'bot-'||$2||'@test.local', '0812', CURRENT_DATE) RETURNING id::text`, name, testutil.RandomHex(4)).Scan(&emp); err != nil {
+		// Gender lives on the employee (spa reads hris.employees.gender).
+		if err := tx.QueryRow(ctx, `INSERT INTO hris.employees (full_name, nip, email, phone, join_date, gender)
+		  VALUES ($1, 'BOT-'||$2, 'bot-'||$2||'@test.local', '0812', CURRENT_DATE, 'female') RETURNING id::text`, name, testutil.RandomHex(4)).Scan(&emp); err != nil {
 			t.Fatal(err)
 		}
 		call("POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": org.BranchID, "gender": "female"}, http.StatusCreated)
@@ -234,8 +244,11 @@ func TestBotBooksTwoGuestsByMenu(t *testing.T) {
 	r := e.start()
 	e.wants(r, "orang") // people question (single outlet auto-picked)
 	r = e.say("2")
-	e.wants(r, "Reflexology", "Rp 150.000")
+	e.wants(r, "Treatment untuk *Tamu 1* (dari 2 orang)", "Reflexology", "Rp 150.000", "*2 semua*")
+	// Guests are asked one by one; "0" copies the previous guest.
 	r = e.say("1")
+	e.wants(r, "✅ Tamu 1: Reflexology · 45 menit", "Treatment untuk *Tamu 2*", "0. Sama dengan Tamu 1 (Reflexology · 45 menit)")
+	r = e.say("0")
 	e.wants(r, "Hari ini", "Besok")
 	r = e.say("2") // tomorrow
 	e.wants(r, "jam", "10.00")
@@ -393,8 +406,8 @@ func (e *botEnv) addOutlet(open, close string, therapists int) string {
 	call("PUT", "/api/spa/outlets/"+org.BranchID, map[string]any{"warehouse_id": warehouse, "open_time": open, "close_time": close, "slot_minutes": 30}, http.StatusOK)
 	for i := 0; i < therapists; i++ {
 		var emp string
-		if err := e.tx.QueryRow(e.ctx, `INSERT INTO hris.employees (full_name, nip, email, phone, join_date)
-		  VALUES ('Terapis Kecil '||$1, 'BOTK-'||$1, 'botk-'||$1||'@test.local', '0812', CURRENT_DATE) RETURNING id::text`, testutil.RandomHex(4)).Scan(&emp); err != nil {
+		if err := e.tx.QueryRow(e.ctx, `INSERT INTO hris.employees (full_name, nip, email, phone, join_date, gender)
+		  VALUES ('Terapis Kecil '||$1, 'BOTK-'||$1, 'botk-'||$1||'@test.local', '0812', CURRENT_DATE, 'female') RETURNING id::text`, testutil.RandomHex(4)).Scan(&emp); err != nil {
 			e.t.Fatal(err)
 		}
 		call("POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": org.BranchID, "gender": "female"}, http.StatusCreated)
@@ -422,7 +435,7 @@ func TestBotStaggersGroupWhenNoCommonSlot(t *testing.T) {
 	e := setupBot(t)
 	e.start()
 	e.say("3")
-	e.say("1")
+	e.say("1 semua") // one treatment for every guest
 	r := e.say("besok")
 	e.wants(r, "bergantian", "10.00 (2 orang) & 11.00 (1 orang)")
 	r = e.say("1")
@@ -568,7 +581,7 @@ func TestBotOffersMenusInteractively(t *testing.T) {
 	e.engine.Handle(e.ctx, e.tx, e.conv, "1", e.at, ms) // Indonesian → greeting + name (profile as option 1)
 	e.engine.Handle(e.ctx, e.tx, e.conv, "1", e.at, ms) // name → people menu
 	last := ms.menus[len(ms.menus)-1]
-	if len(last) != 3 || last[0].Key != "1" || last[2].Label != "3 orang" {
+	if len(last) != domain.MaxPeople || last[0].Key != "1" || last[9].Label != "10 orang" {
 		t.Fatalf("people menu: %v", last)
 	}
 }
@@ -661,7 +674,7 @@ func TestBotAnswersQuestionsFromSystemData(t *testing.T) {
 	// A booking-shaped question is not a FAQ: "bisa besok jam 3?" asks for a slot.
 	e.say("1") // name
 	e.say("2")
-	e.say("1")
+	e.say("1 semua")
 	r = e.say("bisa besok jam 3?")
 	e.wants(r, "ringkasan")
 }
@@ -683,7 +696,7 @@ func TestBotGroupCountsOnceAgainstCap(t *testing.T) {
 	r := e.start()
 	e.say(menuKey(t, r, pick))
 	e.say("3")
-	e.say("1")
+	e.say("1 semua")
 	r = e.say("besok")
 	e.wants(r, "Jam yang masih tersedia")
 	e.say("1")
@@ -717,9 +730,11 @@ func TestBotEnglishFlow(t *testing.T) {
 	r := e.say("Hi, I'd like to book a massage for 2 people tomorrow afternoon")
 	e.wants(r, "booking assistant", "May I have your name", "1. Use *Fajar Bot*")
 	r = e.say("1")
-	e.wants(r, "Choose a treatment", "Reply with *one number*")
+	e.wants(r, "Treatment for *Guest 1* (of 2)", "add *all*")
 	r = e.say("1")
-	e.wants(r, "Times still available on *Friday, 9 Oct 2026*", "(afternoon)")
+	e.wants(r, "Treatment for *Guest 2*", "0. Same as Guest 1")
+	r = e.say("0")
+	e.wants(r, "Times still available on *Friday, 9 Oct 2026*", "(afternoon)", "free therapists: 2 female")
 	r = e.say("1")
 	e.wants(r, "Here's your booking summary", "2 people", "• Name: *Fajar Bot*", "Reply *yes* to book")
 	r = e.say("yes")
@@ -756,10 +771,13 @@ func TestBotBackAndNewBooking(t *testing.T) {
 	e := setupBot(t)
 	e.start()
 	e.say("2")
-	r := e.say("1")
+	e.say("1")
+	r := e.say("0")
 	e.wants(r, "Mau datang kapan?")
+	r = e.say("kembali") // re-asks the last guest's treatment
+	e.wants(r, "Oke, kembali satu langkah.", "Treatment untuk *Tamu 2*")
 	r = e.say("kembali")
-	e.wants(r, "Oke, kembali satu langkah.", "Pilih treatment")
+	e.wants(r, "Oke, kembali satu langkah.", "Treatment untuk *Tamu 1*")
 	r = e.say("kembali")
 	e.wants(r, "Untuk berapa orang?")
 	e.say("1")

@@ -37,7 +37,7 @@ type PublicGroupInput struct {
 }
 
 // MaxPublicGroup is the most guests one chat group booking covers.
-const MaxPublicGroup = 3
+const MaxPublicGroup = 10
 
 // PublicBookGroup creates the guests' bookings all-or-nothing. Guests are
 // named "Nama (1)", "Nama (2)" so the front office can tell them apart.

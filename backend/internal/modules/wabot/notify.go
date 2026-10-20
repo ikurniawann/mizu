@@ -52,6 +52,13 @@ func (e *Engine) Subscribe(bus *outbox.Bus, db database.DB) {
 		}
 		return e.DepositNotice(ctx, tx, db, n, true)
 	})
+	bus.Subscribe(spa.TopicGiftOrderPaid, subscriberGiftPaid, func(ctx context.Context, tx pgx.Tx, ev outbox.Event) error {
+		var n spa.GiftNotice
+		if err := ev.Decode(&n); err != nil {
+			return err
+		}
+		return e.GiftNotice(ctx, tx, db, n)
+	})
 	bus.Subscribe(spa.TopicBookingDepositExpired, subscriberDepositExpired, func(ctx context.Context, tx pgx.Tx, ev outbox.Event) error {
 		var n spa.BookingNotice
 		if err := ev.Decode(&n); err != nil {

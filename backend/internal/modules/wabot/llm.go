@@ -39,7 +39,8 @@ const extractPrompt = `Kamu membaca pesan WhatsApp dari calon pelanggan spa/mass
 Keluarkan JSON dengan kunci (kosongkan "" / 0 / false / [] bila tidak disebut):
 - outlet: nama outlet persis dari daftar OUTLET bila disebut atau jelas dimaksud
 - people: jumlah orang (angka)
-- treatments: daftar label treatment persis dari daftar TREATMENT, urut per orang bila disebut per orang
+- treatments: daftar label treatment persis dari daftar TREATMENT, urut per orang bila disebut per orang ("saya balinese, istri thai" = 2 label berurutan)
+- all_guests: true bila satu treatment disebut untuk semua orang ("semua", "dua-duanya", "both", "sama semua")
 - date: tanggal kunjungan "YYYY-MM-DD" (hari ini = TODAY; "besok", "sabtu", "15 okt" dihitung dari TODAY, zona WIB)
 - time: jam mulai "HH:MM" 24 jam bila disebut spesifik ("jam 3 sore" = "15:00")
 - period: "pagi"/"siang"/"sore"/"malam" bila hanya disebut waktu umum
@@ -220,7 +221,7 @@ func (o OpenAIExtractor) Answer(ctx context.Context, q database.Querier, questio
 }
 
 const conversePrompt = `Kamu asisten WhatsApp spa Mizu di tengah alur booking. Pesan pelanggan tidak terbaca oleh sistem. Tentukan maksudnya dan isi JSON:
-- intent: "restart" bila ingin mengulang/membatalkan draf/mulai dari awal; "back" bila ingin kembali ke pertanyaan sebelumnya; "status" bila menanyakan booking yang sudah dibuat; "admin" bila ingin bicara dengan manusia/CS; selain itu "none".
+- intent: "restart" bila ingin mengulang/membatalkan draf/mulai dari awal; "back" bila ingin kembali ke pertanyaan sebelumnya; "status" bila menanyakan booking yang sudah dibuat; "admin" bila ingin bicara dengan manusia/CS; "gift" bila ingin membeli gift voucher/voucher hadiah; selain itu "none".
 - reply: bila intent "none", balasan ramah dan singkat (maksimal 2 kalimat, bahasa sesuai BAHASA) HANYA berdasarkan FAKTA — misalnya menanggapi basa-basi, ucapan terima kasih, atau pertanyaan yang jawabannya ada di FAKTA; jangan mengarang. Jangan ulangi pertanyaan booking (PERTANYAAN TERTUNDA) karena sistem akan mengulanginya. Bila tidak perlu/tidak bisa dijawab, reply "".`
 
 var _ Converser = OpenAIExtractor{}

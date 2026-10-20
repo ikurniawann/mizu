@@ -4167,6 +4167,16 @@
   {
     "module": "spa",
     "method": "GET",
+    "path": "/api/public/spa/gift-orders/{token}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/public/spa/gift-orders/{token}/mock-pay"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
     "path": "/api/public/spa/outlets"
   },
   {

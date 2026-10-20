@@ -58,6 +58,23 @@ func HHMM(s string) string {
 	return s
 }
 
+// BeforeLastOrder checks that an online booking starts no later than the
+// outlet's last order ("20:30"); nil or "" means until close.
+func BeforeLastOrder(start time.Time, lastOrder *string) error {
+	if lastOrder == nil {
+		return nil
+	}
+	last, ok := ClockMinutes(*lastOrder)
+	if !ok {
+		return nil
+	}
+	local := start.In(WIB)
+	if local.Hour()*60+local.Minute() > last {
+		return rule("Jadwal melewati last order outlet (%s WIB)", HHMM(*lastOrder))
+	}
+	return nil
+}
+
 // WithinHours checks that [start, start+duration) falls inside the outlet's
 // opening hours on the WIB day of start.
 func WithinHours(start time.Time, durationMin int, openTime, closeTime string) error {

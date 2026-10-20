@@ -338,6 +338,12 @@ func (s *Service) settleOnline(ctx context.Context, bookingID, invoiceID string,
 // PublicInvoiceCallback handles a Xendit invoice callback for spa bookings.
 // It reports what happened; other prefixes are ignored for other modules.
 func (s *Service) PublicInvoiceCallback(ctx context.Context, cb InvoiceCallback) (string, error) {
+	if id, ok := strings.CutPrefix(cb.ExternalID, spaGiftPrefix); ok {
+		if !validate.IsUUID(id) {
+			return "ignored", nil
+		}
+		return s.giftCallback(ctx, id, cb)
+	}
 	if !strings.HasPrefix(cb.ExternalID, spaInvoicePrefix) && !strings.HasPrefix(cb.ExternalID, spaDepositPrefix) {
 		return "ignored", nil
 	}

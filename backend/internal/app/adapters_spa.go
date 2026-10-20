@@ -20,7 +20,7 @@ import (
 // SpaPorts wires the spa module.
 func SpaPorts() spa.Ports {
 	return spa.Ports{POS: spaPOS{}, Customers: spaCustomers{}, People: spaPeople{},
-		Payments: spaPayments{newXenditInvoices(os.Getenv, slog.Default())}}
+		Payments: spaPayments{newXenditInvoices(os.Getenv, slog.Default())}, GiftCards: newSpaGiftCards()}
 }
 
 /* ── online payment (Xendit invoices) ────────────────────────────────── */

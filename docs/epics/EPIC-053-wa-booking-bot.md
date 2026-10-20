@@ -182,3 +182,19 @@ preferensi gender dilonggarkan → outlet lain di jam sama → hari lain jam sam
   restart|back|status|admin|none + balasan singkat dari FAKTA dalam bahasa sesi) sebelum dihitung
   "tidak paham"; pertanyaan tertunda diulang setelah balasan. Bukti: `TestBotOffScriptMessages`,
   `TestIntentAnywhereInShortMessages`.
+- 2026-10-20 — Revisi bot dari pemilik (8 poin). Keputusan pemilik: rombongan sampai 10 orang di chat;
+  gift voucher dibeli penuh lewat chat; last order diatur per outlet; perbedaan outlet dari kolom
+  deskripsi outlet. Hasil: (1) treatment rombongan ditanya per tamu ("Tamu 2: … / 0 = sama dengan Tamu 1",
+  "2 semua" = semua sama; *kembali* mundur satu tamu); (2) `spa.outlets.description` + jawaban "bedanya
+  apa" (deskripsi, jam, last order, selisih harga, treatment khusus); (3) `MaxPeople`/`MaxPublicGroup` = 10,
+  >10 dijelaskan & diarahkan ke admin; (4) gift voucher: `spa.gift_orders` → invoice Xendit `spa-gv-` →
+  gift card `source_type = xendit_invoice` di outlet pilihan → kode via outbox `spa.gift_order.paid`
+  (sekali, `wa_notif_log`) atau "sudah bayar"; halaman `/booking/spa/gift/<token>`; tanpa pembayaran
+  online bot menjawab beli di kasir/admin; (5) `spa.outlets.last_order_time`: slot & booking/reschedule
+  publik ditolak setelahnya, ditampilkan di menu outlet, jam buka & daftar jam; (6) daftar jam memuat
+  terapis kosong per gender; (7) sapaan & menu bahasa menyebut "balasan otomatis (bot), bukan admin";
+  (8) jam admin live dari `cs_business_hours_start/end` di sapaan/handover/"tidak paham"; handover di luar
+  jam memberi tahu admin membalas di jam kerja berikutnya. Migrasi: `20261020090000_spa_outlet_description_last_order.sql`,
+  `20261020091000_spa_gift_orders.sql` (juga memperluas `gift_card_ledger.context_type`). Bukti:
+  `revisi_integration_test.go` (6 tes, gift butuh `XENDIT_MOCK=1`), `domain/revisi_test.go`, seluruh tes
+  wabot/giftcards/app hijau; kegagalan `TestCustomerReportUsesPaidPOSOrdersAndWIB` sudah ada sebelumnya.

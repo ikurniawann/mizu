@@ -3,6 +3,7 @@ package wabot
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,8 +15,10 @@ type store struct{}
 
 // settings reads the bot_* keys (jsonb values).
 func (store) settings(ctx context.Context, q database.Querier) (Settings, error) {
-	s := Settings{Name: "Mizu Assistant", HandoverKeywords: []string{"admin", "cs", "manusia", "operator"}, NotifyCustomer: true}
-	rows, err := q.Query(ctx, `SELECT key, value FROM crm.crm_settings WHERE key LIKE 'bot_%'`)
+	s := Settings{Name: "Mizu Assistant", HandoverKeywords: []string{"admin", "cs", "manusia", "operator"}, NotifyCustomer: true,
+		AdminHours: domain.AdminHours{Start: 10, End: 22}}
+	rows, err := q.Query(ctx, `SELECT key, value FROM crm.crm_settings
+	  WHERE key LIKE 'bot_%' OR key IN ('cs_business_hours_start', 'cs_business_hours_end')`)
 	if err != nil {
 		return s, err
 	}
@@ -51,6 +54,10 @@ func (store) settings(ctx context.Context, q database.Querier) (Settings, error)
 			if text, ok := v.(string); ok {
 				s.Greeting = strings.TrimSpace(text)
 			}
+		case "cs_business_hours_start":
+			s.AdminHours.Start = hourValue(v, s.AdminHours.Start)
+		case "cs_business_hours_end":
+			s.AdminHours.End = hourValue(v, s.AdminHours.End)
 		case "bot_handover_keywords":
 			if text, ok := v.(string); ok && strings.TrimSpace(text) != "" {
 				s.HandoverKeywords = nil
@@ -198,4 +205,25 @@ func (store) sessionLang(ctx context.Context, q database.Querier, conversationID
 		return domain.LangID
 	}
 	return domain.L(*lang)
+}
+
+// hourValue reads a 0–23 hour stored as a JSON number or string.
+func hourValue(v any, def int) int {
+	var n float64
+	switch x := v.(type) {
+	case float64:
+		n = x
+	case string:
+		f, err := strconv.ParseFloat(strings.TrimSpace(x), 64)
+		if err != nil {
+			return def
+		}
+		n = f
+	default:
+		return def
+	}
+	if n < 0 || n > 24 || n != float64(int(n)) {
+		return def
+	}
+	return int(n)
 }

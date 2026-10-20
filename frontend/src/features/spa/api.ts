@@ -54,6 +54,7 @@ import type {
   MySummary,
   PublicOutlet,
   PublicLookup,
+  PublicGiftOrder,
   PublicPayment,
   PublicSlot,
   PublicRoom,
@@ -296,6 +297,8 @@ export const publicSpaApi = {
   mockPay: (token: string) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}/mock-pay`, {}),
   payDeposit: (token: string) => send<PublicPayment>(`${PUBLIC_BASE}/bookings/${enc(token)}/deposit`, {}),
   mockPayDeposit: (token: string) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings/${enc(token)}/mock-pay-deposit`, {}),
+  giftOrder: (token: string) => call<PublicGiftOrder>(`${PUBLIC_BASE}/gift-orders/${enc(token)}`),
+  mockPayGift: (token: string) => send<PublicGiftOrder>(`${PUBLIC_BASE}/gift-orders/${enc(token)}/mock-pay`, {}),
   createBooking: (input: PublicBookingInput) => send<PublicBookingResult>(`${PUBLIC_BASE}/bookings`, input),
   findBooking: (bookingCode: string, phone: string) =>
     send<PublicLookup>(`${PUBLIC_BASE}/bookings/find`, { booking_code: bookingCode, phone }),

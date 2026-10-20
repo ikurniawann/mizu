@@ -24,9 +24,9 @@ const (
 	StepDone      = "done"
 )
 
-// MaxPeople is the most guests one chat booking covers (also the public
-// per-phone open-booking cap).
-const MaxPeople = 3
+// MaxPeople is the most guests one chat booking covers (a group/rombongan;
+// spa.MaxPublicGroup). Larger parties are arranged by an admin.
+const MaxPeople = 10
 
 // MaxMisses is how many consecutive non-understood replies the bot allows
 // before it hands the conversation to an agent.
@@ -111,6 +111,9 @@ type OutletOpt struct {
 	Address   string `json:"address,omitempty"`
 	City      string `json:"city,omitempty"`
 	Phone     string `json:"phone,omitempty"`
+	// LastOrder is the latest start ("20:30"); "" = treatments end by close.
+	LastOrder   string `json:"last_order,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 // Session is the state stored per conversation (crm.wa_bot_sessions.state).
@@ -143,8 +146,10 @@ type Session struct {
 	// session the watcher refilled after telling the guest a slot is free.
 	WaitlistID   string `json:"waitlist_id,omitempty"`
 	FromWaitlist bool   `json:"from_waitlist,omitempty"`
-	// PendingTreatments were named before the outlet was known.
+	// PendingTreatments were named before the outlet was known; PendingAll
+	// says they are for every guest ("semua thai massage").
 	PendingTreatments []string `json:"pending_treatments,omitempty"`
+	PendingAll        bool     `json:"pending_all,omitempty"`
 	// Room the guest chose (revisi R6): RoomDone once answered or skipped
 	// (no room free); RoomAsked when the menu was actually shown. RoomPrice
 	// is charged once for the party.
@@ -153,6 +158,9 @@ type Session struct {
 	RoomPrice float64 `json:"room_price,omitempty"`
 	RoomDone  bool    `json:"room_done,omitempty"`
 	RoomAsked bool    `json:"room_asked,omitempty"`
+	// Gift is a gift voucher being bought in this chat (kept across bookings
+	// until its code is sent).
+	Gift *GiftDraft `json:"gift,omitempty"`
 }
 
 // NewSession starts at the outlet step.
@@ -161,8 +169,11 @@ func NewSession() *Session { return &Session{Step: StepLang, Pref: "any"} }
 // ResetBooking keeps what identifies the guest (language, name) and starts
 // a new booking.
 func (s *Session) ResetBooking() {
-	name, wl, lang := s.Name, s.WaitlistID, s.Lang
+	name, wl, lang, gift := s.Name, s.WaitlistID, s.Lang, s.Gift
 	*s = Session{Step: StepLang, Pref: "any", Name: name, Greeted: true, WaitlistID: wl, Lang: lang}
+	if gift.AwaitingPayment() {
+		s.Gift = gift // the link sent stays checkable
+	}
 }
 
 // Staggered reports whether some guest starts at another time than the first.
@@ -291,7 +302,7 @@ func (s *Session) Back() bool {
 			s.People = 0
 		}
 	case StepDate:
-		s.Persons = nil
+		s.Persons = s.Persons[:len(s.Persons)-1] // re-ask the last guest's treatment
 	case StepTime:
 		s.Date, s.Period, s.WantedTime = "", "", ""
 	case StepTherapist:

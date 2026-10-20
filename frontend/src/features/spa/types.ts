@@ -46,6 +46,10 @@ export interface Outlet {
   public_booking: boolean;
   is_active: boolean;
   warehouses: WarehouseOption[];
+  /** Jam mulai booking online paling akhir ("20:30"); null = sampai jam tutup. */
+  last_order_time: string | null;
+  /** Keunggulan outlet; dipakai bot WhatsApp saat tamu bertanya bedanya outlet. */
+  description: string;
 }
 
 export interface OutletPrice {
@@ -142,6 +146,9 @@ export interface OutletInput {
   slot_minutes: number;
   public_booking: boolean;
   is_active: boolean;
+  /** "" = tanpa last order (sampai jam tutup). */
+  last_order_time?: string | null;
+  description?: string;
 }
 
 // ── Treatment ────────────────────────────────────────────────────────────────
@@ -546,6 +553,23 @@ export interface PublicTherapist {
 }
 
 export type PublicPaymentMethod = "outlet" | "online";
+
+/** Gift voucher yang dibeli lewat chat WhatsApp (/booking/spa/gift/<token>). */
+export interface PublicGiftOrder {
+  token: string;
+  branch_id: string;
+  branch_name: string;
+  nominal_idr: number;
+  buyer_name: string;
+  recipient_name: string | null;
+  status: "pending" | "paid" | "expired";
+  pay_url: string | null;
+  pay_until: string | null;
+  code: string | null;
+  card_expires_at: string | null;
+  paid_at: string | null;
+  mock: boolean;
+}
 
 export interface PublicPayment {
   invoice_url: string;

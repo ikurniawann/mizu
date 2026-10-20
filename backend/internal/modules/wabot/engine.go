@@ -115,6 +115,8 @@ type turn struct {
 	// banned: the member is blocked; every day looks full and no
 	// alternatives/waitlist are offered (revisi R8).
 	banned bool
+	// allGuests: this message's treatment is for every remaining guest ("2 semua").
+	allGuests bool
 }
 
 func (t *turn) run(ctx context.Context, text string) []string {
@@ -131,13 +133,13 @@ func (t *turn) run(ctx context.Context, text string) []string {
 			}
 			s.Greeted = true
 			s.ClearMenu()
-			return append([]string{domain.Greeting(s.Lang, t.settings.Name, t.settings.Greeting)}, t.prompt(ctx)...)
+			return append([]string{domain.Greeting(s.Lang, t.settings.Name, t.settings.Greeting, t.settings.AdminHours)}, t.prompt(ctx)...)
 		}
 		// A stated choice or a clearly English message decides; an Indonesian
 		// message that already carries a booking or a question continues in
 		// Indonesian; a bare greeting gets the language question once.
 		lang := domain.DetectLang(text)
-		carries := t.localExtract(ctx, text).useful() || domain.DetectQuestion(text) != domain.QuestionNone
+		carries := t.localExtract(ctx, text).useful() || t.question(ctx, text) != domain.QuestionNone || domain.WantsGift(text)
 		switch {
 		case domain.ExplicitLang(text) != "" || lang == domain.LangEN:
 			s.Lang = lang
@@ -155,14 +157,27 @@ func (t *turn) run(ctx context.Context, text string) []string {
 	greet := func() {
 		if !s.Greeted {
 			s.Greeted = true
-			out = append(out, domain.Greeting(l, t.settings.Name, t.settings.Greeting))
+			out = append(out, domain.Greeting(l, t.settings.Name, t.settings.Greeting, t.settings.AdminHours))
 		}
 	}
 	intent := domain.DetectIntent(text, t.settings.HandoverKeywords)
+	// Gift voucher: a draft being filled in owns the turn (except "admin");
+	// asking for one starts it from anywhere.
+	if intent != domain.IntentAdmin && (s.Gift.Active() || domain.WantsGift(text)) {
+		greet()
+		return append(out, t.giftTurn(ctx, text, intent)...)
+	}
+	if s.Gift.AwaitingPayment() && paidWords(text) {
+		msgs := []string{t.giftCheck(ctx)}
+		if len(s.Bookings) > 0 && s.NextStep() == domain.StepDone && s.PayMethod != "outlet" {
+			msgs = append(msgs, t.paymentCheck(ctx))
+		}
+		return msgs
+	}
 	switch intent {
 	case domain.IntentAdmin:
 		t.handedOver = "customer"
-		return []string{domain.Handover(l, t.settings.Name)}
+		return []string{domain.Handover(l, t.settings.Name, t.settings.AdminHours, t.at)}
 	case domain.IntentBack:
 		greet()
 		if !s.Back() {
@@ -209,13 +224,12 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		return append(out, domain.WaitlistCancelled(l))
 	}
 	if s.NextStep() == domain.StepDone {
-		if kind := domain.DetectQuestion(text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).bookingShaped()) {
+		if kind := t.question(ctx, text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).bookingShaped()) {
 			if answer := t.answer(ctx, kind, text); answer != "" {
 				return []string{answer}
 			}
 		}
-		n := domain.Normalize(text)
-		if strings.Contains(n, "bayar") || strings.Contains(n, "lunas") || strings.Contains(n, "transfer") || strings.Contains(n, "paid") || strings.Contains(n, "payment") {
+		if paidWords(text) {
 			return []string{t.paymentCheck(ctx)}
 		}
 		// "booking", "mau booking", "book", "reservasi": the Done message tells
@@ -231,7 +245,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 			return t.prompt(ctx)
 		}
 		if intent == domain.IntentGreeting || intent == domain.IntentYes {
-			return []string{domain.Done(l, t.settings.Name)}
+			return []string{domain.Done(l, t.settings.Name, t.settings.AdminHours)}
 		}
 		// Anything else after a finished booking: let the AI decide if it is a new booking.
 		if ext := t.extract(ctx, text); ext != nil && (ext.Outlet != "" || ext.Date != "" || len(ext.Treatments) > 0 || ext.People > 0) {
@@ -239,7 +253,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 			t.apply(ctx, ext)
 			return t.prompt(ctx)
 		}
-		return []string{domain.Done(l, t.settings.Name)}
+		return []string{domain.Done(l, t.settings.Name, t.settings.AdminHours)}
 	}
 	greet()
 	if intent == domain.IntentGreeting && len(strings.Fields(text)) <= 3 {
@@ -247,7 +261,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 	}
 	// Questions (address, hours, prices, …) are answered from system data
 	// without touching the draft; the pending booking question follows.
-	if kind := domain.DetectQuestion(text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).bookingShaped()) {
+	if kind := t.question(ctx, text); kind != domain.QuestionNone && !(kind == domain.QuestionOther && t.localExtract(ctx, text).bookingShaped()) {
 		if answer := t.answer(ctx, kind, text); answer != "" {
 			prompts := t.prompt(ctx)
 			if len(prompts) > 0 {
@@ -263,7 +277,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 			s.Name = t.conv.DisplayName
 			applied = true
 		} else if name := strings.TrimSpace(strings.Trim(text, ".!")); looksLikeName(name) && domain.MenuNumbers(text) == nil &&
-			len([]rune(name)) >= 3 && intent == domain.IntentNone && domain.DetectQuestion(text) == domain.QuestionNone {
+			len([]rune(name)) >= 3 && intent == domain.IntentNone && t.question(ctx, text) == domain.QuestionNone {
 			s.Name = titleCase(name)
 			applied = true
 		}
@@ -272,7 +286,14 @@ func (t *turn) run(ctx context.Context, text string) []string {
 			return append(out, t.prompt(ctx)...)
 		}
 	}
-	if nums := domain.MenuNumbers(text); nums != nil && len(s.Menu) > 0 {
+	nums := domain.MenuNumbers(text)
+	if nums == nil && s.MenuStep == domain.StepTreatment && domain.ParseAllGuests(text) {
+		// "2 semua": menu number 2 for every guest still without one.
+		if n := domain.MenuNumbers(domain.StripAllGuests(text)); n != nil {
+			nums, t.allGuests = n, true
+		}
+	}
+	if nums != nil && len(s.Menu) > 0 {
 		applied = t.applyMenu(ctx, nums)
 	} else {
 		ext := t.localExtract(ctx, text)
@@ -285,7 +306,7 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		}
 		if ext.WantAdmin {
 			t.handedOver = "customer"
-			return append(out, domain.Handover(l, t.settings.Name))
+			return append(out, domain.Handover(l, t.settings.Name, t.settings.AdminHours, t.at))
 		}
 		applied = t.apply(ctx, &ext)
 	}
@@ -298,11 +319,11 @@ func (t *turn) run(ctx context.Context, text string) []string {
 		s.Misses++
 		if s.Misses >= domain.MaxMisses {
 			t.handedOver = "lost"
-			return append(out, domain.Handover(l, t.settings.Name))
+			return append(out, domain.Handover(l, t.settings.Name, t.settings.AdminHours, t.at))
 		}
 		prompts := t.prompt(ctx)
 		if len(prompts) > 0 {
-			prompts[0] = domain.NotUnderstood(l, prompts[0], s.Misses)
+			prompts[0] = domain.NotUnderstood(l, prompts[0], s.Misses, t.settings.AdminHours)
 		}
 		return append(out, prompts...)
 	}
@@ -348,6 +369,7 @@ func (t *turn) localExtract(ctx context.Context, text string) Extraction {
 		treatmentText = domain.StripWords(text, s.Outlets[i].Name)
 	}
 	x.People = domain.ParsePeople(text)
+	x.AllGuests = domain.ParseAllGuests(text)
 	vocab := s.Catalog
 	if len(vocab) == 0 && len(s.Outlets) > 0 {
 		// No outlet yet: treatment names are shared, so any outlet's catalog
@@ -395,7 +417,41 @@ func (t *turn) localExtract(ctx context.Context, text string) Extraction {
 	if step == domain.StepName && intent == domain.IntentNone && x.Date == "" && x.Time == "" && x.People == 0 && looksLikeName(text) {
 		x.Name = titleCase(text)
 	}
+	// "2 orang thai massage": one treatment named with the party size is everyone's.
+	if x.People > 1 && len(x.Treatments) == 1 {
+		x.AllGuests = true
+	}
 	return x
+}
+
+// question classifies an information question; "how do the outlets
+// differ" needs the outlet names, so it is checked here first.
+func (t *turn) question(ctx context.Context, text string) domain.QuestionKind {
+	if len(t.sess.Outlets) == 0 {
+		t.loadOutlets(ctx)
+	}
+	if domain.DetectCompare(text, outletNames(t.sess.Outlets)) {
+		return domain.QuestionCompare
+	}
+	return domain.DetectQuestion(text)
+}
+
+// addPersons gives the next guests their treatments in order; all=true
+// gives every guest still without one the first treatment. The time is
+// chosen again afterwards (durations may differ).
+func (t *turn) addPersons(persons []domain.Person, all bool) {
+	s := t.sess
+	if all && len(persons) == 1 {
+		for len(s.Persons) < s.People {
+			s.Persons = append(s.Persons, persons[0])
+		}
+	} else {
+		s.Persons = append(s.Persons, persons...)
+	}
+	if len(s.Persons) > s.People {
+		s.Persons = s.Persons[:s.People]
+	}
+	s.ClearSlot()
 }
 
 // extract asks the AI; nil when unavailable or on error (menu mode goes on).
@@ -461,7 +517,7 @@ func (t *turn) converse(ctx context.Context, text string, out []string) ([]strin
 		return append(out, domain.StatusOf(l, s.Bookings)), true
 	case "admin":
 		t.handedOver = "customer"
-		return append(out, domain.Handover(l, t.settings.Name)), true
+		return append(out, domain.Handover(l, t.settings.Name, t.settings.AdminHours, t.at)), true
 	}
 	if res.Reply == "" {
 		return nil, false
@@ -521,6 +577,16 @@ func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string
 		return domain.AnswerPayment(l, t.e.ports.Spa.OnlinePayment())
 	case domain.QuestionReschedule:
 		return domain.AnswerReschedule(l)
+	case domain.QuestionCompare:
+		catalogs := map[string][]domain.VariantOpt{}
+		for _, o := range s.Outlets {
+			if o.ID == s.OutletID && len(s.Catalog) > 0 {
+				catalogs[o.ID] = s.Catalog
+				continue
+			}
+			catalogs[o.ID], _ = t.e.catalogFor(ctx, o.ID)
+		}
+		return domain.AnswerCompare(l, s.Outlets, catalogs)
 	}
 	if answerer, ok := t.e.ports.Extractor.(Answerer); ok {
 		ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
@@ -536,7 +602,7 @@ func (t *turn) answer(ctx context.Context, kind domain.QuestionKind, text string
 			return reply
 		}
 	}
-	return domain.AnswerUnknown(l)
+	return domain.AnswerUnknown(l, t.settings.AdminHours)
 }
 
 // facts is what the AI may answer from: outlets, the catalog, policies.
@@ -550,8 +616,16 @@ func (t *turn) facts(ctx context.Context) string {
 			b.WriteString(", " + o.City)
 		}
 		b.WriteString("; buka setiap hari " + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + " WIB")
+		if o.LastOrder != "" {
+			b.WriteString("; last order " + hhmm(o.LastOrder) + " WIB")
+		} else {
+			b.WriteString("; last order: treatment harus selesai sebelum jam tutup")
+		}
 		if o.Phone != "" {
 			b.WriteString("; telp " + o.Phone)
+		}
+		if o.Description != "" {
+			b.WriteString("; keunggulan: " + o.Description)
 		}
 		b.WriteString("\n")
 	}
@@ -567,7 +641,7 @@ func (t *turn) facts(ctx context.Context) string {
 			b.WriteString("- " + v.Label() + " (" + strconv.Itoa(v.DurationMin) + " menit): " + domain.Rupiah(v.Price) + "\n")
 		}
 	}
-	b.WriteString("KEBIJAKAN:\n- Booking lewat chat maksimal " + strconv.Itoa(domain.MaxPeople) + " orang per booking, untuk 60 hari ke depan.\n")
+	b.WriteString("KEBIJAKAN:\n- Booking lewat chat bisa untuk rombongan sampai " + strconv.Itoa(domain.MaxPeople) + " orang per booking (tiap tamu boleh beda treatment), untuk 60 hari ke depan.\n")
 	if amount, hold, enabled := t.e.ports.Spa.DepositPolicy(ctx); enabled {
 		b.WriteString("- Booking online memerlukan DP " + domain.Rupiah(amount) + " per booking, dibayar lewat link dalam " + strconv.Itoa(hold) + " menit agar jadwal terkunci; sisa harga dibayar di outlet setelah treatment. DP tidak dikembalikan bila booking dibatalkan sepihak (tanya admin untuk pengecualian).\n")
 	}
@@ -582,7 +656,9 @@ func (t *turn) facts(ctx context.Context) string {
 	}
 	b.WriteString("- Jadwal bisa diubah/dibatalkan sendiri lewat link status booking sampai 1 jam sebelum kunjungan; setelah itu lewat admin.\n")
 	b.WriteString("- Terapis bisa dipilih sendiri (yang kosong di jam itu) atau dipilihkan Mizu; ada terapis wanita dan pria.\n")
-	b.WriteString("- Untuk hal lain (parkir, fasilitas, promo, grup lebih dari " + strconv.Itoa(domain.MaxPeople) + " orang) pelanggan diminta ketik admin.\n")
+	b.WriteString("- Gift voucher (voucher hadiah) bisa dibeli lewat chat ini: ketik gift voucher.\n")
+	b.WriteString("- Yang membalas chat ini adalah bot (asisten virtual), bukan admin. Admin live hanya tersedia pada jam kerja " + t.settings.AdminHours.Label() + " WIB; ketik admin untuk dihubungkan.\n")
+	b.WriteString("- Untuk hal lain (parkir, fasilitas, promo, rombongan lebih dari " + strconv.Itoa(domain.MaxPeople) + " orang) pelanggan diminta ketik admin.\n")
 	return b.String()
 }
 
@@ -642,6 +718,7 @@ func mergeExtraction(local, ai Extraction) Extraction {
 		out.Name = ai.Name
 	}
 	out.WantAdmin = out.WantAdmin || ai.WantAdmin
+	out.AllGuests = out.AllGuests || ai.AllGuests
 	out.OffTopic = out.OffTopic || ai.OffTopic
 	return out
 }
@@ -661,8 +738,9 @@ func (t *turn) apply(ctx context.Context, x *Extraction) bool {
 	}
 	if x.People > 0 && x.People != s.People {
 		if x.People > domain.MaxPeople {
-			// Keep the draft; prompt explains the cap.
+			// Keep the draft; the people question follows the explanation.
 			s.People = 0
+			t.failure = domain.TooManyPeople(s.Lang, t.settings.AdminHours)
 		} else {
 			s.People = x.People
 			if len(s.Persons) > s.People {
@@ -675,7 +753,7 @@ func (t *turn) apply(ctx context.Context, x *Extraction) bool {
 	if len(x.Treatments) > 0 && s.OutletID == "" {
 		// Named before the outlet ("thai massage dua-duanya"): matched once
 		// the outlet's catalog is known.
-		s.PendingTreatments = x.Treatments
+		s.PendingTreatments, s.PendingAll = x.Treatments, x.AllGuests
 		applied = true
 	}
 	if len(x.Treatments) > 0 && s.OutletID != "" {
@@ -695,16 +773,14 @@ func (t *turn) apply(ctx context.Context, x *Extraction) bool {
 			if s.People == 0 {
 				s.People = 1
 			}
-			if len(persons) == 1 && s.People > 1 {
-				for len(persons) < s.People {
-					persons = append(persons, persons[0])
-				}
+			if len(s.Persons) >= s.People {
+				// A change of a complete choice starts the list again; one
+				// treatment named for a group is then everyone's.
+				s.Persons = nil
+				t.addPersons(persons, len(persons) == 1)
+			} else {
+				t.addPersons(persons, x.AllGuests)
 			}
-			if len(persons) > s.People {
-				persons = persons[:s.People]
-			}
-			s.Persons = persons
-			s.ClearSlot()
 			applied = true
 		}
 	}
@@ -795,11 +871,21 @@ func (t *turn) applyMenu(ctx context.Context, nums []int) bool {
 		n, _ := strconv.Atoi(o.Value)
 		return t.apply(ctx, &Extraction{People: n})
 	case domain.StepTreatment:
+		// Numbers fill the next guests in order ("1, 3" = two guests);
+		// "0" repeats the previous guest; "2 semua" gives everyone left #2.
 		var persons []domain.Person
 		for _, n := range nums {
 			o := pick(n)
 			if o == nil {
 				return false
+			}
+			if o.Value == "same" {
+				all := append(append([]domain.Person(nil), s.Persons...), persons...)
+				if len(all) == 0 {
+					return false
+				}
+				persons = append(persons, all[len(all)-1])
+				continue
 			}
 			for _, v := range s.Catalog {
 				if v.VariantID == o.Value {
@@ -810,15 +896,7 @@ func (t *turn) applyMenu(ctx context.Context, nums []int) bool {
 		if len(persons) == 0 {
 			return false
 		}
-		if len(persons) == 1 && s.People > 1 {
-			for len(persons) < s.People {
-				persons = append(persons, persons[0])
-			}
-		}
-		if len(persons) > s.People {
-			persons = persons[:s.People]
-		}
-		s.Persons, s.SlotISO = persons, ""
+		t.addPersons(persons, t.allGuests)
 		return true
 	case domain.StepDate:
 		o := pick(nums[0])
@@ -907,7 +985,10 @@ func (t *turn) loadOutlets(ctx context.Context) {
 	}
 	t.sess.Outlets = t.sess.Outlets[:0]
 	for _, o := range list {
-		opt := domain.OutletOpt{ID: o.BranchID, Name: o.Name, OpenTime: o.OpenTime, CloseTime: o.CloseTime}
+		opt := domain.OutletOpt{ID: o.BranchID, Name: o.Name, OpenTime: o.OpenTime, CloseTime: o.CloseTime, Description: strings.TrimSpace(o.Description)}
+		if o.LastOrderTime != nil {
+			opt.LastOrder = *o.LastOrderTime
+		}
 		if o.Address != nil {
 			opt.Address = strings.TrimSpace(*o.Address)
 		}
@@ -927,9 +1008,9 @@ func (t *turn) setOutlet(ctx context.Context, o domain.OutletOpt) {
 	s.Catalog, s.Persons, s.SlotISO, s.TherapistID, s.TherapistName = nil, nil, "", "", ""
 	t.loadCatalog(ctx)
 	if len(s.PendingTreatments) > 0 {
-		pending := s.PendingTreatments
-		s.PendingTreatments = nil
-		t.apply(ctx, &Extraction{Treatments: pending})
+		pending, all := s.PendingTreatments, s.PendingAll
+		s.PendingTreatments, s.PendingAll = nil, false
+		t.apply(ctx, &Extraction{Treatments: pending, AllGuests: all})
 	}
 }
 
@@ -1149,14 +1230,14 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 			}
 			if len(s.Outlets) == 0 {
 				t.handedOver = "no_outlet"
-				return []string{domain.Handover(l, t.settings.Name)}
+				return []string{domain.Handover(l, t.settings.Name, t.settings.AdminHours, t.at)}
 			}
 			opts := make([]domain.MenuOption, len(s.Outlets))
 			for i, o := range s.Outlets {
-				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: o.Name + " (" + openWord(l) + " " + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + ")", Value: o.ID}
+				opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: domain.OutletLabel(l, o), Value: o.ID}
 			}
 			s.SetMenu(domain.StepOutlet, opts)
-			return []string{domain.AskOutlet(l, opts)}
+			return []string{domain.AskOutlet(l, opts, s.Outlets)}
 		case domain.StepPeople:
 			opts := make([]domain.MenuOption, domain.MaxPeople)
 			for i := range opts {
@@ -1170,9 +1251,19 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 			}
 			if len(s.Catalog) == 0 {
 				t.handedOver = "no_catalog"
-				return []string{domain.Handover(l, t.settings.Name)}
+				return []string{domain.Handover(l, t.settings.Name, t.settings.AdminHours, t.at)}
 			}
+			// A group is asked one guest at a time; from the second guest on,
+			// "0" copies the previous guest's treatment.
 			var opts []domain.MenuOption
+			guest := len(s.Persons) + 1
+			chosen := make([]string, len(s.Persons))
+			for i, p := range s.Persons {
+				chosen[i] = p.Label
+			}
+			if s.People > 1 && guest > 1 {
+				opts = append(opts, domain.MenuOption{Key: "0", Label: domain.SameAsLabel(l, guest-1, chosen[guest-2]), Value: "same"})
+			}
 			for i, v := range s.Catalog {
 				if i >= 15 {
 					break
@@ -1180,7 +1271,7 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 				opts = append(opts, domain.MenuOption{Key: strconv.Itoa(i + 1), Label: v.Label() + " — " + domain.Rupiah(v.Price), Value: v.VariantID})
 			}
 			s.SetMenu(domain.StepTreatment, opts)
-			return []string{domain.AskTreatment(l, s.OutletName, s.People, opts)}
+			return []string{domain.AskTreatment(l, s.OutletName, s.People, guest, chosen, opts)}
 		case domain.StepDate:
 			today := t.at.In(domain.WIB)
 			labels := domain.DayLabels(l)
@@ -1249,7 +1340,7 @@ func (t *turn) promptSteps(ctx context.Context) []string {
 				t.justBooked = false
 				return []string{domain.Confirmed(l, s, t.settings.Name)}
 			}
-			return []string{domain.Done(l, t.settings.Name)}
+			return []string{domain.Done(l, t.settings.Name, t.settings.AdminHours)}
 		}
 	}
 	return nil
@@ -1307,7 +1398,8 @@ func (t *turn) promptTime(ctx context.Context) (string, bool) {
 	sort.Slice(ranked, func(i, j int) bool { return ranked[i].At.Before(ranked[j].At) })
 	opts := make([]domain.MenuOption, len(ranked))
 	for i, sl := range ranked {
-		label := domain.Clock(sl.At) + " (" + domain.PeriodLabel(l, domain.PeriodOf(domain.ClockMinute(sl.At))) + ")"
+		female, male := t.freeByGender(ctx, sl.At)
+		label := domain.SlotLabel(l, domain.Clock(sl.At), domain.PeriodLabel(l, domain.PeriodOf(domain.ClockMinute(sl.At))), female, male)
 		opts[i] = domain.MenuOption{Key: strconv.Itoa(i + 1), Label: label, Value: sl.ISO}
 	}
 	requested := ""
@@ -1315,8 +1407,36 @@ func (t *turn) promptTime(ctx context.Context) (string, bool) {
 		requested = strings.Replace(s.WantedTime, ":", ".", 1)
 		s.WantedTime = ""
 	}
+	lastOrder := ""
+	for _, o := range s.Outlets {
+		if o.ID == s.OutletID {
+			lastOrder = domain.LastOrderNote(l, o)
+		}
+	}
 	s.SetMenu(domain.StepTime, opts)
-	return domain.AskTime(l, s.Date, opts, requested), false
+	return domain.AskTime(l, s.Date, opts, requested, lastOrder), false
+}
+
+// freeByGender counts the therapists free for the first guest's treatment
+// at a start, by gender (whatever the guest's preference, so they see both).
+func (t *turn) freeByGender(ctx context.Context, at time.Time) (female, male int) {
+	list, err := t.e.ports.Spa.Therapists(ctx, t.sess.OutletID, at, t.sess.FirstVariantIDs(), "any")
+	if err != nil {
+		t.e.log.Warn("[wabot] hitung terapis per jam", "error", err)
+		return 0, 0
+	}
+	for _, th := range list {
+		if th.Gender == nil {
+			continue
+		}
+		switch *th.Gender {
+		case "female":
+			female++
+		case "male":
+			male++
+		}
+	}
+	return female, male
 }
 
 // noSlots offers the next days with room, the other outlets the same day
@@ -1666,6 +1786,12 @@ func (t *turn) paymentCheck(ctx context.Context) string {
 }
 
 /* ── small helpers ───────────────────────────────────────────────────── */
+
+// paidWords: "sudah bayar", "lunas", "paid" — the guest reports a payment.
+func paidWords(text string) bool {
+	n := domain.Normalize(text)
+	return strings.Contains(n, "bayar") || strings.Contains(n, "lunas") || strings.Contains(n, "transfer") || strings.Contains(n, "paid") || strings.Contains(n, "payment")
+}
 
 func outletNames(list []domain.OutletOpt) []string {
 	out := make([]string, len(list))

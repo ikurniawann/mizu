@@ -135,20 +135,48 @@ func GenderSuffix(l L, gender string) string {
 	return ""
 }
 
+/* ── admin hours & bot note ──────────────────────────────────────────── */
+
+// AdminHours are the hours a live admin answers chats (crm settings
+// cs_business_hours_start/end, whole hours WIB).
+type AdminHours struct{ Start, End int }
+
+// Label is "10.00–22.00".
+func (h AdminHours) Label() string { return pad2(h.Start) + ".00–" + pad2(h.End) + ".00" }
+
+// Open reports whether a live admin works at at.
+func (h AdminHours) Open(at time.Time) bool {
+	hr := at.In(WIB).Hour()
+	if h.Start <= h.End {
+		return hr >= h.Start && hr < h.End
+	}
+	return hr >= h.Start || hr < h.End // overnight shift
+}
+
+// BotNote tells the guest a bot is answering (some took it for a live admin)
+// and when a live admin is around.
+func BotNote(l L, h AdminHours) string {
+	return t(l, "🤖 _Pesan ini dibalas otomatis oleh asisten virtual (bot), bukan admin. Butuh admin? Ketik *admin* — admin live tersedia jam "+h.Label()+" WIB._",
+		"🤖 _This is an automated reply from a virtual assistant (bot), not a live admin. Need an admin? Type *admin* — live admins are available "+h.Label()+" WIB._")
+}
+
 /* ── conversation ────────────────────────────────────────────────────── */
 
 // AskLang is the first message: a bilingual welcome and the language menu.
 func AskLang(botName string) string {
-	return "Halo! Selamat datang di Mizu 🌿 / Hello! Welcome to Mizu 🌿\n\n" +
+	return "Halo! Selamat datang di Mizu 🌿 / Hello! Welcome to Mizu 🌿\n" +
+		"🤖 _Ini balasan otomatis (bot), bukan admin / This is an automated reply (bot), not a live admin._\n\n" +
 		"Pilih bahasa / choose a language:\n" + NumberedMenu(LangMenu()) + "\n\nBalas *1* atau *2* / reply *1* or *2*."
 }
 
-func Greeting(l L, botName, greeting string) string {
-	if l == LangID && strings.TrimSpace(greeting) != "" {
-		return greeting
-	}
-	return t(l, "Halo! Saya "+botName+", asisten booking Mizu. Saya bantu pilih outlet, treatment, dan jamnya ya 🙏",
+// Greeting opens the booking; the bot note always follows a custom greeting.
+func Greeting(l L, botName, greeting string, h AdminHours) string {
+	text := t(l, "Halo! Saya "+botName+", asisten booking Mizu. Saya bantu pilih outlet, treatment, dan jamnya ya 🙏",
 		"Hi! I'm "+botName+", Mizu's booking assistant. I'll help you pick an outlet, a treatment and a time 🙏")
+	if l == LangID && strings.TrimSpace(greeting) != "" {
+		text = strings.TrimSpace(greeting)
+	}
+	return text + t(l, "\n🎁 Mau beli gift voucher? Ketik *gift voucher*.", "\n🎁 Want a gift voucher? Type *gift voucher*.") + "\n\n" + BotNote(l, h)
 }
 
 // AskName opens the booking: the profile name is offered as option 1.
@@ -160,23 +188,73 @@ func AskName(l L, profileName string) string {
 	return t(l, "Boleh tahu nama Anda untuk bookingnya?", "May I have your name for the booking?")
 }
 
-func AskOutlet(l L, options []MenuOption) string {
-	return t(l, "Mau datang ke outlet mana?\n", "Which outlet would you like to visit?\n") + NumberedMenu(options) +
-		t(l, "\n\nBalas dengan *nomor* atau nama outletnya.", "\n\nReply with the *number* or the outlet name.")
+// OutletLabel is "Mizu 1.0 (buka 10.00–22.00, last order 20.30)".
+func OutletLabel(l L, o OutletOpt) string {
+	label := o.Name + " (" + t(l, "buka ", "open ") + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime)
+	if o.LastOrder != "" {
+		label += ", last order " + hhmm(o.LastOrder)
+	}
+	return label + ")"
+}
+
+// AskOutlet lists the outlets with what sets each apart.
+func AskOutlet(l L, options []MenuOption, outlets []OutletOpt) string {
+	msg := t(l, "Mau datang ke outlet mana?\n", "Which outlet would you like to visit?\n") + NumberedMenu(options)
+	described := 0
+	for _, o := range outlets {
+		if d := strings.TrimSpace(o.Description); d != "" {
+			if described == 0 {
+				msg += "\n"
+			}
+			msg += "\n• *" + o.Name + "*: " + d
+			described++
+		}
+	}
+	msg += t(l, "\n\nBalas dengan *nomor* atau nama outletnya.", "\n\nReply with the *number* or the outlet name.")
+	if len(outlets) > 1 {
+		msg += t(l, " Bingung pilih? Ketik *bedanya apa* untuk perbandingan outlet.", " Not sure? Type *what's the difference* to compare the outlets.")
+	}
+	return msg
 }
 
 func AskPeople(l L) string {
-	return t(l, "Untuk berapa orang? Balas angkanya (maks. "+strconv.Itoa(MaxPeople)+" orang per booking).",
-		"For how many people? Reply with a number (max. "+strconv.Itoa(MaxPeople)+" per booking).")
+	return t(l, "Untuk berapa orang? Balas angkanya (rombongan bisa sampai "+strconv.Itoa(MaxPeople)+" orang per booking).",
+		"For how many people? Reply with a number (groups up to "+strconv.Itoa(MaxPeople)+" people per booking).")
 }
 
-func AskTreatment(l L, outlet string, people int, options []MenuOption) string {
-	head := t(l, "Pilih treatment di *"+outlet+"*:\n", "Choose a treatment at *"+outlet+"*:\n") + NumberedMenu(options)
-	if people > 1 {
-		return head + t(l, "\n\nBalas *satu nomor* kalau semua orang sama, atau beberapa nomor dipisah koma sesuai urutan orang, mis. *1, 3*.",
-			"\n\nReply with *one number* if everyone takes the same, or several numbers separated by commas in guest order, e.g. *1, 3*.")
+// GuestLabel is "Tamu 2" / "Guest 2".
+func GuestLabel(l L, i int) string { return t(l, "Tamu ", "Guest ") + strconv.Itoa(i) }
+
+// SameAsLabel is the treatment-menu choice that copies the previous guest's.
+func SameAsLabel(l L, guest int, treatment string) string {
+	return t(l, "Sama dengan ", "Same as ") + GuestLabel(l, guest) + " (" + treatment + ")"
+}
+
+// AskTreatment asks one guest at a time: guest is the guest being asked
+// (1-based) and chosen the labels already picked for the guests before.
+func AskTreatment(l L, outlet string, people, guest int, chosen []string, options []MenuOption) string {
+	if people <= 1 {
+		return t(l, "Pilih treatment di *"+outlet+"*:\n", "Choose a treatment at *"+outlet+"*:\n") + NumberedMenu(options) +
+			t(l, "\n\nBalas dengan *nomor* treatmentnya.", "\n\nReply with the treatment *number*.")
 	}
-	return head + t(l, "\n\nBalas dengan *nomor* treatmentnya.", "\n\nReply with the treatment *number*.")
+	var b strings.Builder
+	for i, c := range chosen {
+		b.WriteString("✅ " + GuestLabel(l, i+1) + ": " + c + "\n")
+	}
+	if len(chosen) > 0 {
+		b.WriteString("\n")
+	}
+	b.WriteString(t(l, "Treatment untuk *"+GuestLabel(l, guest)+"* (dari "+strconv.Itoa(people)+" orang) di *"+outlet+"*:\n",
+		"Treatment for *"+GuestLabel(l, guest)+"* (of "+strconv.Itoa(people)+") at *"+outlet+"*:\n"))
+	b.WriteString(NumberedMenu(options))
+	if guest == 1 {
+		b.WriteString(t(l, "\n\nBalas *nomor* treatmentnya. Tiap tamu boleh beda treatment — saya tanyakan satu per satu. Kalau semua tamu sama, tambahkan *semua*, mis. *2 semua*.",
+			"\n\nReply with the treatment *number*. Each guest may choose differently — I'll ask one by one. If everyone takes the same, add *all*, e.g. *2 all*."))
+	} else {
+		b.WriteString(t(l, "\n\nBalas *nomor* treatmentnya, atau *0* kalau sama dengan "+GuestLabel(l, guest-1)+".",
+			"\n\nReply with the treatment *number*, or *0* if it's the same as "+GuestLabel(l, guest-1)+"."))
+	}
+	return b.String()
 }
 
 func AskDate(l L, options []MenuOption) string {
@@ -184,13 +262,47 @@ func AskDate(l L, options []MenuOption) string {
 		t(l, "\n\nAtau tulis tanggalnya, mis. *Sabtu*, *15 Okt*, atau *besok sore*.", "\n\nOr type a date, e.g. *Saturday*, *Oct 15*, or *tomorrow afternoon*.")
 }
 
-func AskTime(l L, date string, options []MenuOption, requested string) string {
+// SlotLabel is "14.00 (siang) — terapis kosong: 2 wanita, 1 pria".
+func SlotLabel(l L, clock, period string, female, male int) string {
+	label := clock + " (" + period + ")"
+	if female == 0 && male == 0 {
+		return label
+	}
+	var parts []string
+	if female > 0 {
+		parts = append(parts, strconv.Itoa(female)+t(l, " wanita", " female"))
+	}
+	if male > 0 {
+		parts = append(parts, strconv.Itoa(male)+t(l, " pria", " male"))
+	}
+	return label + t(l, " — terapis kosong: ", " — free therapists: ") + strings.Join(parts, ", ")
+}
+
+// LastOrderNote is the outlet's last-order line.
+func LastOrderNote(l L, o OutletOpt) string {
+	if o.LastOrder != "" {
+		return t(l, "Last order di "+o.Name+": jam *"+hhmm(o.LastOrder)+"* WIB.", "Last order at "+o.Name+": *"+hhmm(o.LastOrder)+"* WIB.")
+	}
+	if o.CloseTime != "" {
+		return t(l, "Last order: treatment harus selesai sebelum jam tutup *"+hhmm(o.CloseTime)+"* WIB.",
+			"Last order: treatments must end before closing at *"+hhmm(o.CloseTime)+"* WIB.")
+	}
+	return ""
+}
+
+// AskTime lists the free starts with the free therapists per gender.
+func AskTime(l L, date string, options []MenuOption, requested, lastOrder string) string {
 	head := t(l, "Jam yang masih tersedia pada *"+LongDate(l, date)+"*", "Times still available on *"+LongDate(l, date)+"*")
 	if requested != "" {
 		head = t(l, "Jam *"+requested+"* sudah penuh. Yang terdekat masih tersedia pada *"+LongDate(l, date)+"*",
 			"*"+requested+"* is fully booked. The nearest times still available on *"+LongDate(l, date)+"*")
 	}
-	return head + ":\n" + NumberedMenu(options) + t(l, "\n\nBalas dengan *nomor* jamnya.", "\n\nReply with the *number* of the time.")
+	msg := head + ":\n" + NumberedMenu(options)
+	if lastOrder != "" {
+		msg += "\n\n" + lastOrder
+	}
+	return msg + t(l, "\n\nBalas dengan *nomor* jamnya. Mau terapis wanita/pria saja? Tulis *wanita* / *pria*.",
+		"\n\nReply with the *number* of the time. Prefer a female/male therapist? Type *female* / *male*.")
 }
 
 // NoSlots offers what is left when the day is full: nearby days, another
@@ -491,27 +603,34 @@ func PaymentSeen(l L, paid bool, code string) string {
 		"Payment for *"+code+"* hasn't shown up yet. If you just paid, wait 1–2 minutes and reply *paid* again, or pay at the outlet when you arrive.")
 }
 
-func Done(l L, botName string) string {
-	return t(l, "Booking Anda sudah selesai. Ketik *booking* untuk booking baru, *status* untuk melihat booking terakhir, atau *admin* untuk bicara dengan tim Mizu.",
-		"Your booking is complete. Type *book* for a new booking, *status* to see your latest booking, or *admin* to talk to the Mizu team.")
+func Done(l L, botName string, h AdminHours) string {
+	return t(l, "Booking Anda sudah selesai. Ketik *booking* untuk booking baru, *status* untuk melihat booking terakhir, *gift voucher* untuk membeli voucher hadiah, atau *admin* untuk bicara dengan tim Mizu (admin live jam "+h.Label()+" WIB).",
+		"Your booking is complete. Type *book* for a new booking, *status* to see your latest booking, *gift voucher* to buy a gift voucher, or *admin* to talk to the Mizu team (live admins "+h.Label()+" WIB).")
 }
 
-func NotUnderstood(l L, prompt string, misses int) string {
+func NotUnderstood(l L, prompt string, misses int, h AdminHours) string {
 	if misses >= 2 {
 		return t(l, "Maaf, saya masih belum paham 🙏 ", "Sorry, I still didn't get that 🙏 ") + prompt +
-			t(l, "\n\nKetik *admin* kalau mau dibantu tim Mizu langsung.", "\n\nType *admin* to get help from the Mizu team directly.")
+			t(l, "\n\nKetik *admin* kalau mau dibantu tim Mizu langsung (admin live jam "+h.Label()+" WIB).",
+				"\n\nType *admin* to get help from the Mizu team directly (live admins "+h.Label()+" WIB).")
 	}
 	return t(l, "Maaf, saya belum paham. ", "Sorry, I didn't get that. ") + prompt
 }
 
-func Handover(l L, botName string) string {
-	return t(l, "Baik, saya sambungkan ke tim Mizu ya. Mohon tunggu sebentar, admin akan membalas di chat ini 🙏",
-		"Sure, I'm connecting you to the Mizu team. Please hold on, an admin will reply in this chat 🙏")
+// Handover passes the chat to the team; outside admin hours the guest is
+// told an admin replies at the next working hours.
+func Handover(l L, botName string, h AdminHours, at time.Time) string {
+	if !h.Open(at) {
+		return t(l, "Baik, pesan Anda sudah saya teruskan ke admin Mizu 🙏 Saat ini di luar jam kerja admin (*"+h.Label()+" WIB*), jadi admin akan membalas di chat ini pada jam kerja berikutnya.",
+			"Sure, I've passed your message to the Mizu admins 🙏 It's outside admin hours right now (*"+h.Label()+" WIB*), so an admin will reply in this chat during the next working hours.")
+	}
+	return t(l, "Baik, saya sambungkan ke admin Mizu ya. Mohon tunggu sebentar, admin akan membalas di chat ini 🙏 (admin live tersedia jam "+h.Label()+" WIB)",
+		"Sure, I'm connecting you to a Mizu admin. Please hold on, an admin will reply in this chat 🙏 (live admins are available "+h.Label()+" WIB)")
 }
 
-func TooManyPeople(l L) string {
-	return t(l, "Untuk lebih dari "+strconv.Itoa(MaxPeople)+" orang, tim Mizu bantu atur langsung ya. Ketik *admin* untuk dihubungkan, atau balas angka 1–"+strconv.Itoa(MaxPeople)+".",
-		"For more than "+strconv.Itoa(MaxPeople)+" people the Mizu team will arrange it for you. Type *admin* to be connected, or reply with a number 1–"+strconv.Itoa(MaxPeople)+".")
+func TooManyPeople(l L, h AdminHours) string {
+	return t(l, "Untuk rombongan lebih dari "+strconv.Itoa(MaxPeople)+" orang, admin Mizu bantu atur langsung ya. Ketik *admin* untuk dihubungkan (admin live jam "+h.Label()+" WIB), atau balas angka 1–"+strconv.Itoa(MaxPeople)+".",
+		"For groups of more than "+strconv.Itoa(MaxPeople)+" people a Mizu admin will arrange it for you. Type *admin* to be connected (live admins "+h.Label()+" WIB), or reply with a number 1–"+strconv.Itoa(MaxPeople)+".")
 }
 
 func StatusOf(l L, refs []BookingRef) string {
@@ -624,7 +743,13 @@ func AnswerHours(l L, outlets []OutletOpt, chosen string) string {
 		if chosen != "" && o.ID != chosen {
 			continue
 		}
-		lines = append(lines, "🕒 *"+o.Name+"*: "+t(l, "setiap hari ", "daily ")+hhmm(o.OpenTime)+"–"+hhmm(o.CloseTime)+" WIB")
+		line := "🕒 *" + o.Name + "*: " + t(l, "setiap hari ", "daily ") + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + " WIB"
+		if o.LastOrder != "" {
+			line += ", last order " + hhmm(o.LastOrder)
+		} else {
+			line += t(l, " (treatment terakhir selesai sebelum "+hhmm(o.CloseTime)+")", " (the last treatment ends before "+hhmm(o.CloseTime)+")")
+		}
+		lines = append(lines, line)
 	}
 	return strings.Join(lines, "\n") + t(l, "\nBooking lewat chat ini bisa untuk 60 hari ke depan.", "\nYou can book through this chat up to 60 days ahead.")
 }
@@ -660,9 +785,92 @@ func AnswerReschedule(l L) string {
 		"You can reschedule or cancel yourself through the booking status link (in the confirmation message) up to *1 hour before* the visit. Past that, type *admin* and the Mizu team will help.")
 }
 
-func AnswerUnknown(l L) string {
-	return t(l, "Untuk pertanyaan itu saya belum punya jawabannya 🙏 Ketik *admin* supaya tim Mizu membalas di chat ini, atau lanjutkan booking.",
-		"I don't have an answer for that yet 🙏 Type *admin* so the Mizu team can reply in this chat, or continue booking.")
+func AnswerUnknown(l L, h AdminHours) string {
+	return t(l, "Untuk pertanyaan itu saya belum punya jawabannya 🙏 Ketik *admin* supaya tim Mizu membalas di chat ini (admin live jam "+h.Label()+" WIB), atau lanjutkan booking.",
+		"I don't have an answer for that yet 🙏 Type *admin* so the Mizu team can reply in this chat (live admins "+h.Label()+" WIB), or continue booking.")
+}
+
+// AnswerCompare explains how the outlets differ: each outlet's own
+// description, address and hours, then the price differences and the
+// treatments only one outlet offers (catalogs by outlet id).
+func AnswerCompare(l L, outlets []OutletOpt, catalogs map[string][]VariantOpt) string {
+	var b strings.Builder
+	if len(outlets) < 2 {
+		b.WriteString(t(l, "Saat ini booking online tersedia di:\n", "Online booking is currently available at:\n"))
+	} else {
+		b.WriteString(t(l, "Perbedaan outlet Mizu:\n", "How the Mizu outlets differ:\n"))
+	}
+	for _, o := range outlets {
+		b.WriteString("\n*" + o.Name + "*\n")
+		if d := strings.TrimSpace(o.Description); d != "" {
+			b.WriteString(d + "\n")
+		}
+		if o.Address != "" {
+			b.WriteString("📍 " + o.Address)
+			if o.City != "" {
+				b.WriteString(", " + o.City)
+			}
+			b.WriteString("\n")
+		}
+		b.WriteString("🕒 " + hhmm(o.OpenTime) + "–" + hhmm(o.CloseTime) + " WIB")
+		if o.LastOrder != "" {
+			b.WriteString(", last order " + hhmm(o.LastOrder))
+		}
+		b.WriteString("\n")
+	}
+	if len(outlets) >= 2 {
+		// Price per label per outlet, in catalog order.
+		var order []string
+		price := map[string]map[string]float64{}
+		for _, o := range outlets {
+			for _, v := range catalogs[o.ID] {
+				label := v.Label()
+				if price[label] == nil {
+					price[label] = map[string]float64{}
+					order = append(order, label)
+				}
+				price[label][o.ID] = v.Price
+			}
+		}
+		var diffs, only []string
+		for _, label := range order {
+			if len(price[label]) < len(outlets) {
+				var at []string
+				for _, o := range outlets {
+					if _, ok := price[label][o.ID]; ok {
+						at = append(at, o.Name)
+					}
+				}
+				only = append(only, "• "+label+t(l, " — hanya di ", " — only at ")+strings.Join(at, ", "))
+				continue
+			}
+			same := true
+			var parts []string
+			for _, o := range outlets {
+				p := price[label][o.ID]
+				parts = append(parts, o.Name+" "+Rupiah(p))
+				same = same && p == price[label][outlets[0].ID]
+			}
+			if !same {
+				diffs = append(diffs, "• "+label+": "+strings.Join(parts, " · "))
+			}
+		}
+		if len(diffs) > 8 {
+			diffs = append(diffs[:8], t(l, "• … dan lainnya", "• … and more"))
+		}
+		if len(only) > 6 {
+			only = append(only[:6], t(l, "• … dan lainnya", "• … and more"))
+		}
+		if len(diffs) > 0 {
+			b.WriteString(t(l, "\nHarga yang berbeda:\n", "\nPrices that differ:\n") + strings.Join(diffs, "\n") + "\n")
+		} else {
+			b.WriteString(t(l, "\nHarga treatment yang ada di semua outlet sama.\n", "\nTreatments offered at every outlet cost the same.\n"))
+		}
+		if len(only) > 0 {
+			b.WriteString(t(l, "\nTreatment khusus:\n", "\nOutlet-only treatments:\n") + strings.Join(only, "\n") + "\n")
+		}
+	}
+	return strings.TrimSpace(b.String())
 }
 
 // ContinuePrompt prefixes the pending booking question after an answer.

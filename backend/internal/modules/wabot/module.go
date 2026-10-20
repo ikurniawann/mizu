@@ -123,6 +123,21 @@ func (h *Handler) view(ctx context.Context, conversationID string) (*SessionView
 	if s.Bookings != nil {
 		v.Bookings = s.Bookings
 	}
+	if g := s.Gift; g != nil {
+		line := "Gift voucher: " + domain.Rupiah(g.Nominal)
+		if g.OutletName != "" {
+			line += " di " + g.OutletName
+		}
+		switch {
+		case g.Code != "":
+			line += " — terbit (" + g.Code + ")"
+		case g.Token != "":
+			line += " — menunggu pembayaran"
+		default:
+			line += " — sedang diisi"
+		}
+		v.Summary = append(v.Summary, line)
+	}
 	return v, nil
 }
 

@@ -17,6 +17,7 @@ const catalog: Treatment[] = [
 const outlet = (branch_id: string, branch_name: string, configured = true): Outlet => ({
   branch_id, branch_name, configured, company_id: "c1", warehouse_id: null, warehouse_name: null,
   open_time: "10:00", close_time: "22:00", slot_minutes: 30, public_booking: true, is_active: branch_id !== "b2", warehouses: [],
+  last_order_time: null, description: "",
 });
 let data: Treatment[];
 let writes: { id: string; prices: PriceInput[] }[];

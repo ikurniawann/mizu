@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useSaveDepositSettings, useSaveOutlet } from "../mutations";
 import { useDepositSettings, useSpaOutlets } from "../queries";
 import { parseClock, shortClock } from "../time";
@@ -75,7 +76,9 @@ export function SpaOutletsPage() {
                         <span className="tabular-nums">
                           {shortClock(o.open_time)}–{shortClock(o.close_time)}
                         </span>
-                        <span className="block text-xs text-muted-foreground">slot {o.slot_minutes} mnt</span>
+                        <span className="block text-xs text-muted-foreground">
+                          slot {o.slot_minutes} mnt{o.last_order_time ? ` · last order ${shortClock(o.last_order_time)}` : ""}
+                        </span>
                       </>
                     ) : (
                       "-"
@@ -118,6 +121,8 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
   const [slot, setSlot] = useState(String(outlet.slot_minutes || 30));
   const [publicBooking, setPublicBooking] = useState(outlet.configured ? outlet.public_booking : false);
   const [active, setActive] = useState(outlet.configured ? outlet.is_active : true);
+  const [lastOrder, setLastOrder] = useState(shortClock(outlet.last_order_time ?? "") || "");
+  const [description, setDescription] = useState(outlet.description ?? "");
   const [error, setError] = useState<string | null>(null);
   const save = useSaveOutlet();
 
@@ -127,11 +132,25 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
     if (parseClock(open) === null || parseClock(close) === null) return setError("Jam buka/tutup tidak valid.");
     if (open === close) return setError("Jam buka dan tutup tidak boleh sama.");
     if (!Number.isInteger(slotMinutes) || slotMinutes < 5 || slotMinutes > 240) return setError("Slot harus 5–240 menit.");
+    if (lastOrder) {
+      const last = parseClock(lastOrder);
+      const [o, c] = [parseClock(open), parseClock(close)];
+      if (last === null || o === null || c === null || last < o || last >= c) return setError("Last order harus di antara jam buka dan sebelum jam tutup.");
+    }
     setError(null);
     save.mutate(
       {
         branchId: outlet.branch_id,
-        input: { warehouse_id: warehouseId, open_time: open, close_time: close, slot_minutes: slotMinutes, public_booking: publicBooking, is_active: active },
+        input: {
+          warehouse_id: warehouseId,
+          open_time: open,
+          close_time: close,
+          slot_minutes: slotMinutes,
+          public_booking: publicBooking,
+          is_active: active,
+          last_order_time: lastOrder || null,
+          description: description.trim(),
+        },
       },
       {
         onSuccess: () => {
@@ -179,6 +198,12 @@ function OutletDialog({ outlet, onClose }: { outlet: Outlet; onClose: () => void
             </Field>
             <Field label="Panjang slot (menit)" hint="Interval pilihan jam di booking publik.">
               <Input type="number" min={5} max={240} step={5} value={slot} onChange={(e) => setSlot(e.target.value)} required />
+            </Field>
+            <Field label="Last order" hint="Jam mulai treatment paling akhir untuk booking online & WhatsApp. Kosongkan = sampai jam tutup.">
+              <Input type="time" value={lastOrder} onChange={(e) => setLastOrder(e.target.value)} />
+            </Field>
+            <Field label="Keunggulan outlet" className="sm:col-span-2" hint="Dipakai bot WhatsApp saat tamu bertanya bedanya outlet (mis. suasana, fasilitas, treatment khusus).">
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} rows={3} />
             </Field>
             <div className="space-y-3 self-end pb-1">
               <label className="flex items-center gap-3 text-sm">

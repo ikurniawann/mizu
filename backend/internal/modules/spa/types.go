@@ -29,6 +29,10 @@ type Outlet struct {
 	PublicBooking bool           `json:"public_booking"`
 	IsActive      bool           `json:"is_active"`
 	Warehouses    []WarehouseRef `json:"warehouses"`
+	// LastOrderTime is the latest online booking start ("20:30"); nil = until close.
+	LastOrderTime *string `json:"last_order_time"`
+	// Description tells guests what sets the outlet apart (website & chat bot).
+	Description string `json:"description"`
 }
 
 // OutletPrice is a variant's price override at one outlet.
@@ -363,6 +367,9 @@ type PublicOutlet struct {
 	OpenTime    string  `json:"open_time"`
 	CloseTime   string  `json:"close_time"`
 	SlotMinutes int     `json:"slot_minutes"`
+	// LastOrderTime is the latest start ("20:30"); nil = until close.
+	LastOrderTime *string `json:"last_order_time"`
+	Description   string  `json:"description"`
 	// OnlinePayment: the guest may pay by Xendit invoice.
 	OnlinePayment bool `json:"online_payment"`
 	// DepositIDR is the DP an online booking must pay to hold its slot (0 = none).

@@ -199,6 +199,8 @@ func MenuNumbers(text string) []int {
 }
 
 var peopleWords = map[string]int{"sendiri": 1, "satu": 1, "seorang": 1, "berdua": 2, "dua": 2, "bertiga": 3, "tiga": 3, "berempat": 4, "empat": 4,
+	"berlima": 5, "lima": 5, "berenam": 6, "enam": 6, "bertujuh": 7, "tujuh": 7, "berdelapan": 8, "delapan": 8, "bersembilan": 9, "sembilan": 9, "bersepuluh": 10, "sepuluh": 10,
+	"five people": 5, "six people": 6, "seven people": 7, "eight people": 8, "nine people": 9, "ten people": 10,
 	"just me": 1, "myself": 1, "alone": 1, "one person": 1, "two of us": 2, "two people": 2, "for two": 2, "couple": 2, "me and my wife": 2, "me and my husband": 2, "me and my friend": 2, "my wife and i": 2, "my husband and i": 2, "three of us": 3, "three people": 3, "for three": 3, "four of us": 4, "four people": 4}
 
 var peopleDigits = regexp.MustCompile(`\b(\d{1,2})\s*(orang|org|pax|people|persons|person|guests|pp)\b`)
@@ -216,6 +218,34 @@ func ParsePeople(text string) int {
 		}
 	}
 	return 0
+}
+
+// allGuestWords say one treatment is for every guest ("2 semua", "dua-duanya").
+var allGuestWords = []string{"semua", "semuanya", "sama semua", "semua sama", "dua-duanya", "dua duanya", "duaduanya", "tiga-tiganya", "tiga tiganya",
+	"all", "all of us", "everyone", "everybody", "both", "both of us", "same for all", "for all"}
+
+// ParseAllGuests: the message says its treatment is for every guest.
+func ParseAllGuests(text string) bool {
+	n := Normalize(text)
+	for _, w := range allGuestWords {
+		if containsPhrase(n, w) {
+			return true
+		}
+	}
+	return false
+}
+
+// StripAllGuests drops the all-guests words so "2 semua" reads as menu "2".
+func StripAllGuests(text string) string {
+	var keep []string
+	for _, w := range strings.Fields(Normalize(text)) {
+		switch strings.Trim(w, ".,!?") {
+		case "semua", "semuanya", "sama", "all", "both", "everyone", "everybody", "untuk", "for":
+			continue
+		}
+		keep = append(keep, w)
+	}
+	return strings.Join(keep, " ")
 }
 
 // ParseGender reads a therapist gender preference; "" when none.
@@ -670,17 +700,76 @@ const (
 	QuestionPrice      QuestionKind = "price"
 	QuestionPayment    QuestionKind = "payment"
 	QuestionReschedule QuestionKind = "reschedule"
+	QuestionCompare    QuestionKind = "compare" // how the outlets differ (DetectCompare)
 	QuestionOther      QuestionKind = "other"
 )
 
 var (
 	addressWords    = []string{"alamat", "lokasi", "dimana", "di mana", "letak", "maps", "map", "arah", "jalan apa", "daerah mana", "deket mana", "dekat mana", "address", "location", "where is", "where are", "where's", "directions", "how to get"}
-	hoursWords      = []string{"jam buka", "buka jam", "jam tutup", "tutup jam", "jam operasional", "jam berapa buka", "buka sampai", "masih buka", "buka hari", "buka tiap", "opening hours", "open until", "what time do you open", "what time do you close", "are you open", "still open", "closing time", "open on"}
+	hoursWords      = []string{"last order", "lastorder", "last-order", "pesan terakhir", "booking terakhir jam", "paling malam", "paling telat", "latest booking", "latest time", "jam buka", "buka jam", "jam tutup", "tutup jam", "jam operasional", "jam berapa buka", "buka sampai", "masih buka", "buka hari", "buka tiap", "opening hours", "open until", "what time do you open", "what time do you close", "are you open", "still open", "closing time", "open on"}
 	priceWords      = []string{"harga", "berapa harga", "tarif", "biaya", "price", "pricelist", "daftar harga", "berapaan", "harganya", "promo", "diskon", "how much", "cost", "rates", "discount", "prices"}
 	paymentWords    = []string{"cara bayar", "bayar pakai", "bayar pake", "bisa bayar", "pembayaran", "qris", "transfer", "kartu kredit", "debit", "bayar dulu", "dp dulu", "bayar di tempat", "cash", "payment", "pay by", "pay with", "credit card", "can i pay", "deposit", "pay later", "pay now"}
 	rescheduleWords = []string{"ubah jadwal", "ganti jadwal", "reschedule", "batalin", "batalkan booking", "cancel", "pindah jam", "geser jam", "telat", "terlambat", "refund", "change my booking", "move my booking", "running late", "cancellation"}
 	questionWords   = []string{"apa", "apakah", "bagaimana", "gimana", "berapa", "kapan", "kenapa", "mengapa", "bisa", "boleh", "ada", "siapa", "yang mana", "punya", "what", "is", "are", "can", "could", "do", "does", "how", "when", "why", "which", "any", "where", "who"}
 )
+
+// compareWords ask how the outlets differ ("bedanya Mizu 1.0 dan Signature?").
+var compareWords = []string{"beda", "bedanya", "perbedaan", "membedakan", "bandingkan", "perbandingan", "dibanding", "lebih bagus", "bagusan", "lebih baik mana",
+	"keunggulan", "kelebihan", "kekurangan", "apa itu", "itu apa", "vs", "versus", "compare", "comparison", "difference", "different", "which is better", "better"}
+
+// DetectCompare: the message asks how outlets differ. It must name an
+// outlet (or "outlet"/"cabang"), so "treatment beda-beda" is not one.
+func DetectCompare(text string, outletNames []string) bool {
+	n := Normalize(strings.TrimRight(strings.TrimSpace(text), "?!. "))
+	asks := false
+	for _, w := range compareWords {
+		if containsPhrase(n, w) || (len(w) > 4 && strings.Contains(n, w)) {
+			asks = true
+			break
+		}
+	}
+	if !asks {
+		return false
+	}
+	for _, w := range strings.Fields(n) { // "outletnya", "outlets", "cabangnya"
+		for _, p := range []string{"outlet", "cabang", "branch", "tempat", "lokasi"} {
+			if strings.HasPrefix(w, p) {
+				return true
+			}
+		}
+	}
+	for _, name := range outletNames {
+		for _, w := range strings.Fields(Normalize(name)) {
+			if !genericWords[w] && containsWord(n, w) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// giftWords ask for a gift voucher / gift card.
+// A bare "voucher" counts only with a buying word (not "pakai voucher diskon").
+var giftWords = []string{"gift voucher", "giftvoucher", "gift card", "giftcard", "voucher hadiah", "voucher kado", "kado", "hadiah", "gift", "e-voucher", "evoucher"}
+var buyWords = []string{"beli", "membeli", "pesan", "order", "buy", "purchase", "mau"}
+
+// WantsGift: the message asks to buy (or about) a gift voucher.
+func WantsGift(text string) bool {
+	n := Normalize(text)
+	for _, w := range giftWords {
+		if containsPhrase(n, w) {
+			return true
+		}
+	}
+	if containsWord(n, "voucher") {
+		for _, w := range buyWords {
+			if containsWord(n, w) {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 // DetectQuestion classifies an information question. Booking-shaped
 // messages are not questions: "bisa besok jam 3?" asks for a slot, which the

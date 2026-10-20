@@ -194,6 +194,8 @@ func (h *Handler) Routes() []module.Route {
 		public("POST "+publicPrefix+"/bookings/{token}/mock-pay-deposit", h.publicMockPayDeposit),
 		public("POST "+publicPrefix+"/bookings", h.publicBook),
 		public("POST "+publicPrefix+"/webhook/xendit", h.publicXenditWebhook),
+		public("GET "+publicPrefix+"/gift-orders/{token}", h.publicGiftOrder),
+		public("POST "+publicPrefix+"/gift-orders/{token}/mock-pay", h.publicGiftMockPay),
 	}
 }
 
@@ -259,6 +261,10 @@ var (
 		_, ok := domain.ClockMinutes(s)
 		return "invalid_format", "Format jam HH:MM", ok
 	}}
+	optionalClockOpts = validate.StrOpts{Trim: true, Check: func(s string) (string, string, bool) {
+		_, ok := domain.ClockMinutes(s)
+		return "invalid_format", "Format jam HH:MM", ok || s == ""
+	}}
 	datetimeOpts       = validate.StrOpts{Check: validate.DatetimeCheck}
 	moneyOpts          = validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(1e12)}
 	treatmentMoneyOpts = validate.NumOpts{Integer: true, Min: validate.Bound(0), Max: validate.Bound(999999999999)}
@@ -308,6 +314,12 @@ func (h *Handler) putOutlet(w http.ResponseWriter, r *http.Request, u *auth.User
 	if n := f.Int("slot_minutes", req, validate.NumOpts{Min: validate.Bound(5), Max: validate.Bound(240)}); n != nil {
 		in.SlotMinutes = *n
 	}
+	// last_order_time: absent keeps it, null/"" clears it (until close).
+	_, in.LastOrderSent = f.Fields()["last_order_time"]
+	if v := f.Str("last_order_time", optNull, optionalClockOpts); v != nil {
+		in.LastOrder = *v
+	}
+	in.Description = f.Str("description", opt, validate.StrOpts{Trim: true, Max: 1000})
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
 	}
@@ -1436,6 +1448,30 @@ func (h *Handler) publicBooking(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	return ok(w, booking)
+}
+
+func (h *Handler) publicGiftOrder(w http.ResponseWriter, r *http.Request) error {
+	token, err := pathUUID(r, "token")
+	if err != nil {
+		return err
+	}
+	g, err := h.svc.PublicGiftOrderStatus(r.Context(), token)
+	if err != nil {
+		return err
+	}
+	return ok(w, g)
+}
+
+func (h *Handler) publicGiftMockPay(w http.ResponseWriter, r *http.Request) error {
+	token, err := pathUUID(r, "token")
+	if err != nil {
+		return err
+	}
+	g, err := h.svc.PublicGiftMockPay(r.Context(), token)
+	if err != nil {
+		return err
+	}
+	return ok(w, g)
 }
 
 func (h *Handler) publicTherapists(w http.ResponseWriter, r *http.Request) error {

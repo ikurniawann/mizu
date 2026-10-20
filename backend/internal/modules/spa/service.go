@@ -187,6 +187,9 @@ func (s *Service) PutOutlet(ctx context.Context, userID, branchID string, in out
 	if closeAt <= open {
 		return nil, httpx.BadRequest("Jam tutup harus setelah jam buka")
 	}
+	if last, ok := domain.ClockMinutes(in.LastOrder); in.LastOrder != "" && (!ok || last < open || last >= closeAt) {
+		return nil, httpx.BadRequest("Last order harus di antara jam buka dan sebelum jam tutup")
+	}
 	err = s.tx(ctx, func(q Q) error {
 		ok, err := s.st.branchExists(ctx, q, branchID)
 		if err != nil {
@@ -1922,6 +1925,11 @@ func (s *Service) PublicSlots(ctx context.Context, branchID, date string, varian
 	for _, item := range baseItems {
 		duration += item.Variant.DurationMin
 	}
+	if outlet.LastOrder != nil {
+		if last, ok := domain.ClockMinutes(*outlet.LastOrder); ok && last+duration < closeAt {
+			closeAt = last + duration // no start after the last order
+		}
+	}
 	now := s.clock()
 	slots := []PublicSlot{}
 	for minute := open; minute+duration <= closeAt; minute += outlet.SlotMinutes {
@@ -2042,6 +2050,9 @@ func (s *Service) PublicChangeBooking(ctx context.Context, token, grant, action 
 			total += item.DurationMin
 		}
 		if err := domain.WithinHours(newAt, total, o.OpenTime, o.CloseTime); err != nil {
+			return ruleErr(err)
+		}
+		if err := domain.BeforeLastOrder(newAt, o.LastOrder); err != nil {
 			return ruleErr(err)
 		}
 		open, ok := domain.ClockMinutes(o.OpenTime)
@@ -2218,6 +2229,9 @@ func (s *Service) publicBookIn(ctx context.Context, q Q, in publicBookingInput, 
 			total += it.Variant.DurationMin
 		}
 		if err := domain.WithinHours(in.ScheduledAt, total, o.OpenTime, o.CloseTime); err != nil {
+			return ruleErr(err)
+		}
+		if err := domain.BeforeLastOrder(in.ScheduledAt, o.LastOrder); err != nil {
 			return ruleErr(err)
 		}
 		available, err := s.publicCapacity(ctx, q, o.BranchID, items, in.TherapistGenderPref)

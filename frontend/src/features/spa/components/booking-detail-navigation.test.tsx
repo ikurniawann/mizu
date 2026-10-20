@@ -24,7 +24,7 @@ const item: BoardItem = {
 const outlet: Outlet = {
   branch_id: "branch-1", branch_name: "Mizu", company_id: "company-1", configured: true, warehouse_id: null,
   warehouse_name: null, open_time: "09:00", close_time: "22:00", slot_minutes: 30, public_booking: true,
-  is_active: true, warehouses: [],
+  is_active: true, warehouses: [], last_order_time: null, description: "",
 };
 const booking: Booking = {
   group_id: null,
