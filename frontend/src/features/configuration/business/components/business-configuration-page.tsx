@@ -41,7 +41,7 @@ import {
   type BusinessTreeNode,
 } from "../types";
 import {
-  collectExpandableBusinessIds,
+  collectDefaultExpandedBusinessIds,
   countBusinessEntities,
   flattenBusinessTreeDisplay,
 } from "../utils/business-tree";
@@ -252,8 +252,8 @@ export function BusinessConfigurationPage() {
   const updateMutation = useUpdateBusinessEntity();
   const deleteMutation = useDeleteBusinessEntity();
 
-  // Node default terbuka; yang ditutup user dicatat di sini.
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  // Holding dan company terbuka; branch ke warehouse tertutup secara default.
+  const [toggledIds, setToggledIds] = useState<Set<string>>(new Set());
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [formType, setFormType] = useState<BusinessEntityType>("holding");
@@ -273,15 +273,14 @@ export function BusinessConfigurationPage() {
     [businessTree],
   );
 
-  const expandedIds = useMemo(
-    () =>
-      new Set(
-        collectExpandableBusinessIds(businessTree).filter(
-          (id) => !collapsedIds.has(id),
-        ),
-      ),
-    [businessTree, collapsedIds],
-  );
+  const expandedIds = useMemo(() => {
+    const ids = new Set(collectDefaultExpandedBusinessIds(businessTree));
+    for (const id of toggledIds) {
+      if (ids.has(id)) ids.delete(id);
+      else ids.add(id);
+    }
+    return ids;
+  }, [businessTree, toggledIds]);
   const displayRows = useMemo(
     () => flattenBusinessTreeDisplay(businessTree, expandedIds),
     [businessTree, expandedIds],
@@ -299,7 +298,7 @@ export function BusinessConfigurationPage() {
   const isDeleting = deleteMutation.isPending;
 
   function toggleExpand(id: string) {
-    setCollapsedIds((prev) => {
+    setToggledIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);

@@ -4,7 +4,6 @@ import type {
   BusinessEntityType,
   BusinessHolding,
   BusinessCompany,
-  BusinessBranch,
 } from "../types";
 
 export interface FlatBusinessTreeRow {
@@ -89,7 +88,7 @@ export function flattenBusinessTreeDisplay(
   return rows;
 }
 
-export function collectExpandableBusinessIds(tree: BusinessTree): string[] {
+export function collectDefaultExpandedBusinessIds(tree: BusinessTree): string[] {
   const ids: string[] = [];
 
   const walkHoldings = (holdings: BusinessHolding[]) => {
@@ -102,13 +101,6 @@ export function collectExpandableBusinessIds(tree: BusinessTree): string[] {
   const walkCompanies = (companies: BusinessCompany[]) => {
     for (const company of companies) {
       if (company.branches.length > 0) ids.push(company.id);
-      walkBranches(company.branches);
-    }
-  };
-
-  const walkBranches = (branches: BusinessBranch[]) => {
-    for (const branch of branches) {
-      if (branch.warehouses.length > 0) ids.push(branch.id);
     }
   };
 
