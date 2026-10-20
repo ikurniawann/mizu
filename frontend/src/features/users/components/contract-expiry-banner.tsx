@@ -35,16 +35,24 @@ export function ContractExpiryBanner() {
   return (
     <div className="space-y-2">
       {(data.noContract?.length ?? 0) > 0 && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-red-800">
-            <DocumentMinusIcon className="h-4 w-4" />
-            {data.noContract.length} karyawan aktif tanpa kontrak aktif
-          </p>
-          <p className="mt-0.5 text-xs text-red-700">
+        <details className="group rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <summary
+            role="button"
+            className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-4 gap-y-1 text-red-800 marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <DocumentMinusIcon className="h-4 w-4" />
+              {data.noContract.length} karyawan aktif tanpa kontrak aktif
+            </span>
+            <span className="text-xs font-semibold text-red-700 underline-offset-2 group-hover:underline">
+              Lihat {data.noContract.length} karyawan
+            </span>
+          </summary>
+          <p className="mt-2 text-xs text-red-700">
             PKWT wajib tertulis sebelum karyawan mulai bekerja (PP 35/2021) — aktifkan
             draft atau buat kontraknya.
           </p>
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-2 space-y-1 border-t border-red-200 pt-2">
             {data.noContract.map((item) => (
               <li key={item.employee_id} className="text-sm text-red-800">
                 <Link
@@ -60,7 +68,7 @@ export function ContractExpiryBanner() {
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       )}
       {data.contracts.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">

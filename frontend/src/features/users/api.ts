@@ -319,8 +319,22 @@ export interface EmployeeShiftScheduleRow extends ShiftScheduleRowLike {
 
 export const fetchShiftOptions = () => apiGet<{ data: ShiftOption[] }>("/api/hris/shifts");
 
-export const fetchEmployeeShiftSchedule = (employeeId: string) =>
-  apiGet<{ data: EmployeeShiftScheduleRow[] }>(`/api/hris/employees/${employeeId}/shifts`);
+export const fetchEmployeeShiftSchedule = async (employeeId: string) => {
+  const response = await apiGet<{ data: EmployeeShiftScheduleRow[] }>(`/api/hris/employees/${employeeId}/shifts`);
+  // SQL date columns can arrive as ISO timestamps. Schedule comparisons use
+  // calendar dates, including both ends of the effective range, in WIB.
+  const calendarDate = (value: string) => value.length === 10
+    ? value
+    : new Date(value).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+  return {
+    ...response,
+    data: (response.data ?? []).map((row) => ({
+      ...row,
+      effective_from: calendarDate(row.effective_from),
+      effective_to: row.effective_to ? calendarDate(row.effective_to) : null,
+    })),
+  };
+};
 
 export const saveEmployeeShiftPattern = (
   employeeId: string,
