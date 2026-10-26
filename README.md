@@ -1,12 +1,13 @@
 # Mizu Spa System
 
 Sistem operasional untuk **Mizu Family Massage & Reflexology**, tempat massage dan refleksi di Bandung
-dengan outlet milik sendiri: **Mizu 1.0** (Jl. Westhoff No. 1) dan **Mizu Signature** (Jl. Riau No. 142).
+dengan outlet milik sendiri: **Mizu 1.0** (Jl. Westhoff No. 1), **Mizu Signature** (Jl. Riau No. 142),
+dan **Mizu Pasteur**.
 
 *Rest. Relax. Rejuvenate.*
 
 Satu aplikasi mencakup booking treatment, penugasan terapis, kasir, komisi terapis, karyawan, stok,
-pembelian, akuntansi, CRM, dan website publik dengan booking online.
+pembelian, akuntansi, CRM, website publik dengan booking online, dan bot booking WhatsApp.
 
 ## Fitur utama
 
@@ -14,22 +15,29 @@ pembelian, akuntansi, CRM, dan website publik dengan booking online.
 
 | Menu | Fungsi |
 |---|---|
-| Booking | Booking walk-in, reservasi, dan online. Status layanan (belum ditugaskan → ditugaskan → berjalan → selesai) ditampilkan terpisah dari status pembayaran. |
-| Book Order | Papan harian per outlet: treatment yang belum ditugaskan dan jadwal setiap terapis lengkap dengan shift, cuti, dan perbantuan. |
-| Treatment | Master treatment dan varian durasi, jeda persiapan antar-tamu, harga per outlet. |
-| Terapis | Data terapis, perbantuan antar-outlet, dan PIC outlet. |
-| Komisi Terapis | Aturan komisi (persen atau nominal per treatment/varian/outlet) dan laporan komisi dengan ekspor CSV. |
-| Outlet Spa | Stall POS, jam buka, booking online, dan sinkron otomatis produk POS. |
+| Book Order | Papan harian per outlet (Sheet, daftar, room) dengan antrean kedatangan terapis, booking bersama sampai 10 orang, dan badge booking yang belum ditugaskan. Drop ke kolom terapis divalidasi server. |
+| Booking History | Riwayat booking walk-in, reservasi, online, dan WhatsApp; daftar tunggu (waitlist). Status layanan ditampilkan terpisah dari status pembayaran dan DP. |
+| Customer | Direktori pelanggan, riwayat treatment, dan blokir pelanggan. |
+| Treatment & Kategori | Master treatment, varian durasi, jeda persiapan antar-tamu, dan harga per outlet. Produk POS tersinkron otomatis saat disimpan. |
+| Terapis | Data terapis (gender mengikuti HRIS), level, perbantuan antar-outlet, PIC outlet, jadwal libur, dan Jadwal Shift Terapis dengan *Generate jadwal* bulanan. |
+| Training | Training per periode dengan persetujuan admin; level terapis 0/1/2 naik otomatis dan direset setelah resign. |
+| Pengaturan Komisi | Komisi nominal per kombinasi level × varian treatment, sama di semua outlet. |
+| Room Spa | Room Public/Private per outlet dengan kapasitas dan harga. |
+| Outlet Spa | Stall POS, jam buka, slot, last order, keunggulan outlet (dipakai bot WhatsApp), booking publik, dan pengaturan DP online. |
+| Laporan | Trend, Rating, Rush Hour, Customer, dan Komisi (ekspor CSV). |
 
 **Aturan inti:**
-- **Jadwal terapis tidak boleh bentrok.** Durasi treatment ditambah jeda dicek di dalam transaksi.
-- **Checkout masuk ke kasir.** Checkout membuat tagihan di POS, dan booking otomatis lunas setelah dibayar di kasir.
-- **Komisi dibekukan saat treatment selesai.** Aturan yang paling spesifik yang dipakai, dan komisi baru masuk laporan setelah booking lunas.
+- **Jadwal terapis tidak boleh bentrok.** Durasi treatment ditambah jeda dicek di dalam transaksi. Booking boleh mulai sebelum akhir shift asal semua treatment selesai paling lambat akhir shift +60 menit.
+- **Room ikut dihitung.** Kapasitas room dicek per jendela booking; pindah room sebelum selesai memakai tarif penuh room tujuan.
+- **Checkout masuk ke kasir.** Checkout (per booking atau per grup) membuat tagihan di POS. DP online menjadi potongan tagihan, dan booking otomatis lunas setelah dibayar di kasir.
+- **DP mengunci slot online.** Booking website dan WhatsApp memegang slot hanya sampai DP dibayar (invoice Xendit); treatment tidak bisa dimulai selagi DP masih pending.
+- **Komisi dibekukan saat treatment selesai** sesuai level terapis dan varian, dan baru masuk laporan setelah booking lunas.
 
 ### Untuk terapis dan pelanggan
 
-- **Tugas Terapis** (`/dashboard/me/spa`): terapis memulai dan menyelesaikan treatment dari HP, serta melihat komisinya bulan ini.
-- **Booking online** (`/booking/spa`): pelanggan memilih outlet, treatment, dan jam tanpa login. Pembayaran dilakukan di outlet.
+- **Area karyawan:** Tugas Terapis (`/dashboard/me/spa`) untuk memulai dan menyelesaikan treatment dari HP serta melihat komisi, Jadwal Libur (`/dashboard/me/jadwal-libur`), dan Training Saya (`/dashboard/me/training`).
+- **Booking online** (`/booking/spa`): pelanggan memilih outlet, treatment, jam, terapis, dan room tanpa login, lalu membayar DP atau di outlet. Status dan ubah jadwal lewat link booking.
+- **Bot booking WhatsApp:** dwibahasa (Indonesia/Inggris); booking rombongan sampai 10 orang dengan treatment per tamu, perbandingan outlet, last order, jam kosong beserta jumlah terapis pria/wanita, gift voucher (`/booking/spa/gift/<token>`), daftar tunggu, pengingat, dan QR booking. Bot memperkenalkan diri sebagai balasan otomatis dan menyerahkan ke admin live di jam kerja CS. Diaktifkan di Pengaturan CRM → Customer Service.
 - **Website publik:** beranda, menu treatment dengan harga per outlet (`/treatments`), lokasi, suasana, tentang, berita, dan kontak.
 
 ### Modul pendukung
@@ -54,9 +62,9 @@ sehingga browser tetap memanggil satu origin.
 | Path | Isi |
 |---|---|
 | `frontend/` | Aplikasi Next.js: dashboard staf, area karyawan, website publik, booking online, aplikasi member. |
-| `backend/` | API Go. Modul spa ada di `internal/modules/spa`, adapter lintas modul di `internal/app/adapters_spa.go`. |
+| `backend/` | API Go. Modul spa di `internal/modules/spa`, bot WhatsApp di `internal/modules/wabot`, adapter lintas modul di `internal/app/adapters_*.go`. |
 | `backend/database/` | Migrasi SQL (`migrations/deltas`), seeder (termasuk demo Mizu), skrip ops. |
-| `docs/` | Dokumentasi. Rancangan modul spa: `docs/epics/EPIC-052-mizu-spa-booking-terapis.md`. |
+| `docs/` | Dokumentasi. Modul spa: `docs/epics/EPIC-052-mizu-spa-booking-terapis.md`; bot WhatsApp: `docs/epics/EPIC-053-wa-booking-bot.md`; rencana per fitur di `docs/superpowers/`. |
 | `services/`, `tools/`, `mobile/` | WhatsApp gateway, bridge NFC dan print worker POS, aplikasi Expo. |
 
 ## Menjalankan secara lokal
@@ -81,7 +89,7 @@ pnpm dev                                   # Next.js di :3000 (set BACKEND_URL=h
 `db:seed:mizu-spa-demo` menjalankan dua seeder:
 
 - **`mizu-spa.js` (master):**
-  - dua outlet beserta profil publiknya, 12 treatment dengan 23 varian, aturan komisi;
+  - dua outlet demo (Mizu 1.0 dan Mizu Signature) beserta profil publiknya, 12 treatment dengan 23 varian, komisi nominal per varian × level;
   - 17 terapis dengan pola shift mingguan, resepsionis, dan manajer;
   - login demo, 80 pelanggan, dan produk POS.
 - **`mizu-spa-transactions.js` (transaksi):**
@@ -101,7 +109,14 @@ cd /home/wit/Desktop/Mizu
 bash tools/deploy-mizu.sh
 ```
 
-Skrip memakai kode lokal, termasuk perubahan yang belum di-commit. Konfigurasi
+Skrip memakai kode lokal, termasuk perubahan yang belum di-commit. Untuk rilis yang
+hanya berisi commit, jalankan dari salinan bersih:
+
+```bash
+D=$(mktemp -d) && git archive HEAD | tar -x -C "$D" && bash "$D/tools/deploy-mizu.sh"
+```
+
+Konfigurasi
 server dibaca dari `~/.config/mizu/web.env` dan `api.env`; rahasia tidak disimpan
 di repository. Docker, curl, ripgrep (`rg`), dan flock harus tersedia.
 
