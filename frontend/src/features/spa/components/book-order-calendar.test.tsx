@@ -15,7 +15,7 @@ const item: BoardItem = {
 };
 const therapist: BoardTherapist = {
   therapist: { id: "therapist-1", employee_id: "employee-1", full_name: "Sari", nip: null, phone: null,
-    photo_url: null, home_branch_id: "branch-1", home_branch_name: "Mizu", gender: "female", is_active: true },
+    photo_url: null, home_branch_id: "branch-1", home_branch_name: "Mizu", gender: "female", is_active: true, level: 0, employment_cycle: 1, employment_status: "contract" },
   shift: { name: "Pagi", start_time: "09:00", end_time: "17:00" }, on_leave: false, items: [],
 };
 let client: QueryClient;
@@ -31,14 +31,60 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.unstubAllGlobals(); });
 
-function openCalendar(rows = [therapist], unassigned = [item], arrivalQueue?: ArrivalQueue) {
+function openCalendar(rows = [therapist], unassigned = [item], arrivalQueue?: ArrivalQueue, onSlot = vi.fn()) {
   const onOpenItem = vi.fn();
   render(<QueryClientProvider client={client}>
     <BookOrderCalendar date="2026-10-09" therapists={rows} unassigned={unassigned} arrivalQueue={arrivalQueue}
-      onOpenItem={onOpenItem} onSlot={() => {}} />
+      onOpenItem={onOpenItem} onSlot={onSlot} />
   </QueryClientProvider>);
   return onOpenItem;
 }
+
+it("area tambahan satu jam berbeda dari tanpa shift dan hanya untuk penyelesaian", () => {
+  const noShift = { ...therapist, therapist: { ...therapist.therapist, id: "no-shift", full_name: "Tanpa Jadwal" }, shift: null };
+  openCalendar([therapist, noShift]);
+  expect(screen.getByText("Perpanjangan shift +1 jam")).toBeInTheDocument();
+  expect(screen.getByText("Hanya penyelesaian treatment")).toBeInTheDocument();
+  const column = screen.getByText("Sari").closest("[data-therapist-id]")!;
+  const extension = column.querySelector('[data-shift-band="extension"]')!;
+  expect(extension).toHaveStyle({ top: `${480 * PX_PER_MIN}px`, height: `${60 * PX_PER_MIN}px` });
+  expect(extension).toHaveClass("bg-amber-100/70", "pointer-events-none");
+  expect(screen.getByText("Tanpa Jadwal").closest("[data-therapist-id]")!.querySelector('[data-shift-band="extension"]')).toBeNull();
+});
+
+it.each([{ on_leave: true }, { day_off: true }])("cuti/libur tidak mendapat area tambahan %o", (state) => {
+  openCalendar([{ ...therapist, ...state }]);
+  expect(screen.getByText("Sari").closest("[data-therapist-id]")!.querySelector('[data-shift-band="extension"]')).toBeNull();
+});
+
+it("klik slot sebelum akhir shift membuka booking, tepat akhir atau sesudahnya tidak", () => {
+  const onSlot = vi.fn();
+  openCalendar([{ ...therapist, shift: { name: "Pagi", start_time: "09:00", end_time: "16:00" } }], [], undefined, onSlot);
+  const column = screen.getByText("Sari").closest(".sticky")!.nextElementSibling!;
+  fireEvent.click(column, { clientY: (15 * 60 + 30 - 9 * 60) * PX_PER_MIN });
+  expect(onSlot).toHaveBeenCalledWith({ therapistId: "therapist-1", time: "15:30" });
+  fireEvent.click(column, { clientY: (16 * 60 - 9 * 60) * PX_PER_MIN });
+  fireEvent.click(column, { clientY: (16 * 60 + 30 - 9 * 60) * PX_PER_MIN });
+  expect(onSlot).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  ["08:30", "10:00", true], // 15:30–17:00 WIB
+  ["09:00", "09:30", false], // 16:00–16:30 WIB
+  ["09:30", "10:00", false], // 16:30–17:00 WIB
+  ["08:30", "10:01", false], // 15:30–17:01 WIB
+])("pindah terapis %s–%s UTC diterima=%s", async (start, end, accepted) => {
+  const assigned: BoardItem = { ...item, status: "assigned", booking_status: "assigned", therapist_id: "source", starts_at: `2026-10-09T${start}:00Z`, ends_at: `2026-10-09T${end}:00Z` };
+  const source = { ...therapist, therapist: { ...therapist.therapist, id: "source", full_name: "Dewi" }, items: [assigned] };
+  openCalendar([source, { ...therapist, shift: { name: "Pagi", start_time: "09:00", end_time: "16:00" } }], []);
+  dragToTherapist(screen.getByRole("button", { name: /Ayu/ }));
+  if (accepted) {
+    await waitFor(() => expect(writes).toEqual([{ url: "/api/spa/bookings/booking-1/therapist", method: "PUT", input: { therapist_id: "therapist-1" } }]));
+  } else {
+    await act(async () => {});
+    expect(writes).toEqual([]);
+  }
+});
 
 function dragToTherapist(button: HTMLElement, target?: HTMLElement) {
   const values = new Map<string, string>();

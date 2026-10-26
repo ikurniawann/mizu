@@ -10,6 +10,8 @@ import {
   minuteOfDay,
   nowOffset,
   offShiftBands,
+  shiftExtensionBand,
+  shiftMismatch,
   PX_PER_MIN,
   snapStartMinute,
 } from "./calendar";
@@ -72,7 +74,7 @@ describe("interaksi", () => {
   });
   it("area di luar shift", () => {
     const shift = { name: "Spa Pagi", start_time: "09:00", end_time: "17:00" };
-    expect(offShiftBands(shift, false, range)).toEqual([{ top: 420 * PX_PER_MIN, height: 300 * PX_PER_MIN }]);
+    expect(offShiftBands(shift, false, range)).toEqual([{ top: 480 * PX_PER_MIN, height: 240 * PX_PER_MIN }]);
     expect(offShiftBands(null, false, range)).toEqual([{ top: 0, height: 720 * PX_PER_MIN }]);
     expect(offShiftBands(shift, true, range)).toHaveLength(1);
   });
@@ -90,10 +92,39 @@ describe("interaksi", () => {
     const shift = { name: "Spa Siang", start_time: "13:00:00", end_time: "22:00:00" };
     expect(availabilityWarning(item("a", "14:00", "15:00"), { shift, on_leave: false })).toBeNull();
     expect(availabilityWarning(item("a", "10:00", "11:00"), { shift, on_leave: false })).toMatch("di luar shift 13:00–22:00");
-    expect(availabilityWarning(item("a", "21:30", "22:30"), { shift, on_leave: false })).toMatch("di luar shift");
+    expect(availabilityWarning(item("a", "21:30", "22:30"), { shift, on_leave: false })).toBeNull();
     expect(availabilityWarning(item("a", "14:00", "15:00"), { shift, on_leave: true })).toMatch("cuti");
     expect(availabilityWarning(item("a", "14:00", "15:00"), { shift, on_leave: false, day_off: true })).toMatch("libur");
     expect(availabilityWarning(item("a", "14:00", "15:00"), { shift: null, on_leave: false })).toMatch("tidak punya shift");
+  });
+});
+
+describe("batas treatment +1 jam", () => {
+  const shift = { name: "Pagi", start_time: "09:00", end_time: "16:00" };
+  it.each([
+    ["15:00", "17:00", true], ["15:30", "17:00", true],
+    ["15:30", "17:01", false], ["16:00", "16:30", false],
+    ["16:30", "17:00", false], ["08:59", "09:30", false],
+  ])("%s–%s diterima=%s", (start, end, allowed) => {
+    expect(shiftMismatch(item("a", start, end), shift) === null).toBe(allowed);
+  });
+  it("tidak membulatkan ke bawah waktu selesai yang melewati batas", () => {
+    expect(shiftMismatch({ starts_at: at("15:30"), ends_at: new Date(new Date(at("17:00")).getTime() + 1000).toISOString() }, shift)).not.toBeNull();
+  });
+  it("membedakan tambahan satu jam dari area tanpa shift", () => {
+    const range = { start: 600, end: 1320 };
+    expect(shiftExtensionBand(shift, false, range)).toEqual({ top: 360 * PX_PER_MIN, height: 60 * PX_PER_MIN });
+    expect(offShiftBands(shift, false, range)).toEqual([{ top: 420 * PX_PER_MIN, height: 300 * PX_PER_MIN }]);
+    expect(shiftExtensionBand(null, false, range)).toBeNull();
+    expect(shiftExtensionBand(shift, true, range)).toBeNull();
+  });
+  it("memotong band pada viewport dan tengah malam", () => {
+    expect(shiftExtensionBand(shift, false, { start: 990, end: 1010 }, 1)).toEqual({ top: 0, height: 20 });
+    expect(shiftExtensionBand(shift, false, { start: 1100, end: 1200 })).toBeNull();
+    expect(offShiftBands(shift, false, { start: 1100, end: 1200 }, 1)).toEqual([{ top: 0, height: 100 }]);
+    expect(offShiftBands(shift, false, { start: 300, end: 400 }, 1)).toEqual([{ top: 0, height: 100 }]);
+    expect(shiftExtensionBand({ ...shift, end_time: "23:30" }, false, { start: 1380, end: 1440 }, 1)).toEqual({ top: 30, height: 30 });
+    expect(shiftExtensionBand({ ...shift, start_time: "22:00", end_time: "06:00" }, false, { start: 0, end: 1440 })).toBeNull();
   });
 });
 

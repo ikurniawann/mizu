@@ -19,6 +19,7 @@ import { currentMonthWib, wibDateOf } from "../time";
 import type { MyScheduleItem } from "../types";
 import { Countdown } from "./countdown";
 import { MyAddTreatmentDialog } from "./my-add-treatment-dialog";
+import { MyCommissionRates } from "./commission-settings-page";
 import { MyPayCard } from "./my-pay-card";
 import { ItemStatusBadge, SPA_KICKER, TimeRange } from "./shared";
 
@@ -98,6 +99,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
         className="mb-2"
       />
 
+      <MyCommissionRates />
       {fresh.length > 0 && (
         <button
           type="button"
@@ -145,6 +147,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
             hint="Treatment terjadwal bulan ini"
           />
         </div>
+        {!!summary.data?.upcoming_unconfigured_count && <p className="text-sm text-warning">{summary.data.upcoming_unconfigured_count} treatment belum memiliki tarif komisi dan belum termasuk perkiraan.</p>}
         {summary.error && <p className="text-sm text-danger">{summary.error.message}</p>}
       </Card>
 
@@ -201,7 +204,7 @@ function TherapistHome({ name, branch }: { name: string; branch: string | null }
                 <h2 className="flex items-baseline justify-between text-sm font-semibold">
                   <span>{d.label}</span>
                   <span className="text-xs font-normal text-muted-foreground">
-                    {d.bookings.length} booking · {formatRupiah(d.bookings.reduce((s, b) => s + b.commission_idr, 0))}
+                    {d.bookings.length} booking · {d.bookings.some((b) => b.commission_missing) ? "Komisi belum lengkap" : formatRupiah(d.bookings.reduce((s, b) => s + b.commission_idr, 0))}
                   </span>
                 </h2>
                 <ul className="space-y-3">
@@ -360,7 +363,7 @@ function BookingCard({ booking, isNew, actions }: { booking: MyBooking; isNew: b
         )}
         <p className="flex items-center justify-between border-t border-dashed border-border pt-3 text-sm">
           <span className="text-body">{booking.estimated ? "Perkiraan komisi" : "Komisi"}</span>
-          <span className="font-semibold tabular-nums">{formatRupiah(booking.commission_idr)}</span>
+          <span className="font-semibold tabular-nums">{booking.commission_missing ? "Komisi belum lengkap" : formatRupiah(booking.commission_idr)}</span>
         </p>
       </Card>
     </li>

@@ -16,26 +16,31 @@ import {
 import { formatRupiah } from "@/lib/format";
 import { useSetBookingRoom } from "../mutations";
 import { useSpaRooms } from "../queries";
+import { ROOM_CATEGORY_LABEL } from "../rooms";
+import type { Booking } from "../types";
 import { Field, FormError, SELECT } from "./shared";
 
 /** Pilih / ganti / lepas room sebuah booking (revisi R6). */
 export function RoomSelectDialog({
-  bookingId,
-  branchId,
-  currentRoomId,
+  booking,
   onClose,
 }: {
-  bookingId: string;
-  branchId: string;
-  currentRoomId: string | null;
+  booking: Pick<Booking, "id" | "branch_id" | "room_id" | "room_name" | "room_price_idr" | "total_idr" | "status">;
   onClose: () => void;
 }) {
-  const [roomId, setRoomId] = useState(currentRoomId ?? "");
+  const [roomId, setRoomId] = useState(booking.room_id ?? "");
   const [error, setError] = useState<string | null>(null);
-  const rooms = useSpaRooms(branchId, true);
-  const setRoom = useSetBookingRoom(bookingId);
+  const rooms = useSpaRooms(booking.branch_id, true);
+  const setRoom = useSetBookingRoom(booking.id);
+  const selected = rooms.data?.find((room) => room.id === roomId);
+  const unchanged = roomId === (booking.room_id ?? "");
+  const price = unchanged ? booking.room_price_idr : selected?.price_idr ?? 0;
+  const total = booking.total_idr - booking.room_price_idr + price;
+  const running = booking.status === "in_treatment";
+  const invalid = unchanged || rooms.isLoading || !!rooms.error || (!!roomId && !selected) || (running && !roomId);
 
   const submit = () => {
+    if (invalid || setRoom.isPending) return;
     setError(null);
     setRoom.mutate(roomId || null, {
       onSuccess: (b) => {
@@ -50,7 +55,7 @@ export function RoomSelectDialog({
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && !setRoom.isPending && onClose()}>
       <DialogPanel size="sm">
         <DialogPanelForm
           onSubmit={(e) => {
@@ -60,26 +65,33 @@ export function RoomSelectDialog({
         >
           <DialogPanelHeader>
             <DialogPanelTitle>Room booking</DialogPanelTitle>
-            <DialogPanelDescription>Room ditahan selama jadwal booking; harganya masuk ke tagihan kasir. Room yang sedang dipakai booking lain pada jam yang sama akan ditolak.</DialogPanelDescription>
+            <DialogPanelDescription>Biaya room mengikuti tarif penuh room tujuan dan dihitung otomatis. Room tujuan harus tersedia selama jadwal booking.</DialogPanelDescription>
           </DialogPanelHeader>
           <DialogPanelBody className="space-y-4">
-            <Field label="Room">
-              <select className={SELECT} value={roomId} onChange={(e) => setRoomId(e.target.value)} aria-label="Room">
-                <option value="">{rooms.isLoading ? "Memuat…" : "Tanpa room"}</option>
+            <p className="text-sm">Room asal: <strong>{booking.room_name ?? "Tanpa room"}</strong> · {formatRupiah(booking.room_price_idr)}</p>
+            <Field label="Room tujuan">
+              <select className={SELECT} value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={rooms.isLoading || setRoom.isPending} aria-label="Room tujuan">
+                {!running && <option value="">{rooms.isLoading ? "Memuat…" : "Tanpa room"}</option>}
+                {running && !roomId && <option value="" disabled>Pilih room tujuan</option>}
+                {booking.room_id && !rooms.data?.some((room) => room.id === booking.room_id) && <option value={booking.room_id} disabled>{booking.room_name ?? "Room asal"}</option>}
                 {(rooms.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.name} · {r.capacity} orang{r.price_idr > 0 ? ` · ${formatRupiah(r.price_idr)}` : ""}
+                    {r.name} · {ROOM_CATEGORY_LABEL[r.category]} · {r.capacity} orang · {formatRupiah(r.price_idr)}
                   </option>
                 ))}
               </select>
             </Field>
-            <FormError>{error}</FormError>
+            <dl className="space-y-2 rounded-xl bg-surface p-3 text-sm">
+              <div data-testid="room-transfer-price" className="flex justify-between gap-3"><dt>Biaya room baru</dt><dd className="font-medium tabular-nums">{formatRupiah(price)}</dd></div>
+              <div data-testid="room-transfer-total" className="flex justify-between gap-3"><dt>Total booking baru</dt><dd className="font-medium tabular-nums">{formatRupiah(total)}</dd></div>
+            </dl>
+            <FormError>{error || rooms.error?.message}</FormError>
           </DialogPanelBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={setRoom.isPending}>
               Batal
             </Button>
-            <Button type="submit" disabled={setRoom.isPending}>
+            <Button type="submit" disabled={invalid || setRoom.isPending}>
               {setRoom.isPending ? "Menyimpan…" : "Simpan"}
             </Button>
           </DialogFooter>

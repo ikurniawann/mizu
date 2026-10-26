@@ -41,22 +41,15 @@ type OutletPrice struct {
 	PriceIDR float64 `json:"price_idr"`
 }
 
-type OutletCommission struct {
-	BranchID string  `json:"branch_id"`
-	Type     string  `json:"commission_type"`
-	Value    float64 `json:"commission_value"`
-}
-
 // Variant is a duration option of a treatment.
 type Variant struct {
-	ID                string             `json:"id"`
-	Name              string             `json:"name"`
-	DurationMin       int                `json:"duration_min"`
-	PriceIDR          float64            `json:"price_idr"`
-	IsActive          bool               `json:"is_active"`
-	SortOrder         int                `json:"sort_order"`
-	OutletPrices      []OutletPrice      `json:"outlet_prices"`
-	OutletCommissions []OutletCommission `json:"outlet_commissions"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	DurationMin  int           `json:"duration_min"`
+	PriceIDR     float64       `json:"price_idr"`
+	IsActive     bool          `json:"is_active"`
+	SortOrder    int           `json:"sort_order"`
+	OutletPrices []OutletPrice `json:"outlet_prices"`
 }
 
 // Treatment is a catalog entry with its variants.
@@ -73,16 +66,19 @@ type Treatment struct {
 
 // Therapist is a therapist with the employee's display data.
 type Therapist struct {
-	ID             string  `json:"id"`
-	EmployeeID     string  `json:"employee_id"`
-	FullName       string  `json:"full_name"`
-	NIP            *string `json:"nip"`
-	Phone          *string `json:"phone"`
-	PhotoURL       *string `json:"photo_url"`
-	HomeBranchID   string  `json:"home_branch_id"`
-	HomeBranchName string  `json:"home_branch_name"`
-	Gender         *string `json:"gender"`
-	IsActive       bool    `json:"is_active"`
+	Level            int     `json:"level"`
+	EmploymentCycle  int     `json:"employment_cycle"`
+	EmploymentStatus string  `json:"employment_status"`
+	ID               string  `json:"id"`
+	EmployeeID       string  `json:"employee_id"`
+	FullName         string  `json:"full_name"`
+	NIP              *string `json:"nip"`
+	Phone            *string `json:"phone"`
+	PhotoURL         *string `json:"photo_url"`
+	HomeBranchID     string  `json:"home_branch_id"`
+	HomeBranchName   string  `json:"home_branch_name"`
+	Gender           *string `json:"gender"`
+	IsActive         bool    `json:"is_active"`
 }
 
 // EmployeeCandidate is an employee that can become a therapist or PIC.
@@ -97,14 +93,17 @@ type EmployeeCandidate struct {
 
 // Assist is a therapist lent to another outlet for a date range.
 type Assist struct {
-	ID            string `json:"id"`
-	TherapistID   string `json:"therapist_id"`
-	TherapistName string `json:"therapist_name"`
-	BranchID      string `json:"branch_id"`
-	BranchName    string `json:"branch_name"`
-	StartDate     string `json:"start_date"`
-	EndDate       string `json:"end_date"`
-	Note          string `json:"note"`
+	Impact        []AssistImpact `json:"impact,omitempty"`
+	StartsAt      time.Time      `json:"starts_at"`
+	EndsAt        time.Time      `json:"ends_at"`
+	ID            string         `json:"id"`
+	TherapistID   string         `json:"therapist_id"`
+	TherapistName string         `json:"therapist_name"`
+	BranchID      string         `json:"branch_id"`
+	BranchName    string         `json:"branch_name"`
+	StartDate     string         `json:"start_date"`
+	EndDate       string         `json:"end_date"`
+	Note          string         `json:"note"`
 }
 
 // OutletPIC is an outlet's person in charge.
@@ -178,18 +177,20 @@ type BookingSummary struct {
 
 // Item is one treatment of a booking.
 type Item struct {
-	ID            string        `json:"id"`
-	VariantID     string        `json:"variant_id"`
-	TreatmentName string        `json:"treatment_name"`
-	VariantName   string        `json:"variant_name"`
-	DurationMin   int           `json:"duration_min"`
-	PriceIDR      float64       `json:"price_idr"`
-	TherapistID   *string       `json:"therapist_id"`
-	TherapistName *string       `json:"therapist_name"`
-	Status        string        `json:"status"`
-	StartedAt     *httpx.JSTime `json:"started_at"`
-	CompletedAt   *httpx.JSTime `json:"completed_at"`
-	CommissionIDR *float64      `json:"commission_idr"`
+	CommissionLevel *int          `json:"commission_level"`
+	CommissionReset bool          `json:"commission_reset"`
+	ID              string        `json:"id"`
+	VariantID       string        `json:"variant_id"`
+	TreatmentName   string        `json:"treatment_name"`
+	VariantName     string        `json:"variant_name"`
+	DurationMin     int           `json:"duration_min"`
+	PriceIDR        float64       `json:"price_idr"`
+	TherapistID     *string       `json:"therapist_id"`
+	TherapistName   *string       `json:"therapist_name"`
+	Status          string        `json:"status"`
+	StartedAt       *httpx.JSTime `json:"started_at"`
+	CompletedAt     *httpx.JSTime `json:"completed_at"`
+	CommissionIDR   *float64      `json:"commission_idr"`
 }
 
 // Event is one line of a booking's history.
@@ -207,6 +208,7 @@ type Event struct {
 // Booking is the full booking detail.
 type Booking struct {
 	BookingSummary
+	CanChangeRoom       *bool         `json:"can_change_room,omitempty"`
 	CompanyID           *string       `json:"company_id"`
 	WarehouseID         string        `json:"warehouse_id"`
 	CustomerID          *string       `json:"customer_id"`
@@ -301,22 +303,9 @@ type Board struct {
 	Unassigned []BoardItem      `json:"unassigned"`
 }
 
-// CommissionRuleView is a commission rule with display names.
-type CommissionRuleView struct {
-	ID             string  `json:"id"`
-	TreatmentID    *string `json:"treatment_id"`
-	TreatmentName  *string `json:"treatment_name"`
-	VariantID      *string `json:"variant_id"`
-	VariantName    *string `json:"variant_name"`
-	BranchID       *string `json:"branch_id"`
-	BranchName     *string `json:"branch_name"`
-	CommissionType string  `json:"commission_type"`
-	Value          float64 `json:"value"`
-	IsActive       bool    `json:"is_active"`
-}
-
 // CommissionLine is one completed, paid treatment in a commission report.
 type CommissionLine struct {
+	CommissionLevel *int         `json:"commission_level"`
 	ItemID          string       `json:"item_id"`
 	BookingID       string       `json:"booking_id"`
 	BookingCode     string       `json:"booking_code"`

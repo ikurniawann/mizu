@@ -58,6 +58,33 @@ func HHMM(s string) string {
 	return s
 }
 
+const TreatmentShiftExtensionMinutes = 60
+
+// WithinTreatmentShift allows completing treatment up to an hour after a
+// dated shift, but requires starting before its original end. Bookings retain
+// the same-day limit; a preceding day's overnight shift keeps its real bounds.
+func WithinTreatmentShift(visit, shift Interval) error {
+	if visit.Start.Before(shift.Start) {
+		return rule("Booking di luar shift terapis (%s–%s WIB)", shift.Start.In(WIB).Format("15:04"), shift.End.In(WIB).Format("15:04"))
+	}
+	if !visit.Start.Before(shift.End) {
+		return rule("Booking harus dimulai sebelum %s WIB (akhir shift)", shift.End.In(WIB).Format("15:04"))
+	}
+	deadline := shift.End.Add(TreatmentShiftExtensionMinutes * time.Minute)
+	_, midnight, _ := DayBounds(WIBDate(visit.Start))
+	if deadline.After(midnight) {
+		deadline = midnight
+	}
+	if visit.End.After(deadline) {
+		clock := deadline.In(WIB).Format("15:04")
+		if deadline.Equal(midnight) {
+			clock = "24:00"
+		}
+		return rule("Booking harus selesai paling lambat %s WIB (akhir shift +1 jam)", clock)
+	}
+	return nil
+}
+
 // BeforeLastOrder checks that an online booking starts no later than the
 // outlet's last order ("20:30"); nil or "" means until close.
 func BeforeLastOrder(start time.Time, lastOrder *string) error {

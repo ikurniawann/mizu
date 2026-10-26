@@ -57,12 +57,6 @@ export interface OutletPrice {
   price_idr: number;
 }
 
-export interface OutletCommission {
-  branch_id: string;
-  commission_type: "percent" | "fixed";
-  commission_value: number;
-}
-
 export interface Variant {
   id: string;
   name: string;
@@ -71,7 +65,6 @@ export interface Variant {
   is_active: boolean;
   sort_order: number;
   outlet_prices: OutletPrice[];
-  outlet_commissions?: OutletCommission[];
 }
 
 export interface Treatment {
@@ -92,6 +85,9 @@ export interface TreatmentCategory {
 }
 
 export interface Therapist {
+  level: number;
+  employment_cycle: number;
+  employment_status: string;
   id: string;
   employee_id: string;
   full_name: string;
@@ -176,7 +172,6 @@ export interface PriceInput {
   variant_id: string;
   branch_id: string;
   price_idr: number | null;
-  commission_value?: number;
 }
 
 // ── Terapis ──────────────────────────────────────────────────────────────────
@@ -202,6 +197,9 @@ export interface TherapistUpdateInput {
 }
 
 export interface Assist {
+  impact?: {branch_id:string;date:string;female:number;male:number;before_female:number;before_male:number;min_female:number;min_male:number}[];
+  starts_at?: string;
+  ends_at?: string;
   id: string;
   therapist_id: string;
   therapist_name: string;
@@ -213,6 +211,8 @@ export interface Assist {
 }
 
 export interface AssistInput {
+  starts_at?: string;
+  ends_at?: string;
   therapist_id: string;
   branch_id: string;
   start_date: string;
@@ -284,6 +284,8 @@ export interface BookingEvent {
 }
 
 export interface Booking extends BookingSummary {
+  /** Server-authorized room transfer; absent on mutation responses. */
+  can_change_room?: boolean;
 	therapist_rating: number | null;
   company_id: string;
   warehouse_id: string | null;
@@ -429,6 +431,8 @@ export interface BoardTherapist {
 
 /** Satu treatment di jadwal terapis (GET /api/spa/me/schedule). */
 export interface MyScheduleItem extends BoardItem {
+  commission_level?: number | null;
+  commission_reset?: boolean;
   branch_id: string;
   branch_name: string;
   payment_status: PaymentStatus;
@@ -442,6 +446,7 @@ export interface MyScheduleItem extends BoardItem {
 
 /** Ringkasan komisi bulan berjalan untuk terapis (GET /api/spa/me/summary). */
 export interface MySummary {
+  upcoming_unconfigured_count?: number;
   month: string;
   earned_idr: number;
   earned_count: number;
@@ -460,29 +465,8 @@ export interface Board {
 
 // ── Komisi ───────────────────────────────────────────────────────────────────
 
-export interface CommissionRule {
-  id: string;
-  treatment_id: string | null;
-  treatment_name: string | null;
-  variant_id: string | null;
-  variant_name: string | null;
-  branch_id: string | null;
-  branch_name: string | null;
-  commission_type: CommissionType;
-  value: number;
-  is_active: boolean;
-}
-
-export interface CommissionRuleInput {
-  treatment_id: string | null;
-  variant_id: string | null;
-  branch_id: string | null;
-  commission_type: CommissionType;
-  value: number;
-  is_active: boolean;
-}
-
 export interface CommissionLine {
+  commission_level?: number | null;
   item_id: string;
   booking_id: string;
   booking_code: string;
@@ -613,6 +597,7 @@ export interface PublicBookingInput {
 
 /** Room yang masih bisa dipilih tamu pada jam itu. */
 export interface PublicRoom {
+  category: RoomCategory;
   id: string;
   name: string;
   capacity: number;
@@ -706,7 +691,10 @@ export type WaitlistCreateInput = {
 
 // ── Room (revisi R6/R9) ──────────────────────────────────────────────────────
 
+export type RoomCategory = "public" | "private";
+
 export interface Room {
+  category: RoomCategory;
   id: string;
   branch_id: string;
   name: string;
@@ -718,6 +706,7 @@ export interface Room {
 }
 
 export interface RoomInput {
+  category: RoomCategory;
   branch_id: string;
   name: string;
   capacity: number;
@@ -787,6 +776,7 @@ export interface DayOffQuota {
   min_female: number;
   min_male: number;
   max_per_week: number;
+  min_per_week?: number;
 }
 
 export interface DayOffRequest {

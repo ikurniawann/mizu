@@ -26,8 +26,8 @@ func TestAddTreatmentDuringAndAfterSession(t *testing.T) {
 	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "ADD" + testutil.RandomHex(3), "name": "Massage",
 		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	mine := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Tambah", &therapistUser.UserID), "home_branch_id": branch}, http.StatusCreated)
-	other := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Lain", nil), "home_branch_id": branch}, http.StatusCreated)
+	mine := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Terapis Tambah", &therapistUser.UserID), "home_branch_id": branch}, http.StatusCreated)
+	other := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Terapis Lain", nil), "home_branch_id": branch}, http.StatusCreated)
 
 	booking := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
 		"branch_id": branch, "booking_type": "walk_in", "customer_name": "Tamu Tambah", "therapist_id": mine["id"],
@@ -97,8 +97,8 @@ func TestTherapistCannotAddToOthersBooking(t *testing.T) {
 	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "OTH" + testutil.RandomHex(3), "name": "Massage",
 		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Saya", &therapistUser.UserID), "home_branch_id": branch}, http.StatusCreated)
-	other := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Lain", nil), "home_branch_id": branch}, http.StatusCreated)
+	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Terapis Saya", &therapistUser.UserID), "home_branch_id": branch}, http.StatusCreated)
+	other := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Terapis Lain", nil), "home_branch_id": branch}, http.StatusCreated)
 	booking := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
 		"branch_id": branch, "booking_type": "walk_in", "customer_name": "Tamu Lain", "therapist_id": other["id"],
 		"scheduled_at": "2026-10-08T03:00:00Z", "items": []any{map[string]any{"variant_id": variant}},

@@ -25,8 +25,6 @@ import type {
   GroupCheckoutResult,
   CommissionReport,
   CommissionReportParams,
-  CommissionRule,
-  CommissionRuleInput,
   EmployeeCandidate,
   ItemActionInput,
   MeResponse,
@@ -232,11 +230,6 @@ export const spaApi = {
   board: (branchId: string, date: string) => call<Board>(withQuery(`${BASE}/board`, { branch_id: branchId, date })),
 
   // Komisi
-  commissionRules: () => call<CommissionRule[]>(`${BASE}/commission-rules`),
-  createCommissionRule: (input: CommissionRuleInput) => send<CommissionRule>(`${BASE}/commission-rules`, input),
-  updateCommissionRule: (id: string, input: Partial<CommissionRuleInput>) =>
-    send<CommissionRule>(`${BASE}/commission-rules/${enc(id)}`, input, "PATCH"),
-  deleteCommissionRule: (id: string) => remove<unknown>(`${BASE}/commission-rules/${enc(id)}`),
   commissions: (params: CommissionReportParams) =>
     call<CommissionReport>(withQuery(`${BASE}/commissions`, params as unknown as Record<string, QueryValue>)),
 

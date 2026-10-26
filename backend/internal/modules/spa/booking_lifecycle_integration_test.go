@@ -16,7 +16,7 @@ func TestBookingLifecycleChangesAllTreatmentsTogether(t *testing.T) {
 	e.call(&e.admin, "PUT", "/api/spa/outlets/"+e.org.BranchID, map[string]any{"warehouse_id": warehouse, "open_time": "09:00", "close_time": "22:00", "slot_minutes": 30, "is_active": true, "public_booking": true}, 200)
 	tr := e.data(&e.admin, "POST", "/api/spa/treatments", map[string]any{"code": "LIFE" + testutil.RandomHex(3), "name": "Massage", "variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, 201)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	therapist := e.data(&e.admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Lifecycle therapist", nil), "home_branch_id": e.org.BranchID}, 201)
+	therapist := e.data(&e.admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Lifecycle therapist", nil), "home_branch_id": e.org.BranchID}, 201)
 	booking := e.data(&e.admin, "POST", "/api/spa/bookings", map[string]any{
 		"branch_id": e.org.BranchID, "booking_type": "reservation", "customer_name": "Lifecycle visit",
 		"scheduled_at": "2026-10-08T03:00:00Z", "items": []any{map[string]any{"variant_id": variant}, map[string]any{"variant_id": variant}},

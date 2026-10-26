@@ -112,7 +112,7 @@ export async function updateShift(id: string, input: z.infer<typeof updateShiftS
 export async function deleteShift(id: string): Promise<string> {
   const used = await queryOne<{ used: boolean }>(
     `SELECT EXISTS (
-       SELECT 1 FROM hris.employee_shifts WHERE shift_id = $1
+       SELECT 1 FROM hris.effective_employee_shifts WHERE shift_id = $1
        UNION ALL
        SELECT 1 FROM hris.attendance WHERE shift_id = $1
      ) AS used`,

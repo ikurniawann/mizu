@@ -51,7 +51,7 @@ func TestRoomsHoldBookingsAndShowOnBoard(t *testing.T) {
 	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "ROOM" + testutil.RandomHex(3), "name": "Massage",
 		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	therapist := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Room", nil), "home_branch_id": branch}, http.StatusCreated)
+	therapist := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Terapis Room", nil), "home_branch_id": branch}, http.StatusCreated)
 
 	// Master rooms: name unique per outlet, price per room.
 	vip := e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "VIP 1", "capacity": 1, "price_idr": 50000}, http.StatusCreated)
@@ -150,7 +150,7 @@ func TestGuestsChooseRoomOnline(t *testing.T) {
 		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 150000}}}, http.StatusCreated)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	for i := 0; i < 4; i++ {
-		e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis Room "+string(rune('A'+i)), nil), "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
+		e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Terapis Room "+string(rune('A'+i)), nil), "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 	}
 	couple := e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "Couple", "capacity": 2, "price_idr": 100000}, http.StatusCreated)
 	single := e.data(admin, "POST", "/api/spa/rooms", map[string]any{"branch_id": branch, "name": "Single", "capacity": 1, "price_idr": 0}, http.StatusCreated)
@@ -203,7 +203,7 @@ func TestPublicBookingQRImage(t *testing.T) {
 	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "QRI" + testutil.RandomHex(3), "name": "Massage",
 		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 150000}}}, http.StatusCreated)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Terapis QR", nil), "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
+	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee("Terapis QR", nil), "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 	res := e.data(nil, "POST", "/api/public/spa/bookings", map[string]any{"branch_id": branch, "scheduled_at": "2026-10-09T05:00:00.000Z",
 		"customer_name": "Tamu QR", "customer_phone": "0813 2000 0001", "variant_ids": []any{variant}}, http.StatusCreated)
 	rec := httptest.NewRecorder()

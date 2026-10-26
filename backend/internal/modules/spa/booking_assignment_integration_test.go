@@ -19,7 +19,7 @@ func TestOneTherapistPerBooking(t *testing.T) {
 	tr := e.data(&e.admin, "POST", "/api/spa/treatments", map[string]any{"code": "ONE" + testutil.RandomHex(3), "name": "Massage", "variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, 201)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	therapist := func(name string) string {
-		th := e.data(&e.admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee(name, nil), "home_branch_id": e.org.BranchID}, 201)
+		th := e.data(&e.admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee(name, nil), "home_branch_id": e.org.BranchID}, 201)
 		return th["id"].(string)
 	}
 	a, b := therapist("First therapist"), therapist("Second therapist")

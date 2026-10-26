@@ -186,38 +186,7 @@ func TestBoundsAndCodes(t *testing.T) {
 	}
 }
 
-func TestResolveCommission(t *testing.T) {
-	rules := []CommissionRule{
-		{ID: "default", Type: CommissionPercent, Value: 10},
-		{ID: "default-b1", BranchID: "b1", Type: CommissionPercent, Value: 12},
-		{ID: "treat", TreatmentID: "t1", Type: CommissionFixed, Value: 30000},
-		{ID: "treat-b2", TreatmentID: "t1", BranchID: "b2", Type: CommissionFixed, Value: 35000},
-		{ID: "var", VariantID: "v90", Type: CommissionPercent, Value: 25},
-		{ID: "var-b1", VariantID: "v90", BranchID: "b1", Type: CommissionPercent, Value: 30},
-	}
-	cases := []struct{ treatment, variant, branch, want string }{
-		{"t1", "v90", "b1", "var-b1"},
-		{"t1", "v90", "b2", "var"},
-		{"t1", "v60", "b2", "treat-b2"},
-		{"t1", "v60", "b1", "treat"},
-		{"t2", "v30", "b1", "default-b1"},
-		{"t2", "v30", "b3", "default"},
-	}
-	for _, c := range cases {
-		got, ok := ResolveCommission(rules, c.treatment, c.variant, c.branch)
-		if !ok || got.ID != c.want {
-			t.Errorf("resolve(%s,%s,%s) = %s, want %s", c.treatment, c.variant, c.branch, got.ID, c.want)
-		}
-	}
-	if _, ok := ResolveCommission(rules[2:4], "t9", "v9", "b1"); ok {
-		t.Fatal("no default rule: must not match")
-	}
-	if CommissionAmount(CommissionRule{Type: CommissionPercent, Value: 12.5}, 250000) != 31250 {
-		t.Fatal("percent amount")
-	}
-	if CommissionAmount(CommissionRule{Type: CommissionFixed, Value: 40000}, 250000) != 40000 {
-		t.Fatal("fixed amount")
-	}
+func TestShouldExpire(t *testing.T) {
 	if !ShouldExpire(BookingAssigned, time.Unix(0, 0), time.Unix(0, 0).Add(3*time.Hour)) ||
 		ShouldExpire(BookingInTreatment, time.Unix(0, 0), time.Unix(0, 0).Add(3*time.Hour)) ||
 		ShouldExpire(BookingAssigned, time.Unix(0, 0), time.Unix(0, 0).Add(time.Hour)) {

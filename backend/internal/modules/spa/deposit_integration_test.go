@@ -33,7 +33,7 @@ func TestDepositHoldsAndSettlesOnlineBookings(t *testing.T) {
 		"variants": []any{map[string]any{"name": "45 menit", "duration_min": 45, "price_idr": 150000}},
 	}, http.StatusCreated)
 	v45 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	emp := e.employee("Terapis DP", nil)
+	emp := e.scheduledEmployee("Terapis DP", nil)
 	therapist := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 
 	// Policy is readable and editable by staff with the outlets menu.

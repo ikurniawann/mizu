@@ -34,6 +34,7 @@ export const COMMISSION_CSV_HEADER = [
   "Treatment",
   "Varian",
   "Harga (Rp)",
+  "Level saat selesai",
   "Aturan komisi",
   "Komisi (Rp)",
 ];
@@ -53,13 +54,14 @@ export function commissionReportCsv(report: CommissionReport): string {
         line.treatment_name,
         line.variant_name,
         line.price_idr,
+        line.commission_level == null ? "" : `Level ${line.commission_level}`,
         commissionValueLabel(line.commission_type, line.commission_value),
         line.commission_idr,
       ]);
     }
-    rows.push([`Subtotal ${t.full_name}`, t.nip, "", "", "", "", `${t.treatment_count} treatment`, "", t.revenue_idr, "", t.commission_idr]);
+    rows.push([`Subtotal ${t.full_name}`, t.nip, "", "", "", "", `${t.treatment_count} treatment`, "", t.revenue_idr, "", "", t.commission_idr]);
   }
-  rows.push(["Total", "", "", "", "", "", "", "", "", "", report.total_idr]);
+  rows.push(["Total", "", "", "", "", "", "", "", "", "", "", report.total_idr]);
   return toCsv(rows);
 }
 

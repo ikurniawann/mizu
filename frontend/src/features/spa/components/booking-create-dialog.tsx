@@ -1,5 +1,6 @@
 "use client";
 
+import { ROOM_CATEGORY_LABEL } from "../rooms";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
@@ -322,7 +323,7 @@ export function BookingCreateDialog({
                 <option value="" disabled>{!branchId ? "Pilih outlet dulu" : rooms.isLoading ? "Memuat room…" : (rooms.data ?? []).length ? "Pilih room…" : "Outlet ini belum punya room"}</option>
                 {(rooms.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.name} · {r.capacity} orang{r.price_idr > 0 ? ` · ${formatRupiah(r.price_idr)}` : ""}
+                    {r.name} · {ROOM_CATEGORY_LABEL[r.category]} · {r.capacity} orang{r.price_idr > 0 ? ` · ${formatRupiah(r.price_idr)}` : ""}
                   </option>
                 ))}
               </select>

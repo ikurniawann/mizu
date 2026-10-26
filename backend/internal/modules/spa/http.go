@@ -81,7 +81,7 @@ func (h *Handler) Routes() []module.Route {
 		})}
 	}
 	p := staffPrefix
-	return []module.Route{
+	return append(append(h.trainingRoutes(), h.commissionSettingRoutes()...), []module.Route{
 		report("GET "+p+"/reports/rush-hour", iam.SpaRushHour, h.rushHourReport),
 		report("GET "+p+"/reports/trend", iam.SpaTrend, h.trendReport),
 		report("GET "+p+"/reports/rating", iam.SpaRating, h.ratingReport),
@@ -103,7 +103,10 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/therapists", iam.SpaTherapists, h.createTherapist),
 		staff("PATCH "+p+"/therapists/{id}", iam.SpaTherapists, h.updateTherapist),
 		staff("GET "+p+"/employees", iam.SpaTherapists, h.listEmployees),
+		staff("POST "+p+"/rosters/preview", iam.SpaTherapists, h.previewRoster),
+		staff("POST "+p+"/rosters/apply", iam.SpaTherapists, h.applyRoster),
 		staff("GET "+p+"/assists", iam.Spa, h.listAssists),
+		staff("POST "+p+"/assists/preview", iam.SpaTherapists, h.previewAssist),
 		staff("POST "+p+"/assists", iam.SpaTherapists, h.createAssist),
 		staff("DELETE "+p+"/assists/{id}", iam.SpaTherapists, h.deleteAssist),
 		staff("GET "+p+"/outlet-pics", iam.Spa, h.listPICs),
@@ -149,10 +152,10 @@ func (h *Handler) Routes() []module.Route {
 		staff("POST "+p+"/waitlist", iam.SpaBookings, h.createWaitlist),
 		staff("POST "+p+"/waitlist/{id}/status", iam.SpaBookings, h.waitlistStatus),
 
-		staff("GET "+p+"/commission-rules", iam.SpaCommissions, h.listRules),
-		staff("POST "+p+"/commission-rules", iam.SpaCommissions, h.createRule),
-		staff("PATCH "+p+"/commission-rules/{id}", iam.SpaCommissions, h.updateRule),
-		staff("DELETE "+p+"/commission-rules/{id}", iam.SpaCommissions, h.deleteRule),
+		staff("GET "+p+"/commission-rules", iam.SpaCommissions, h.legacyCommissionRule),
+		staff("POST "+p+"/commission-rules", iam.SpaCommissions, h.legacyCommissionRule),
+		staff("PATCH "+p+"/commission-rules/{id}", iam.SpaCommissions, h.legacyCommissionRule),
+		staff("DELETE "+p+"/commission-rules/{id}", iam.SpaCommissions, h.legacyCommissionRule),
 		staff("GET "+p+"/commissions", iam.SpaCommissions, h.report),
 		staff("GET "+p+"/pay-settings", iam.SpaCommissions, h.paySettings),
 		staff("PUT "+p+"/pay-settings", iam.SpaCommissions, h.savePaySettings),
@@ -167,6 +170,7 @@ func (h *Handler) Routes() []module.Route {
 		staff("PATCH "+p+"/pay-lines/{id}", iam.SpaCommissions, h.updatePayLine),
 
 		self("GET "+p+"/me", h.me),
+		self("GET "+p+"/me/trainings", h.myTrainings),
 		self("GET "+p+"/me/assignments", h.myAssignments),
 		self("GET "+p+"/me/schedule", h.mySchedule),
 		self("GET "+p+"/me/summary", h.mySummary),
@@ -178,6 +182,7 @@ func (h *Handler) Routes() []module.Route {
 		self("POST "+p+"/me/day-offs", h.bookMyDayOff),
 		self("POST "+p+"/me/day-offs/{id}/cancel", h.cancelMyDayOff),
 		self("GET "+p+"/me/commissions", h.myCommissions),
+		self("GET "+p+"/me/commission-rates", h.myCommissionRates),
 
 		public("GET "+publicPrefix+"/outlets", h.publicOutlets),
 		public("GET "+publicPrefix+"/outlets/{branchId}/treatments", h.publicTreatments),
@@ -196,7 +201,7 @@ func (h *Handler) Routes() []module.Route {
 		public("POST "+publicPrefix+"/webhook/xendit", h.publicXenditWebhook),
 		public("GET "+publicPrefix+"/gift-orders/{token}", h.publicGiftOrder),
 		public("POST "+publicPrefix+"/gift-orders/{token}/mock-pay", h.publicGiftMockPay),
-	}
+	}...)
 }
 
 func ok(w http.ResponseWriter, data any) error { return httpx.Data(w, http.StatusOK, data) }
@@ -506,11 +511,13 @@ func (h *Handler) setPrices(w http.ResponseWriter, r *http.Request, u *auth.User
 	var prices []priceInput
 	f.List("prices", req, 500, func(items *validate.Form, i int, v any) {
 		item := items.Item(i, v)
+		if _, exists := item.Fields()["commission_value"]; exists {
+			item.Fail("commission_value", "custom", "Atur komisi di halaman Pengaturan Komisi")
+		}
 		prices = append(prices, priceInput{
-			VariantID:       str(item.Str("variant_id", req, uuidOpts)),
-			BranchID:        str(item.Str("branch_id", req, uuidOpts)),
-			Price:           item.Num("price_idr", validate.Rule{Nullable: true, Optional: true}, treatmentMoneyOpts),
-			CommissionValue: item.Num("commission_value", req, treatmentMoneyOpts),
+			VariantID: str(item.Str("variant_id", req, uuidOpts)),
+			BranchID:  str(item.Str("branch_id", req, uuidOpts)),
+			Price:     item.Num("price_idr", validate.Rule{Nullable: true, Optional: true}, treatmentMoneyOpts),
 		})
 	})
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
@@ -601,28 +608,43 @@ func (h *Handler) listAssists(w http.ResponseWriter, r *http.Request, _ *auth.Us
 }
 
 func (h *Handler) createAssist(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	return h.assistForm(w, r, u, false)
+}
+func (h *Handler) previewAssist(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	return h.assistForm(w, r, u, true)
+}
+func (h *Handler) assistForm(w http.ResponseWriter, r *http.Request, u *auth.User, preview bool) error {
 	f := body(r)
 	therapistID := str(f.Str("therapist_id", req, uuidOpts))
 	branchID := str(f.Str("branch_id", req, uuidOpts))
 	start := str(f.Str("start_date", req, dateOpts))
 	end := str(f.Str("end_date", req, dateOpts))
+	startsAt := f.StrDefault("starts_at", "", validate.StrOpts{Max: 40})
+	endsAt := f.StrDefault("ends_at", "", validate.StrOpts{Max: 40})
 	note := f.StrDefault("note", "", validate.StrOpts{Trim: true, Max: 500})
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
 	}
-	a, err := h.svc.CreateAssist(r.Context(), u.ID, therapistID, branchID, start, end, note)
+	mode := ""
+	if preview {
+		mode = "preview"
+	}
+	a, err := h.svc.CreateAssist(r.Context(), u.ID, therapistID, branchID, start, end, note, startsAt, endsAt, mode)
 	if err != nil {
 		return err
+	}
+	if preview {
+		return ok(w, a)
 	}
 	return created(w, a)
 }
 
-func (h *Handler) deleteAssist(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
+func (h *Handler) deleteAssist(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	id, err := pathUUID(r, "id")
 	if err != nil {
 		return err
 	}
-	if err := h.svc.DeleteAssist(r.Context(), id); err != nil {
+	if err := h.svc.cancelAssist(r.Context(), u.ID, id); err != nil {
 		return err
 	}
 	return ok(w, struct {
@@ -956,6 +978,13 @@ func (h *Handler) getBooking(w http.ResponseWriter, r *http.Request, u *auth.Use
 	if err != nil {
 		return err
 	}
+	allowed, err := h.auth.HasMenuAction(r.Context(), u, "update", iam.SpaBookings...)
+	if err != nil { return err }
+	if allowed {
+		allowed, err = h.svc.roomOperator(r.Context(), u.ID)
+		if err != nil { return err }
+	}
+	b.CanChangeRoom = &allowed
 	return ok(w, b)
 }
 
@@ -1126,77 +1155,6 @@ func (h *Handler) board(w http.ResponseWriter, r *http.Request, u *auth.User) er
 }
 
 /* ── commissions ─────────────────────────────────────────────────────── */
-
-func (h *Handler) listRules(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
-	list, err := h.svc.Rules(r.Context())
-	if err != nil {
-		return err
-	}
-	return ok(w, list)
-}
-
-func ruleFields(f *validate.Form) ruleInput {
-	in := ruleInput{
-		TreatmentID: f.Str("treatment_id", optNull, uuidOpts),
-		VariantID:   f.Str("variant_id", optNull, uuidOpts),
-		BranchID:    f.Str("branch_id", optNull, uuidOpts),
-		Type:        str(f.Enum("commission_type", req, domain.CommissionTypes)),
-		IsActive:    f.BoolDefault("is_active", true),
-	}
-	if v := f.Num("value", req, moneyOpts); v != nil {
-		in.Value = *v
-	}
-	if in.TreatmentID != nil && in.VariantID != nil {
-		f.Fail("variant_id", "custom", "Pilih treatment atau varian, bukan keduanya")
-	}
-	if in.Type == domain.CommissionPercent && in.Value > 100 {
-		f.Fail("value", "too_big", "Persentase maksimal 100")
-	}
-	return in
-}
-
-func (h *Handler) createRule(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
-	f := body(r)
-	in := ruleFields(f)
-	if err := f.ErrAtPath("Data tidak valid"); err != nil {
-		return err
-	}
-	rule, err := h.svc.CreateRule(r.Context(), in)
-	if err != nil {
-		return err
-	}
-	return created(w, rule)
-}
-
-func (h *Handler) updateRule(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
-	id, err := pathUUID(r, "id")
-	if err != nil {
-		return err
-	}
-	f := body(r)
-	in := ruleFields(f)
-	if err := f.ErrAtPath("Data tidak valid"); err != nil {
-		return err
-	}
-	rule, err := h.svc.UpdateRule(r.Context(), id, in)
-	if err != nil {
-		return err
-	}
-	return ok(w, rule)
-}
-
-func (h *Handler) deleteRule(w http.ResponseWriter, r *http.Request, _ *auth.User) error {
-	id, err := pathUUID(r, "id")
-	if err != nil {
-		return err
-	}
-	if err := h.svc.DeleteRule(r.Context(), id); err != nil {
-		return err
-	}
-	return ok(w, struct {
-		ID string `json:"id"`
-	}{id})
-}
 
 func (h *Handler) report(w http.ResponseWriter, r *http.Request, u *auth.User) error {
 	from, err := queryDate(r, "from", true)

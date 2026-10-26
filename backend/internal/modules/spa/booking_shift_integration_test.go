@@ -39,8 +39,9 @@ func TestBookingAssignmentRejectsShiftAndGenderMismatch(t *testing.T) {
 	}
 	e.data(&e.admin, "PATCH", path, map[string]any{"scheduled_at": "2026-10-08T06:00:00Z"}, 200) // 13:00–15:00 WIB
 	e.data(&e.admin, "PUT", path+"/therapist", assign, 200)
-	e.call(&e.admin, "PATCH", path, map[string]any{"scheduled_at": "2026-10-08T09:00:00Z"}, http.StatusConflict) // 16:00–18:00 WIB
-	if got := e.data(&e.admin, "GET", path, nil, 200); got["scheduled_at"] != "2026-10-08T06:00:00.000Z" {
+	e.data(&e.admin, "PATCH", path, map[string]any{"scheduled_at": "2026-10-08T09:00:00Z"}, 200) // 16:00–18:00 WIB: finishes at shift +1h
+	e.call(&e.admin, "PATCH", path, map[string]any{"scheduled_at": "2026-10-08T09:30:00Z"}, http.StatusConflict) // 16:30–18:30 WIB
+	if got := e.data(&e.admin, "GET", path, nil, 200); got["scheduled_at"] != "2026-10-08T09:00:00.000Z" {
 		t.Fatalf("failed reschedule changed booking: %v", got["scheduled_at"])
 	}
 	e.data(&e.admin, "PUT", path+"/therapist", map[string]any{"therapist_id": nil}, 200)

@@ -28,7 +28,7 @@ func TestBannedMemberSeesSlotsAsFull(t *testing.T) {
 		"variants": []any{map[string]any{"name": "45 menit", "duration_min": 45, "price_idr": 150000}},
 	}, http.StatusCreated)
 	v45 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	emp := e.employee("Terapis Ban", nil)
+	emp := e.scheduledEmployee("Terapis Ban", nil)
 	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 
 	phone := "0813 5555 6666"

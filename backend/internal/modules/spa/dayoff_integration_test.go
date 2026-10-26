@@ -32,6 +32,7 @@ func TestDayOffBookingRespectsGenderQuotaAndWeeklyLimit(t *testing.T) {
 	cici := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Cici Libur", nil), "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 	e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee("Beni Libur", nil), "home_branch_id": branch, "gender": "male"}, http.StatusCreated)
 	ayuID := ayu["id"].(string)
+	scheduleTestTherapists(e)
 
 	// HRD: at least one woman and one man every day, two days off a week.
 	q := e.data(admin, "PUT", "/api/spa/day-off-quotas/"+branch, map[string]any{"min_female": 1, "min_male": 1, "max_per_week": 2}, http.StatusOK)
@@ -111,5 +112,16 @@ func TestDayOffBookingRespectsGenderQuotaAndWeeklyLimit(t *testing.T) {
 	withdrawn := e.data(admin, "POST", "/api/spa/day-offs/"+third["id"].(string)+"/cancel", map[string]any{"reason": "Tamu ramai"}, http.StatusOK)
 	if withdrawn["status"] != "cancelled" || withdrawn["cancel_reason"] != "Tamu ramai" {
 		t.Fatalf("HRD cancel = %v", withdrawn)
+	}
+}
+
+func scheduleTestTherapists(e *env) {
+	e.t.Helper()
+	var shift string
+	if err := e.tx.QueryRow(e.ctx, `INSERT INTO hris.shifts(name,start_time,end_time) VALUES('Test scheduled work','09:00','22:00') RETURNING id::text`).Scan(&shift); err != nil {
+		e.t.Fatal(err)
+	}
+	if _, err := e.tx.Exec(e.ctx, `INSERT INTO hris.employee_shifts(employee_id,day_of_week,shift_id,effective_from) SELECT employee_id,d,$2,'2026-10-01' FROM spa.therapists CROSS JOIN generate_series(1,7) d WHERE home_branch_id=$1`, e.org.BranchID, shift); err != nil {
+		e.t.Fatal(err)
 	}
 }

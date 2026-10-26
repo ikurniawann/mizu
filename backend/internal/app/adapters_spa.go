@@ -379,7 +379,7 @@ func (spaPeople) Rosters(ctx context.Context, q database.Querier, employeeIDs []
 	weekday := spadomain.Weekday(start)
 	rows, err := q.Query(ctx, `SELECT es.employee_id::text, es.effective_from::text, es.effective_to::text,
 	        s.id::text, s.name, to_char(s.start_time, 'HH24:MI'), to_char(s.end_time, 'HH24:MI')
-	   FROM hris.employee_shifts es LEFT JOIN hris.shifts s ON s.id = es.shift_id
+	   FROM hris.effective_employee_shifts es LEFT JOIN hris.shifts s ON s.id = es.shift_id
 	  WHERE es.employee_id = ANY($1::uuid[]) AND es.day_of_week = $2`, employeeIDs, weekday)
 	if err != nil {
 		return nil, err

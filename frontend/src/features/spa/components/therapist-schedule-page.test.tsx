@@ -89,7 +89,7 @@ describe("TherapistSchedulePage", () => {
     await ready();
     expect(await screen.findByRole("button", { name: "Atur Ayu, Jumat 16 Okt 2026" })).toHaveTextContent("Libur disetujui");
     expect(screen.getByRole("button", { name: "Atur Sari, Jumat 16 Okt 2026" })).not.toHaveTextContent("Libur disetujui");
-    expect(screen.getByRole("button", { name: "Atur Budi, Jumat 16 Okt 2026" })).toHaveTextContent("Belum diatur");
+    expect(screen.getByRole("button", { name: "Atur Budi, Jumat 16 Okt 2026" })).toHaveTextContent("Libur");
   });
 
   it("can replace an inactive legacy shift with an active evening shift", async () => {
@@ -129,13 +129,13 @@ describe("TherapistSchedulePage", () => {
     expect(screen.getByRole("button", { name: "Atur Ayu, Selasa 13 Okt 2026" })).toHaveTextContent("Shift Malam");
   });
 
-  it("shows dated shifts and treats null patterns as unassigned, including shared employee cache and effective ranges", async () => {
+  it("shows dated shifts and distinguishes explicit days off from unassigned dates, including shared employee cache and effective ranges", async () => {
     setup({ cached: true });
     await ready();
     expect(screen.getByRole("button", { name: "Atur Ayu, Senin 12 Okt 2026" })).toHaveTextContent("09:00–17:00");
     expect(screen.getByRole("button", { name: "Atur Ayu, Jumat 16 Okt 2026" })).toHaveTextContent("Shift Malam");
     expect(screen.getByRole("button", { name: "Atur Sari, Senin 12 Okt 2026" })).toHaveTextContent("Belum diatur");
-    expect(screen.getByRole("button", { name: "Atur Budi, Senin 12 Okt 2026" })).toHaveTextContent("Belum diatur");
+    expect(screen.getByRole("button", { name: "Atur Budi, Senin 12 Okt 2026" })).toHaveTextContent("Libur");
     fireEvent.click(screen.getByRole("button", { name: "Minggu sebelumnya" }));
     expect(screen.getByRole("button", { name: "Atur Ayu, Jumat 9 Okt 2026" })).toHaveTextContent("Shift Siang");
     fireEvent.change(screen.getByRole("textbox", { name: "Cari terapis" }), { target: { value: "002" } });

@@ -27,7 +27,7 @@ func TestPublicRescheduleByBookingCode(t *testing.T) {
 	v60 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	for _, name := range []string{"Sari Terapis", "Rina Terapis"} {
 		e.data(admin, "POST", "/api/spa/therapists", map[string]any{
-			"employee_id": e.employee(name, nil), "home_branch_id": branch, "gender": "female",
+			"employee_id": e.scheduledEmployee(name, nil), "home_branch_id": branch, "gender": "female",
 		}, http.StatusCreated)
 	}
 	book := func(at, phone string) map[string]any {
@@ -117,7 +117,7 @@ func TestStaffReschedulePaidBooking(t *testing.T) {
 	}, http.StatusCreated)
 	v60 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	th := e.data(admin, "POST", "/api/spa/therapists", map[string]any{
-		"employee_id": e.employee("Tari Terapis", nil), "home_branch_id": branch, "gender": "female",
+		"employee_id": e.scheduledEmployee("Tari Terapis", nil), "home_branch_id": branch, "gender": "female",
 	}, http.StatusCreated)["id"].(string)
 	create := func(name, at string) map[string]any {
 		return e.data(admin, "POST", "/api/spa/bookings", map[string]any{

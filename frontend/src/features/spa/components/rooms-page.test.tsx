@@ -7,7 +7,7 @@ import { SpaOutletsPage } from "./outlets-page";
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 it("manages rooms on their own page for the selected outlet", async () => {
-  const rooms = [{ id: "r1", branch_id: "b1", name: "VIP 1", capacity: 2, price_idr: 50000, description: "", is_active: true, sort_order: 0 }];
+  const rooms = [{ id: "r1", branch_id: "b1", name: "VIP 1", category: "private", capacity: 2, price_idr: 50000, description: "", is_active: true, sort_order: 0 }];
   const writes: string[] = [];
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -41,11 +41,14 @@ it("manages rooms on their own page for the selected outlet", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Tambah room" }));
   let dialog = screen.getByRole("dialog", { name: "Tambah room" });
   fireEvent.change(within(dialog).getByRole("textbox", { name: "Nama room" }), { target: { value: "Reguler 1" } });
+  fireEvent.change(within(dialog).getByRole("combobox", { name: "Kategori room" }), { target: { value: "public" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Simpan room" }));
   expect(await screen.findByRole("row", { name: /Reguler 1/ })).toBeInTheDocument();
+  expect(rooms[1].category).toBe("public");
   const vip = screen.getByRole("row", { name: /VIP 1/ });
   fireEvent.click(within(vip).getByRole("button", { name: "Ubah room VIP 1" }));
   dialog = screen.getByRole("dialog", { name: "Ubah room VIP 1" });
+  expect(within(dialog).getByRole("combobox", { name: "Kategori room" })).toHaveValue("private");
   fireEvent.change(within(dialog).getByRole("textbox", { name: "Nama room" }), { target: { value: "VIP Utama" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Simpan room" }));
   const updated = await screen.findByRole("row", { name: /VIP Utama/ });

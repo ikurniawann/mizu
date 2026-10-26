@@ -15,8 +15,6 @@ import {
   itemStatusBadge,
   normalizeMyCommissions,
   paymentStatusBadge,
-  ruleScope,
-  ruleSpecificity,
   sortByStart,
   sumCommission,
   activeVariantOptions,
@@ -108,25 +106,6 @@ describe("aksi booking", () => {
 });
 
 describe("komisi", () => {
-  it("scope & spesifisitas aturan", () => {
-    const r = (treatment_id: string | null, variant_id: string | null, branch_id: string | null) => ({
-      treatment_id,
-      variant_id,
-      branch_id,
-    });
-    expect(ruleScope(r(null, null, null))).toBe("default");
-    expect(ruleScope(r("t", null, null))).toBe("treatment");
-    expect(ruleScope(r("t", "v", null))).toBe("variant");
-    const order = [
-      r("t", "v", "b"),
-      r("t", "v", null),
-      r("t", null, "b"),
-      r("t", null, null),
-      r(null, null, "b"),
-      r(null, null, null),
-    ].map(ruleSpecificity);
-    expect(order).toEqual([0, 1, 2, 3, 4, 5]);
-  });
   it("nilai & perhitungan", () => {
     expect(commissionValueLabel("percent", 12.5)).toBe("12,5%");
     expect(commissionValueLabel("fixed", 25000)).toBe("Rp 25.000");

@@ -381,7 +381,6 @@ func (s *Service) UpdateTreatment(ctx context.Context, id string, in treatmentIn
 type priceInput struct {
 	VariantID, BranchID string
 	Price               *float64
-	CommissionValue     *float64
 }
 
 // SetPrices sets or clears per-outlet prices of a treatment's variants.
@@ -410,11 +409,6 @@ func (s *Service) SetPrices(ctx context.Context, userID, id string, prices []pri
 		for _, p := range prices {
 			if err := s.st.setPrice(ctx, q, id, p.VariantID, p.BranchID, p.Price); err != nil {
 				return err
-			}
-			if p.CommissionValue != nil {
-				if err := s.st.setOutletCommission(ctx, q, p.VariantID, p.BranchID, *p.CommissionValue); err != nil {
-					return err
-				}
 			}
 		}
 		seen := map[string]bool{}
@@ -473,6 +467,13 @@ func (s *Service) CreateTherapist(ctx context.Context, employeeID, branchID stri
 		if !ok {
 			return httpx.BadRequest("Karyawan tidak ditemukan")
 		}
+		var status string
+		if err := q.QueryRow(ctx, `SELECT employment_status FROM hris.employees WHERE id=$1 FOR UPDATE`, employeeID).Scan(&status); err != nil {
+			return err
+		}
+		if status == "resigned" {
+			return httpx.Conflict("Perbarui status kepegawaian di HRIS sebelum mendaftarkan terapis")
+		}
 		if ok, err = s.st.branchExists(ctx, q, branchID); err != nil || !ok {
 			if err == nil {
 				err = httpx.BadRequest("Outlet tidak ditemukan")
@@ -500,9 +501,29 @@ func (s *Service) UpdateTherapist(ctx context.Context, id string, branchID *stri
 		}
 	}
 	err := s.tx(ctx, func(q Q) error {
+		if active != nil && *active {
+			if err := trainingLock(ctx, q); err != nil {
+				return err
+			}
+			var allowed bool
+			err := q.QueryRow(ctx, `SELECT COALESCE(e.is_active,true) AND e.employment_status <> 'resigned' AND NOT t.rehire_pending
+			  FROM spa.therapists t JOIN hris.employees e ON e.id=t.employee_id WHERE t.id=$1 FOR UPDATE OF e`, id).Scan(&allowed)
+			if database.IsNoRows(err) {
+				return httpx.NotFound("Terapis tidak ditemukan")
+			}
+			if err != nil {
+				return err
+			}
+			if !allowed {
+				return httpx.Conflict("Perbarui status kepegawaian dan aktifkan pegawai di HRIS terlebih dahulu")
+			}
+		}
 		found, err := s.st.updateTherapist(ctx, q, id, branchID, active)
 		if err == nil && !found {
 			err = httpx.NotFound("Terapis tidak ditemukan")
+		}
+		if err == nil && active != nil && *active {
+			return s.promoteTherapist(ctx, q, id, "")
 		}
 		return err
 	})
@@ -518,55 +539,29 @@ func (s *Service) Assists(ctx context.Context, branchID, from, to string) ([]Ass
 }
 
 // CreateAssist lends a therapist to another outlet.
-func (s *Service) CreateAssist(ctx context.Context, userID, therapistID, branchID, start, end, note string) (*Assist, error) {
-	t, err := s.st.therapist(ctx, s.db, therapistID)
-	if err != nil {
-		return nil, err
+func (s *Service) CreateAssist(ctx context.Context, userID, therapistID, branchID, start, end, note string, times ...string) (*Assist, error) {
+	from, to, ok := domain.RangeBounds(start, end)
+	if !ok {
+		return nil, httpx.BadRequest("Tanggal tidak valid")
 	}
-	if t == nil {
-		return nil, httpx.BadRequest("Terapis tidak ditemukan")
+	if start == domain.WIBDate(s.clock()) {
+		from = time.Time{} // resolve "now" once inside createTimedAssist
 	}
-	if t.HomeBranchID == branchID {
-		return nil, httpx.BadRequest("Perbantuan harus ke outlet selain outlet asal terapis")
-	}
-	if end < start {
-		return nil, httpx.BadRequest("Tanggal selesai harus sama atau setelah tanggal mulai")
-	}
-	if ok, err := s.st.branchExists(ctx, s.db, branchID); err != nil || !ok {
-		if err == nil {
-			err = httpx.BadRequest("Outlet tidak ditemukan")
-		}
-		return nil, err
-	}
-	var id string
-	if err := s.tx(ctx, func(q Q) error {
+	if len(times) > 0 && times[0] != "" {
 		var err error
-		id, err = s.st.insertAssist(ctx, q, therapistID, branchID, start, end, note, userID)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-	list, err := s.st.assists(ctx, s.db, branchID, start, end)
-	if err != nil {
-		return nil, err
-	}
-	for _, a := range list {
-		if a.ID == id {
-			return &a, nil
+		from, err = time.Parse(time.RFC3339, times[0])
+		if err != nil {
+			return nil, httpx.BadRequest("Jam mulai tidak valid")
 		}
 	}
-	return nil, httpx.NotFound("Perbantuan tidak ditemukan")
-}
-
-// DeleteAssist removes a loan.
-func (s *Service) DeleteAssist(ctx context.Context, id string) error {
-	return s.tx(ctx, func(q Q) error {
-		found, err := s.st.deleteAssist(ctx, q, id)
-		if err == nil && !found {
-			err = httpx.NotFound("Perbantuan tidak ditemukan")
+	if len(times) > 1 && times[1] != "" {
+		var err error
+		to, err = time.Parse(time.RFC3339, times[1])
+		if err != nil {
+			return nil, httpx.BadRequest("Jam selesai tidak valid")
 		}
-		return err
-	})
+	}
+	return s.createTimedAssist(ctx, userID, therapistID, branchID, from, to, note, len(times) > 2 && times[2] == "preview")
 }
 
 // PICs lists outlet PICs.
@@ -691,7 +686,7 @@ func (s *Service) visibleBooking(ctx context.Context, sc *scope.Scope, id string
 		return nil, err
 	}
 	if b != nil {
-		total := 0.0
+		total := b.RoomPriceIDR
 		for _, it := range b.Items {
 			if it.Status != domain.ItemCancelled {
 				total += it.PriceIDR
@@ -1173,7 +1168,7 @@ func (s *Service) BookingAction(ctx context.Context, userID, id, action string) 
 				return err
 			}
 			if action == domain.ActionComplete {
-				if err := s.freezeCommission(ctx, q, b.BranchID, item); err != nil {
+				if err := s.freezeCommission(ctx, q, item); err != nil {
 					return err
 				}
 			}
@@ -1265,7 +1260,7 @@ func (s *Service) itemAction(ctx context.Context, q Q, userID, bookingID, itemID
 		if err := s.st.setItemStatus(ctx, q, it.ID, next, now); err != nil {
 			return err
 		}
-		if err := s.freezeCommission(ctx, q, b.BranchID, it); err != nil {
+		if err := s.freezeCommission(ctx, q, it); err != nil {
 			return err
 		}
 	}
@@ -1275,16 +1270,28 @@ func (s *Service) itemAction(ctx context.Context, q Q, userID, bookingID, itemID
 
 // freezeCommission stores the commission of a completed item with the rule
 // in force now; later rule edits do not rewrite history.
-func (s *Service) freezeCommission(ctx context.Context, q Q, branchID string, it itemRow) error {
-	rules, err := s.st.activeRules(ctx, q)
+func (s *Service) freezeCommission(ctx context.Context, q Q, it itemRow) error {
+	if it.TherapistID == nil {
+		return httpx.Conflict("Tentukan terapis sebelum menyelesaikan treatment")
+	}
+	var level int
+	if err := q.QueryRow(ctx, `SELECT level FROM spa.therapists WHERE id=$1 FOR SHARE`, *it.TherapistID).Scan(&level); err != nil {
+		return err
+	}
+	// One MVCC read captures a committed tariff; no rule locks are held across
+	// multiple items, avoiding lock inversion with a bulk tariff edit.
+	var amount float64
+	err := q.QueryRow(ctx, `SELECT value::float8 FROM spa.commission_rules
+ WHERE variant_id=$1 AND therapist_level=$2 AND is_active`, it.VariantID, level).Scan(&amount)
+	if database.IsNoRows(err) {
+		return httpx.Conflict("Komisi varian untuk level terapis belum diatur di Pengaturan Komisi")
+	}
 	if err != nil {
 		return err
 	}
-	r, ok := domain.ResolveCommission(rules, it.TreatmentID, it.VariantID, branchID)
-	if !ok {
-		return s.st.setItemCommission(ctx, q, it.ID, nil, nil, 0)
-	}
-	return s.st.setItemCommission(ctx, q, it.ID, &r.Type, &r.Value, domain.CommissionAmount(r, it.Price))
+	_, err = q.Exec(ctx, `UPDATE spa.booking_items SET commission_type='fixed',commission_value=$2,
+ commission_idr=$2,commission_level=$3 WHERE id=$1 AND NOT commission_reset`, it.ID, amount, level)
+	return err
 }
 
 // syncStatus re-derives the booking status from its items.
@@ -1520,7 +1527,7 @@ func (s *Service) Availability(ctx context.Context, userID, branchID string, sta
 		start, end = iv.Start, iv.End
 	}
 	date := domain.WIBDate(start)
-	eligible, err := s.st.eligibleTherapists(ctx, s.db, branchID, date)
+	eligible, err := s.eligibleTherapistsAt(ctx, s.db, branchID, domain.Interval{Start: start, End: end})
 	if err != nil {
 		return nil, err
 	}
@@ -1537,6 +1544,10 @@ func (s *Service) Availability(ctx context.Context, userID, branchID string, sta
 	if err != nil {
 		return nil, err
 	}
+	working, err := s.workingRosters(ctx, s.db, employees, domain.Interval{Start: start, End: end})
+	if err != nil {
+		return nil, err
+	}
 	out := make([]Availability, len(eligible))
 	for i, t := range eligible {
 		r := rosters[t.EmployeeID]
@@ -1544,7 +1555,11 @@ func (s *Service) Availability(ctx context.Context, userID, branchID string, sta
 		if c == nil {
 			c = []Conflict{}
 		}
-		out[i] = Availability{Therapist: t.Therapist, Available: len(c) == 0, Conflicts: c, OnLeave: r.OnLeave,
+		effective, scheduled := working[t.EmployeeID]
+		if scheduled {
+			r = effective
+		}
+		out[i] = Availability{Therapist: t.Therapist, Available: scheduled && len(c) == 0, Conflicts: c, OnLeave: r.OnLeave,
 			Shift: r.Shift, DayOff: r.DayOff, Assisting: t.Assisting}
 	}
 	return out, nil
@@ -1704,62 +1719,6 @@ func (s *Service) MyCommissions(ctx context.Context, userID, month string) (*Com
 
 /* ── commissions ─────────────────────────────────────────────────────── */
 
-// Rules lists commission rules.
-func (s *Service) Rules(ctx context.Context) ([]CommissionRuleView, error) {
-	return s.st.rules(ctx, s.db)
-}
-
-func (s *Service) rule(ctx context.Context, id string) (*CommissionRuleView, error) {
-	list, err := s.st.rules(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	for _, r := range list {
-		if r.ID == id {
-			return &r, nil
-		}
-	}
-	return nil, httpx.NotFound("Aturan komisi tidak ditemukan")
-}
-
-// CreateRule adds a commission rule.
-func (s *Service) CreateRule(ctx context.Context, in ruleInput) (*CommissionRuleView, error) {
-	var id string
-	if err := s.tx(ctx, func(q Q) error {
-		var err error
-		id, err = s.st.insertRule(ctx, q, in)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-	return s.rule(ctx, id)
-}
-
-// UpdateRule replaces a commission rule.
-func (s *Service) UpdateRule(ctx context.Context, id string, in ruleInput) (*CommissionRuleView, error) {
-	if err := s.tx(ctx, func(q Q) error {
-		found, err := s.st.updateRule(ctx, q, id, in)
-		if err == nil && !found {
-			err = httpx.NotFound("Aturan komisi tidak ditemukan")
-		}
-		return err
-	}); err != nil {
-		return nil, err
-	}
-	return s.rule(ctx, id)
-}
-
-// DeleteRule removes a commission rule.
-func (s *Service) DeleteRule(ctx context.Context, id string) error {
-	return s.tx(ctx, func(q Q) error {
-		found, err := s.st.deleteRule(ctx, q, id)
-		if err == nil && !found {
-			err = httpx.NotFound("Aturan komisi tidak ditemukan")
-		}
-		return err
-	})
-}
-
 // Report is the commission report of [from, to] (WIB dates).
 func (s *Service) Report(ctx context.Context, userID, from, to, branchID, therapistID string) (*CommissionReport, error) {
 	sc, err := s.scope(ctx, userID)
@@ -1854,7 +1813,7 @@ func (s *Service) publicCapacity(ctx context.Context, q Q, branchID string, item
 	if err != nil {
 		return false, err
 	}
-	eligible, err := s.st.eligibleTherapists(ctx, q, branchID, domain.WIBDate(interval.Start))
+	eligible, err := s.eligibleTherapistsAt(ctx, q, branchID, interval)
 	if err != nil {
 		return false, err
 	}
@@ -1870,7 +1829,7 @@ func (s *Service) publicCapacity(ctx context.Context, q Q, branchID string, item
 	if len(ids) == 0 {
 		return false, nil
 	}
-	rosters, err := s.ports.People.Rosters(ctx, q, employees, domain.WIBDate(interval.Start))
+	rosters, err := s.workingRosters(ctx, q, employees, interval)
 	if err != nil {
 		return false, err
 	}
@@ -1887,8 +1846,8 @@ func (s *Service) publicCapacity(ctx context.Context, q Q, branchID string, item
 		if pref != "any" && (therapist.Gender == nil || *therapist.Gender != pref) {
 			continue
 		}
-		roster := rosters[therapist.EmployeeID]
-		if !roster.OnLeave && !roster.DayOff && len(conflicts[therapist.ID]) == 0 {
+		_, working := rosters[therapist.EmployeeID]
+		if working && len(conflicts[therapist.ID]) == 0 {
 			free++
 		}
 	}

@@ -28,10 +28,10 @@ func TestTherapistPayrollTwiceAMonth(t *testing.T) {
 	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "PAY" + testutil.RandomHex(3), "name": "Massage",
 		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	e.data(admin, "POST", "/api/spa/commission-rules", map[string]any{"commission_type": "percent", "value": 10}, http.StatusCreated)
+	e.call(admin, "PUT", "/api/spa/commission-settings", map[string]any{"rows": []any{map[string]any{"variant_id": variant, "values": []any{20000, 25000, 30000}}}}, http.StatusOK)
 
-	ayuEmp := e.employee("Ayu Gaji", &me.UserID)
-	beniEmp := e.employee("Beni Komisi", nil)
+	ayuEmp := e.scheduledEmployee("Ayu Gaji", &me.UserID)
+	beniEmp := e.scheduledEmployee("Beni Komisi", nil)
 	ayu := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": ayuEmp, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 	beni := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": beniEmp, "home_branch_id": branch, "gender": "male"}, http.StatusCreated)
 	for emp, base := range map[string]float64{ayuEmp: 3000000, beniEmp: 2500000} {
@@ -169,8 +169,8 @@ func TestTherapistPayrollSalaryViaHRIS(t *testing.T) {
 	tr := e.data(admin, "POST", "/api/spa/treatments", map[string]any{"code": "HRS" + testutil.RandomHex(3), "name": "Massage",
 		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}}}, http.StatusCreated)
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	e.data(admin, "POST", "/api/spa/commission-rules", map[string]any{"commission_type": "percent", "value": 10}, http.StatusCreated)
-	emp := e.employee("Sari HRIS", nil)
+	e.call(admin, "PUT", "/api/spa/commission-settings", map[string]any{"rows": []any{map[string]any{"variant_id": variant, "values": []any{20000, 25000, 30000}}}}, http.StatusOK)
+	emp := e.scheduledEmployee("Sari HRIS", nil)
 	th := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": emp, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 	if _, err := e.tx.Exec(e.ctx, `INSERT INTO hris.employee_salary (employee_id, base_salary, fixed_allowance, effective_date, is_active)
 	  VALUES ($1, 3000000, 500000, '2026-01-01', true)`, emp); err != nil {

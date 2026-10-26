@@ -1,4 +1,6 @@
-import type { RoomState } from "./types";
+import type { RoomCategory, RoomState } from "./types";
+
+export const ROOM_CATEGORY_LABEL: Record<RoomCategory, string> = { public: "Public", private: "Private" };
 
 /** Label & warna status room di papan Room (revisi R6). */
 export const ROOM_STATE_LABEL: Record<RoomState, string> = {

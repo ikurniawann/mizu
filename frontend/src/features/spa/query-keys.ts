@@ -27,7 +27,6 @@ export const spaKeys = {
   rooms: (branchId: string, activeOnly: boolean) => ["spa", "rooms", branchId, activeOnly] as const,
   roomBoard: (branchId: string) => ["spa", "room-board", branchId] as const,
   arrivalQueue: (branchId: string, date: string) => ["spa", "arrival-queue", branchId, date] as const,
-  commissionRules: () => ["spa", "commission-rules"] as const,
   commissionsAll: () => ["spa", "commissions"] as const,
   commissions: (params: CommissionReportParams) => ["spa", "commissions", params] as const,
   me: () => ["spa", "me"] as const,

@@ -274,7 +274,7 @@ func (store) unpaidCommissions(ctx context.Context, q Q, from, to time.Time) ([]
 		return x, r.Scan(&x.itemID, &x.therapistID, &x.amount)
 	}, `SELECT i.id::text, i.therapist_id::text, COALESCE(i.commission_idr, 0)::float8
 	   FROM spa.booking_items i JOIN spa.bookings b ON b.id = i.booking_id
-	  WHERE i.status = 'completed' AND b.payment_status = 'paid' AND i.therapist_id IS NOT NULL
+	  WHERE i.status = 'completed' AND NOT i.commission_reset AND b.payment_status = 'paid' AND i.therapist_id IS NOT NULL
 	    AND i.completed_at >= $1 AND i.completed_at < $2
 	    AND NOT EXISTS (SELECT 1 FROM spa.pay_commission_items p WHERE p.item_id = i.id)`, from, to)
 }

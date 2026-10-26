@@ -20,11 +20,12 @@ import { spaKeys } from "../query-keys";
 import { useSpaOutlets, useSpaTherapists } from "../queries";
 import { addDaysToDate } from "../time";
 import { OutletSelect, SELECT, SPA_KICKER, TableNote } from "./shared";
+import { RosterGeneratorDialog } from "./roster-generator-dialog";
 import { TherapistShiftMappingDialog } from "./therapist-shift-mapping-dialog";
 
 function shiftName(row: EmployeeShiftScheduleRow | null) {
   if (!row) return "Belum diatur";
-  if (!row.shift_id) return "Belum diatur";
+  if (!row.shift_id) return "Libur";
   return row.shift_name || "Shift";
 }
 
@@ -36,6 +37,7 @@ export function TherapistSchedulePage({ embedded = false }: { embedded?: boolean
   const [viewDate, setViewDate] = useState(todayWib);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [generating, setGenerating] = useState(false);
   const [editing, setEditing] = useState<{ date: string; therapistId?: string } | null>(null);
   const branchId = preferredBranchId || configured[0]?.branch_id || "";
   const therapists = useSpaTherapists({ branch_id: branchId || undefined, active: true });
@@ -85,9 +87,10 @@ export function TherapistSchedulePage({ embedded = false }: { embedded?: boolean
           <h2 className="text-lg font-semibold">Jadwal shift mingguan</h2>
           <p className="mt-1 text-sm text-muted-foreground">Lihat siapa yang bertugas dan jam kerjanya. Klik sel jadwal untuk mengubah satu terapis.</p>
         </div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setGenerating(true)} disabled={!branchId || shifts.isPending || shifts.isError}>Generate jadwal bulanan</Button>
         <Button onClick={() => setEditing({ date: viewDate })} disabled={!branchId || !ready || !rows.length || shifts.isPending || shifts.isError}>
           <Plus /> Atur mapping
-        </Button>
+        </Button></div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -176,6 +179,7 @@ export function TherapistSchedulePage({ embedded = false }: { embedded?: boolean
           <p>Geser tabel untuk melihat seluruh minggu. Belum diatur = belum ada shift pada tanggal tersebut. Libur disetujui berasal dari pengajuan di tab Jadwal Libur.</p>
         </div>
       </Card>
+      {generating && <RosterGeneratorDialog branchId={branchId} outletName={configured.find(o=>o.branch_id===branchId)?.branch_name??""} initialMonth={viewDate.slice(0,7)} shifts={shifts.data?.data??[]} onClose={()=>setGenerating(false)} onSaved={date=>{setViewDate(date);setGenerating(false);}}/>}
       {editing && <TherapistShiftMappingDialog
         initialDate={editing.date}
         singleTherapist={!!editing.therapistId}

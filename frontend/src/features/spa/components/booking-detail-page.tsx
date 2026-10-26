@@ -130,6 +130,7 @@ function BookingDetail({ booking, readOnly, embedded, onOpenBooking }: { booking
   const [roomDialog, setRoomDialog] = useState(false);
   const co = checkoutState(booking);
   const closed = isBookingClosed(booking);
+  const canChangeRoom = !readOnly && booking.can_change_room === true && !booking.checked_out_at && ["unassigned", "assigned", "in_treatment"].includes(booking.status);
   const activeItems = items.filter((i) => i.status !== "cancelled");
   const depositPending = booking.deposit?.deposit_status === "pending";
   const canAssign = !closed && activeItems.length > 0 && activeItems.every((i) => i.status === "assigned" || i.status === "unassigned");
@@ -278,7 +279,7 @@ function BookingDetail({ booking, readOnly, embedded, onOpenBooking }: { booking
                   ) : (
                     <span className="font-normal text-muted-foreground">Tanpa room</span>
                   )}
-                  {!readOnly && !closed && !booking.checked_out_at && (
+                  {canChangeRoom && (
                     <Button size="sm" variant="ghost" onClick={() => setRoomDialog(true)}>
                       {booking.room_name ? "Ganti room" : "Pilih room"}
                     </Button>
@@ -442,7 +443,7 @@ function BookingDetail({ booking, readOnly, embedded, onOpenBooking }: { booking
                         {eventLabel(ev.action)}
                         {item ? <span className="font-normal text-muted-foreground"> · {item.treatment_name}</span> : null}
                       </p>
-                      {(ev.from_status || ev.to_status) && (
+                      {ev.action !== "room" && (ev.from_status || ev.to_status) && (
                         <p className="text-xs text-muted-foreground">
                           {anyStatusLabel(ev.from_status)} → {anyStatusLabel(ev.to_status)}
                         </p>
@@ -473,8 +474,8 @@ function BookingDetail({ booking, readOnly, embedded, onOpenBooking }: { booking
       {!readOnly && dialog?.kind === "add" && (
         <AddItemDialog bookingId={booking.id} branchId={booking.branch_id} onClose={close} />
       )}
-      {!readOnly && roomDialog && (
-        <RoomSelectDialog bookingId={booking.id} branchId={booking.branch_id} currentRoomId={booking.room_id} onClose={() => setRoomDialog(false)} />
+      {canChangeRoom && roomDialog && (
+        <RoomSelectDialog booking={booking} onClose={() => setRoomDialog(false)} />
       )}
       {!readOnly && dialog?.kind === "confirm-item" && (
         <ConfirmDialog

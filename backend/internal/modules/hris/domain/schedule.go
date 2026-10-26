@@ -33,7 +33,11 @@ func ResolveScheduleRow(rows []ScheduleRow, dateISO string) int {
 	// Array.prototype.sort with a comparator that never returns 0 for equal
 	// keys still keeps a stable order on ties in V8 (TimSort); mirror it.
 	sort.SliceStable(candidates, func(a, b int) bool {
-		return rows[candidates[a]].EffectiveFrom > rows[candidates[b]].EffectiveFrom
+		x, y := rows[candidates[a]], rows[candidates[b]]
+		if x.EffectiveFrom == y.EffectiveFrom {
+			return x.EffectiveTo != nil && *x.EffectiveTo == x.EffectiveFrom && (y.EffectiveTo == nil || *y.EffectiveTo != y.EffectiveFrom)
+		}
+		return x.EffectiveFrom > y.EffectiveFrom
 	})
 	return candidates[0]
 }

@@ -54,7 +54,7 @@ export function SpaTreatmentsPage() {
       <PageHeader
         kicker={SPA_KICKER}
         title="Treatment"
-        description="Treatment dan varian durasinya. Harga dan komisi diatur per outlet; produk POS diperbarui otomatis saat perubahan disimpan."
+        description="Treatment dan varian durasinya. Harga diatur per outlet; komisi di halaman Pengaturan Komisi; produk POS diperbarui otomatis saat perubahan disimpan."
         actions={
           tab === "list" ? <Button onClick={() => setEditing("new")}><Plus /> Treatment baru</Button> : undefined
         }

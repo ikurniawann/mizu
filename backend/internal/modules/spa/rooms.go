@@ -2,6 +2,7 @@ package spa
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ type Room struct {
 	ID          string  `json:"id"`
 	BranchID    string  `json:"branch_id"`
 	Name        string  `json:"name"`
+	Category    string  `json:"category"`
 	Capacity    int     `json:"capacity"`
 	PriceIDR    float64 `json:"price_idr"`
 	Description string  `json:"description"`
@@ -32,6 +34,7 @@ type Room struct {
 type roomInput struct {
 	BranchID    string
 	Name        string
+	Category    string
 	Capacity    int
 	PriceIDR    float64
 	Description string
@@ -84,11 +87,11 @@ type RoomBoard struct {
 
 /* ── store ───────────────────────────────────────────────────────────── */
 
-const roomColumns = `id::text, branch_id::text, name, capacity, price_idr::float8, description, is_active, sort_order`
+const roomColumns = `id::text, branch_id::text, name, capacity, price_idr::float8, description, is_active, sort_order, category`
 
 func scanRoom(r pgx.Row) (Room, error) {
 	var x Room
-	err := r.Scan(&x.ID, &x.BranchID, &x.Name, &x.Capacity, &x.PriceIDR, &x.Description, &x.IsActive, &x.SortOrder)
+	err := r.Scan(&x.ID, &x.BranchID, &x.Name, &x.Capacity, &x.PriceIDR, &x.Description, &x.IsActive, &x.SortOrder, &x.Category)
 	return x, err
 }
 
@@ -117,15 +120,15 @@ func (store) roomNameTaken(ctx context.Context, q Q, branchID, name, exceptID st
 
 func (store) insertRoom(ctx context.Context, q Q, in roomInput) (string, error) {
 	var id string
-	err := q.QueryRow(ctx, `INSERT INTO spa.rooms (branch_id, name, capacity, price_idr, description, is_active, sort_order)
-	  VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id::text`,
-		in.BranchID, in.Name, in.Capacity, in.PriceIDR, in.Description, in.IsActive, in.SortOrder).Scan(&id)
+	err := q.QueryRow(ctx, `INSERT INTO spa.rooms (branch_id, name, capacity, price_idr, description, is_active, sort_order, category)
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id::text`,
+		in.BranchID, in.Name, in.Capacity, in.PriceIDR, in.Description, in.IsActive, in.SortOrder, in.Category).Scan(&id)
 	return id, err
 }
 
 func (store) updateRoom(ctx context.Context, q Q, id string, in roomInput) error {
 	_, err := q.Exec(ctx, `UPDATE spa.rooms SET name = $2, capacity = $3, price_idr = $4, description = $5, is_active = $6,
-	    sort_order = $7, updated_at = now() WHERE id = $1`, id, in.Name, in.Capacity, in.PriceIDR, in.Description, in.IsActive, in.SortOrder)
+	    sort_order = $7, category = $8, updated_at = now() WHERE id = $1`, id, in.Name, in.Capacity, in.PriceIDR, in.Description, in.IsActive, in.SortOrder, in.Category)
 	return err
 }
 
@@ -150,11 +153,20 @@ func (store) roomUse(ctx context.Context, q Q, roomID, bookingID string, start, 
 	return n, *code, err
 }
 
+// lockRooms gives multi-room bookings the same lock order regardless of guest order.
+func (store) lockRooms(ctx context.Context, q Q, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	_, err := q.Exec(ctx, `SELECT id FROM spa.rooms WHERE id = ANY($1::uuid[]) ORDER BY id FOR NO KEY UPDATE`, ids)
+	return err
+}
+
 // roomConflict returns the code of a booking that leaves no place for one
 // more guest in the room within [start, end), or "".
 func (st store) roomConflict(ctx context.Context, q Q, roomID, bookingID string, start, end time.Time) (string, error) {
 	var capacity int
-	if err := q.QueryRow(ctx, `SELECT capacity FROM spa.rooms WHERE id = $1`, roomID).Scan(&capacity); err != nil {
+	if err := q.QueryRow(ctx, `SELECT capacity FROM spa.rooms WHERE id = $1 FOR NO KEY UPDATE`, roomID).Scan(&capacity); err != nil {
 		return "", err
 	}
 	n, code, err := st.roomUse(ctx, q, roomID, bookingID, start, end)
@@ -248,6 +260,15 @@ func (s *Service) SaveRoom(ctx context.Context, userID, id string, in roomInput)
 			return nil, httpx.NotFound("Room tidak ditemukan")
 		}
 		in.BranchID = existing.BranchID
+		if in.Category == "" {
+			in.Category = existing.Category
+		}
+	}
+	if in.Category == "" {
+		in.Category = "public"
+	}
+	if in.Category != "public" && in.Category != "private" {
+		return nil, httpx.BadRequest("Kategori room harus Public atau Private")
 	}
 	if _, err := s.outletIn(ctx, s.db, sc, in.BranchID); err != nil {
 		return nil, err
@@ -299,10 +320,29 @@ func (s *Service) DeleteRoom(ctx context.Context, userID, id string) error {
 	return nil
 }
 
+func (s *Service) roomOperator(ctx context.Context, userID string) (bool, error) {
+	sc, err := s.scope(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	if sc.Role != nil && *sc.Role == "spa_therapist" {
+		return false, nil
+	}
+	therapist, err := s.Me(ctx, userID)
+	return therapist == nil, err
+}
+
 // SetBookingRoom puts a booking in a room (roomID "" releases it). The room
 // must belong to the outlet, be active and free for the booking's window;
 // the room price is snapshotted onto the booking and billed at checkout.
 func (s *Service) SetBookingRoom(ctx context.Context, userID, bookingID, roomID string) (*Booking, error) {
+	allowed, err := s.roomOperator(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, httpx.Forbidden("Hanya admin yang boleh memindahkan room; terapis tidak diperbolehkan")
+	}
 	sc, err := s.scope(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -327,23 +367,41 @@ func (s *Service) assignRoomIn(ctx context.Context, q Q, userID string, b *booki
 // assignRoom puts the booking in the room; waivePrice charges no room price
 // (the second guest of a party sharing the room — the price counts once).
 func (s *Service) assignRoom(ctx context.Context, q Q, userID string, b *bookingRow, roomID string, waivePrice bool) error {
-	if !domain.IsOpenBooking(b.Status) {
-		return httpx.Conflict("Booking sudah " + domain.BookingLabel(b.Status))
+	if err := domain.CanChangeRoom(b.Status, b.CheckedOutAt != nil, roomID == ""); err != nil {
+		return ruleErr(err)
 	}
-	if b.CheckedOutAt != nil {
-		return httpx.Conflict("Booking sudah dikirim ke kasir; room tidak bisa diubah")
+	if deref(b.RoomID) == roomID {
+		return nil
+	}
+	oldName := "Tanpa room"
+	if b.RoomID != nil {
+		oldRoom, err := s.st.room(ctx, q, *b.RoomID)
+		if err != nil {
+			return err
+		}
+		if oldRoom != nil {
+			oldName = oldRoom.Name
+		}
 	}
 	if roomID == "" {
+		if err := s.checkRoomPayment(ctx, q, b, 0); err != nil {
+			return err
+		}
 		if err := s.st.setBookingRoom(ctx, q, b.ID, nil, 0); err != nil {
 			return err
 		}
-		return s.st.event(ctx, q, b.ID, nil, "room", nil, nil, userID, "Room dilepas")
+		return s.st.event(ctx, q, b.ID, nil, "room", b.RoomID, nil, userID, fmt.Sprintf("%s → Tanpa room · %s → Rp 0", oldName, domainRupiah(b.RoomPriceIDR)))
 	}
-	room, err := s.st.room(ctx, q, roomID)
+	// NO KEY UPDATE serializes capacity writers without conflicting with
+	// the foreign-key KEY SHARE locks of bookings already using this room.
+	room, err := scanRoom(q.QueryRow(ctx, `SELECT `+roomColumns+` FROM spa.rooms WHERE id=$1 FOR NO KEY UPDATE`, roomID))
+	if database.IsNoRows(err) {
+		return httpx.BadRequest("Room tidak ditemukan di outlet ini")
+	}
 	if err != nil {
 		return err
 	}
-	if room == nil || room.BranchID != b.BranchID {
+	if room.BranchID != b.BranchID {
 		return httpx.BadRequest("Room tidak ditemukan di outlet ini")
 	}
 	if !room.IsActive {
@@ -360,10 +418,29 @@ func (s *Service) assignRoom(ctx context.Context, q Q, userID string, b *booking
 	if waivePrice {
 		price = 0
 	}
+	if err := s.checkRoomPayment(ctx, q, b, price); err != nil {
+		return err
+	}
 	if err := s.st.setBookingRoom(ctx, q, b.ID, &room.ID, price); err != nil {
 		return err
 	}
-	return s.st.event(ctx, q, b.ID, nil, "room", nil, nil, userID, "Room "+room.Name)
+	return s.st.event(ctx, q, b.ID, nil, "room", b.RoomID, &room.ID, userID, fmt.Sprintf("%s → %s · %s → %s", oldName, room.Name, domainRupiah(b.RoomPriceIDR), domainRupiah(price)))
+}
+
+// Full online invoices cannot be repriced without reconciling the payment.
+// DP is independent: it remains a credit against the new booking total.
+func (s *Service) checkRoomPayment(ctx context.Context, q Q, b *bookingRow, price float64) error {
+	if price == b.RoomPriceIDR {
+		return nil
+	}
+	var invoiced bool
+	if err := q.QueryRow(ctx, `SELECT xendit_invoice_id IS NOT NULL OR invoice_amount_idr IS NOT NULL FROM spa.bookings WHERE id=$1`, b.ID).Scan(&invoiced); err != nil {
+		return err
+	}
+	if b.PaymentStatus == domain.PaymentPaid || invoiced {
+		return httpx.Conflict("Booking sudah memiliki tagihan atau pembayaran online penuh; rekonsiliasi pembayaran terlebih dahulu sebelum pindah ke room dengan tarif berbeda")
+	}
+	return nil
 }
 
 // checkRoomWindow re-validates a booking's room after its window moved.
@@ -481,6 +558,7 @@ func (s *Service) roomBillLine(ctx context.Context, q Q, o *outletRow, roomID st
 type PublicRoom struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
+	Category    string  `json:"category"`
 	Capacity    int     `json:"capacity"`
 	PriceIDR    float64 `json:"price_idr"`
 	Description string  `json:"description"`
@@ -511,7 +589,7 @@ func (s *Service) PublicRoomsAt(ctx context.Context, branchID string, start, end
 		if n+people > r.Capacity {
 			continue
 		}
-		out = append(out, PublicRoom{ID: r.ID, Name: r.Name, Capacity: r.Capacity, PriceIDR: r.PriceIDR, Description: r.Description})
+		out = append(out, PublicRoom{ID: r.ID, Name: r.Name, Category: r.Category, Capacity: r.Capacity, PriceIDR: r.PriceIDR, Description: r.Description})
 	}
 	return out, nil
 }

@@ -104,7 +104,7 @@ func (s *Service) PublicTherapists(ctx context.Context, branchID string, startsA
 // freeTherapists applies checkBookingTherapist's rules to every eligible
 // therapist at once.
 func (s *Service) freeTherapists(ctx context.Context, q Q, branchID string, iv domain.Interval, pref string) ([]Therapist, error) {
-	eligible, err := s.st.eligibleTherapists(ctx, q, branchID, domain.WIBDate(iv.Start))
+	eligible, err := s.eligibleTherapistsAt(ctx, q, branchID, iv)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (s *Service) freeTherapists(ctx context.Context, q Q, branchID string, iv d
 	if len(candidates) == 0 {
 		return []Therapist{}, nil
 	}
-	rosters, err := s.ports.People.Rosters(ctx, q, employees, domain.WIBDate(iv.Start))
+	rosters, err := s.workingRosters(ctx, q, employees, iv)
 	if err != nil {
 		return nil, err
 	}
@@ -130,28 +130,11 @@ func (s *Service) freeTherapists(ctx context.Context, q Q, branchID string, iv d
 	if err != nil {
 		return nil, err
 	}
-	local := iv.Start.In(domain.WIB)
-	visitStart := local.Hour()*60 + local.Minute()
-	visitEnd := visitStart + int(iv.End.Sub(iv.Start)/time.Minute)
 	free := make([]Therapist, 0, len(candidates))
 	for _, t := range candidates {
-		roster := rosters[t.EmployeeID]
-		if roster.OnLeave || roster.DayOff || len(conflicts[t.ID]) > 0 {
-			continue
+		if _, working := rosters[t.EmployeeID]; working && len(conflicts[t.ID]) == 0 {
+			free = append(free, t)
 		}
-		if shift := roster.Shift; shift != nil {
-			start, startOK := domain.ClockMinutes(shift.StartTime)
-			end, endOK := domain.ClockMinutes(shift.EndTime)
-			if startOK && endOK {
-				if end <= start {
-					end = 24 * 60
-				}
-				if visitStart < start || visitEnd > end {
-					continue
-				}
-			}
-		}
-		free = append(free, t)
 	}
 	// Bookings still waiting for a therapist reserve capacity (as in
 	// publicCapacity): that many of the free therapists are spoken for.
@@ -216,12 +199,9 @@ func (s *Service) PublicPay(ctx context.Context, token string) (*PublicPayment, 
 		return nil, httpx.Status(503, "Pembayaran online belum tersedia. Silakan bayar di outlet.")
 	}
 	now := s.clock()
-	var b *payRow
-	var total float64
-	var reuse *PublicPayment
+	var result *PublicPayment
 	err := s.tx(ctx, func(q Q) error {
-		var err error
-		b, err = s.st.payRow(ctx, q, `public_token = $1::uuid AND source IN ('public', 'whatsapp')`, token)
+		b, err := s.st.payRow(ctx, q, `public_token = $1::uuid AND source IN ('public', 'whatsapp')`, token)
 		if err != nil {
 			return err
 		}
@@ -237,7 +217,8 @@ func (s *Service) PublicPay(ctx context.Context, token string) (*PublicPayment, 
 		if b.PosOrderID != nil {
 			return httpx.Conflict("Tagihan sudah dibuka di kasir outlet. Silakan bayar di outlet.")
 		}
-		if total, err = s.st.activeTotal(ctx, q, b.ID); err != nil {
+		total, err := s.st.activeTotal(ctx, q, b.ID)
+		if err != nil {
 			return err
 		}
 		prepaid, err := s.st.paidDeposit(ctx, q, b.ID)
@@ -250,33 +231,30 @@ func (s *Service) PublicPay(ctx context.Context, token string) (*PublicPayment, 
 		}
 		if b.InvoiceURL != nil && b.InvoiceExpires != nil && b.InvoiceExpires.After(now.Add(invoiceReuseMargin)) &&
 			b.InvoiceAmount != nil && *b.InvoiceAmount == total {
-			reuse = &PublicPayment{InvoiceURL: *b.InvoiceURL, Mock: strings.HasPrefix(deref(b.InvoiceID), "mock-")}
+			result = &PublicPayment{InvoiceURL: *b.InvoiceURL, Mock: strings.HasPrefix(deref(b.InvoiceID), "mock-")}
+			return nil
 		}
-		return nil
-	})
-	if err != nil || reuse != nil {
-		return reuse, err
-	}
+		// Hold the booking lock through invoice creation so room pricing cannot
+		// change mid-request. Provider errors roll back without reserving an amount.
+		statusURL := appOrigin() + "/booking/spa/status/" + token
+		inv, err := s.ports.Payments.CreateInvoice(ctx, InvoiceRequest{
+			ExternalID:  spaInvoicePrefix + b.ID,
+			Amount:      total,
+			PayerName:   b.CustomerName,
+			Description: "Booking Mizu " + b.Code,
+			RedirectURL: statusURL,
+		})
+		if err != nil {
+			if s.log != nil {
+				s.log.Error("[spa] invoice error", "booking", b.Code, "error", err)
+			}
+			return httpx.Status(502, "Pembayaran online sedang gangguan. Coba lagi, atau bayar di outlet.")
+		}
+		if inv.Mock {
+			// No hosted page exists in mock mode: the status page simulates it.
+			inv.URL = statusURL + "?bayar=simulasi"
+		}
 
-	statusURL := appOrigin() + "/booking/spa/status/" + token
-	inv, err := s.ports.Payments.CreateInvoice(ctx, InvoiceRequest{
-		ExternalID:  spaInvoicePrefix + b.ID,
-		Amount:      total,
-		PayerName:   b.CustomerName,
-		Description: "Booking Mizu " + b.Code,
-		RedirectURL: statusURL,
-	})
-	if err != nil {
-		if s.log != nil {
-			s.log.Error("[spa] invoice error", "booking", b.Code, "error", err)
-		}
-		return nil, httpx.Status(502, "Pembayaran online sedang gangguan. Coba lagi, atau bayar di outlet.")
-	}
-	if inv.Mock {
-		// No hosted page exists in mock mode: the status page simulates it.
-		inv.URL = statusURL + "?bayar=simulasi"
-	}
-	err = s.tx(ctx, func(q Q) error {
 		tag, err := q.Exec(ctx, `UPDATE spa.bookings SET payment_method = 'online', xendit_invoice_id = $2,
 		    xendit_invoice_url = $3, invoice_amount_idr = $4, invoice_expires_at = $5, updated_at = now()
 		  WHERE id = $1 AND payment_status = 'unpaid'`, b.ID, inv.ID, inv.URL, total, inv.ExpiresAt)
@@ -286,12 +264,16 @@ func (s *Service) PublicPay(ctx context.Context, token string) (*PublicPayment, 
 		if tag.RowsAffected() == 0 {
 			return httpx.Conflict("Booking ini sudah dibayar")
 		}
-		return s.st.event(ctx, q, b.ID, nil, "payment_link", nil, nil, "", "Link bayar online dibuat (Xendit)")
+		if err := s.st.event(ctx, q, b.ID, nil, "payment_link", nil, nil, "", "Link bayar online dibuat (Xendit)"); err != nil {
+			return err
+		}
+		result = &PublicPayment{InvoiceURL: inv.URL, Mock: inv.Mock}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &PublicPayment{InvoiceURL: inv.URL, Mock: inv.Mock}, nil
+	return result, nil
 }
 
 // settleOnline marks a booking paid by its Xendit invoice. It is idempotent:

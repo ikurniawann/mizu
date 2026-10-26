@@ -326,7 +326,7 @@ func (s *store) ESSSchedule(ctx context.Context, employeeID string) ([]domain.ES
 	rows, err := s.db.Query(ctx, `SELECT es.day_of_week, es.shift_id::text,
 		es.effective_from::text, es.effective_to::text,
 		s.name, s.start_time::text, s.end_time::text, s.late_tolerance_minutes
-		FROM hris.employee_shifts es
+		FROM hris.effective_employee_shifts es
 		LEFT JOIN hris.shifts s ON s.id = es.shift_id
 		WHERE es.employee_id = $1`, employeeID)
 	if err != nil {
@@ -411,11 +411,13 @@ func (s *store) TeamScheduleSummary(ctx context.Context, ids []string) ([]*Row, 
 		string_agg(DISTINCT s.name, ', ' ORDER BY s.name) AS shift_names,
 		count(*) FILTER (WHERE es.shift_id IS NOT NULL)::int AS work_days,
 		max(es.effective_from)::text AS effective_from
-		FROM hris.employee_shifts es
+		FROM unnest($1::uuid[]) employee(id)
+		CROSS JOIN generate_series(date_trunc('week', CURRENT_DATE)::date, date_trunc('week', CURRENT_DATE)::date + 6, interval '1 day') d
+		JOIN LATERAL (SELECT * FROM hris.effective_employee_shifts x
+		 WHERE x.employee_id=employee.id AND x.day_of_week=extract(isodow FROM d)
+		 AND x.effective_from<=d::date AND (x.effective_to IS NULL OR x.effective_to>=d::date)
+		 ORDER BY x.effective_from DESC,x.effective_to ASC NULLS LAST LIMIT 1) es ON true
 		LEFT JOIN hris.shifts s ON s.id = es.shift_id
-		WHERE es.employee_id = ANY($1::uuid[])
-		  AND es.effective_from <= CURRENT_DATE
-		  AND (es.effective_to IS NULL OR es.effective_to >= CURRENT_DATE)
 		GROUP BY es.employee_id`, ids)
 }
 

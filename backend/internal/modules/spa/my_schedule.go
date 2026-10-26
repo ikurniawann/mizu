@@ -31,18 +31,19 @@ type MyScheduleItem struct {
 
 // MySummary is GET /api/spa/me/summary.
 type MySummary struct {
-	Month         string  `json:"month"`
-	EarnedIDR     float64 `json:"earned_idr"`
-	EarnedCount   int     `json:"earned_count"`
-	PendingIDR    float64 `json:"pending_idr"`
-	PendingCount  int     `json:"pending_count"`
-	UpcomingIDR   float64 `json:"upcoming_idr"`
-	UpcomingCount int     `json:"upcoming_count"`
+	UpcomingUnconfiguredCount int     `json:"upcoming_unconfigured_count"`
+	Month                     string  `json:"month"`
+	EarnedIDR                 float64 `json:"earned_idr"`
+	EarnedCount               int     `json:"earned_count"`
+	PendingIDR                float64 `json:"pending_idr"`
+	PendingCount              int     `json:"pending_count"`
+	UpcomingIDR               float64 `json:"upcoming_idr"`
+	UpcomingCount             int     `json:"upcoming_count"`
 }
 
 type myItemRow struct {
-	item        MyScheduleItem
-	treatmentID string
+	item  MyScheduleItem
+	level int
 }
 
 // myItems are the therapist's non-cancelled treatments of bookings starting in [start, end).
@@ -53,7 +54,7 @@ func (store) myItems(ctx context.Context, q Q, therapistID string, start, end ti
 		var assigned *time.Time
 		item, err := scanItem(r, &starts, &ends, &row.item.BookingID, &row.item.BookingCode, &row.item.BranchID, &row.item.BranchName,
 			&row.item.CustomerName, &row.item.GenderPref, &row.item.BookingStatus, &row.item.PaymentStatus, &row.item.GroupID,
-			&row.treatmentID, &row.item.Notes, &assigned)
+			&row.item.Notes, &assigned, &row.level)
 		row.item.Item = item
 		row.item.StartsAt, row.item.EndsAt = jsTime(starts), jsTime(ends)
 		if assigned != nil {
@@ -61,10 +62,9 @@ func (store) myItems(ctx context.Context, q Q, therapistID string, start, end ti
 			row.item.AssignedAt = &at
 		}
 		return row, err
-	}, `SELECT `+boardItemColumns+`, v.treatment_id::text, b.notes,
-	        (SELECT max(ev.created_at) FROM spa.booking_events ev WHERE ev.booking_id = b.id AND ev.action = 'assign')
+	}, `SELECT `+boardItemColumns+`, b.notes,
+	        (SELECT max(ev.created_at) FROM spa.booking_events ev WHERE ev.booking_id = b.id AND ev.action = 'assign'), COALESCE(t.level,0)
 	   FROM spa.booking_items i JOIN spa.bookings b ON b.id = i.booking_id
-	   JOIN spa.treatment_variants v ON v.id = i.variant_id
 	   JOIN configuration.branches br ON br.id = b.branch_id `+itemJoins+`
 	  WHERE i.therapist_id = $1 AND b.scheduled_at >= $2 AND b.scheduled_at < $3
 	    AND i.status <> 'cancelled' AND b.status <> 'cancelled'
@@ -74,21 +74,25 @@ func (store) myItems(ctx context.Context, q Q, therapistID string, start, end ti
 // withCommission fills each item's commission: the frozen amount once
 // completed, else an estimate from the active rules.
 func (s *Service) withCommission(ctx context.Context, rows []myItemRow) ([]MyScheduleItem, error) {
-	rules, err := s.st.activeRules(ctx, s.db)
+	rules, err := s.CommissionSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]MyScheduleItem, len(rows))
 	for i, row := range rows {
 		it := row.item
-		if it.Status != domain.ItemCompleted || it.CommissionIDR == nil {
-			amount := 0.0
-			if r, ok := domain.ResolveCommission(rules, row.treatmentID, it.VariantID, it.BranchID); ok {
-				amount = domain.CommissionAmount(r, it.PriceIDR)
-			}
-			it.CommissionIDR = &amount
+		if it.Status != domain.ItemCompleted {
+			it.CommissionIDR = nil
 			it.CommissionEstimated = true
+			it.CommissionLevel = &row.level
+			for _, r := range rules {
+				if r.VariantID == it.VariantID {
+					it.CommissionIDR = r.Values[row.level]
+					break
+				}
+			}
 		}
+
 		out[i] = it
 	}
 	return out, nil
@@ -146,6 +150,15 @@ func (s *Service) MySummary(ctx context.Context, userID, month string) (*MySumma
 		return nil, err
 	}
 	for _, it := range items {
+		if it.CommissionReset {
+			continue
+		}
+		if it.CommissionIDR == nil {
+			if it.Status != domain.ItemCompleted && it.BookingStatus != domain.BookingExpired {
+				sum.UpcomingUnconfiguredCount++
+			}
+			continue
+		}
 		amount := *it.CommissionIDR
 		switch {
 		case it.Status == domain.ItemCompleted && it.PaymentStatus != domain.PaymentPaid:

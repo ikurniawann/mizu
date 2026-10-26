@@ -51,7 +51,7 @@ export function DayOffAdminTab({ outlets }: { outlets: Outlet[] }) {
         </Card>
       ) : data.data ? (
         <>
-          <QuotaForm key={`${branchId}-${data.data.quota.min_female}-${data.data.quota.min_male}-${data.data.quota.max_per_week}`} data={data.data} />
+          <QuotaForm key={`${branchId}-${data.data.quota.min_female}-${data.data.quota.min_male}-${data.data.quota.max_per_week}-${data.data.quota.min_per_week}`} data={data.data} />
           <MonthTable data={data.data} />
         </>
       ) : null}
@@ -62,16 +62,18 @@ export function DayOffAdminTab({ outlets }: { outlets: Outlet[] }) {
 function QuotaForm({ data }: { data: DayOffMonth }) {
   const [female, setFemale] = useState(String(data.quota.min_female));
   const [male, setMale] = useState(String(data.quota.min_male));
+  const [minWeek,setMinWeek]=useState(String(data.quota.min_per_week??0));
   const [perWeek, setPerWeek] = useState(String(data.quota.max_per_week));
   const [error, setError] = useState<string | null>(null);
   const save = useSaveDayOffQuota();
   const submit = () => {
-    const f = Number(female), m = Number(male), w = Number(perWeek);
+    const f = Number(female), m = Number(male), w = Number(perWeek), min = Number(minWeek);
+    if (!Number.isInteger(min)||min<0||min>w) return setError("Minimum libur harus 0 sampai maksimum libur.");
     if (![f, m].every((n) => Number.isInteger(n) && n >= 0 && n <= 100)) return setError("Kuota minimal 0–100 orang.");
     if (!Number.isInteger(w) || w < 0 || w > 7) return setError("Libur per minggu 0–7 hari.");
     setError(null);
     save.mutate(
-      { branchId: data.branch_id, input: { min_female: f, min_male: m, max_per_week: w } },
+      { branchId: data.branch_id, input: { min_female: f, min_male: m, max_per_week: w, min_per_week: min } },
       {
         onSuccess: () => toast.success("Kuota libur disimpan"),
         onError: (err) => {
@@ -90,7 +92,7 @@ function QuotaForm({ data }: { data: DayOffMonth }) {
         </p>
       </div>
       <form
-        className="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:items-end"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-5 sm:items-end"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -102,6 +104,7 @@ function QuotaForm({ data }: { data: DayOffMonth }) {
         <Field label="Min. terapis pria masuk / hari">
           <Input type="number" min={0} max={100} value={male} onChange={(e) => setMale(e.target.value)} aria-label="Minimal terapis pria" />
         </Field>
+        <Field label="Min. libur / minggu"><Input type="number" min={0} max={7} value={minWeek} onChange={e=>setMinWeek(e.target.value)} aria-label="Minimal libur per minggu" /></Field>
         <Field label="Maks. libur / minggu">
           <Input type="number" min={0} max={7} value={perWeek} onChange={(e) => setPerWeek(e.target.value)} aria-label="Maksimal libur per minggu" />
         </Field>

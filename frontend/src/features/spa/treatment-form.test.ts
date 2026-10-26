@@ -102,13 +102,8 @@ describe("form treatment", () => {
 describe("harga per outlet", () => {
   const outlets = [{ branch_id: "b1" }, { branch_id: "b2" }];
 
-  it("mengirim komisi outlet bersama perubahan harga dan menolak komisi kosong", () => {
-    expect(() => buildPriceBatches([treatment], { v1: { b1: "250000" } }, {})).toThrow(/Komisi.*wajib/);
-    expect(buildPriceBatches([treatment], { v1: { b1: "250000" } }, {
-      v1: { b1: "12000" },
-    })[0].prices).toEqual([{ variant_id: "v1", branch_id: "b1", price_idr: 250000, commission_value: 12000 }]);
-    expect(buildPriceBatches([treatment], {}, { v2: { b2: "0" } })[0].prices)
-      .toEqual([{ variant_id: "v2", branch_id: "b2", price_idr: null, commission_value: 0 }]);
+  it("menyimpan harga tanpa input komisi", () => {
+    expect(buildPriceBatches([treatment], { v1: { b1: "250000" } })[0].prices).toEqual([{ variant_id: "v1", branch_id: "b1", price_idr: 250000 }]);
   });
 
   it("grid awal dari override yang ada", () => {

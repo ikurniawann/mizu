@@ -6555,6 +6555,71 @@
     "path": "/api/spa/waitlist/{id}/status"
   },
   {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/commission-settings"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/commission-settings"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/level-requirements"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/level-requirements"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/commission-rates"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/me/trainings"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/training-participants/{id}/status"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/trainings"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/trainings"
+  },
+  {
+    "module": "spa",
+    "method": "PUT",
+    "path": "/api/spa/trainings/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/trainings/{id}/candidates"
+  },
+  {
+    "module": "spa",
+    "method": "GET",
+    "path": "/api/spa/trainings/{id}/participants"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/trainings/{id}/participants"
+  },
+  {
     "module": "pos-sales",
     "method": "POST",
     "path": "/api/table-order/orders"
@@ -7043,5 +7108,20 @@
     "module": "shop",
     "method": "GET",
     "path": "/api/wholesale/orders/{id}"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/assists/preview"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/rosters/apply"
+  },
+  {
+    "module": "spa",
+    "method": "POST",
+    "path": "/api/spa/rosters/preview"
   }
 ]

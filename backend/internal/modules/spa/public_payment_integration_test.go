@@ -53,10 +53,10 @@ func TestPublicTherapistChoiceAndOnlinePayment(t *testing.T) {
 	}, http.StatusCreated)
 	v60 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	ayu := e.data(admin, "POST", "/api/spa/therapists", map[string]any{
-		"employee_id": e.employee("Ayu Lestari", nil), "home_branch_id": branch, "gender": "female",
+		"employee_id": e.scheduledEmployee("Ayu Lestari", nil), "home_branch_id": branch, "gender": "female",
 	}, http.StatusCreated)["id"].(string)
 	e.data(admin, "POST", "/api/spa/therapists", map[string]any{
-		"employee_id": e.employee("Budi Santoso", nil), "home_branch_id": branch, "gender": "male",
+		"employee_id": e.scheduledEmployee("Budi Santoso", nil), "home_branch_id": branch, "gender": "male",
 	}, http.StatusCreated)
 
 	for _, o := range e.list(nil, "/api/public/spa/outlets") {

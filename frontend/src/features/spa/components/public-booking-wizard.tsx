@@ -1,5 +1,6 @@
 "use client";
 
+import { ROOM_CATEGORY_LABEL } from "../rooms";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -1131,7 +1132,7 @@ function RoomPicker({ rooms, value, onChange }: { rooms: PublicRoom[]; value: st
               <span className="min-w-0">
                 <span className="block truncate font-semibold">{r.name}</span>
                 <span className={cn("block text-xs", on ? "text-on-ink-muted" : "text-muted-foreground")}>
-                  {r.capacity} orang · {r.price_idr > 0 ? `+${formatRupiah(r.price_idr)}` : "gratis"}
+                  {ROOM_CATEGORY_LABEL[r.category]} · {r.capacity} orang · {r.price_idr > 0 ? `+${formatRupiah(r.price_idr)}` : "gratis"}
                   {r.description ? ` · ${r.description}` : ""}
                 </span>
               </span>

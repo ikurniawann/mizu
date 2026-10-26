@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import Image from "next/image";
 import { UserRoundX } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { initials } from "@/lib/hris/ess-view";
@@ -16,7 +17,10 @@ import {
   minuteAtOffset,
   nowOffset,
   offShiftBands,
+  shiftExtensionBand,
+  shiftStartMismatch,
   PX_PER_MIN,
+  type Band,
   type DayRange,
   type Placed,
 } from "../calendar";
@@ -28,6 +32,7 @@ import { BOOKING_DRAG_TYPE, BOOKING_GRAB_TYPE, useBookingDnd } from "./use-booki
 const HEADER_H = 80;
 const COL_W = 176;
 const AXIS_W = 56;
+const EXTENSION_TONE = "bg-amber-100/70 dark:bg-amber-900/30";
 
 export interface CalendarSlot {
   therapistId: string | null;
@@ -194,11 +199,19 @@ export function BookOrderCalendar({
                   hours={hours}
                   nowY={nowY}
                   bands={bands}
+                  extensionBand={shiftExtensionBand(row.shift, unavailable, range)}
                   highlight={dnd.dropTarget === t.id}
                   onDragOver={(e) => dnd.onDragOver(e, t.id)}
                   onDragLeave={(e) => dnd.onDragLeave(e, t.id)}
                   onDrop={(e) => dnd.onDrop(e, row, { date, range })}
-                  onEmptyClick={(minute) => onSlot({ therapistId: t.id, time: clockOf(minute) })}
+                  onEmptyClick={(minute) => {
+                    const mismatch = shiftStartMismatch(minute, row.shift);
+                    if (mismatch) {
+                      toast.error("Waktu mulai tidak tersedia", { description: mismatch });
+                      return;
+                    }
+                    onSlot({ therapistId: t.id, time: clockOf(minute) });
+                  }}
                 >
                   {placed.map((p) => (
                     <Block key={p.item.id} placed={p} onOpen={onOpenItem} />
@@ -251,6 +264,7 @@ function Column({
   hours,
   nowY,
   bands = [],
+  extensionBand,
   highlight,
   className,
   children,
@@ -266,6 +280,7 @@ function Column({
   hours: number[];
   nowY: number | null;
   bands?: { top: number; height: number }[];
+  extensionBand?: Band | null;
   highlight?: boolean;
   className?: string;
   children: React.ReactNode;
@@ -305,6 +320,14 @@ function Column({
           onEmptyClick(minuteAtOffset(y, range));
         }}
       >
+        {extensionBand && (
+          <div
+            aria-hidden
+            data-shift-band="extension"
+            className={cn("pointer-events-none absolute inset-x-0", EXTENSION_TONE)}
+            style={{ top: extensionBand.top, height: extensionBand.height }}
+          />
+        )}
         {bands.map((b, i) => (
           <div
             key={i}
@@ -417,6 +440,11 @@ function Legend() {
           <span className={cn("inline-block size-3 rounded border", tone)} /> {label}
         </span>
       ))}
+      <span className="inline-flex items-center gap-1.5">
+        <span className={cn("inline-block h-3 w-4 rounded border border-amber-300 dark:border-amber-700", EXTENSION_TONE)} />
+        <span>Perpanjangan shift +1 jam</span>
+        <span className="text-[11px]">Hanya penyelesaian treatment</span>
+      </span>
       <span className="inline-flex items-center gap-1.5">
         <span className="inline-block h-3 w-4 rounded bg-muted/50 bg-[repeating-linear-gradient(135deg,transparent,transparent_2px,color-mix(in_srgb,var(--muted-foreground)_30%,transparent)_2px,color-mix(in_srgb,var(--muted-foreground)_30%,transparent)_4px)]" />
         Di luar shift

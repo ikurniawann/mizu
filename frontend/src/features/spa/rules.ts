@@ -8,7 +8,6 @@ import type {
   BookingItem,
   BookingStatus,
   CommissionLine,
-  CommissionRule,
   CommissionType,
   GenderPref,
   ItemAction,
@@ -224,30 +223,6 @@ export function sortByStart<T extends { starts_at: string }>(items: T[]): T[] {
 }
 
 // ── Komisi ───────────────────────────────────────────────────────────────────
-
-export type RuleScope = "default" | "treatment" | "variant";
-
-export function ruleScope(rule: Pick<CommissionRule, "treatment_id" | "variant_id">): RuleScope {
-  if (rule.variant_id) return "variant";
-  if (rule.treatment_id) return "treatment";
-  return "default";
-}
-
-export const RULE_SCOPE_LABEL: Record<RuleScope, string> = {
-  default: "Default",
-  treatment: "Treatment",
-  variant: "Varian",
-};
-
-/** Peringkat spesifisitas (0 = paling spesifik) sesuai urutan resolusi EPIC-052. */
-export function ruleSpecificity(rule: Pick<CommissionRule, "treatment_id" | "variant_id" | "branch_id">): number {
-  const scope = ruleScope(rule);
-  const base = scope === "variant" ? 0 : scope === "treatment" ? 2 : 4;
-  return base + (rule.branch_id ? 0 : 1);
-}
-
-export const COMMISSION_RESOLUTION_TEXT =
-  "Aturan paling spesifik menang: varian + outlet → varian → treatment + outlet → treatment → default + outlet → default. Persentase = harga × nilai ÷ 100; nominal tetap = nilai.";
 
 /** "10%" atau "Rp 25.000" (tanpa import formatter supaya tetap murni). */
 export function commissionValueLabel(type: CommissionType | null | undefined, value: number | null | undefined): string {

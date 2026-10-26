@@ -8,7 +8,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"nuhabit/backend/internal/modules/spa/domain"
 	"nuhabit/backend/internal/platform/database"
 	"nuhabit/backend/internal/platform/httpx"
 )
@@ -245,31 +244,6 @@ func (s store) treatments(ctx context.Context, q Q, activeOnly bool, id string) 
 		i := index[x.treatmentID]
 		list[i].Variants = append(list[i].Variants, x.v)
 	}
-	type outletCommissionRow struct {
-		VariantID  string
-		Commission OutletCommission
-	}
-	commissions, err := many(ctx, q, func(r pgx.Row) (outletCommissionRow, error) {
-		var row outletCommissionRow
-		err := r.Scan(&row.VariantID, &row.Commission.BranchID, &row.Commission.Type, &row.Commission.Value)
-		return row, err
-	}, `SELECT r.variant_id::text, r.branch_id::text, r.commission_type, r.value::float8
-	    FROM spa.commission_rules r JOIN spa.treatment_variants v ON v.id = r.variant_id
-	   WHERE v.treatment_id = ANY($1::uuid[]) AND r.branch_id IS NOT NULL AND r.is_active`, ids)
-	if err != nil {
-		return nil, err
-	}
-	byVariant := make(map[string]*Variant)
-	for i := range list {
-		for j := range list[i].Variants {
-			byVariant[list[i].Variants[j].ID] = &list[i].Variants[j]
-		}
-	}
-	for _, row := range commissions {
-		if v := byVariant[row.VariantID]; v != nil {
-			v.OutletCommissions = append(v.OutletCommissions, row.Commission)
-		}
-	}
 	return list, nil
 }
 
@@ -359,17 +333,6 @@ func (store) setPrice(ctx context.Context, q Q, treatmentID, variantID, branchID
 	}
 	_, err := q.Exec(ctx, `INSERT INTO spa.variant_outlet_prices (variant_id, branch_id, price_idr) VALUES ($1, $2, $3)
 	  ON CONFLICT (variant_id, branch_id) DO UPDATE SET price_idr = EXCLUDED.price_idr, updated_at = now()`, variantID, branchID, *price)
-	return err
-}
-
-func (store) setOutletCommission(ctx context.Context, q Q, variantID, branchID string, value float64) error {
-	_, err := q.Exec(ctx, `INSERT INTO spa.commission_rules (variant_id, branch_id, commission_type, value, is_active)
-	  VALUES ($1, $2, 'fixed', $3, true)
-	  ON CONFLICT (COALESCE(treatment_id, '00000000-0000-0000-0000-000000000000'::uuid),
-	               COALESCE(variant_id, '00000000-0000-0000-0000-000000000000'::uuid),
-	               COALESCE(branch_id, '00000000-0000-0000-0000-000000000000'::uuid))
-	  DO UPDATE SET commission_type = EXCLUDED.commission_type, value = EXCLUDED.value,
-	                is_active = true, updated_at = now()`, variantID, branchID, value)
 	return err
 }
 
@@ -464,7 +427,9 @@ func (store) publicTreatments(ctx context.Context, q Q, branchID string) ([]Publ
 /* ── therapists ──────────────────────────────────────────────────────── */
 
 const therapistColumns = `t.id::text, t.employee_id::text, e.full_name, e.nip, e.phone, e.photo_url,
-	t.home_branch_id::text, b.name, e.gender::text, t.is_active`
+	t.home_branch_id::text, b.name, e.gender::text,
+	t.is_active AND COALESCE(e.is_active,true) AND e.employment_status <> 'resigned' AND NOT t.rehire_pending,
+	t.level, t.employment_cycle, e.employment_status`
 
 const therapistFrom = `spa.therapists t
 	JOIN hris.employees e ON e.id = t.employee_id
@@ -472,7 +437,7 @@ const therapistFrom = `spa.therapists t
 
 func scanTherapist(r pgx.Row) (Therapist, error) {
 	var t Therapist
-	err := r.Scan(&t.ID, &t.EmployeeID, &t.FullName, &t.NIP, &t.Phone, &t.PhotoURL, &t.HomeBranchID, &t.HomeBranchName, &t.Gender, &t.IsActive)
+	err := r.Scan(&t.ID, &t.EmployeeID, &t.FullName, &t.NIP, &t.Phone, &t.PhotoURL, &t.HomeBranchID, &t.HomeBranchName, &t.Gender, &t.IsActive, &t.Level, &t.EmploymentCycle, &t.EmploymentStatus)
 	return t, err
 }
 
@@ -482,7 +447,7 @@ func (store) therapists(ctx context.Context, q Q, branchID string, activeOnly bo
 		w.add("t.home_branch_id = ?", branchID)
 	}
 	if activeOnly {
-		w.parts = append(w.parts, "t.is_active AND COALESCE(e.is_active, true)")
+		w.parts = append(w.parts, "t.is_active AND COALESCE(e.is_active, true) AND e.employment_status <> 'resigned' AND NOT t.rehire_pending")
 	}
 	return many(ctx, q, scanTherapist, `SELECT `+therapistColumns+` FROM `+therapistFrom+` WHERE `+w.sql()+` ORDER BY e.full_name`, w.args...)
 }
@@ -509,16 +474,16 @@ func (store) eligibleTherapists(ctx context.Context, q Q, branchID, date string)
 	return many(ctx, q, func(r pgx.Row) (eligibleTherapist, error) {
 		var t eligibleTherapist
 		err := r.Scan(&t.ID, &t.EmployeeID, &t.FullName, &t.NIP, &t.Phone, &t.PhotoURL, &t.HomeBranchID, &t.HomeBranchName,
-			&t.Gender, &t.IsActive, &t.Assisting)
+			&t.Gender, &t.IsActive, &t.Level, &t.EmploymentCycle, &t.EmploymentStatus, &t.Assisting)
 		return t, err
 	}, `SELECT `+therapistColumns+`, t.home_branch_id <> $1
 	   FROM `+therapistFrom+`
-	  WHERE t.is_active AND COALESCE(e.is_active, true)
+	  WHERE t.is_active AND COALESCE(e.is_active, true) AND e.employment_status <> 'resigned' AND NOT t.rehire_pending
 	    AND ((t.home_branch_id = $1 AND NOT EXISTS (
 	            SELECT 1 FROM spa.therapist_assists a
-	             WHERE a.therapist_id = t.id AND a.branch_id <> $1 AND $2::date BETWEEN a.start_date AND a.end_date))
+	             WHERE a.therapist_id = t.id AND a.branch_id <> $1 AND a.cancelled_at IS NULL AND a.starts_at <= ($2::date::timestamp AT TIME ZONE 'Asia/Jakarta') AND a.ends_at >= (($2::date+1)::timestamp AT TIME ZONE 'Asia/Jakarta')))
 	      OR EXISTS (SELECT 1 FROM spa.therapist_assists a
-	             WHERE a.therapist_id = t.id AND a.branch_id = $1 AND $2::date BETWEEN a.start_date AND a.end_date))
+	             WHERE a.therapist_id = t.id AND a.branch_id = $1 AND a.cancelled_at IS NULL AND a.starts_at < (($2::date+2)::timestamp AT TIME ZONE 'Asia/Jakarta') AND a.ends_at > ($2::date::timestamp AT TIME ZONE 'Asia/Jakarta')))
 	  ORDER BY t.home_branch_id <> $1, e.full_name`, branchID, date)
 }
 
@@ -541,6 +506,7 @@ func (store) updateTherapist(ctx context.Context, q Q, id string, branchID *stri
 
 func (store) assists(ctx context.Context, q Q, branchID, from, to string) ([]Assist, error) {
 	w := &where{}
+	w.add("(a.cancelled_at IS NULL) = ?", true)
 	if branchID != "" {
 		w.add("a.branch_id = ?", branchID)
 	}
@@ -552,9 +518,9 @@ func (store) assists(ctx context.Context, q Q, branchID, from, to string) ([]Ass
 	}
 	return many(ctx, q, func(r pgx.Row) (Assist, error) {
 		var a Assist
-		err := r.Scan(&a.ID, &a.TherapistID, &a.TherapistName, &a.BranchID, &a.BranchName, &a.StartDate, &a.EndDate, &a.Note)
+		err := r.Scan(&a.ID, &a.TherapistID, &a.TherapistName, &a.BranchID, &a.BranchName, &a.StartDate, &a.EndDate, &a.Note, &a.StartsAt, &a.EndsAt)
 		return a, err
-	}, `SELECT a.id::text, a.therapist_id::text, e.full_name, a.branch_id::text, b.name, a.start_date::text, a.end_date::text, a.note
+	}, `SELECT a.id::text, a.therapist_id::text, e.full_name, a.branch_id::text, b.name, a.start_date::text, a.end_date::text, a.note, a.starts_at, a.ends_at
 	   FROM spa.therapist_assists a
 	   JOIN spa.therapists t ON t.id = a.therapist_id
 	   JOIN hris.employees e ON e.id = t.employee_id
@@ -715,7 +681,7 @@ func (store) bookingIDOfItem(ctx context.Context, q Q, itemID string) (string, e
 
 const itemColumns = `i.id::text, i.variant_id::text, i.treatment_name, i.variant_name, i.duration_min,
 	i.price_idr::float8, i.therapist_id::text, e.full_name, i.status, i.started_at, i.completed_at,
-	i.commission_idr::float8`
+	i.commission_idr::float8, i.commission_level, i.commission_reset`
 
 const itemJoins = `LEFT JOIN spa.therapists t ON t.id = i.therapist_id
 	LEFT JOIN hris.employees e ON e.id = t.employee_id`
@@ -724,7 +690,7 @@ func scanItem(r pgx.Row, extra ...any) (Item, error) {
 	var it Item
 	var started, completed *time.Time
 	dest := append([]any{&it.ID, &it.VariantID, &it.TreatmentName, &it.VariantName, &it.DurationMin,
-		&it.PriceIDR, &it.TherapistID, &it.TherapistName, &it.Status, &started, &completed, &it.CommissionIDR}, extra...)
+		&it.PriceIDR, &it.TherapistID, &it.TherapistName, &it.Status, &started, &completed, &it.CommissionIDR, &it.CommissionLevel, &it.CommissionReset}, extra...)
 	err := r.Scan(dest...)
 	it.StartedAt, it.CompletedAt = httpx.NewJSTime(started), httpx.NewJSTime(completed)
 	return it, err
@@ -857,12 +823,6 @@ func (store) setItemStatus(ctx context.Context, q Q, itemID, status string, at t
 	    completed_at = CASE WHEN $2 = 'completed' THEN $3 ELSE completed_at END,
 	    updated_at = now()
 	  WHERE id = $1`, itemID, status, at)
-	return err
-}
-
-func (store) setItemCommission(ctx context.Context, q Q, itemID string, ctype *string, value *float64, amount float64) error {
-	_, err := q.Exec(ctx, `UPDATE spa.booking_items SET commission_type = $2, commission_value = $3, commission_idr = $4 WHERE id = $1`,
-		itemID, ctype, value, amount)
 	return err
 }
 
@@ -1187,67 +1147,6 @@ func (store) publicBookingFunnel(ctx context.Context, q Q, from, to time.Time) (
 
 /* ── commissions ─────────────────────────────────────────────────────── */
 
-func (store) activeRules(ctx context.Context, q Q) ([]domain.CommissionRule, error) {
-	return many(ctx, q, func(r pgx.Row) (domain.CommissionRule, error) {
-		var c domain.CommissionRule
-		var t, v, b *string
-		err := r.Scan(&c.ID, &t, &v, &b, &c.Type, &c.Value)
-		c.TreatmentID, c.VariantID, c.BranchID = deref(t), deref(v), deref(b)
-		return c, err
-	}, `SELECT id::text, treatment_id::text, variant_id::text, branch_id::text, commission_type, value::float8
-	   FROM spa.commission_rules WHERE is_active`)
-}
-
-func (store) rules(ctx context.Context, q Q) ([]CommissionRuleView, error) {
-	return many(ctx, q, func(r pgx.Row) (CommissionRuleView, error) {
-		var c CommissionRuleView
-		err := r.Scan(&c.ID, &c.TreatmentID, &c.TreatmentName, &c.VariantID, &c.VariantName, &c.BranchID, &c.BranchName,
-			&c.CommissionType, &c.Value, &c.IsActive)
-		return c, err
-	}, `SELECT r.id::text, COALESCE(r.treatment_id, vt.id)::text, COALESCE(t.name, vt.name), r.variant_id::text, v.name,
-	        r.branch_id::text, b.name, r.commission_type, r.value::float8, r.is_active
-	   FROM spa.commission_rules r
-	   LEFT JOIN spa.treatments t ON t.id = r.treatment_id
-	   LEFT JOIN spa.treatment_variants v ON v.id = r.variant_id
-	   LEFT JOIN spa.treatments vt ON vt.id = v.treatment_id
-	   LEFT JOIN configuration.branches b ON b.id = r.branch_id
-	  ORDER BY (r.variant_id IS NULL AND r.treatment_id IS NULL) DESC, COALESCE(t.name, vt.name), v.name, b.name NULLS FIRST`)
-}
-
-type ruleInput struct {
-	TreatmentID, VariantID, BranchID *string
-	Type                             string
-	Value                            float64
-	IsActive                         bool
-}
-
-func ruleConflict(err error) error {
-	if database.IsUniqueViolation(err) {
-		return httpx.Conflict("Aturan komisi untuk cakupan ini sudah ada")
-	}
-	return err
-}
-
-func (store) insertRule(ctx context.Context, q Q, in ruleInput) (string, error) {
-	var id string
-	err := q.QueryRow(ctx, `INSERT INTO spa.commission_rules (treatment_id, variant_id, branch_id, commission_type, value, is_active)
-	  VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6) RETURNING id::text`,
-		in.TreatmentID, in.VariantID, in.BranchID, in.Type, in.Value, in.IsActive).Scan(&id)
-	return id, ruleConflict(err)
-}
-
-func (store) updateRule(ctx context.Context, q Q, id string, in ruleInput) (bool, error) {
-	tag, err := q.Exec(ctx, `UPDATE spa.commission_rules SET treatment_id = $2::uuid, variant_id = $3::uuid, branch_id = $4::uuid,
-	    commission_type = $5, value = $6, is_active = $7, updated_at = now() WHERE id = $1`,
-		id, in.TreatmentID, in.VariantID, in.BranchID, in.Type, in.Value, in.IsActive)
-	return tag.RowsAffected() > 0, ruleConflict(err)
-}
-
-func (store) deleteRule(ctx context.Context, q Q, id string) (bool, error) {
-	tag, err := q.Exec(ctx, `DELETE FROM spa.commission_rules WHERE id = $1`, id)
-	return tag.RowsAffected() > 0, err
-}
-
 type commissionRow struct {
 	TherapistID string
 	FullName    string
@@ -1270,18 +1169,18 @@ func (store) commissionLines(ctx context.Context, q Q, start, end time.Time, bra
 		var at time.Time
 		err := r.Scan(&c.TherapistID, &c.FullName, &c.NIP, &c.Line.ItemID, &c.Line.BookingID, &c.Line.BookingCode,
 			&c.Line.BranchName, &at, &c.Line.TreatmentName, &c.Line.VariantName, &c.Line.PriceIDR,
-			&c.Line.CommissionType, &c.Line.CommissionValue, &c.Line.CommissionIDR)
+			&c.Line.CommissionType, &c.Line.CommissionValue, &c.Line.CommissionIDR, &c.Line.CommissionLevel)
 		c.Line.CompletedAt = jsTime(at)
 		return c, err
 	}, `SELECT t.id::text, e.full_name, e.nip, i.id::text, b.id::text, b.booking_code, br.name, i.completed_at,
 	        i.treatment_name, i.variant_name, i.price_idr::float8, i.commission_type, i.commission_value::float8,
-	        COALESCE(i.commission_idr, 0)::float8
+	        COALESCE(i.commission_idr, 0)::float8, i.commission_level
 	   FROM spa.booking_items i
 	   JOIN spa.bookings b ON b.id = i.booking_id
 	   JOIN configuration.branches br ON br.id = b.branch_id
 	   JOIN spa.therapists t ON t.id = i.therapist_id
 	   JOIN hris.employees e ON e.id = t.employee_id
-	  WHERE i.status = 'completed' AND b.payment_status = 'paid' AND `+w.sql()+`
+	  WHERE i.status = 'completed' AND NOT i.commission_reset AND b.payment_status = 'paid' AND `+w.sql()+`
 	  ORDER BY e.full_name, i.completed_at`, w.args...)
 }
 

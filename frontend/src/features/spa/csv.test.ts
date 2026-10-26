@@ -53,7 +53,7 @@ describe("toCsv & commissionReportCsv", () => {
               treatment_name: "Balinese Massage",
               variant_name: "90 menit",
               price_idr: 300000,
-              commission_type: "percent",
+              commission_level: 1, commission_type: "percent",
               commission_value: 10,
               commission_idr: 30000,
             },
@@ -65,8 +65,8 @@ describe("toCsv & commissionReportCsv", () => {
     expect(lines).toHaveLength(4);
     expect(lines[0]).toContain("Terapis,NIP,Kode booking");
     // completed_at 17:30Z = 8 Okt 00:30 WIB
-    expect(lines[1]).toBe('"Sari, A.",M-01,SPA-001,Mizu Kemang,2026-10-08,00:30,Balinese Massage,90 menit,300000,10%,30000');
-    expect(lines[2]).toBe('"Subtotal Sari, A.",M-01,,,,,1 treatment,,300000,,30000');
-    expect(lines[3]).toBe("Total,,,,,,,,,,30000");
+    expect(lines[1]).toBe('"Sari, A.",M-01,SPA-001,Mizu Kemang,2026-10-08,00:30,Balinese Massage,90 menit,300000,Level 1,10%,30000');
+    expect(lines[2]).toBe('"Subtotal Sari, A.",M-01,,,,,1 treatment,,300000,,,30000');
+    expect(lines[3]).toBe("Total,,,,,,,,,,,30000");
   });
 });

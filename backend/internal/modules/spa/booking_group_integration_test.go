@@ -18,7 +18,7 @@ func TestStaffBookingGroupCreatesSeparateVisitsAndOnePOSBill(t *testing.T) {
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	therapists := []string{}
 	for _, name := range []string{"Terapis grup A", "Terapis grup B"} {
-		th := e.data(&e.admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.employee(name, nil), "home_branch_id": e.org.BranchID}, 201)
+		th := e.data(&e.admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": e.scheduledEmployee(name, nil), "home_branch_id": e.org.BranchID}, 201)
 		therapists = append(therapists, th["id"].(string))
 	}
 	member := func(name, therapist string) map[string]any {

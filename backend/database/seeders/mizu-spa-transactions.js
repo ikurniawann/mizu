@@ -95,7 +95,7 @@ async function load(c) {
   const products = new Map(productRows.rows.map((r) => [`${r.variant_id}|${r.branch_id}`, { id: r.id, sku: r.sku }]));
 
   const staffRows = await c.query(
-    `SELECT e.id AS employee_id, e.nip, e.full_name, t.id AS therapist_id, e.gender::text AS gender, t.home_branch_id
+    `SELECT e.id AS employee_id, e.nip, e.full_name, t.id AS therapist_id, e.gender::text AS gender, t.home_branch_id, t.level
        FROM hris.employees e LEFT JOIN spa.therapists t ON t.employee_id = e.id
       WHERE e.nip = ANY($1)`, [D.STAFF.map((s) => `MZ-${s[0]}`)]);
   const staffByNip = new Map(staffRows.rows.map((r) => [r.nip.slice(3), r]));
@@ -108,7 +108,7 @@ async function load(c) {
     if (kind === "therapist") {
       const s = D.SHIFTS.find((x) => x.key === shift);
       therapists.push({ id: row.therapist_id, employeeId: row.employee_id, name: row.full_name, gender: row.gender,
-        home: outlet.id, dayOff, shiftStart: clock(s.start), shiftEnd: clock(s.end) });
+        level: row.level, home: outlet.id, dayOff, shiftStart: clock(s.start), shiftEnd: clock(s.end) });
     }
     if (kind === "frontdesk") cashier[outlet.id] = row.employee_id;
   }
@@ -117,7 +117,7 @@ async function load(c) {
       WHERE therapist_id = ANY($1)`, [therapists.map((t) => t.id)]);
 
   const ruleRows = await c.query(
-    `SELECT id, treatment_id, variant_id, branch_id, commission_type AS type, value::float8 AS value
+    `SELECT id, variant_id, therapist_level, value::float8 AS value
        FROM spa.commission_rules WHERE is_active`);
 
   const custRows = await c.query(`SELECT id, name, phone, gender FROM pos.pos_customers WHERE phone = ANY($1)`,
@@ -128,25 +128,10 @@ async function load(c) {
 
 /* ── rules mirrored from the Go domain ───────────────────────────────── */
 
-function resolveCommission(rules, treatmentId, variantId, branchId, price) {
-  let best = null;
-  let bestRank = Infinity;
-  for (const r of rules) {
-    if (r.branch_id && r.branch_id !== branchId) continue;
-    const branchRank = r.branch_id ? 0 : 1;
-    let rank;
-    if (r.variant_id) {
-      if (r.variant_id !== variantId) continue;
-      rank = branchRank;
-    } else if (r.treatment_id) {
-      if (r.treatment_id !== treatmentId) continue;
-      rank = 2 + branchRank;
-    } else rank = 4 + branchRank;
-    if (rank < bestRank) { best = r; bestRank = rank; }
-  }
-  if (!best) return null;
-  const amount = best.type === "percent" ? Math.round((price * best.value) / 100) : Math.round(best.value);
-  return { type: best.type, value: best.value, amount };
+function resolveCommission(rules, variantId, level) {
+  const rule = rules.find((r) => r.variant_id === variantId && r.therapist_level === level);
+  if (!rule) throw new Error(`Tarif komisi varian ${variantId}, Level ${level} belum diatur`);
+  return { type: "fixed", value: rule.value, amount: rule.value, level };
 }
 
 function deriveStatus(items) {
@@ -285,7 +270,7 @@ function generate(ctx, existingCodes, orderSeq) {
           if (it.status === "in_treatment" || it.status === "completed") it.startedAt = new Date(it.startsAt.getTime() + between(0, 6) * MIN);
           if (it.status === "completed") it.completedAt = new Date(it.endsAt.getTime() + between(-3, 6) * MIN);
           if (it.status === "completed") {
-            it.commission = resolveCommission(ctx.rules, it.line.v.treatment_id, it.line.v.id, outlet.id, it.price);
+            it.commission = resolveCommission(ctx.rules, it.line.v.id, it.therapist.level);
           }
         }
         let status = deriveStatus(items.map((i) => i.status));
@@ -376,7 +361,7 @@ async function persist(c, ctx, bookings) {
       itemRows.push([id, b.id, v.id, v.treatment, v.name, v.duration_min, it.price,
         b.therapist ? b.therapist.id : null, it.status, it.startedAt || null, it.completedAt || null,
         it.commission ? it.commission.type : null, it.commission ? it.commission.value : null,
-        it.status === "completed" ? (it.commission ? it.commission.amount : 0) : null, i, b.created, it.completedAt || b.created]);
+        it.status === "completed" ? (it.commission ? it.commission.amount : 0) : null, it.commission?.level ?? null, i, b.created, it.completedAt || b.created]);
       const assignAt = new Date(Math.min(b.type === "walk_in" ? b.created.getTime() + 2 * MIN
         : it.startsAt.getTime() - between(30, 600) * MIN, Date.now()));
       const assignWhen = assignAt < b.created ? new Date(b.created.getTime() + MIN) : assignAt;
@@ -436,7 +421,7 @@ async function persist(c, ctx, bookings) {
     "pos_order_id", "checked_out_at", "paid_at", "cancelled_at", "cancel_reason", "created_by", "created_at", "updated_at"], bookingRows);
   await insertMany(c, "spa.booking_items", ["id", "booking_id", "variant_id", "treatment_name", "variant_name", "duration_min",
     "price_idr", "therapist_id", "status", "started_at", "completed_at", "commission_type",
-    "commission_value", "commission_idr", "sort_order", "created_at", "updated_at"], itemRows);
+    "commission_value", "commission_idr", "commission_level", "sort_order", "created_at", "updated_at"], itemRows);
   await insertMany(c, "spa.booking_events", ["id", "booking_id", "item_id", "action", "from_status", "to_status", "actor_user_id",
     "note", "created_at"], eventRows.map((r) => { r[6] = null; return r; }));
 

@@ -109,7 +109,6 @@ export function toTreatmentInput(form: TreatmentForm): TreatmentInput {
 
 /** Grid harga per outlet: `prices[variantId][branchId]` = teks input ("" = harga dasar). */
 export type PriceGrid = Record<string, Record<string, string>>;
-export type CommissionGrid = Record<string, Record<string, string>>;
 
 export function initialPriceGrid(treatment: Treatment, outlets: Pick<Outlet, "branch_id">[]): PriceGrid {
   const grid: PriceGrid = {};
@@ -128,32 +127,21 @@ export function initialPriceGrid(treatment: Treatment, outlets: Pick<Outlet, "br
  * yang sebelumnya punya override dikirim `null` (hapus override).
  * Melempar Error bila ada nilai bukan angka.
  */
-export function toPriceInputs(treatment: Treatment, grid: PriceGrid, commissions?: CommissionGrid): PriceInput[] {
+export function toPriceInputs(treatment: Treatment, grid: PriceGrid): PriceInput[] {
   const out: PriceInput[] = [];
   for (const v of treatment.variants) {
-    const branches = new Set([...Object.keys(grid[v.id] ?? {}), ...Object.keys(commissions?.[v.id] ?? {})]);
+    const branches = Object.keys(grid[v.id] ?? {});
     for (const branchId of branches) {
       const existing = v.outlet_prices.find((p) => p.branch_id === branchId);
       const raw = grid[v.id]?.[branchId] ?? (existing ? String(existing.price_idr) : "");
       const text = raw.trim();
-      const storedCommission = v.outlet_commissions?.find((c) => c.branch_id === branchId);
-      const draftCommission = commissions?.[v.id]?.[branchId];
-      const value = draftCommission ?? (storedCommission ? String(storedCommission.commission_value) : "");
-      const commissionChanged = draftCommission !== undefined && (Number(value) !== storedCommission?.commission_value || storedCommission?.commission_type !== "fixed");
-      const commission = commissions ? (() => {
-        if (!value.trim()) throw new Error(`Komisi ${v.name} di outlet ini wajib diisi.`);
-        if (!isInt(value, 0, MAX_PRICE_IDR)) {
-          throw new Error(`Komisi ${v.name} tidak valid.`);
-        }
-        return { commission_value: Number(value) };
-      })() : {};
       if (text === "") {
-        if (existing || commissionChanged) out.push({ variant_id: v.id, branch_id: branchId, price_idr: null, ...commission });
+        if (existing) out.push({ variant_id: v.id, branch_id: branchId, price_idr: null });
         continue;
       }
       const price = parseOutletPrice(raw);
-      if (!existing || Number(existing.price_idr) !== price || commissionChanged) {
-        out.push({ variant_id: v.id, branch_id: branchId, price_idr: price, ...commission });
+      if (!existing || Number(existing.price_idr) !== price) {
+        out.push({ variant_id: v.id, branch_id: branchId, price_idr: price });
       }
     }
   }
@@ -161,13 +149,13 @@ export function toPriceInputs(treatment: Treatment, grid: PriceGrid, commissions
 }
 
 /** Validasi seluruh draft terlebih dulu, lalu bagi per treatment sesuai batas API. */
-export function buildPriceBatches(treatments: Treatment[], grid: PriceGrid, commissions?: CommissionGrid): { id: string; prices: PriceInput[] }[] {
+export function buildPriceBatches(treatments: Treatment[], grid: PriceGrid): { id: string; prices: PriceInput[] }[] {
   const variants = new Set(treatments.flatMap((t) => t.variants.map((v) => v.id)));
   if (Object.keys(grid).some((id) => !variants.has(id))) {
     throw new Error("Varian pada draft tidak ditemukan. Muat ulang daftar sebelum menyimpan.");
   }
   return treatments.flatMap((treatment) => {
-    const prices = toPriceInputs(treatment, grid, commissions);
+    const prices = toPriceInputs(treatment, grid);
     const batches = [];
     for (let i = 0; i < prices.length; i += 500) batches.push({ id: treatment.id, prices: prices.slice(i, i + 500) });
     return batches;

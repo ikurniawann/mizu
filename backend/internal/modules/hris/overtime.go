@@ -249,7 +249,7 @@ func (s *store) UpdateShift(ctx context.Context, id string, in shiftInput) (bool
 func (s *store) DeleteShift(ctx context.Context, id string) (string, error) {
 	var used bool
 	if err := s.db.QueryRow(ctx, `SELECT EXISTS (
-		SELECT 1 FROM hris.employee_shifts WHERE shift_id = $1
+		SELECT 1 FROM hris.effective_employee_shifts WHERE shift_id = $1
 		UNION ALL
 		SELECT 1 FROM hris.attendance WHERE shift_id = $1) AS used`, id).Scan(&used); err != nil {
 		return "", err

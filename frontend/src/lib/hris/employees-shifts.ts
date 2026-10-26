@@ -57,7 +57,7 @@ export async function listEmployeeShifts(employeeId: string) {
   return query(
     `SELECT es.id, es.day_of_week, es.shift_id, es.effective_from, es.effective_to,
             s.name AS shift_name, s.start_time, s.end_time
-     FROM hris.employee_shifts es
+     FROM hris.effective_employee_shifts es
      LEFT JOIN hris.shifts s ON s.id = es.shift_id
      WHERE es.employee_id = $1
      ORDER BY es.effective_from DESC, es.day_of_week ASC`,
@@ -71,6 +71,9 @@ export async function listEmployeeShifts(employeeId: string) {
  */
 export async function saveShiftPattern(employeeId: string, pattern: ShiftPattern, actorName: string) {
   await withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('spa-roster'))");
+    const managed = await client.query<{managed:boolean}>(`SELECT EXISTS(SELECT 1 FROM spa.therapists t LEFT JOIN spa.day_off_quotas q ON q.branch_id=t.home_branch_id WHERE t.employee_id=$1 AND (EXISTS(SELECT 1 FROM spa.therapist_assists a WHERE a.therapist_id=t.id AND a.cancelled_at IS NULL AND a.end_date>=$2::date) OR COALESCE(q.min_per_week,0)>0 OR COALESCE(q.min_female,0)>0 OR COALESCE(q.min_male,0)>0 OR EXISTS(SELECT 1 FROM hris.employee_shift_dates d WHERE d.employee_id=$1 AND d.work_date>=$2::date))) AS managed`,[employeeId,pattern.effective_from]);
+    if (managed.rows[0]?.managed) throw new Error("Ubah jadwal terapis melalui Generate jadwal di Jadwal Shift agar syarat outlet divalidasi");
     await client.query(
       `DELETE FROM hris.employee_shifts
        WHERE employee_id = $1 AND effective_from >= $2`,

@@ -73,6 +73,12 @@ func (h *Handler) saveDayOffQuota(w http.ResponseWriter, r *http.Request, u *aut
 	if n := f.Int("max_per_week", opt, validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(7)}); n != nil {
 		in.MaxPerWeek = *n
 	}
+	if n := f.Int("min_per_week", opt, validate.NumOpts{Min: validate.Bound(0), Max: validate.Bound(7)}); n != nil {
+		in.MinPerWeek = *n
+	}
+	if in.MinPerWeek > in.MaxPerWeek {
+		return httpx.BadRequest("Minimum libur tidak boleh melebihi maksimum libur")
+	}
 	if err := f.ErrAtPath("Kuota tidak valid"); err != nil {
 		return err
 	}

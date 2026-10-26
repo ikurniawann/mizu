@@ -35,9 +35,9 @@ func setup(t *testing.T) *env {
 	t.Helper()
 	deps := testutil.Deps(t, func() time.Time { return fixedNow })
 	admin := testutil.CreateStaff(t, testutil.StaffOptions{Menus: map[string][]string{
-		"spa.bookings": nil, "spa.book-order": nil, "spa.treatments": nil,
+		"spa.bookings": {"read", "update"}, "spa.book-order": nil, "spa.treatments": nil,
 		"spa.categories": {"read", "create", "update", "delete"}, "spa.therapists": nil,
-		"spa.commissions": nil, "spa.outlets": nil, "spa.rooms": {"read", "create", "update", "delete"}, "spa.rush-hour": nil, "spa.trend": nil, "spa.rating": nil, "spa.customer": nil, "spa.customer-report": nil,
+		"spa.commission-settings": {"read", "update"}, "spa.commissions": nil, "spa.outlets": nil, "spa.rooms": {"read", "create", "update", "delete"}, "spa.rush-hour": nil, "spa.trend": nil, "spa.rating": nil, "spa.customer": nil, "spa.customer-report": nil,
 	}})
 	// Created before the transaction: cleanups run in reverse, so the
 	// rollback releases rows that reference these users first.
@@ -73,6 +73,17 @@ func (e *env) call(as *testutil.Staff, method, path string, body any, status int
 	rec, out := testutil.Do(e.t, e.mux, r)
 	if rec.Code != status {
 		e.t.Fatalf("%s %s: status %d, want %d: %s", method, path, rec.Code, status, rec.Body.String())
+	}
+	// Unrelated booking workflows start with explicit zero tariffs. Commission
+	// tests clear/replace these fixtures to exercise missing and nonzero rates.
+	if method == "POST" && path == "/api/spa/treatments" && rec.Code == 201 {
+		tr := out["data"].(map[string]any)
+		for _, raw := range tr["variants"].([]any) {
+			id := raw.(map[string]any)["id"]
+			if _, err := e.tx.Exec(e.ctx, `INSERT INTO spa.commission_rules(variant_id,therapist_level,commission_type,value) SELECT $1,n,'fixed',0 FROM generate_series(0,2) n`, id); err != nil {
+				e.t.Fatal(err)
+			}
+		}
 	}
 	return out
 }
@@ -152,52 +163,18 @@ func TestTreatmentProductsFollowSpaChanges(t *testing.T) {
 	}
 	e.data(&e.admin, "PUT", "/api/spa/treatments/"+id+"/prices", map[string]any{
 		"prices": []any{map[string]any{
-			"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 275000, "commission_value": 0,
+			"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 275000,
 		}},
 	}, http.StatusOK)
 	check(variant, "Updated Treatment (90 menit)", 275000, true)
 	e.data(&e.admin, "PUT", "/api/spa/treatments/"+id+"/prices", map[string]any{
 		"prices": []any{map[string]any{
-			"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil, "commission_value": 0,
+			"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil,
 		}},
 	}, http.StatusOK)
 	check(variant, "Updated Treatment (90 menit)", 250000, true)
 	e.data(&e.admin, "PATCH", "/api/spa/treatments/"+id, map[string]any{"is_active": false}, http.StatusOK)
 	check(variant, "Updated Treatment (90 menit)", 250000, false)
-}
-
-func TestOutletPriceAndCommissionSavedTogether(t *testing.T) {
-	e := setup(t)
-	if _, err := e.tx.Exec(e.ctx, `INSERT INTO spa.outlets (branch_id, warehouse_id)
-	  SELECT $1, id FROM configuration.warehouses WHERE branch_id = $1 LIMIT 1`, e.org.BranchID); err != nil {
-		t.Fatal(err)
-	}
-	tr := e.data(&e.admin, "POST", "/api/spa/treatments", map[string]any{
-		"code": "COM" + testutil.RandomHex(3), "name": "Komisi Outlet",
-		"variants": []any{map[string]any{"name": "60 menit", "duration_min": 60, "price_idr": 200000}},
-	}, http.StatusCreated)
-	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	path := "/api/spa/treatments/" + tr["id"].(string) + "/prices"
-	e.call(&e.admin, "PUT", path, map[string]any{"prices": []any{map[string]any{
-		"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 220000,
-	}}}, http.StatusBadRequest)
-	input := map[string]any{"variant_id": variant, "branch_id": e.org.BranchID,
-		"price_idr": 220000, "commission_value": 12000}
-	tr = e.data(&e.admin, "PUT", path, map[string]any{"prices": []any{input}}, http.StatusOK)
-	commissions := tr["variants"].([]any)[0].(map[string]any)["outlet_commissions"].([]any)
-	if len(commissions) != 1 || commissions[0].(map[string]any)["commission_value"] != float64(12000) || commissions[0].(map[string]any)["commission_type"] != "fixed" {
-		t.Fatalf("outlet commissions = %v", commissions)
-	}
-	input["price_idr"] = 250000
-	input["commission_value"] = -1
-	e.call(&e.admin, "PUT", path, map[string]any{"prices": []any{input}}, http.StatusBadRequest)
-	var price float64
-	if err := e.tx.QueryRow(e.ctx, `SELECT price_idr::float8 FROM spa.variant_outlet_prices WHERE variant_id = $1 AND branch_id = $2`, variant, e.org.BranchID).Scan(&price); err != nil {
-		t.Fatal(err)
-	}
-	if price != 220000 {
-		t.Fatalf("price changed after invalid commission: %v", price)
-	}
 }
 
 func TestTherapistGenderFollowsEmployee(t *testing.T) {
@@ -292,8 +269,8 @@ func TestTreatmentOutletPriceScope(t *testing.T) {
 	variant := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
 	path := "/api/spa/treatments/" + tr["id"].(string) + "/prices"
 	prices := []any{
-		map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 220000, "commission_value": 10000},
-		map[string]any{"variant_id": variant, "branch_id": other.BranchID, "price_idr": 230000, "commission_value": 10000},
+		map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": 220000},
+		map[string]any{"variant_id": variant, "branch_id": other.BranchID, "price_idr": 230000},
 	}
 	var count int
 	for _, level := range []string{"branch", "company", "holding"} {
@@ -310,7 +287,7 @@ func TestTreatmentOutletPriceScope(t *testing.T) {
 		}
 	}
 	e.call(&e.admin, "PUT", path, map[string]any{"prices": prices[:1]}, http.StatusOK)
-	prices[0] = map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil, "commission_value": 10000}
+	prices[0] = map[string]any{"variant_id": variant, "branch_id": e.org.BranchID, "price_idr": nil}
 	e.call(&e.admin, "PUT", path, map[string]any{"prices": prices[:1]}, http.StatusOK)
 	if err := e.tx.QueryRow(e.ctx, `SELECT count(*) FROM spa.variant_outlet_prices WHERE variant_id = $1`, variant).Scan(&count); err != nil || count != 0 {
 		t.Fatalf("clearing price: count=%d err=%v", count, err)
@@ -360,22 +337,21 @@ func TestSpaBookingFlow(t *testing.T) {
 
 	// Outlet price for the 60-minute variant.
 	tr = e.data(admin, "PUT", "/api/spa/treatments/"+tr["id"].(string)+"/prices", map[string]any{
-		"prices": []any{map[string]any{"variant_id": v60, "branch_id": branch, "price_idr": 220000, "commission_value": 22000}},
+		"prices": []any{map[string]any{"variant_id": v60, "branch_id": branch, "price_idr": 220000}},
 	}, http.StatusOK)
 
 	// Therapists.
-	empA := e.employee("Ayu Terapis", &therapistUser.UserID)
-	empB := e.employee("Budi Terapis", nil)
+	empA := e.scheduledEmployee("Ayu Terapis", &therapistUser.UserID)
+	empB := e.scheduledEmployee("Budi Terapis", nil)
 	thA := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": empA, "home_branch_id": branch, "gender": "female"}, http.StatusCreated)
 	thB := e.data(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": empB, "home_branch_id": branch, "gender": "male"}, http.StatusCreated)
 	e.call(admin, "POST", "/api/spa/therapists", map[string]any{"employee_id": empA, "home_branch_id": branch}, http.StatusConflict)
 	tA, tB := thA["id"].(string), thB["id"].(string)
 
-	// Commission rules: default 10%, the 90-minute variant a flat 50k.
-	e.data(admin, "POST", "/api/spa/commission-rules", map[string]any{"commission_type": "percent", "value": 10}, http.StatusCreated)
-	e.data(admin, "POST", "/api/spa/commission-rules", map[string]any{"variant_id": v90, "commission_type": "fixed", "value": 50000}, http.StatusCreated)
-	e.call(admin, "POST", "/api/spa/commission-rules", map[string]any{"commission_type": "percent", "value": 12}, http.StatusConflict)
-	e.call(admin, "POST", "/api/spa/commission-rules", map[string]any{"commission_type": "percent", "value": 120, "branch_id": branch}, http.StatusBadRequest)
+	e.call(admin, "PUT", "/api/spa/commission-settings", map[string]any{"rows": []any{
+		map[string]any{"variant_id": v60, "values": []any{22000, 25000, 30000}},
+		map[string]any{"variant_id": v90, "values": []any{50000, 55000, 60000}},
+	}}, http.StatusOK)
 
 	// Booking 1: 10:00 WIB with therapist A, the outlet price applies.
 	start := "2026-10-08T03:00:00.000Z"
@@ -585,7 +561,7 @@ func TestSpaPublicBookingAndAuth(t *testing.T) {
 		"variants": []any{map[string]any{"name": "45 menit", "duration_min": 45, "price_idr": 150000}},
 	}, http.StatusCreated)
 	v45 := tr["variants"].([]any)[0].(map[string]any)["id"].(string)
-	emp := e.employee("Terapis Booking Online", nil)
+	emp := e.scheduledEmployee("Terapis Booking Online", nil)
 	e.data(admin, "POST", "/api/spa/therapists", map[string]any{
 		"employee_id": emp, "home_branch_id": branch, "gender": "female",
 	}, http.StatusCreated)

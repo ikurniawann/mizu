@@ -28,9 +28,6 @@ let clients: QueryClient[];
 
 beforeEach(() => {
   data = structuredClone(catalog);
-  for (const treatment of data) for (const variant of treatment.variants) {
-    variant.outlet_commissions = ["b1", "b2"].map((branch_id) => ({ branch_id, commission_type: "fixed", commission_value: 10000 }));
-  }
   writes = [];
   clients = [];
   failTreatment = null;
@@ -52,10 +49,7 @@ beforeEach(() => {
         const variant = treatment.variants.find((v) => v.id === p.variant_id)!;
         variant.outlet_prices = variant.outlet_prices.filter((existing) => existing.branch_id !== p.branch_id);
         if (p.price_idr !== null) variant.outlet_prices.push({ branch_id: p.branch_id, price_idr: p.price_idr });
-        if (p.commission_value !== undefined) {
-          variant.outlet_commissions = variant.outlet_commissions?.filter((existing) => existing.branch_id !== p.branch_id) ?? [];
-          variant.outlet_commissions.push({ branch_id: p.branch_id, commission_type: "fixed", commission_value: p.commission_value });
-        }
+
       }
       return new Response(JSON.stringify({ success: true, data: treatment }));
     }
@@ -78,26 +72,13 @@ const price = (variant: string, branch = "Mizu 1", treatment = "Balinese Massage
 const change = (variant: string, value: string, branch = "Mizu 1", treatment = "Balinese Massage") => fireEvent.change(price(variant, branch, treatment), { target: { value } });
 
 describe("Treatment dan Harga Outlet", () => {
-  it("mewajibkan komisi per varian dan outlet saat menyimpan harga", async () => {
-    data[1].variants[1].outlet_commissions = [];
-    await openPage();
-    openPrices();
+  it("menyimpan harga tanpa input atau payload komisi", async () => {
+    await openPage(); openPrices();
+    expect(screen.queryByRole("spinbutton", { name: /Komisi/ })).not.toBeInTheDocument();
     change("60 menit", "250000");
     fireEvent.click(screen.getByRole("button", { name: "Simpan perubahan" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/komisi.*wajib/i);
-    expect(writes).toEqual([]);
-  });
-
-  it("menyimpan komisi outlet tanpa mengubah harga outlet lain", async () => {
-    await openPage(); openPrices();
-    expect(screen.queryByRole("combobox", { name: /Jenis komisi/ })).not.toBeInTheDocument();
-    fireEvent.change(screen.getByRole("spinbutton", { name: "Komisi nominal Balinese Massage, 60 menit, Mizu 1" }), { target: { value: "15000" } });
-    fireEvent.click(screen.getByRole("button", { name: "Simpan perubahan" }));
     await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].prices).toEqual([{
-      variant_id: "v1", branch_id: "b1", price_idr: 220000, commission_value: 15000,
-    }]);
-    expect(data[1].variants[1].outlet_commissions?.find((c) => c.branch_id === "b2")?.commission_value).toBe(10000);
+    expect(writes[0].prices).toEqual([{ variant_id: "v1", branch_id: "b1", price_idr: 250000 }]);
   });
 
   it("mengurutkan A–Z, mengelompokkan varian, dan membuka harga lewat tab", async () => {
@@ -155,8 +136,8 @@ describe("Treatment dan Harga Outlet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Simpan perubahan" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Simpan perubahan" })).toBeDisabled());
     expect(writes).toEqual([{ id: "t1", prices: [
-      { variant_id: "v2", branch_id: "b2", price_idr: 0, commission_value: 10000 },
-      { variant_id: "v1", branch_id: "b1", price_idr: null, commission_value: 10000 },
+      { variant_id: "v2", branch_id: "b2", price_idr: 0 },
+      { variant_id: "v1", branch_id: "b1", price_idr: null },
     ] }]);
     expect(data[1].variants.find((v) => v.id === "v1")?.price_idr).toBe(200000);
     const cleanUnload = new Event("beforeunload", { cancelable: true });
@@ -187,7 +168,7 @@ describe("Treatment dan Harga Outlet", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("1 perubahan sudah tersimpan"));
     expect(screen.getByRole("alert")).toHaveTextContent("Outlet di luar akses Anda");
     expect(screen.getByText("1 perubahan di 1 outlet belum disimpan")).toBeInTheDocument();
-    expect(writes[0].prices).toEqual([{ variant_id: "v1", branch_id: "b1", price_idr: 250000, commission_value: 10000 }]);
+    expect(writes[0].prices).toEqual([{ variant_id: "v1", branch_id: "b1", price_idr: 250000 }]);
     expect(price("30 menit", "Mizu 1", "Refleksi")).toHaveValue("50.000");
     failTreatment = null;
     fireEvent.click(screen.getByRole("button", { name: "Simpan perubahan" }));

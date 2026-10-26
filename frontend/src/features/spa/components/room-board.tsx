@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useRoomBoard } from "../queries";
-import { ROOM_STATE_LABEL, ROOM_STATE_VARIANT } from "../rooms";
+import { ROOM_CATEGORY_LABEL, ROOM_STATE_LABEL, ROOM_STATE_VARIANT } from "../rooms";
 import type { RoomBoardEntry, RoomOccupant } from "../types";
 import { Countdown } from "./countdown";
 import { TableNote, TimeRange } from "./shared";
@@ -65,7 +65,7 @@ function RoomCard({ room, onOpenBooking }: { room: RoomBoardEntry; onOpenBooking
               <DoorOpen className="size-5 text-muted-foreground" /> {room.name}
             </p>
             <p className="text-xs text-muted-foreground">
-              {room.capacity} orang{room.price_idr > 0 ? ` · Rp ${room.price_idr.toLocaleString("id-ID")}` : ""}
+              {ROOM_CATEGORY_LABEL[room.category]} · {room.capacity} orang{room.price_idr > 0 ? ` · Rp ${room.price_idr.toLocaleString("id-ID")}` : ""}
             </p>
           </div>
           <Badge variant={ROOM_STATE_VARIANT[room.state]}>{ROOM_STATE_LABEL[room.state]}</Badge>

@@ -10,7 +10,6 @@ import type {
   BookingGroupCreateInput,
   BookingItemInput,
   BookingUpdateInput,
-  CommissionRuleInput,
   WaitlistCreateInput,
   ItemActionInput,
   DayOffQuota,
@@ -29,7 +28,9 @@ import type {
 
 /** Booking berubah → perbarui cache detail + segarkan daftar, papan, ketersediaan. */
 function bookingChanged(qc: QueryClient, booking?: Booking) {
-  if (booking?.id) qc.setQueryData(spaKeys.booking(booking.id), booking);
+  if (booking?.id) qc.setQueryData<Booking>(spaKeys.booking(booking.id), (previous) => ({
+    ...booking, can_change_room: booking.can_change_room ?? previous?.can_change_room,
+  }));
   void qc.invalidateQueries({ queryKey: spaKeys.bookingsAll() });
   void qc.invalidateQueries({ queryKey: ["spa", "reports"] });
   void qc.invalidateQueries({ queryKey: spaKeys.boardAll() });
@@ -168,6 +169,7 @@ export const useSetBookingRoom = (bookingId: string) => {
     mutationFn: (roomId: string | null) => spaApi.setBookingRoom(bookingId, roomId),
     onSuccess: (booking) => {
       bookingChanged(qc, booking);
+      if (booking.group_id) void qc.invalidateQueries({ queryKey: spaKeys.bookingGroup(booking.group_id) });
       void qc.invalidateQueries({ queryKey: ["spa", "room-board"] });
     },
   });
@@ -267,7 +269,7 @@ export const useCreateAssist = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: AssistInput) => spaApi.createAssist(input),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.assistsAll() }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa"] }),
   });
 };
 
@@ -275,7 +277,7 @@ export const useDeleteAssist = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => spaApi.deleteAssist(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.assistsAll() }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["spa"] }),
   });
 };
 
@@ -296,23 +298,6 @@ export const useDeleteOutletPic = () => {
 };
 
 // ── Komisi ───────────────────────────────────────────────────────────────────
-
-export const useSaveCommissionRule = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, input }: { id?: string; input: CommissionRuleInput }) =>
-      id ? spaApi.updateCommissionRule(id, input) : spaApi.createCommissionRule(input),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.commissionRules() }),
-  });
-};
-
-export const useDeleteCommissionRule = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => spaApi.deleteCommissionRule(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: spaKeys.commissionRules() }),
-  });
-};
 
 // ── Self-service terapis ─────────────────────────────────────────────────────
 

@@ -87,7 +87,7 @@ func (s *Service) checkBookingTherapist(ctx context.Context, q Q, b *bookingRow,
 	if err := s.st.lockTherapist(ctx, q, therapistID); err != nil {
 		return nil, err
 	}
-	eligible, err := s.st.eligibleTherapists(ctx, q, b.BranchID, domain.WIBDate(iv.Start))
+	eligible, err := s.eligibleTherapistsAt(ctx, q, b.BranchID, iv)
 	if err != nil {
 		return nil, err
 	}
@@ -105,24 +105,15 @@ func (s *Service) checkBookingTherapist(ctx context.Context, q Q, b *bookingRow,
 	if b.GenderPref != "any" && (therapist.Gender == nil || *therapist.Gender != b.GenderPref) {
 		return nil, httpx.Conflict("Gender terapis tidak sesuai preferensi booking")
 	}
-	rosters, err := s.ports.People.Rosters(ctx, q, []string{therapist.EmployeeID}, domain.WIBDate(iv.Start))
+	rosters, rejected, err := s.checkWorkingRosters(ctx, q, []string{therapist.EmployeeID}, iv)
 	if err != nil {
 		return nil, err
 	}
-	if shift := rosters[therapist.EmployeeID].Shift; shift != nil {
-		start, startOK := domain.ClockMinutes(shift.StartTime)
-		end, endOK := domain.ClockMinutes(shift.EndTime)
-		if startOK && endOK {
-			if end <= start {
-				end = 24 * 60
-			}
-			local := iv.Start.In(domain.WIB)
-			bookingStart := local.Hour()*60 + local.Minute()
-			bookingEnd := bookingStart + int(iv.End.Sub(iv.Start)/time.Minute)
-			if bookingStart < start || bookingEnd > end {
-				return nil, httpx.Conflict(fmt.Sprintf("Booking di luar shift terapis (%s–%s WIB)", domain.HHMM(shift.StartTime), domain.HHMM(shift.EndTime)))
-			}
+	if _, working := rosters[therapist.EmployeeID]; !working {
+		if reason := rejected[therapist.EmployeeID]; reason != nil {
+			return nil, httpx.Conflict(reason.Error())
 		}
+		return nil, httpx.Conflict("Terapis tidak memiliki jadwal kerja yang mencakup booking, atau sedang cuti/libur")
 	}
 	conflicts, err := s.st.bookingConflicts(ctx, q, []string{therapistID}, iv.Start, iv.End, b.ID)
 	if err != nil {

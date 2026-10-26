@@ -3,6 +3,7 @@ package hris
 import (
 	"context"
 	"fmt"
+	"nuhabit/backend/internal/platform/httpx"
 	"strings"
 	"time"
 
@@ -202,7 +203,7 @@ func (s *store) LatestOffboarding(ctx context.Context, employeeID string) (*Row,
 func (s *store) EmployeeShiftHistory(ctx context.Context, employeeID string) ([]*Row, error) {
 	return queryRows(ctx, s.db, `SELECT es.id, es.day_of_week, es.shift_id, es.effective_from, es.effective_to,
 		s.name AS shift_name, s.start_time, s.end_time
-		FROM hris.employee_shifts es
+		FROM hris.effective_employee_shifts es
 		LEFT JOIN hris.shifts s ON s.id = es.shift_id
 		WHERE es.employee_id = $1
 		ORDER BY es.effective_from DESC, es.day_of_week ASC`, employeeID)
@@ -211,6 +212,17 @@ func (s *store) EmployeeShiftHistory(ctx context.Context, employeeID string) ([]
 // SaveShiftPattern replaces the patterns starting on/after effectiveFrom and
 // closes the running one the day before (call inside a transaction).
 func (s *store) SaveShiftPattern(ctx context.Context, employeeID, effectiveFrom string, days []patternDay, actorName string) error {
+	if _, err := s.db.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('spa-roster'))`); err != nil {
+		return err
+	}
+	var managed bool
+	if err := s.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM spa.therapists t LEFT JOIN spa.day_off_quotas q ON q.branch_id=t.home_branch_id WHERE t.employee_id=$1 AND (EXISTS(SELECT 1 FROM spa.therapist_assists a WHERE a.therapist_id=t.id AND a.cancelled_at IS NULL AND a.end_date>=$2::date) OR COALESCE(q.min_per_week,0)>0 OR COALESCE(q.min_female,0)>0 OR COALESCE(q.min_male,0)>0 OR EXISTS(SELECT 1 FROM hris.employee_shift_dates d WHERE d.employee_id=$1 AND d.work_date>=$2::date)))`, employeeID, effectiveFrom).Scan(&managed); err != nil {
+		return err
+	}
+	if managed {
+		return httpx.Conflict("Jadwal terapis memakai syarat outlet. Ubah melalui Generate jadwal di Jadwal Shift agar semua syarat divalidasi")
+	}
+
 	if _, err := s.db.Exec(ctx, `DELETE FROM hris.employee_shifts WHERE employee_id = $1 AND effective_from >= $2`,
 		employeeID, effectiveFrom); err != nil {
 		return err

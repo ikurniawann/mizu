@@ -91,15 +91,8 @@ const OUTLET_PRICES = [
   ["MZ-RIAU", "BALI", "120 menit", 345000],
 ];
 
-// Template komisi untuk menghasilkan aturan per varian dan outlet pada seeder.
-const COMMISSION_RULES = [
-  { type: "percent", value: 10 },
-  { outlet: "MZ-RIAU", type: "percent", value: 12 },
-  { treatment: "REFLEX", type: "percent", value: 12 },
-  { treatment: "HOTSTONE", type: "fixed", value: 60000 },
-  { treatment: "MIZU", type: "fixed", value: 100000 },
-  { treatment: "HEAD", variant: "30 menit", type: "fixed", value: 15000 },
-];
+// Tarif contoh untuk seeder demo saja, dikonversi menjadi nominal per varian.
+const COMMISSION_PER_MINUTE = [200, 250, 300]; // Level 0, 1, 2
 
 // Shift kerja spa (hris.shifts) dan pola libur mingguan terapis.
 const SHIFTS = [
@@ -182,6 +175,6 @@ function posCodes(treatmentCode, variantId, branchId) {
 const SEED_ACTOR = "00000000-0000-4000-8000-00000000a5ed";
 
 module.exports = {
-  loadEnv, HOLDING, COMPANY, OUTLETS, RETIRED_OUTLETS, RETIRED_LOGINS, TREATMENTS, OUTLET_PRICES, COMMISSION_RULES, SHIFTS, STAFF, ASSISTS,
+  loadEnv, HOLDING, COMPANY, OUTLETS, RETIRED_OUTLETS, RETIRED_LOGINS, TREATMENTS, OUTLET_PRICES, COMMISSION_PER_MINUTE, SHIFTS, STAFF, ASSISTS,
   customers, rng, posCodes, SEED_ACTOR,
 };

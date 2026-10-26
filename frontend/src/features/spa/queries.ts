@@ -109,9 +109,6 @@ export const useSpaBoard = (branchId: string, date: string) =>
     placeholderData: keepPreviousData,
   });
 
-export const useCommissionRules = () =>
-  useQuery({ queryKey: spaKeys.commissionRules(), queryFn: spaApi.commissionRules });
-
 export const useCommissionReport = (params: CommissionReportParams) =>
   useQuery({
     queryKey: spaKeys.commissions(params),

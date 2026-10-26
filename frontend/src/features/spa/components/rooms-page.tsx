@@ -23,7 +23,8 @@ import { Switch } from "@/components/ui/switch";
 import { formatRupiah } from "@/lib/format";
 import { useDeleteRoom, useSaveRoom } from "../mutations";
 import { useSpaOutlets, useSpaRooms } from "../queries";
-import type { Room, RoomInput } from "../types";
+import type { Room, RoomInput, RoomCategory } from "../types";
+import { ROOM_CATEGORY_LABEL } from "../rooms";
 import { Field, FormError, OutletSelect, SELECT, SPA_KICKER, TableNote } from "./shared";
 
 /** Spa → Room Spa: master room per outlet beserta harga. */
@@ -114,7 +115,7 @@ export function SpaRoomsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3"><Badge variant="outline" className="border-0 bg-blue-50 text-blue-700">Room</Badge></td>
+                      <td className="px-4 py-3"><Badge variant="outline" className="border-0 bg-blue-50 text-blue-700">{ROOM_CATEGORY_LABEL[room.category]}</Badge></td>
                       <td className="px-4 py-3">{room.capacity} orang</td>
                       <td className="px-4 py-3 tabular-nums">{room.price_idr > 0 ? formatRupiah(room.price_idr) : "Gratis"}</td>
                       <td className="px-4 py-3">{room.is_active ? <Badge variant="success">Aktif</Badge> : <Badge variant="muted">Nonaktif</Badge>}</td>
@@ -153,6 +154,7 @@ export function SpaRoomsPage() {
 
 function RoomForm({ branchId, outletName, room, onDone }: { branchId: string; outletName: string; room: Room | null; onDone: () => void }) {
   const [name, setName] = useState(room?.name ?? "");
+  const [category, setCategory] = useState<RoomCategory>(room?.category ?? "public");
   const [capacity, setCapacity] = useState(String(room?.capacity ?? 1));
   const [price, setPrice] = useState<number>(room?.price_idr ?? 0);
   const [description, setDescription] = useState(room?.description ?? "");
@@ -167,7 +169,7 @@ function RoomForm({ branchId, outletName, room, onDone }: { branchId: string; ou
     if (!Number.isInteger(cap) || cap < 1 || cap > 10) return setError("Kapasitas 1–10 orang.");
     if (!Number.isFinite(priceIdr) || priceIdr < 0) return setError("Harga tidak valid.");
     setError(null);
-    const input: RoomInput = { branch_id: branchId, name: name.trim(), capacity: cap, price_idr: priceIdr, description: description.trim(), is_active: active };
+    const input: RoomInput = { branch_id: branchId, name: name.trim(), category, capacity: cap, price_idr: priceIdr, description: description.trim(), is_active: active };
     save.mutate(
       { id: room?.id, input },
       {
@@ -194,6 +196,12 @@ function RoomForm({ branchId, outletName, room, onDone }: { branchId: string; ou
           <DialogPanelBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Nama room">
               <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Mis. VIP 1" required aria-label="Nama room" />
+            </Field>
+            <Field label="Kategori room">
+              <select className={SELECT} value={category} onChange={(event) => setCategory(event.target.value as RoomCategory)} required aria-label="Kategori room">
+                <option value="public">Public</option>
+                <option value="private">Private (termasuk VIP)</option>
+              </select>
             </Field>
             <Field label="Kapasitas (orang)">
               <Input type="number" min={1} max={10} value={capacity} onChange={(event) => setCapacity(event.target.value)} required aria-label="Kapasitas room" />

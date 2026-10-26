@@ -52,7 +52,8 @@ export function resolveScheduleRowForDate<T extends EmployeeShiftRow>(
         row.effective_from <= dateIso &&
         (row.effective_to === null || row.effective_to >= dateIso)
     )
-    .sort((a, b) => (a.effective_from < b.effective_from ? 1 : -1));
+    .sort((a, b) => b.effective_from.localeCompare(a.effective_from) ||
+      Number(b.effective_to === b.effective_from) - Number(a.effective_to === a.effective_from));
 
   return candidates[0] ?? null;
 }

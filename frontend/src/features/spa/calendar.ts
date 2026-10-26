@@ -3,10 +3,11 @@
  * per hari WIB, satu kolom per terapis, blok booking setinggi total durasinya.
  */
 import type { Shift } from "./types";
-import { parseClock, wibClockOf, wibDateOf } from "./time";
+import { parseClock, wibClockOf, wibDateOf, wibToIso } from "./time";
 
 /** Piksel per menit: 30 menit = 42 px. */
 export const PX_PER_MIN = 1.4;
+export const SHIFT_EXTENSION_MINUTES = 60;
 
 export interface DayRange {
   /** Menit sejak 00:00 WIB. */
@@ -126,18 +127,44 @@ export interface Band {
   height: number;
 }
 
-/** Area di luar shift (diarsir). Tanpa shift/libur/cuti → seluruh kolom. */
+function shiftWindow(shift: Shift | null): { start: number; end: number; treatmentEnd: number } | null {
+  const start = parseClock(shift?.start_time);
+  const endClock = parseClock(shift?.end_time);
+  if (start === null || endClock === null) return null;
+  const end = endClock > start ? endClock : 24 * 60;
+  return { start, end, treatmentEnd: Math.min(24 * 60, end + SHIFT_EXTENSION_MINUTES) };
+}
+
+function clippedBand(start: number, end: number, range: DayRange, pxPerMin: number): Band | null {
+  const from = Math.max(start, range.start);
+  const to = Math.min(end, range.end);
+  return to > from ? { top: (from - range.start) * pxPerMin, height: (to - from) * pxPerMin } : null;
+}
+
+/** Tambahan waktu khusus penyelesaian treatment, bukan waktu mulai baru. */
+export function shiftExtensionBand(shift: Shift | null, unavailable: boolean, range: DayRange, pxPerMin = PX_PER_MIN): Band | null {
+  const window = shiftWindow(shift);
+  return unavailable || !window ? null : clippedBand(window.end, window.treatmentEnd, range, pxPerMin);
+}
+
+/** Pesan penolakan waktu mulai: akhir shift asli bersifat eksklusif. */
+export function shiftStartMismatch(minute: number, shift: Shift | null): string | null {
+  const window = shiftWindow(shift);
+  if (!window) return null;
+  if (minute < window.start) return `Booking di luar shift ${clockOf(window.start)}–${clockOf(window.end)}.`;
+  if (minute >= window.end) return `Booking harus dimulai sebelum ${clockOf(window.end)} WIB (akhir shift).`;
+  return null;
+}
+
+/** Area di luar shift dan tambahan treatment. Tanpa shift/libur/cuti → seluruh kolom. */
 export function offShiftBands(shift: Shift | null, unavailable: boolean, range: DayRange, pxPerMin = PX_PER_MIN): Band[] {
   const total = (range.end - range.start) * pxPerMin;
-  const s = parseClock(shift?.start_time);
-  const e = parseClock(shift?.end_time);
-  if (unavailable || s === null || e === null) return [{ top: 0, height: total }];
-  const bands: Band[] = [];
-  const from = Math.max(s, range.start);
-  const to = e > s ? Math.min(e, range.end) : range.end; // shift malam: sampai akhir rentang
-  if (from > range.start) bands.push({ top: 0, height: (from - range.start) * pxPerMin });
-  if (to < range.end) bands.push({ top: (to - range.start) * pxPerMin, height: (range.end - to) * pxPerMin });
-  return bands;
+  const window = shiftWindow(shift);
+  if (unavailable || !window) return [{ top: 0, height: total }];
+  return [
+    clippedBand(range.start, window.start, range, pxPerMin),
+    clippedBand(window.treatmentEnd, range.end, range, pxPerMin),
+  ].filter((band): band is Band => band !== null);
 }
 
 /** Posisi garis "sekarang" bila tanggal tampilan = hari ini (WIB), selain itu null. */
@@ -162,13 +189,14 @@ export function isDraggable(item: { status: string; booking_status: string; assi
 
 /** Booking di luar rentang shift yang memang terjadwal tidak boleh ditugaskan. */
 export function shiftMismatch(item: Timed, shift: Shift | null): string | null {
-  const s = parseClock(shift?.start_time);
-  const e = parseClock(shift?.end_time);
-  if (s === null || e === null) return null;
-  const from = minuteOfDay(item.starts_at);
-  const to = from + durationMin(item);
-  const end = e > s ? e : 24 * 60;
-  if (from < s || to > end) return `Booking ${clockOf(from)}–${clockOf(to)} di luar shift ${clockOf(s)}–${clockOf(e)}.`;
+  const window = shiftWindow(shift);
+  if (!window) return null;
+  const startMismatch = shiftStartMismatch(minuteOfDay(item.starts_at), shift);
+  if (startMismatch) return startMismatch;
+  const midnight = new Date(wibToIso(wibDateOf(item.starts_at), "00:00")).getTime();
+  if (new Date(item.ends_at).getTime() > midnight + window.treatmentEnd * 60000) {
+    return `Booking harus selesai paling lambat ${clockOf(window.treatmentEnd)} WIB (akhir shift +1 jam).`;
+  }
   return null;
 }
 

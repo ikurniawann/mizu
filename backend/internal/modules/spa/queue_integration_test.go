@@ -36,6 +36,7 @@ func TestArrivalQueueAssignsInClockInOrderWithRotation(t *testing.T) {
 	ayuID, ayuEmp := mk("Ayu Antri", "female")
 	beniID, beniEmp := mk("Beni Antri", "male")
 	_, _ = mk("Cici Absen", "female") // eligible but never clocks in
+	scheduleTestTherapists(e)
 	clockIn := func(employeeID string, at time.Time) {
 		if _, err := e.tx.Exec(e.ctx, `INSERT INTO hris.attendance (employee_id, date, clock_in, status) VALUES ($1, $2::date, $3, 'present')`,
 			employeeID, "2026-10-08", at); err != nil {
@@ -126,6 +127,7 @@ func TestAutoAssignSingleBooking(t *testing.T) {
 	first := mk("A First", "male", &early)
 	second := mk("B Second", "female", &late)
 	_ = mk("C Absent", "female", nil)
+	scheduleTestTherapists(e)
 	book := func(name, pref, at string) string {
 		b := e.data(admin, "POST", "/api/spa/bookings", map[string]any{
 			"branch_id": branch, "booking_type": "reservation", "customer_name": name, "therapist_gender_pref": pref,

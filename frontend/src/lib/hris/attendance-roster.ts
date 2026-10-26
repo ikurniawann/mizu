@@ -120,11 +120,11 @@ export async function loadDailyRoster(date: string, today: string) {
       `WITH scheduled AS (
          SELECT DISTINCT ON (es.employee_id)
                 es.employee_id, es.shift_id
-         FROM hris.employee_shifts es
+         FROM hris.effective_employee_shifts es
          WHERE es.day_of_week = $2
            AND es.effective_from <= $1::date
            AND (es.effective_to IS NULL OR es.effective_to >= $1::date)
-         ORDER BY es.employee_id, es.effective_from DESC
+         ORDER BY es.employee_id, es.effective_from DESC, es.effective_to ASC NULLS LAST
        )
        SELECT e.id AS employee_id, e.full_name, e.nip, e.photo_url,
               d.name AS department_name, p.title AS job_title,

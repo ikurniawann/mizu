@@ -80,7 +80,7 @@ async function shiftSnapshot(employeeId: string, dateIso: string, clockIn: Date)
             es.effective_from::text, es.effective_to::text,
             s.name, s.start_time::text, s.end_time::text,
             s.late_tolerance_minutes, s.is_overnight
-     FROM hris.employee_shifts es
+     FROM hris.effective_employee_shifts es
      LEFT JOIN hris.shifts s ON s.id = es.shift_id
      WHERE es.employee_id = $1`,
     [employeeId]
@@ -381,7 +381,7 @@ export async function listScheduleRows(employeeId: string) {
             es.effective_from::text, es.effective_to::text,
             s.name AS shift_name, s.start_time::text, s.end_time::text,
             s.is_overnight
-     FROM hris.employee_shifts es
+     FROM hris.effective_employee_shifts es
      LEFT JOIN hris.shifts s ON s.id = es.shift_id
      WHERE es.employee_id = $1
      ORDER BY es.effective_from DESC, es.day_of_week ASC`,

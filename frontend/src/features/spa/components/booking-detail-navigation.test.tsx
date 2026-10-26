@@ -88,7 +88,7 @@ function openPage(page: React.ReactNode) {
 function therapist(name: string, id: string, items: BoardItem[] = []): BoardTherapist {
   return {
     therapist: { id, employee_id: `employee-${id}`, full_name: name, nip: null, phone: null, photo_url: null,
-      home_branch_id: "branch-1", home_branch_name: "Mizu", gender: "female", is_active: true },
+      home_branch_id: "branch-1", home_branch_name: "Mizu", gender: "female", is_active: true, level: 0, employment_cycle: 1, employment_status: "contract" },
     shift: { name: "Pagi", start_time: "09:00", end_time: "17:00" }, on_leave: false, items,
   };
 }
@@ -149,7 +149,7 @@ it.each(["calendar", "list"])("pencarian terapis dan pelanggan bekerja bersama d
   localStorage.setItem(STORAGE_KEYS.spaBookOrderView.key, view);
   board.therapists = ["Sari", "Dewi"].map((name, index) => ({
     therapist: { id: `therapist-${index}`, employee_id: `employee-${index}`, full_name: name, nip: null, phone: null, photo_url: null,
-      home_branch_id: "branch-1", home_branch_name: "Mizu", gender: "female", is_active: true },
+      home_branch_id: "branch-1", home_branch_name: "Mizu", gender: "female", is_active: true, level: 0, employment_cycle: 1, employment_status: "contract" },
     shift: null, on_leave: false,
     items: [{ ...item, id: `assigned-${index}`, booking_id: `assigned-booking-${index}`, booking_code: `SPA-${index + 2}`,
       customer_name: index === 0 ? "Budi Pelanggan" : "Citra Pelanggan", therapist_id: `therapist-${index}`, therapist_name: name,
@@ -409,4 +409,21 @@ it("penugasan hanya tersedia sekali untuk seluruh booking dan terkunci setelah t
   await screen.findByText("Refleksi");
   expect(screen.queryByRole("button", { name: "Ganti terapis" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Lepas terapis" })).not.toBeInTheDocument();
+});
+
+
+it.each([false, true])("only shows room action with server permission %s", async (allowed) => {
+  detail = { ...detail, can_change_room: allowed };
+  openPage(<SpaBookingDetailPage id="booking-1" />);
+  await screen.findByText("Catatan booking");
+  const button = screen.queryByRole("button", { name: "Pilih room" });
+  if (allowed) expect(button).toBeInTheDocument();
+  else expect(button).not.toBeInTheDocument();
+});
+
+it("hides room action when completed even before checkout", async () => {
+  detail = { ...detail, can_change_room: true, status: "completed", checked_out_at: null };
+  openPage(<SpaBookingDetailPage id="booking-1" />);
+  await screen.findByText("Catatan booking");
+  expect(screen.queryByRole("button", { name: "Pilih room" })).not.toBeInTheDocument();
 });

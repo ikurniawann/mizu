@@ -34,6 +34,15 @@ func (s *Service) CreateBookingGroup(ctx context.Context, userID string, in crea
 		if !o.IsActive {
 			return httpx.BadRequest("Outlet spa sedang tidak aktif")
 		}
+		var roomIDs []string
+		for _, member := range in.Bookings {
+			if member.RoomID != "" {
+				roomIDs = append(roomIDs, member.RoomID)
+			}
+		}
+		if err := s.st.lockRooms(ctx, q, roomIDs); err != nil {
+			return err
+		}
 		payerID, phone, err := s.customer(ctx, q, in.PayerCustomerID, in.PayerName, in.PayerPhone)
 		if err != nil {
 			return err
@@ -254,6 +263,14 @@ func (s *Service) CheckoutBookingGroup(ctx context.Context, userID, id string, r
 					note += " · Terapis: " + *item.TherapistName
 				}
 				lines = append(lines, BillLine{ProductID: pid, Name: item.TreatmentName + " (" + item.VariantName + ")", SKU: "SPA-" + v.TreatmentCode, UnitPrice: item.PriceIDR, Note: note})
+			}
+			if b.RoomID != nil && b.RoomPriceIDR > 0 {
+				line, err := s.roomBillLine(ctx, q, o, *b.RoomID, b.RoomPriceIDR)
+				if err != nil {
+					return err
+				}
+				line.Note = "Room · Pelanggan: " + b.CustomerName
+				lines = append(lines, line)
 			}
 		}
 		first := active[0]

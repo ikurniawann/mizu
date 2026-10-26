@@ -144,6 +144,7 @@ function ReportTab({ outlets }: { outlets: Outlet[] }) {
                                   <th className="py-1 pr-3 font-medium">Outlet</th>
                                   <th className="py-1 pr-3 font-medium">Treatment</th>
                                   <th className="py-1 pr-3 text-right font-medium">Harga</th>
+                                  <th className="py-1 pr-3 font-medium">Level saat selesai</th>
                                   <th className="py-1 pr-3 text-right font-medium">Aturan</th>
                                   <th className="py-1 text-right font-medium">Komisi</th>
                                 </tr>
@@ -158,6 +159,7 @@ function ReportTab({ outlets }: { outlets: Outlet[] }) {
                                       {l.treatment_name} — {l.variant_name}
                                     </td>
                                     <td className="py-1.5 pr-3 text-right tabular-nums">{formatRupiah(l.price_idr)}</td>
+                                    <td className="py-1.5 pr-3">{l.commission_level == null ? "—" : `Level ${l.commission_level}`}</td>
                                     <td className="py-1.5 pr-3 text-right">{commissionValueLabel(l.commission_type, l.commission_value)}</td>
                                     <td className="py-1.5 text-right font-medium tabular-nums">{formatRupiah(l.commission_idr)}</td>
                                   </tr>

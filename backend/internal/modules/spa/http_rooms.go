@@ -6,6 +6,7 @@ import (
 
 	"nuhabit/backend/internal/platform/auth"
 	"nuhabit/backend/internal/platform/httpx"
+	"nuhabit/backend/internal/platform/iam"
 	"nuhabit/backend/internal/platform/validate"
 )
 
@@ -25,6 +26,7 @@ func (h *Handler) listRooms(w http.ResponseWriter, r *http.Request, u *auth.User
 
 func roomFields(f *validate.Form, withBranch bool) roomInput {
 	in := roomInput{
+		Category:    str(f.Enum("category", opt, []string{"public", "private"})),
 		Name:        f.StrDefault("name", "", validate.StrOpts{Trim: true, Max: 80}),
 		Description: f.StrDefault("description", "", validate.StrOpts{Trim: true, Max: 500}),
 		IsActive:    f.BoolDefault("is_active", true),
@@ -87,12 +89,20 @@ func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request, u *auth.Use
 
 // setBookingRoom: {"room_id": "<uuid>"} puts the booking in a room, null releases it.
 func (h *Handler) setBookingRoom(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	if _, err := h.auth.RequireMenuAction(r, "update", iam.SpaBookings...); err != nil {
+		return err
+	}
 	id, err := pathUUID(r, "id")
 	if err != nil {
 		return err
 	}
 	f := body(r)
-	roomID := str(f.Str("room_id", optNull, uuidOpts))
+	for key := range f.Fields() {
+		if key != "room_id" {
+			f.Fail(key, "custom", "Biaya room dihitung otomatis; hanya room_id yang boleh dikirim")
+		}
+	}
+	roomID := strings.ToLower(str(f.Str("room_id", validate.Rule{Nullable: true}, uuidOpts)))
 	if err := f.ErrAtPath("Data tidak valid"); err != nil {
 		return err
 	}
@@ -100,6 +110,7 @@ func (h *Handler) setBookingRoom(w http.ResponseWriter, r *http.Request, u *auth
 	if err != nil {
 		return err
 	}
+	b.CanChangeRoom = ptr(true)
 	return ok(w, b)
 }
 

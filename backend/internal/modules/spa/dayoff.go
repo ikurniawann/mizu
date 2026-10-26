@@ -28,6 +28,7 @@ type DayOffQuota struct {
 	MinFemale  int    `json:"min_female"`
 	MinMale    int    `json:"min_male"`
 	MaxPerWeek int    `json:"max_per_week"`
+	MinPerWeek int    `json:"min_per_week"`
 }
 
 // DefaultMaxPerWeek applies until HRD sets an outlet's quota.
@@ -74,8 +75,8 @@ type DayOffMonth struct {
 
 func (store) dayOffQuota(ctx context.Context, q Q, branchID string) (DayOffQuota, error) {
 	out := DayOffQuota{BranchID: branchID, MaxPerWeek: DefaultMaxPerWeek}
-	err := q.QueryRow(ctx, `SELECT min_female, min_male, max_per_week FROM spa.day_off_quotas WHERE branch_id = $1`, branchID).
-		Scan(&out.MinFemale, &out.MinMale, &out.MaxPerWeek)
+	err := q.QueryRow(ctx, `SELECT min_female, min_male, max_per_week, min_per_week FROM spa.day_off_quotas WHERE branch_id = $1`, branchID).
+		Scan(&out.MinFemale, &out.MinMale, &out.MaxPerWeek, &out.MinPerWeek)
 	if database.IsNoRows(err) {
 		return out, nil
 	}
@@ -83,11 +84,11 @@ func (store) dayOffQuota(ctx context.Context, q Q, branchID string) (DayOffQuota
 }
 
 func (store) saveDayOffQuota(ctx context.Context, q Q, in DayOffQuota, userID string) error {
-	_, err := q.Exec(ctx, `INSERT INTO spa.day_off_quotas (branch_id, min_female, min_male, max_per_week, updated_by)
-	  VALUES ($1, $2, $3, $4, NULLIF($5, '')::uuid)
+	_, err := q.Exec(ctx, `INSERT INTO spa.day_off_quotas (branch_id, min_female, min_male, max_per_week, updated_by, min_per_week)
+	  VALUES ($1, $2, $3, $4, NULLIF($5, '')::uuid, $6)
 	  ON CONFLICT (branch_id) DO UPDATE SET min_female = EXCLUDED.min_female, min_male = EXCLUDED.min_male,
-	    max_per_week = EXCLUDED.max_per_week, updated_by = EXCLUDED.updated_by, updated_at = now()`,
-		in.BranchID, in.MinFemale, in.MinMale, in.MaxPerWeek, userID)
+	    min_per_week = EXCLUDED.min_per_week, max_per_week = EXCLUDED.max_per_week, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+		in.BranchID, in.MinFemale, in.MinMale, in.MaxPerWeek, userID, in.MinPerWeek)
 	return err
 }
 
@@ -168,11 +169,26 @@ func (s *Service) dayWorkforce(ctx context.Context, q Q, branchID, date string) 
 	if err != nil {
 		return 0, 0, nil, nil, err
 	}
+	dayStart, dayEnd, _ := domain.DayBounds(date)
+	assists, err := s.assistIntervals(ctx, q, "", dayStart, dayEnd.AddDate(0, 0, 1))
+	if err != nil {
+		return 0, 0, nil, nil, err
+	}
 	working, eligible = map[string]bool{}, map[string]bool{}
 	for _, t := range list {
 		eligible[t.ID] = true
 		r := rosters[t.EmployeeID]
-		if r.OnLeave || r.DayOff {
+		if r.OnLeave || r.DayOff || r.Shift == nil {
+			continue
+		}
+		intervals := map[string][]domain.Interval{}
+		for _, a := range assists {
+			if a.therapist == t.ID {
+				intervals[a.branch] = append(intervals[a.branch], a.interval)
+			}
+		}
+		if domain.QuotaBranch(t.HomeBranchID, shiftInterval(date, r.Shift.StartTime, r.Shift.EndTime), intervals) != branchID {
+			delete(eligible, t.ID)
 			continue
 		}
 		working[t.ID] = true
@@ -204,6 +220,48 @@ func (s *Service) offDaysInWeek(ctx context.Context, q Q, t *Therapist, date str
 	return n, nil
 }
 
+// weeklyRestQuota combines home and destination rules only for assisted work
+// dates in this ISO week, so later day-off edits cannot invalidate a transfer.
+func (s *Service) weeklyRestQuota(ctx context.Context, q Q, t *Therapist, date string) (DayOffQuota, error) {
+	quota, err := s.st.dayOffQuota(ctx, q, t.HomeBranchID)
+	if err != nil {
+		return quota, err
+	}
+	monday, _ := weekBounds(date)
+	start, _, _ := domain.DayBounds(monday)
+	assists, err := s.assistIntervals(ctx, q, t.ID, start, start.AddDate(0, 0, 8))
+	if err != nil || len(assists) == 0 {
+		return quota, err
+	}
+	branches := map[string]bool{}
+	for i := 0; i < 7; i++ {
+		day := domain.WIBDate(start.AddDate(0, 0, i))
+		rosters, err := s.ports.People.Rosters(ctx, q, []string{t.EmployeeID}, day)
+		if err != nil {
+			return quota, err
+		}
+		r := rosters[t.EmployeeID]
+		if r.Shift == nil || r.OnLeave || r.DayOff {
+			continue
+		}
+		iv := shiftInterval(day, r.Shift.StartTime, r.Shift.EndTime)
+		for _, a := range assists {
+			if a.interval.Overlaps(iv) {
+				branches[a.branch] = true
+			}
+		}
+	}
+	for branch := range branches {
+		away, err := s.st.dayOffQuota(ctx, q, branch)
+		if err != nil {
+			return quota, err
+		}
+		quota.MinPerWeek = max(quota.MinPerWeek, away.MinPerWeek)
+		quota.MaxPerWeek = min(quota.MaxPerWeek, away.MaxPerWeek)
+	}
+	return quota, nil
+}
+
 // dayOffWindow: from tomorrow to the end of next month (WIB).
 func (s *Service) dayOffWindow() (string, string) {
 	now := s.clock().In(domain.WIB)
@@ -232,8 +290,27 @@ func (s *Service) checkDayOff(ctx context.Context, q Q, t *Therapist, quota DayO
 	if err != nil {
 		return "", err
 	}
+	restQuota, err := s.weeklyRestQuota(ctx, q, t, date)
+	if err != nil {
+		return "", err
+	}
+	quota.MaxPerWeek = restQuota.MaxPerWeek
 	if off >= quota.MaxPerWeek {
 		return fmt.Sprintf("Libur minggu ini sudah %d hari (maksimal %d)", off, quota.MaxPerWeek), nil
+	}
+	rosters, err := s.ports.People.Rosters(ctx, q, []string{t.EmployeeID}, date)
+	if err != nil {
+		return "", err
+	}
+	if shift := rosters[t.EmployeeID].Shift; shift != nil {
+		iv := shiftInterval(date, shift.StartTime, shift.EndTime)
+		assists, err := s.assistIntervals(ctx, q, t.ID, iv.Start, iv.End)
+		if err != nil {
+			return "", err
+		}
+		if len(assists) > 0 {
+			return "Batalkan atau ubah perbantuan sebelum mengajukan libur pada tanggal ini", nil
+		}
 	}
 	start, end, _ := domain.DayBounds(date)
 	n, err := s.st.bookingsOnDay(ctx, q, t.ID, start, end)
@@ -304,8 +381,10 @@ func (s *Service) MyDayOffs(ctx context.Context, userID, month string) (*DayOffM
 			}
 			if r[t.EmployeeID].OnLeave {
 				day.Mine = "leave"
-			} else {
+			} else if r[t.EmployeeID].DayOff {
 				day.Mine = "pattern"
+			} else {
+				day.Reason = "Tidak dijadwalkan bekerja di outlet ini"
 			}
 		default:
 			reason, err := s.checkDayOff(ctx, s.db, t, quota, date)
@@ -330,6 +409,9 @@ func (s *Service) BookDayOff(ctx context.Context, userID, date string) (*DayOffR
 	}
 	var id string
 	err = s.tx(ctx, func(q Q) error {
+		if err := rosterLock(ctx, q); err != nil {
+			return err
+		}
 		// One booking at a time per outlet and day: the quota check and the
 		// insert must see each other's results.
 		if _, err := q.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('spa-dayoff:' || $1 || ':' || $2))`, t.HomeBranchID, date); err != nil {
@@ -384,8 +466,30 @@ func (s *Service) cancelDayOff(ctx context.Context, r *DayOffRequest, userID, re
 	if r.Date <= domain.WIBDate(s.clock()) {
 		return nil, httpx.Conflict("Libur hari ini atau yang sudah lewat tidak bisa dibatalkan")
 	}
-	if _, err := s.db.Exec(ctx, `UPDATE spa.day_off_requests SET status = 'cancelled', cancelled_at = now(),
-	    cancelled_by = NULLIF($2, '')::uuid, cancel_reason = $3 WHERE id = $1`, r.ID, userID, reason); err != nil {
+	if err := s.tx(ctx, func(q Q) error {
+		if err := rosterLock(ctx, q); err != nil {
+			return err
+		}
+		if _, err := q.Exec(ctx, `UPDATE spa.day_off_requests SET status = 'cancelled', cancelled_at = now(), cancelled_by = NULLIF($2, '')::uuid, cancel_reason = $3 WHERE id = $1 AND status='approved'`, r.ID, userID, reason); err != nil {
+			return err
+		}
+		t, err := s.st.therapist(ctx, q, r.TherapistID)
+		if err != nil {
+			return err
+		}
+		quota, err := s.weeklyRestQuota(ctx, q, t, r.Date)
+		if err != nil {
+			return err
+		}
+		off, err := s.offDaysInWeek(ctx, q, t, r.Date)
+		if err != nil {
+			return err
+		}
+		if off < quota.MinPerWeek {
+			return httpx.Conflict("Pembatalan melanggar minimum libur mingguan")
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 	return s.st.dayOff(ctx, s.db, r.ID)
@@ -442,7 +546,15 @@ func (s *Service) SaveDayOffQuota(ctx context.Context, userID string, in DayOffQ
 	if _, err := s.outletIn(ctx, s.db, sc, in.BranchID); err != nil {
 		return nil, err
 	}
-	if err := s.st.saveDayOffQuota(ctx, s.db, in, userID); err != nil {
+	if in.MinPerWeek < 0 || in.MinPerWeek > in.MaxPerWeek {
+		return nil, httpx.BadRequest("Minimum libur tidak boleh melebihi maksimum")
+	}
+	if err := s.tx(ctx, func(q Q) error {
+		if err := rosterLock(ctx, q); err != nil {
+			return err
+		}
+		return s.st.saveDayOffQuota(ctx, q, in, userID)
+	}); err != nil {
 		return nil, err
 	}
 	q, err := s.st.dayOffQuota(ctx, s.db, in.BranchID)

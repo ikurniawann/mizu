@@ -28,6 +28,7 @@ export interface MyBooking {
   /** Total komisi treatment di booking ini (perkiraan bila ada yang belum selesai). */
   commission_idr: number;
   estimated: boolean;
+  commission_missing?: boolean;
 }
 
 export interface MyScheduleDay {
@@ -73,6 +74,7 @@ export function groupMySchedule(items: MyScheduleItem[], today: string): MySched
     b.items.push(it);
     b.commission_idr += Number(it.commission_idr ?? 0);
     b.estimated ||= it.commission_estimated;
+    b.commission_missing ||= it.commission_idr == null;
   }
   const days = new Map<string, MyScheduleDay>();
   const sorted = [...bookings.values()].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());

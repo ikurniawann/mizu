@@ -8,7 +8,7 @@
  *   - spa.outlets                               : stall POS default, jam buka, booking online
  *   - spa.treatments + treatment_variants       : 12 treatment, varian durasi & harga
  *   - spa.variant_outlet_prices                 : harga premium Setiabudi
- *   - spa.commission_rules                      : default 10%, refleksi 12%, signature nominal, dll
+ *   - spa.commission_rules                      : nominal demo per varian × level, sama lintas outlet
  *   - hris.departments/positions/shifts         : Spa Operations, Terapis, Shift Siang/Malam
  *   - hris.employees + employee_shifts          : 17 terapis, 3 resepsionis, 3 manajer (pola libur mingguan)
  *   - login demo: fo.westhoff@ / fo.signature@ (Resepsionis Spa), ayu@ / euis@ / wulan@ (Terapis Spa);
@@ -137,25 +137,13 @@ async function seedPrices(c, outlets, variants) {
   }
 }
 
-async function seedRules(c, outlets, variants) {
-  for (const [outletCode, outlet] of Object.entries(outlets)) {
-    for (const [key, variant] of Object.entries(variants)) {
-      const [treatmentCode, variantName] = key.split("|");
-      const rule = D.COMMISSION_RULES
-        .filter((r) => (!r.outlet || r.outlet === outletCode) && (!r.treatment || r.treatment === treatmentCode) && (!r.variant || r.variant === variantName))
-        .sort((a, b) => (Number(!!a.variant) * 2 + Number(!!a.treatment) + Number(!!a.outlet) / 10)
-          - (Number(!!b.variant) * 2 + Number(!!b.treatment) + Number(!!b.outlet) / 10)).at(-1);
-      if (!rule) continue;
-      const outletPrice = D.OUTLET_PRICES.find(([code, treatment, name]) => code === outletCode && treatment === treatmentCode && name === variantName)?.[3] ?? variant.price;
-      const commission = rule.type === "percent" ? Math.round(outletPrice * rule.value / 100) : rule.value;
+async function seedRules(c, variants) {
+  for (const variant of Object.values(variants)) {
+    for (const [level, perMinute] of D.COMMISSION_PER_MINUTE.entries()) {
       await c.query(
-      `INSERT INTO spa.commission_rules (variant_id, branch_id, commission_type, value, is_active)
-       VALUES ($1, $2, $3, $4, true)
-       ON CONFLICT (COALESCE(treatment_id, '00000000-0000-0000-0000-000000000000'::uuid),
-                    COALESCE(variant_id, '00000000-0000-0000-0000-000000000000'::uuid),
-                    COALESCE(branch_id, '00000000-0000-0000-0000-000000000000'::uuid))
-       DO UPDATE SET commission_type = EXCLUDED.commission_type, value = EXCLUDED.value, is_active = true, updated_at = NOW()`,
-      [variant.id, outlet.branchId, "fixed", commission]);
+        `INSERT INTO spa.commission_rules(variant_id,therapist_level,commission_type,value)
+         VALUES($1,$2,'fixed',$3) ON CONFLICT(variant_id,therapist_level) DO NOTHING`,
+        [variant.id, level, variant.duration * perMinute]);
     }
   }
 }
@@ -371,8 +359,8 @@ async function main() {
     const { treatments, variants } = await seedTreatments(c);
     console.log("treatment/varian  :", Object.keys(treatments).length, "/", Object.keys(variants).length);
     await seedPrices(c, outlets, variants);
-    await seedRules(c, outlets, variants);
-    console.log("aturan komisi     :", D.COMMISSION_RULES.length);
+    await seedRules(c, variants);
+    console.log("aturan komisi     :", Object.keys(variants).length * 3);
     const hr = await seedHr(c);
     const { staff, logins } = await seedStaff(c, outlets, hr, passwordHash);
     console.log("staf              :", Object.keys(staff).length, `(${Object.values(staff).filter((s) => s.therapistId).length} terapis)`);
